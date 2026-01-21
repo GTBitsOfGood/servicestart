@@ -13,5 +13,5 @@ export default defineConfig(
   vitest.configs.recommended,
   {
     ignores: ['node_modules/**', '.next/**'],
-  }
+  },
 );

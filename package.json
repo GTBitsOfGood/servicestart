@@ -5,7 +5,10 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0"
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "format": "prettier . --check",
+    "format:fix": "prettier . --write"
   },
   "dependencies": {
     "next": "latest",
@@ -24,6 +27,7 @@
     "eslint": "^9.39.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "jsdom": "^26.1.0",
+    "prettier": "3.8.1",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.53.1",
     "vitest": "^3.2.4"
