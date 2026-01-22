@@ -1,45 +1,37 @@
-# Vitest
+# ServiceStart
+ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/VolunTrack) - a volunteer and event management platform for nonprofits.
 
-This example shows how to use [Vitest](https://github.com/vitest-dev/vitest) with Next.js.
+[![Netlify Status](https://api.netlify.com/api/v1/badges/4c02de3a-8a0a-45e0-8282-349cc70f0705/deploy-status)](https://app.netlify.com/projects/servicestart/deploys)
 
-This includes Next.js' built-in support for Global CSS, CSS Modules and TypeScript. This example also shows how to use Vitest with the App Router and React Server Components.
+## Stack
 
-> **Note:** Since tests can be co-located alongside other files inside the App Router, we have placed those tests in `app/` to demonstrate this behavior (which is different than `pages/`). You can still place all tests in `__tests__` if you prefer.
+- React: Frontend framework
+- Next.js: Backend framework and server-side rendering
+- Tailwind CSS: Styling
+- Netlify: Hosting and deployment
+- Vitest: Testing
+- PNPM: Package management
+- ESLint: Linting
+- Prettier: Code formatting
 
-## Deploy your own
+## Getting Started
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/vercel/next.js/tree/canary/examples/with-vitest&project-name=with-vitest&repository-name=with-vitest)
+1. Install PNPM if you haven't already:
 
-## How to use
+   ```bash
+   npm install -g pnpm
+   ```
 
-Execute [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app) with [npm](https://docs.npmjs.com/cli/init), [Yarn](https://yarnpkg.com/lang/en/docs/cli/create/), or [pnpm](https://pnpm.io) to bootstrap the example:
+1. Clone the repository:
 
-```bash
-npx create-next-app --example with-vitest with-vitest-app
-```
+   ```bash
+   git clone https://github.com/GTBitsOfGood/servicestart.git
+   cd servicestart
+   ```
 
-```bash
-yarn create next-app --example with-vitest with-vitest-app
-```
+1. Start the server:
 
-```bash
-pnpm create next-app --example with-vitest with-vitest-app
-```
-
-Deploy it to the cloud with [Vercel](https://vercel.com/new?utm_source=github&utm_medium=readme&utm_campaign=next-example) ([Documentation](https://nextjs.org/docs/deployment)).
-
-## Running Tests
-
-```bash
-npm test
-```
-
-```bash
-yarn test
-```
-
-```bash
-pnpm test
-```
-
-Deploy it to the cloud with [Vercel](https://vercel.com/new?utm_source=github&utm_medium=readme&utm_campaign=next-example) ([Documentation](https://nextjs.org/docs/deployment)).
+   ```bash
+   pnpm install
+   pnpm dev
+   ``` 
