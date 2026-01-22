@@ -1,4 +1,5 @@
 # ServiceStart
+
 ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/VolunTrack) - a volunteer and event management platform for nonprofits.
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/4c02de3a-8a0a-45e0-8282-349cc70f0705/deploy-status)](https://app.netlify.com/projects/servicestart/deploys)
@@ -34,4 +35,9 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
    ```bash
    pnpm install
    pnpm dev
-   ``` 
+   ```
+
+## Other Tools
+
+- Dependabot is enabled and will submit PRs to update dependencies.
+- PRs automatically create preview deployments on Netlify for easy UX testing.
