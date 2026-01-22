@@ -12,10 +12,14 @@
     "format:fix": "prettier . --write"
   },
   "dependencies": {
+    "@tailwindcss/cli": "^4.1.18",
+    "@tailwindcss/postcss": "^4.1.18",
     "next": "latest",
+    "postcss": "^8.5.6",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
