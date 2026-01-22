@@ -34,7 +34,7 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 
    ```bash
    pnpm install
-   pnpm dev
+   pnpm run dev
    ```
 
 ## Other Tools
