@@ -42,6 +42,6 @@
     "vitest": "^4.0.17"
   },
   "lint-staged": {
-    "**/*": "prettier --write --ignore-unknown"
+    "**/*": "pnpm run format"
   }
 }
