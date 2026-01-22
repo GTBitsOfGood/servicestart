@@ -1,10 +1,9 @@
 ---
 name: Ticket
 about: Standard ticket template.
-title: ''
-labels: ''
-assignees: ''
-
+title: ""
+labels: ""
+assignees: ""
 ---
 
 ## Intro
