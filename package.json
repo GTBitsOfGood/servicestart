@@ -16,7 +16,9 @@
     "db:push": "drizzle-kit push && DB_URL=postgres://test:root@localhost:5433/postgres drizzle-kit push",
     "db:test:create": "docker pull postgres && docker run --name servicestart-test-db -e POSTGRES_PASSWORD=root -e POSTGRES_USER=test -d -p 5433:5432 postgres",
     "db:test:start": "docker container start servicestart-test-db",
-    "db:test:stop": "docker container stop servicestart-test-db"
+    "db:test:stop": "docker container stop servicestart-test-db",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@tailwindcss/cli": "^4.1.18",
