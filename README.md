@@ -14,6 +14,8 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - PNPM: Package management
 - ESLint: Linting
 - Prettier: Code formatting
+- [Drizzle ORM](https://orm.drizzle.team/): Database ORM
+- PostgreSQL: Database
 
 ## Getting Started
 
