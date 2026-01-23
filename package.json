@@ -23,6 +23,7 @@
   "dependencies": {
     "@tailwindcss/cli": "^4.1.18",
     "@tailwindcss/postcss": "^4.1.18",
+    "better-auth": "^1.4.17",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "next": "latest",

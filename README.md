@@ -39,6 +39,14 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
    pnpm run db:test:create
    ```
 
+1. Set up environment variables:
+   - Copy `.env.template` to `.env` and fill in the required values.
+   - Generate your `BETTER_AUTH_SECRET` using the following command:
+
+     ```bash
+     openssl rand -base64 32
+     ```
+
 1. Start the server:
 
    ```bash
