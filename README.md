@@ -14,6 +14,8 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - PNPM: Package management
 - ESLint: Linting
 - Prettier: Code formatting
+- [Drizzle ORM](https://orm.drizzle.team/): Database ORM
+- PostgreSQL: Database
 
 ## Getting Started
 
@@ -28,6 +30,13 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
    ```bash
    git clone https://github.com/GTBitsOfGood/servicestart.git
    cd servicestart
+   ```
+
+1. Create the database:
+
+   ```bash
+   pnpm run db:create
+   pnpm run db:test:create
    ```
 
 1. Start the server:
