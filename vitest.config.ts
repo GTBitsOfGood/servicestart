@@ -9,6 +9,8 @@ export default defineConfig({
     environment: "jsdom",
     env: loadEnv("test", process.cwd(), ""),
     passWithNoTests: true,
+    setupFiles: ["./tests/setup.ts"],
+    fileParallelism: false, // Necessary for DB tests
   },
   resolve: {
     alias: {
