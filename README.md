@@ -34,6 +34,7 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 
    ```bash
    pnpm run db:create
+   pnpm run db:test:create
    ```
 
 1. Start the server:
