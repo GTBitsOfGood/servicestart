@@ -30,6 +30,12 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
    cd servicestart
    ```
 
+1. Create the database:
+
+   ```bash
+   pnpm run db:create
+   ```
+
 1. Start the server:
 
    ```bash
