@@ -38,6 +38,9 @@ jobs:
       - name: Create test database
         run: pnpm run db:test:create
 
+      - name: Push schema to test database
+        run: pnpm run db:test:push
+
       - name: Run tests
         run: pnpm test
 
