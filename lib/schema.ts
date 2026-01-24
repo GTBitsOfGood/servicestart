@@ -124,7 +124,7 @@ export const invitations = pgTable(
 );
 
 export const relations = defineRelations(
-  { users, sessions, accounts },
+  { users, sessions, accounts, organizations, members, invitations },
   (r) => ({
     users: {
       sessions: r.many.sessions({
@@ -136,6 +136,32 @@ export const relations = defineRelations(
         to: r.accounts.userId,
       }),
     },
+    sessions: {
+      organizations: r.one.organizations({
+        from: r.sessions.activeOrganizationId,
+        to: r.organizations.id,
+      }),
+    },
+    members: {
+      users: r.one.users({
+        from: r.members.userId,
+        to: r.users.id,
+      }),
+      organizations: r.one.organizations({
+        from: r.members.organizationId,
+        to: r.organizations.id,
+      }),
+    },
+    invitations: {
+      organizations: r.one.organizations({
+        from: r.invitations.organizationId,
+        to: r.organizations.id,
+      }),
+      inviter: r.one.users({
+        from: r.invitations.inviterId,
+        to: r.users.id,
+      }),
+    },
   }),
 );
 
@@ -144,4 +170,7 @@ export const schema = {
   sessions,
   accounts,
   verification,
+  organizations,
+  members,
+  invitations,
 };
