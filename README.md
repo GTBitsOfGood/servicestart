@@ -10,12 +10,13 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - Next.js: Backend framework and server-side rendering
 - Tailwind CSS: Styling
 - Netlify: Hosting and deployment
-- Vitest: Testing
 - PNPM: Package management
 - ESLint: Linting
 - Prettier: Code formatting
+- [Vitest](https://vitest.dev/): Testing
 - [Drizzle ORM](https://orm.drizzle.team/): Database ORM
 - PostgreSQL: Database
+- [BetterAuth](https://www.better-auth.com/): Authentication
 
 ## Getting Started
 
