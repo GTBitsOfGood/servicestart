@@ -1,28 +1,336 @@
 @import "tailwindcss";
 
-html,
-body {
-  padding: 0;
-  margin: 0;
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    Segoe UI,
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    Fira Sans,
-    Droid Sans,
-    Helvetica Neue,
-    sans-serif;
+@theme {
+  --breakpoint-mobile: 640px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1024px;
+
+  --color-brand-text: #fc5b43;
+  --color-brand-stroke-strong: #fc5b43cc;
+  --color-brand-stroke-weak: #fc5b4333;
+  --color-brand-hover: #fc5b4380;
+  --color-brand-fill: #fc5b430d;
+  --color-grey-text-strong: #22070b;
+  --color-grey-text-weak: #22070bb2;
+  --color-grey-stroke-strong: #22070b80;
+  --color-grey-off-state: #22070b26;
+  --color-grey-stroke-weak: #22070b1a;
+  --color-grey-fill-weak: #22070b0d;
+  --color-grey-fill-weaker: #22070b06;
+  --color-status-blue-text: #325ce8;
+  --color-status-blue-stroke-strong: #325ce8cc;
+  --color-status-blue-stroke-weak: #325ce833;
+  --color-status-blue-fill: #325ce80d;
+  --color-status-green-text: #0a7b40;
+  --color-status-green-stroke-strong: #0a7b40cc;
+  --color-status-green-stroke-weak: #0a7b4033;
+  --color-status-green-fill: #0a7b400d;
+  --color-status-amber-text: #8f6c1a;
+  --color-status-amber-stroke-strong: #8f6c1acc;
+  --color-status-amber-stroke-weak: #8f6c1a33;
+  --color-status-amber-fill: #8f6c1a0d;
+  --color-status-red-text: #c73a3a;
+  --color-status-red-stroke-strong: #c73a3acc;
+  --color-status-red-stroke-weak: #c73a3a33;
+  --color-status-red-fill: #c73a3a0d;
+  --color-solid-bg-sunken: #f9f9f9;
+  --color-solid-bg-base: #ffffff;
+
+  --text-desktop-display: 48px;
+  --text-desktop-heading-1: 40px;
+  --text-desktop-heading-2: 32px;
+  --text-desktop-heading-3: 24px;
+  --text-desktop-heading-4: 20px;
+  --text-mobile-display: 32px;
+  --text-mobile-heading-1: 28px;
+  --text-mobile-heading-2: 24px;
+  --text-mobile-heading-3: 20px;
+  --text-mobile-heading-4: 18px;
+  --text-desktop-paragraph-1: 18px;
+  --text-desktop-paragraph-2: 16px;
+  --text-desktop-small: 12px;
+  --text-mobile-paragraph-1: 16px;
+  --text-mobile-paragraph-2: 14px;
+  --text-mobile-small: 12px;
+
+  --text-desktop-display--line-height: 56px;
+  --text-desktop-heading-1--line-height: 48px;
+  --text-desktop-heading-2--line-height: 40px;
+  --text-desktop-heading-3--line-height: 32px;
+  --text-desktop-heading-4--line-height: 24px;
+  --text-mobile-display--line-height: 40px;
+  --text-mobile-heading-1--line-height: 36px;
+  --text-mobile-heading-2--line-height: 32px;
+  --text-mobile-heading-3--line-height: 28px;
+  --text-mobile-heading-4--line-height: 24px;
+  --text-desktop-paragraph-1--line-height: 24px;
+  --text-desktop-paragraph-2--line-height: 22px;
+  --text-desktop-small--line-height: 18px;
+  --text-mobile-paragraph-1--line-height: 24px;
+  --text-mobile-paragraph-2--line-height: 22px;
+  --text-mobile-small--line-height: 18px;
+
+  --font-heading:
+    Visby Extra Bold, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-paragraph:
+    Open Sans Regular, ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  --animate-fade-in: fade-in 0.25s ease-out;
+  --animate-fade-out: fade-out 0.25s ease-out;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
-* {
-  box-sizing: border-box;
+@keyframes fade-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+    @apply transition duration-250 ease-in-out;
+  }
+}
+
+@layer utilities {
+  :root,
+  .root,
+  #root,
+  #docs-root {
+    padding: 0;
+  }
+
+  body {
+    padding: 0;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  h1 {
+    line-height: var(--text-mobile-heading-1--line-height);
+    font-size: var(--text-mobile-heading-1);
+    font-family: var(--font-heading);
+  }
+
+  h2 {
+    line-height: var(--text-mobile-heading-2--line-height);
+    font-size: var(--text-mobile-heading-2);
+    font-family: var(--font-heading);
+  }
+
+  h3 {
+    line-height: var(--text-mobile-heading-3--line-height);
+    font-size: var(--text-mobile-heading-3);
+    font-family: var(--font-heading);
+  }
+
+  h4,
+  h5,
+  h6 {
+    line-height: var(--text-mobile-heading-4--line-height);
+    font-size: var(--text-mobile-heading-4);
+    font-family: var(--font-heading);
+  }
+
+  small {
+    line-height: var(--text-mobile-small--line-height);
+    font-size: var(--text-mobile-small);
+    font-family: var(--font-paragraph);
+  }
+
+  p,
+  pre,
+  span,
+  ul,
+  ol,
+  li,
+  a {
+    line-height: var(--text-mobile-paragraph-1--line-height);
+    font-size: var(--text-mobile-paragraph-1);
+    font-family: var(--font-paragraph);
+  }
+
+  @font-face {
+    font-family: "Visby Extra Bold";
+    src:
+      url("/fonts/visbyextrabold-webfont.woff2") format("woff2"),
+      url("/fonts/visbyextrabold-webfont.woff") format("woff");
+    font-weight: normal;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: "Open Sans Regular";
+    src:
+      url("/fonts/opensans-regular-webfont.woff2") format("woff2"),
+      url("/fonts/opensans-regular-webfont.woff") format("woff");
+    font-weight: normal;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: "Open Sans Regular";
+    font-style: normal;
+    font-weight: 300 800;
+    font-stretch: 100%;
+    font-display: swap;
+    src: url("/fonts/opensans-webfont.woff2") format("woff2");
+  }
+
+  html {
+    font-size: 10px;
+  }
+
+  .text-display {
+    line-height: var(--text-mobile-display--line-height);
+    font-size: var(--text-mobile-display);
+    font-family: var(--font-heading);
+  }
+
+  .text-heading-1 {
+    line-height: var(--text-mobile-heading-1--line-height);
+    font-size: var(--text-mobile-heading-1);
+    font-family: var(--font-heading);
+  }
+
+  .text-heading-2 {
+    line-height: var(--text-mobile-heading-2--line-height);
+    font-size: var(--text-mobile-heading-2);
+    font-family: var(--font-heading);
+  }
+
+  .text-heading-3 {
+    line-height: var(--text-mobile-heading-3--line-height);
+    font-size: var(--text-mobile-heading-3);
+    font-family: var(--font-heading);
+  }
+
+  .text-heading-4 {
+    line-height: var(--text-mobile-heading-4--line-height);
+    font-size: var(--text-mobile-heading-4);
+    font-family: var(--font-heading);
+  }
+
+  .text-paragraph-1 {
+    line-height: var(--text-mobile-paragraph-1--line-height);
+    font-size: var(--text-mobile-paragraph-1);
+    font-family: var(--font-paragraph);
+  }
+
+  .text-paragraph-2 {
+    line-height: var(--text-mobile-paragraph-2--line-height);
+    font-size: var(--text-mobile-paragraph-2);
+    font-family: var(--font-paragraph);
+  }
+
+  .text-small {
+    line-height: var(--text-mobile-small--line-height);
+    font-size: var(--text-mobile-small);
+    font-family: var(--font-paragraph);
+  }
+
+  @media (width >= 1024px) {
+    .text-display {
+      line-height: var(--text-desktop-display--line-height);
+      font-size: var(--text-desktop-display);
+    }
+
+    .text-heading-1 {
+      line-height: var(--text-desktop-heading-1--line-height);
+      font-size: var(--text-desktop-heading-1);
+    }
+
+    .text-heading-2 {
+      line-height: var(--text-desktop-heading-2--line-height);
+      font-size: var(--text-desktop-heading-2);
+    }
+
+    .text-heading-3 {
+      line-height: var(--text-desktop-heading-3--line-height);
+      font-size: var(--text-desktop-heading-3);
+    }
+
+    .text-heading-4 {
+      line-height: var(--text-desktop-heading-4--line-height);
+      font-size: var(--text-desktop-heading-4);
+    }
+
+    .text-paragraph-1 {
+      line-height: var(--text-desktop-paragraph-1--line-height);
+      font-size: var(--text-desktop-paragraph-1);
+    }
+
+    .text-paragraph-2 {
+      line-height: var(--text-desktop-paragraph-2--line-height);
+      font-size: var(--text-desktop-paragraph-2);
+    }
+
+    .text-small {
+      line-height: var(--text-desktop-small--line-height);
+      font-size: var(--text-desktop-small);
+    }
+
+    h1 {
+      line-height: var(--text-desktop-heading-1--line-height);
+      font-size: var(--text-desktop-heading-1);
+    }
+
+    h2 {
+      line-height: var(--text-desktop-heading-2--line-height);
+      font-size: var(--text-desktop-heading-2);
+    }
+
+    h3 {
+      line-height: var(--text-desktop-heading-3--line-height);
+      font-size: var(--text-desktop-heading-3);
+    }
+
+    h4,
+    h5,
+    h6 {
+      line-height: var(--text-desktop-heading-4--line-height);
+      font-size: var(--text-desktop-heading-4);
+    }
+
+    small {
+      line-height: var(--text-desktop-small--line-height);
+      font-size: var(--text-desktop-small);
+    }
+
+    p,
+    pre,
+    span,
+    ul,
+    ol,
+    li,
+    a {
+      line-height: var(--text-desktop-paragraph-1--line-height);
+      font-size: var(--text-desktop-paragraph-1);
+    }
+  }
 }

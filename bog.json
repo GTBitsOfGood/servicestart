@@ -1,0 +1,10 @@
+{
+  "design-system": {
+    "path": "components",
+    "components": {
+      "icon": {
+        "version": "1.0.0"
+      }
+    }
+  }
+}
