@@ -1,7 +1,7 @@
 // @ts-check
 
 import eslint from "@eslint/js";
-import { defineConfig } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 import vitest from "@vitest/eslint-plugin";
@@ -13,7 +13,10 @@ export default defineConfig(
   reactHooks.configs.flat.recommended,
   vitest.configs.recommended,
   eslintConfigPrettier,
+  globalIgnores(["node_modules/", ".next/"]),
   {
-    ignores: ["node_modules/**", ".next/**"],
+    rules: {
+      "vitest/valid-title": "off", // Caused issues with using functions as test titles
+    },
   },
 );

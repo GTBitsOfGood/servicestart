@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { sessions } from "@/lib/schema";
 import { eq } from "drizzle-orm";
 
-describe(createTestUser.name, () => {
+describe(createTestUser, () => {
   it("should create a test user successfully", async () => {
     const data = await createTestUser();
 
