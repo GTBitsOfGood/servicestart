@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 describe("beforeEach", () => {
   db.insert(users).values([
     {
+      id: "test-user-id",
       name: "Test User",
       email: "test@test.com",
       emailVerified: true,
