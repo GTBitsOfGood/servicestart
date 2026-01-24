@@ -145,7 +145,9 @@ const BogIcon: React.FC<BogIconProps> = ({
     const dir = name.split("-")[1];
     const chevronName = "Chevron" + dir.charAt(0).toUpperCase() + dir.slice(1);
     const caretName = "Caret" + dir.charAt(0).toUpperCase() + dir.slice(1);
-    iconName = (PhosphorIcons as any)[chevronName] ? chevronName : caretName;
+    iconName = PhosphorIcons[chevronName as keyof typeof PhosphorIcons]
+      ? chevronName
+      : caretName;
   } else if (isCaret) {
     const dir = name.split("-")[1];
     iconName = "Caret" + dir.charAt(0).toUpperCase() + dir.slice(1);
