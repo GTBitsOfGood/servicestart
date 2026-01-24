@@ -6,6 +6,19 @@ export const baseTestUser = {
   name: "Test User",
 };
 
+/**
+ * Signs up a test user, which you can use to run API routes.
+ * 
+ * For example, you can get the session like so:
+ * ```ts
+ * const data = await createTestUser();
+ * const session = await auth.api.getSession({
+      headers: data.headers,
+    });
+ * ```
+
+ * @returns an object with the user, their token, and the relevant request headers
+ */
 export async function createTestUser() {
   const userNumber = `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
