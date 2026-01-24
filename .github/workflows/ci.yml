@@ -38,6 +38,9 @@ jobs:
       - name: Create test database
         run: pnpm run db:test:create
 
+      - name: Push schema to test database
+        run: pnpm run db:test:push
+
       - name: Run tests
         run: pnpm test
 
@@ -68,3 +71,17 @@ jobs:
 
       - name: Check code format
         run: pnpm format
+
+  check-migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Check migrations
+        run: pnpm run db:check

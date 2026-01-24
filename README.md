@@ -10,12 +10,13 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - Next.js: Backend framework and server-side rendering
 - Tailwind CSS: Styling
 - Netlify: Hosting and deployment
-- Vitest: Testing
 - PNPM: Package management
 - ESLint: Linting
 - Prettier: Code formatting
+- [Vitest](https://vitest.dev/): Testing
 - [Drizzle ORM](https://orm.drizzle.team/): Database ORM
 - PostgreSQL: Database
+- [BetterAuth](https://www.better-auth.com/): Authentication
 
 ## Getting Started
 
@@ -39,6 +40,14 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
    pnpm run db:test:create
    ```
 
+1. Set up environment variables:
+   - Copy `.env.template` to `.env` and fill in the required values.
+   - Generate your `BETTER_AUTH_SECRET` using the following command:
+
+     ```bash
+     openssl rand -base64 32
+     ```
+
 1. Start the server:
 
    ```bash
@@ -51,3 +60,5 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - Dependabot is enabled and will submit PRs to update dependencies.
 - PRs automatically create preview deployments on Netlify for easy UX testing.
 - There's a pre-commit hook for Prettier. If you get an error when committing, click "Show command output" in the popup to see the issue.
+- Use `pnpm run db:view` to open Drizzle Studio and view the database schema and contents.
+- Use the `createTestUser` function in `tests/testUtils.ts` to get a user that you can use for API endpoints in tests.
