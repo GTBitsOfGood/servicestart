@@ -59,3 +59,4 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - Dependabot is enabled and will submit PRs to update dependencies.
 - PRs automatically create preview deployments on Netlify for easy UX testing.
 - There's a pre-commit hook for Prettier. If you get an error when committing, click "Show command output" in the popup to see the issue.
+- Use `pnpm run db:view` to open Drizzle Studio and view the database schema and contents.
