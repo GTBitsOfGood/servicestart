@@ -1,8 +1,6 @@
 import db from "@/lib/db";
-import { PgTable } from "drizzle-orm/pg-core";
+import { tables } from "@/lib/schema";
 import { beforeEach } from "vitest";
-
-const tables: PgTable[] = [];
 
 beforeEach(async () => {
   // Wipe DB before each test
