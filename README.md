@@ -18,6 +18,7 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - PostgreSQL: Database
 - [BetterAuth](https://www.better-auth.com/): Authentication
 - [BoG Design System](https://github.com/GTBitsOfGood/design-system): UI components
+- [Zod](https://zod.dev/): Schema validation
 
 ## Getting Started
 
