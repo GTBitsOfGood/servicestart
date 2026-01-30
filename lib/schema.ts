@@ -16,9 +16,11 @@ export enum JoinRequestStatus {
 }
 
 // Array of enum values for use with pgEnum and Zod
-export const JOIN_REQUEST_STATUS_VALUES = Object.values(
-  JoinRequestStatus,
-) as readonly [string, ...string[]];
+export const JOIN_REQUEST_STATUS_VALUES = [
+  JoinRequestStatus.Pending,
+  JoinRequestStatus.Approved,
+  JoinRequestStatus.Denied,
+] as const;
 
 export const joinRequestStatusEnum = pgEnum(
   "join_request_status",
