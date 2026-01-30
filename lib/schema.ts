@@ -8,11 +8,22 @@ import {
   text,
 } from "drizzle-orm/pg-core";
 
-export const joinRequestStatus = pgEnum("join_request_status", [
-  "pending",
-  "approved",
-  "denied",
-]);
+// TypeScript enum for join request status values
+export enum JoinRequestStatus {
+  Pending = "pending",
+  Approved = "approved",
+  Denied = "denied",
+}
+
+// Array of enum values for use with pgEnum and Zod
+export const JOIN_REQUEST_STATUS_VALUES = Object.values(
+  JoinRequestStatus,
+) as readonly [string, ...string[]];
+
+export const joinRequestStatusEnum = pgEnum(
+  "join_request_status",
+  JOIN_REQUEST_STATUS_VALUES,
+);
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -147,7 +158,7 @@ export const joinRequests = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    status: joinRequestStatus("status").notNull(),
+    status: joinRequestStatusEnum("status").notNull(),
   },
   (table) => [
     index("join_request_organizationId_idx").on(table.organizationId),

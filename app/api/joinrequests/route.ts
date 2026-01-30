@@ -1,10 +1,42 @@
-import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { auth } from "@/lib/auth";
-import db from "@/lib/db";
-import { joinRequests, members } from "@/lib/schema";
+import { JoinRequestStatus, JOIN_REQUEST_STATUS_VALUES } from "@/lib/schema";
+import { JoinRequestsService } from "@/lib/services/joinRequests";
 
-const ADMIN_ROLES = ["admin", "owner"];
+// Schema for GET pagination parameters
+const getParamsSchema = z.object({
+  page: z
+    .string()
+    .optional()
+    .transform((val) => {
+      const num = parseInt(val || "1", 10);
+      return isNaN(num) ? 1 : num;
+    })
+    .pipe(z.number().int().min(1, "Page must be at least 1")),
+  pageSize: z
+    .string()
+    .optional()
+    .transform((val) => {
+      const num = parseInt(val || "20", 10);
+      return isNaN(num) ? 20 : num;
+    })
+    .pipe(
+      z
+        .number()
+        .int()
+        .min(1, "Page size must be at least 1")
+        .max(100, "Page size must be at most 100"),
+    ),
+});
+
+// Schema for PATCH parameters
+const patchParamsSchema = z.object({
+  id: z.string({ error: "Missing required parameters: id and status" }).min(1),
+  status: z.enum(JOIN_REQUEST_STATUS_VALUES, {
+    error: "Invalid status. Must be pending, approved, or denied",
+  }),
+});
 
 export async function GET(request: Request) {
   const session = await auth.api.getSession({
@@ -25,45 +57,40 @@ export async function GET(request: Request) {
   }
 
   // Check if user is admin or owner of the active organization
-  const [membership] = await db
-    .select({ role: members.role })
-    .from(members)
-    .where(
-      and(
-        eq(members.userId, session.user.id),
-        eq(members.organizationId, activeOrganizationId),
-      ),
-    )
-    .limit(1);
+  const membership = await JoinRequestsService.getUserMembership(
+    session.user.id,
+    activeOrganizationId,
+  );
 
-  if (!membership || !ADMIN_ROLES.includes(membership.role)) {
+  if (!JoinRequestsService.isAdminOrOwner(membership?.role)) {
     return NextResponse.json(
       { error: "Forbidden: Admin or owner role required" },
       { status: 403 },
     );
   }
 
-  // Parse pagination parameters
+  // Parse and validate pagination parameters with Zod
   const url = new URL(request.url);
-  const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10));
-  const pageSize = Math.max(
-    1,
-    Math.min(100, parseInt(url.searchParams.get("pageSize") || "20", 10)),
-  );
+  const parsed = getParamsSchema.safeParse({
+    page: url.searchParams.get("page") ?? undefined,
+    pageSize: url.searchParams.get("pageSize") ?? undefined,
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues.map((i) => i.message).join(", ") },
+      { status: 400 },
+    );
+  }
+
+  const { page, pageSize } = parsed.data;
   const offset = (page - 1) * pageSize;
 
   // Query join requests for the organization
-  const requests = await db
-    .select({
-      id: joinRequests.id,
-      userId: joinRequests.userId,
-      status: joinRequests.status,
-      createdAt: joinRequests.createdAt,
-    })
-    .from(joinRequests)
-    .where(eq(joinRequests.organizationId, activeOrganizationId))
-    .limit(pageSize)
-    .offset(offset);
+  const requests = await JoinRequestsService.listByOrganization(
+    activeOrganizationId,
+    { limit: pageSize, offset },
+  );
 
   return NextResponse.json({
     data: requests,
@@ -91,56 +118,41 @@ export async function PATCH(request: Request) {
   }
 
   // Check if user is admin or owner of the active organization
-  const [membership] = await db
-    .select({ role: members.role })
-    .from(members)
-    .where(
-      and(
-        eq(members.userId, session.user.id),
-        eq(members.organizationId, activeOrganizationId),
-      ),
-    )
-    .limit(1);
+  const membership = await JoinRequestsService.getUserMembership(
+    session.user.id,
+    activeOrganizationId,
+  );
 
-  if (!membership || !ADMIN_ROLES.includes(membership.role)) {
+  if (!JoinRequestsService.isAdminOrOwner(membership?.role)) {
     return NextResponse.json(
       { error: "Forbidden: Admin or owner role required" },
       { status: 403 },
     );
   }
 
-  // Parse query parameters
+  // Parse and validate query parameters with Zod
   const url = new URL(request.url);
-  const joinRequestId = url.searchParams.get("id");
-  const newStatus = url.searchParams.get("status");
+  const parsed = patchParamsSchema.safeParse({
+    id: url.searchParams.get("id"),
+    status: url.searchParams.get("status"),
+  });
 
-  if (!joinRequestId || !newStatus) {
+  if (!parsed.success) {
     return NextResponse.json(
-      { error: "Missing required parameters: id and status" },
+      { error: parsed.error.issues[0].message },
       { status: 400 },
     );
   }
 
-  if (!["pending", "approved", "denied"].includes(newStatus)) {
-    return NextResponse.json(
-      { error: "Invalid status. Must be pending, approved, or denied" },
-      { status: 400 },
-    );
-  }
+  const { id: joinRequestId, status: newStatus } = parsed.data;
 
   // Find the join request
-  const [joinRequest] = await db
-    .select({
-      id: joinRequests.id,
-      userId: joinRequests.userId,
-      organizationId: joinRequests.organizationId,
-      status: joinRequests.status,
-    })
-    .from(joinRequests)
-    .where(eq(joinRequests.id, joinRequestId))
-    .limit(1);
+  const joinRequest = await JoinRequestsService.findByIdAndOrganization(
+    joinRequestId,
+    activeOrganizationId,
+  );
 
-  if (!joinRequest || joinRequest.organizationId !== activeOrganizationId) {
+  if (!joinRequest) {
     return NextResponse.json(
       { error: "Join request not found" },
       { status: 404 },
@@ -148,7 +160,7 @@ export async function PATCH(request: Request) {
   }
 
   // If already approved, don't change anything
-  if (joinRequest.status === "approved") {
+  if (joinRequest.status === JoinRequestStatus.Approved) {
     return NextResponse.json({
       message: "Join request is already approved",
       joinRequest,
@@ -156,13 +168,13 @@ export async function PATCH(request: Request) {
   }
 
   // Update the status
-  await db
-    .update(joinRequests)
-    .set({ status: newStatus as "pending" | "approved" | "denied" })
-    .where(eq(joinRequests.id, joinRequestId));
+  const updatedRequest = await JoinRequestsService.updateStatus(
+    joinRequestId,
+    newStatus as JoinRequestStatus,
+  );
 
   // If new status is approved, add the user to the organization
-  if (newStatus === "approved") {
+  if (newStatus === JoinRequestStatus.Approved) {
     await auth.api.addMember({
       body: {
         organizationId: activeOrganizationId,
@@ -171,17 +183,6 @@ export async function PATCH(request: Request) {
       },
     });
   }
-
-  const [updatedRequest] = await db
-    .select({
-      id: joinRequests.id,
-      userId: joinRequests.userId,
-      status: joinRequests.status,
-      createdAt: joinRequests.createdAt,
-    })
-    .from(joinRequests)
-    .where(eq(joinRequests.id, joinRequestId))
-    .limit(1);
 
   return NextResponse.json(updatedRequest);
 }

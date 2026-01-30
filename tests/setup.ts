@@ -14,6 +14,7 @@ import { beforeEach } from "vitest";
 beforeEach(async () => {
   // Wipe DB before each test - delete in order to respect FK constraints
   // Child tables first, then parent tables
+  // Add line here when you create a new table
   await db.delete(joinRequests);
   await db.delete(invitations);
   await db.delete(members);

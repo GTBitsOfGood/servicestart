@@ -3,13 +3,13 @@ import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { GET, DELETE } from "@/app/api/joinrequests/[organizationId]/route";
 import db from "@/lib/db";
-import { joinRequests } from "@/lib/schema";
+import { joinRequests, JoinRequestStatus } from "@/lib/schema";
 import {
   buildTestUser,
   createJoinRequest,
   createOrganization,
   signUpAndGetHeaders,
-} from "../../helpers/joinRequests";
+} from "../../../../testUtils";
 
 describe("GET /api/joinrequests/[organizationId]", () => {
   it("returns the join request status for an authenticated user", async () => {
@@ -22,7 +22,7 @@ describe("GET /api/joinrequests/[organizationId]", () => {
       id: randomUUID(),
       userId: createdUser.id,
       organizationId: organization.id,
-      status: "pending",
+      status: JoinRequestStatus.Pending,
     });
 
     const request = new Request(
@@ -37,7 +37,7 @@ describe("GET /api/joinrequests/[organizationId]", () => {
     expect(response.status).toBe(200);
 
     const data = await response.json();
-    expect(data.status).toBe("pending");
+    expect(data.status).toBe(JoinRequestStatus.Pending);
     expect(data.id).toBeDefined();
     expect(data.createdAt).toBeDefined();
   });
@@ -90,7 +90,7 @@ describe("GET /api/joinrequests/[organizationId]", () => {
       id: randomUUID(),
       userId: createdUser.id,
       organizationId: organization.id,
-      status: "approved",
+      status: JoinRequestStatus.Approved,
     });
 
     const request = new Request(
@@ -105,7 +105,7 @@ describe("GET /api/joinrequests/[organizationId]", () => {
     expect(response.status).toBe(200);
 
     const data = await response.json();
-    expect(data.status).toBe("approved");
+    expect(data.status).toBe(JoinRequestStatus.Approved);
   });
 });
 
@@ -151,7 +151,11 @@ describe("DELETE /api/joinrequests/[organizationId]", () => {
     const user = buildTestUser();
     const { user: createdUser, headers } = await signUpAndGetHeaders(user);
 
-    await createJoinRequest(createdUser.id, organization.id, "approved");
+    await createJoinRequest(
+      createdUser.id,
+      organization.id,
+      JoinRequestStatus.Approved,
+    );
 
     const request = new Request(
       `http://localhost/api/joinrequests/${organization.id}`,
@@ -184,7 +188,11 @@ describe("DELETE /api/joinrequests/[organizationId]", () => {
     const user = buildTestUser();
     const { user: createdUser, headers } = await signUpAndGetHeaders(user);
 
-    await createJoinRequest(createdUser.id, organization.id, "denied");
+    await createJoinRequest(
+      createdUser.id,
+      organization.id,
+      JoinRequestStatus.Denied,
+    );
 
     const request = new Request(
       `http://localhost/api/joinrequests/${organization.id}`,
@@ -203,7 +211,11 @@ describe("DELETE /api/joinrequests/[organizationId]", () => {
     const user = buildTestUser();
     const { user: createdUser, headers } = await signUpAndGetHeaders(user);
 
-    await createJoinRequest(createdUser.id, organization.id, "pending");
+    await createJoinRequest(
+      createdUser.id,
+      organization.id,
+      JoinRequestStatus.Pending,
+    );
 
     const request = new Request(
       `http://localhost/api/joinrequests/${organization.id}`,

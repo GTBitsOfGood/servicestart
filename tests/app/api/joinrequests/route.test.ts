@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { GET, PATCH } from "@/app/api/joinrequests/route";
 import db from "@/lib/db";
-import { joinRequests, members } from "@/lib/schema";
+import { joinRequests, JoinRequestStatus, members } from "@/lib/schema";
 import {
   addMember,
   buildTestUser,
@@ -10,7 +10,7 @@ import {
   createOrganization,
   setActiveOrganization,
   signUpAndGetSession,
-} from "../../helpers/joinRequests";
+} from "../../../testUtils";
 
 describe("GET /api/joinrequests (paginated list)", () => {
   it("returns 401 when user is not authenticated", async () => {
@@ -69,11 +69,19 @@ describe("GET /api/joinrequests (paginated list)", () => {
     // Create some join requests from other users
     const otherUser1 = buildTestUser();
     const { user: other1 } = await signUpAndGetSession(otherUser1);
-    await createJoinRequest(other1.id, organization.id, "pending");
+    await createJoinRequest(
+      other1.id,
+      organization.id,
+      JoinRequestStatus.Pending,
+    );
 
     const otherUser2 = buildTestUser();
     const { user: other2 } = await signUpAndGetSession(otherUser2);
-    await createJoinRequest(other2.id, organization.id, "approved");
+    await createJoinRequest(
+      other2.id,
+      organization.id,
+      JoinRequestStatus.Approved,
+    );
 
     const request = new Request("http://localhost/api/joinrequests", {
       headers,
@@ -101,7 +109,11 @@ describe("GET /api/joinrequests (paginated list)", () => {
 
     const otherUser = buildTestUser();
     const { user: other } = await signUpAndGetSession(otherUser);
-    await createJoinRequest(other.id, organization.id, "pending");
+    await createJoinRequest(
+      other.id,
+      organization.id,
+      JoinRequestStatus.Pending,
+    );
 
     const request = new Request("http://localhost/api/joinrequests", {
       headers,
@@ -129,7 +141,11 @@ describe("GET /api/joinrequests (paginated list)", () => {
     for (let i = 0; i < 5; i++) {
       const otherUser = buildTestUser();
       const { user: other } = await signUpAndGetSession(otherUser);
-      await createJoinRequest(other.id, organization.id, "pending");
+      await createJoinRequest(
+        other.id,
+        organization.id,
+        JoinRequestStatus.Pending,
+      );
     }
 
     // Request page 1 with pageSize 2
@@ -333,7 +349,7 @@ describe("PATCH /api/joinrequests", () => {
     const joinRequestId = await createJoinRequest(
       requester.id,
       organization2.id,
-      "pending",
+      JoinRequestStatus.Pending,
     );
 
     const request = new Request(
@@ -365,7 +381,7 @@ describe("PATCH /api/joinrequests", () => {
     const joinRequestId = await createJoinRequest(
       requester.id,
       organization.id,
-      "approved",
+      JoinRequestStatus.Approved,
     );
 
     const request = new Request(
@@ -386,7 +402,7 @@ describe("PATCH /api/joinrequests", () => {
       .select()
       .from(joinRequests)
       .where(eq(joinRequests.id, joinRequestId));
-    expect(unchangedRequest.status).toBe("approved");
+    expect(unchangedRequest.status).toBe(JoinRequestStatus.Approved);
   });
 
   it("updates status to denied", async () => {
@@ -406,7 +422,7 @@ describe("PATCH /api/joinrequests", () => {
     const joinRequestId = await createJoinRequest(
       requester.id,
       organization.id,
-      "pending",
+      JoinRequestStatus.Pending,
     );
 
     const request = new Request(
@@ -420,7 +436,7 @@ describe("PATCH /api/joinrequests", () => {
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.status).toBe("denied");
+    expect(data.status).toBe(JoinRequestStatus.Denied);
 
     // Verify user is NOT added as member
     const [membership] = await db
@@ -452,7 +468,7 @@ describe("PATCH /api/joinrequests", () => {
     const joinRequestId = await createJoinRequest(
       requester.id,
       organization.id,
-      "pending",
+      JoinRequestStatus.Pending,
     );
 
     const request = new Request(
@@ -466,7 +482,7 @@ describe("PATCH /api/joinrequests", () => {
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.status).toBe("approved");
+    expect(data.status).toBe(JoinRequestStatus.Approved);
 
     // Verify user is added as member
     const [membership] = await db
@@ -499,7 +515,7 @@ describe("PATCH /api/joinrequests", () => {
     const joinRequestId = await createJoinRequest(
       requester.id,
       organization.id,
-      "pending",
+      JoinRequestStatus.Pending,
     );
 
     const request = new Request(
@@ -513,6 +529,6 @@ describe("PATCH /api/joinrequests", () => {
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.status).toBe("approved");
+    expect(data.status).toBe(JoinRequestStatus.Approved);
   });
 });

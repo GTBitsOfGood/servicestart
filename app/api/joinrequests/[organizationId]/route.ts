@@ -1,8 +1,7 @@
-import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import db from "@/lib/db";
-import { joinRequests } from "@/lib/schema";
+import { JoinRequestStatus } from "@/lib/schema";
+import { JoinRequestsService } from "@/lib/services/joinRequests";
 
 export async function GET(
   request: Request,
@@ -18,20 +17,10 @@ export async function GET(
 
   const { organizationId } = await params;
 
-  const [joinRequest] = await db
-    .select({
-      id: joinRequests.id,
-      status: joinRequests.status,
-      createdAt: joinRequests.createdAt,
-    })
-    .from(joinRequests)
-    .where(
-      and(
-        eq(joinRequests.userId, session.user.id),
-        eq(joinRequests.organizationId, organizationId),
-      ),
-    )
-    .limit(1);
+  const joinRequest = await JoinRequestsService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
 
   if (!joinRequest) {
     return NextResponse.json(
@@ -57,19 +46,10 @@ export async function DELETE(
 
   const { organizationId } = await params;
 
-  const [joinRequest] = await db
-    .select({
-      id: joinRequests.id,
-      status: joinRequests.status,
-    })
-    .from(joinRequests)
-    .where(
-      and(
-        eq(joinRequests.userId, session.user.id),
-        eq(joinRequests.organizationId, organizationId),
-      ),
-    )
-    .limit(1);
+  const joinRequest = await JoinRequestsService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
 
   if (!joinRequest) {
     return NextResponse.json(
@@ -78,14 +58,14 @@ export async function DELETE(
     );
   }
 
-  if (joinRequest.status !== "pending") {
+  if (joinRequest.status !== JoinRequestStatus.Pending) {
     return NextResponse.json(
       { error: "Cannot delete a non-pending join request" },
       { status: 403 },
     );
   }
 
-  await db.delete(joinRequests).where(eq(joinRequests.id, joinRequest.id));
+  await JoinRequestsService.deleteById(joinRequest.id);
 
   return NextResponse.json({ success: true });
 }

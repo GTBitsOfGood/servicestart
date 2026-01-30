@@ -3,12 +3,8 @@ import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { auth } from "@/lib/auth";
 import db from "@/lib/db";
-import { joinRequests, members } from "@/lib/schema";
-import {
-  buildHost,
-  buildTestUser,
-  createOrganization,
-} from "../helpers/joinRequests";
+import { joinRequests, JoinRequestStatus, members } from "@/lib/schema";
+import { buildHost, buildTestUser, createOrganization } from "../testUtils";
 
 async function getJoinRequests(userId: string, organizationId: string) {
   return db
@@ -35,7 +31,7 @@ describe("join request hooks", () => {
     const requests = await getJoinRequests(result.user.id, organization.id);
 
     expect(requests).toHaveLength(1);
-    expect(requests[0].status).toBe("pending");
+    expect(requests[0].status).toBe(JoinRequestStatus.Pending);
   });
 
   it("defaults the slug to servicestart when host is not a subdomain", async () => {
