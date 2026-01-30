@@ -1,0 +1,32 @@
+name: Migrate Database
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: Staging
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Check migrations
+        run: pnpm run db:check
+
+      - name: Load DB_URL from secrets
+        run: echo "DB_URL=${{ secrets.DB_URL }}" >> $GITHUB_ENV
+
+      - name: Generate DB migrations
+        run: pnpm run db:generate
+
+      - name: Run database migrations
+        run: pnpm run db:migrate
