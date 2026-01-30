@@ -65,3 +65,4 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - Use `pnpm run db:view` to open Drizzle Studio and view the database schema and contents.
 - Use the `createTestUser` function in `tests/testUtils.ts` to get a user that you can use for API endpoints in tests.
 - Use `pnpx bog-cli design edit` to configure the BoG design system.
+- Run scripts in the `scripts` folder with `pnpx tsx <script-name>`.
