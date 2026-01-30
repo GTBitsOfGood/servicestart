@@ -1,4 +1,4 @@
-name: Migrate Database
+name: CD
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  migrate:
+  migrate-db:
     runs-on: ubuntu-latest
     environment: Staging
     steps:
