@@ -1,12 +1,4 @@
-import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
-import db from "@/lib/db";
-import {
-  joinRequests,
-  JoinRequestStatus,
-  members,
-  organizations,
-} from "@/lib/schema";
+import { JoinRequestsService } from "@/lib/services/joinRequests";
 
 const defaultOrganizationSlug = "servicestart";
 
@@ -21,44 +13,21 @@ export function getSlugFromHost(host?: string): string {
 
 export async function createJoinRequestIfNeeded(userId: string, host?: string) {
   const slug = getSlugFromHost(host);
-  const [organizationRecord] = await db
-    .select({ id: organizations.id })
-    .from(organizations)
-    .where(eq(organizations.slug, slug))
-    .limit(1);
 
-  if (!organizationRecord) return;
+  const organization = await JoinRequestsService.findOrganizationBySlug(slug);
+  if (!organization) return;
 
-  const [membership] = await db
-    .select({ id: members.id })
-    .from(members)
-    .where(
-      and(
-        eq(members.userId, userId),
-        eq(members.organizationId, organizationRecord.id),
-      ),
-    )
-    .limit(1);
-
+  const membership = await JoinRequestsService.getUserMembership(
+    userId,
+    organization.id,
+  );
   if (membership) return;
 
-  const [existingRequest] = await db
-    .select({ id: joinRequests.id })
-    .from(joinRequests)
-    .where(
-      and(
-        eq(joinRequests.userId, userId),
-        eq(joinRequests.organizationId, organizationRecord.id),
-      ),
-    )
-    .limit(1);
-
+  const existingRequest = await JoinRequestsService.findByUserAndOrganization(
+    userId,
+    organization.id,
+  );
   if (existingRequest) return;
 
-  await db.insert(joinRequests).values({
-    id: randomUUID(),
-    userId,
-    organizationId: organizationRecord.id,
-    status: JoinRequestStatus.Pending,
-  });
+  await JoinRequestsService.create(userId, organization.id);
 }

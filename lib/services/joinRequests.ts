@@ -1,6 +1,12 @@
+import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
-import { joinRequests, JoinRequestStatus, members } from "@/lib/schema";
+import {
+  joinRequests,
+  JoinRequestStatus,
+  members,
+  organizations,
+} from "@/lib/schema";
 
 async function findByUserAndOrganization(
   userId: string,
@@ -122,6 +128,27 @@ function isAdminOrOwner(role: string | undefined): boolean {
   return role !== undefined && ADMIN_ROLES.includes(role);
 }
 
+async function findOrganizationBySlug(slug: string) {
+  const [organization] = await db
+    .select({ id: organizations.id })
+    .from(organizations)
+    .where(eq(organizations.slug, slug))
+    .limit(1);
+
+  return organization ?? null;
+}
+
+async function create(userId: string, organizationId: string) {
+  const id = randomUUID();
+  await db.insert(joinRequests).values({
+    id,
+    userId,
+    organizationId,
+    status: JoinRequestStatus.Pending,
+  });
+  return id;
+}
+
 export const JoinRequestsService = {
   findByUserAndOrganization,
   findByIdAndOrganization,
@@ -131,4 +158,6 @@ export const JoinRequestsService = {
   deleteById,
   getUserMembership,
   isAdminOrOwner,
+  findOrganizationBySlug,
+  create,
 };
