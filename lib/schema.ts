@@ -1,5 +1,31 @@
 import { defineRelations } from "drizzle-orm";
-import { pgTable, timestamp, boolean, index, text } from "drizzle-orm/pg-core";
+import {
+  pgEnum,
+  pgTable,
+  timestamp,
+  boolean,
+  index,
+  text,
+} from "drizzle-orm/pg-core";
+
+// TypeScript enum for join request status values
+export enum JoinRequestStatus {
+  Pending = "pending",
+  Approved = "approved",
+  Denied = "denied",
+}
+
+// Array of enum values for use with pgEnum and Zod
+export const JOIN_REQUEST_STATUS_VALUES = [
+  JoinRequestStatus.Pending,
+  JoinRequestStatus.Approved,
+  JoinRequestStatus.Denied,
+] as const;
+
+export const joinRequestStatusEnum = pgEnum(
+  "join_request_status",
+  JOIN_REQUEST_STATUS_VALUES,
+);
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -123,8 +149,34 @@ export const invitations = pgTable(
   (table) => [index("invitation_organizationId_idx").on(table.organizationId)],
 );
 
+export const joinRequests = pgTable(
+  "join_requests",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    status: joinRequestStatusEnum("status").notNull(),
+  },
+  (table) => [
+    index("join_request_organizationId_idx").on(table.organizationId),
+  ],
+);
+
 export const relations = defineRelations(
-  { users, sessions, accounts, organizations, members, invitations },
+  {
+    users,
+    sessions,
+    accounts,
+    organizations,
+    members,
+    invitations,
+    joinRequests,
+  },
   (r) => ({
     users: {
       sessions: r.many.sessions({
@@ -162,6 +214,16 @@ export const relations = defineRelations(
         to: r.users.id,
       }),
     },
+    joinRequests: {
+      users: r.one.users({
+        from: r.joinRequests.userId,
+        to: r.users.id,
+      }),
+      organizations: r.one.organizations({
+        from: r.joinRequests.organizationId,
+        to: r.organizations.id,
+      }),
+    },
   }),
 );
 
@@ -173,4 +235,5 @@ export const schema = {
   organizations,
   members,
   invitations,
+  joinRequests,
 };
