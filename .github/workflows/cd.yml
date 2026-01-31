@@ -10,6 +10,8 @@ jobs:
   migrate-db:
     runs-on: ubuntu-latest
     environment: Staging
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v6
 
@@ -27,6 +29,12 @@ jobs:
 
       - name: Generate DB migrations
         run: pnpm run db:generate
+
+      - uses: stefanzweifel/git-auto-commit-action@v7
+        with:
+          commit_message: "[Actions] Generate database migrations"
+          branch: main
+          file_pattern: "drizzle/**"
 
       - name: Run database migrations
         run: pnpm run db:migrate
