@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  delete-db:
+  drop-db:
     runs-on: ubuntu-latest
     environment: "Preview"
     steps:
@@ -23,4 +23,4 @@ jobs:
 
       - name: Drop database
         run: |
-          PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h ${{ secrets.DB_HOST }} -p ${{ secrets.DB_PORT }} -U ${{ secrets.DB_USER }} -d postgres -c 'drop database if exists "${{ github.ref_name }}";'
+          psql ${{ secrets.DB_URL }}/postgres -c 'drop database if exists "${{ github.ref_name }}";'
