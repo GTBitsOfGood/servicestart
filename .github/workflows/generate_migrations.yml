@@ -24,5 +24,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Generate new migrations [skip ci]" -m "Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" || echo "No changes to commit"
+          git commit -m "Generate new migrations" -m "Co-authored-by: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>" || echo "No changes to commit"
           git push origin ${{ github.ref }}
