@@ -18,6 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Log PR type
+        run: echo "Name - ${{github.event_name}}, Type - ${{ github.event.action }}"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4.2.0
 
