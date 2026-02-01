@@ -33,4 +33,12 @@ describe(getDbUrl, () => {
     const url = getDbUrl();
     expect(url).toBe("postgres://user:pass@host:5432/pr123");
   });
+
+  it("returns DB_URL if it does not contain <branch>", () => {
+    process.env.DB_URL = "postgres://user:pass@host:5432/main";
+    process.env.NEXT_PUBLIC_BRANCH_NAME = "feature-xyz";
+
+    const url = getDbUrl();
+    expect(url).toBe("postgres://user:pass@host:5432/main");
+  });
 });
