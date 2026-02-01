@@ -12,22 +12,12 @@ export function getDbUrl(): string {
     return "";
   }
 
-  if (
-    process.env.DB_URL.includes("<branch>") &&
-    !process.env.NEXT_PUBLIC_BRANCH_NAME
-  ) {
-    return process.env.DB_URL.replace("<branch>", "main");
+  let branchName = process.env.NEXT_PUBLIC_BRANCH_NAME || "main";
+  if (branchName.startsWith("pull/")) {
+    branchName = branchName.slice("pull/".length);
   }
 
-  if (process.env.NEXT_PUBLIC_BRANCH_NAME?.startsWith("pull/")) {
-    process.env.NEXT_PUBLIC_BRANCH_NAME =
-      process.env.NEXT_PUBLIC_BRANCH_NAME.slice("pull/".length);
-  }
-
-  return process.env.DB_URL.replace(
-    "<branch>",
-    `"${process.env.NEXT_PUBLIC_BRANCH_NAME!}"`,
-  );
+  return process.env.DB_URL.replace("<branch>", `"${branchName}"`);
 }
 
 export default drizzle(getDbUrl(), {
