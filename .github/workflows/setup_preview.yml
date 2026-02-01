@@ -23,7 +23,7 @@ jobs:
         run: pnpm install
 
       - name: Load DB_URL from secrets
-        run: echo "DB_URL=${{ secrets.DB_URL }}/${{ github.ref_name }}" >> $GITHUB_ENV
+        run: echo "DB_URL=${{ secrets.DB_URL }}/\"${{ github.ref_name }}\"" >> $GITHUB_ENV
 
       - name: Create database
         run: |
