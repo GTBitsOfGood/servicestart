@@ -27,7 +27,7 @@ jobs:
 
       - name: Create database
         run: |
-          psql ${{ secrets.DB_URL }}/postgres -c 'create database "${{ github.ref_name }}";'
+          psql "${{ secrets.DB_URL }}/postgres" -c 'create database "${{ github.ref_name }}";'
 
       - name: Migrate database
         run: pnpm run db:migrate
