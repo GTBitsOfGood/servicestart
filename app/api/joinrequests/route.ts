@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { JoinRequestStatus, JOIN_REQUEST_STATUS_VALUES } from "@/lib/schema";
 import { JoinRequestsService } from "@/lib/services/joinRequests";
+import { MembersService } from "@/lib/services/members";
 
 // Schema for GET pagination parameters
 const getParamsSchema = z.object({
@@ -57,12 +58,12 @@ export async function GET(request: Request) {
   }
 
   // Check if user is admin or owner of the active organization
-  const membership = await JoinRequestsService.getUserMembership(
+  const membership = await MembersService.findByUserAndOrganization(
     session.user.id,
     activeOrganizationId,
   );
 
-  if (!JoinRequestsService.isAdminOrOwner(membership?.role)) {
+  if (!MembersService.isAdminOrOwner(membership?.role)) {
     return NextResponse.json(
       { error: "Forbidden: Admin or owner role required" },
       { status: 403 },
@@ -118,12 +119,12 @@ export async function PATCH(request: Request) {
   }
 
   // Check if user is admin or owner of the active organization
-  const membership = await JoinRequestsService.getUserMembership(
+  const membership = await MembersService.findByUserAndOrganization(
     session.user.id,
     activeOrganizationId,
   );
 
-  if (!JoinRequestsService.isAdminOrOwner(membership?.role)) {
+  if (!MembersService.isAdminOrOwner(membership?.role)) {
     return NextResponse.json(
       { error: "Forbidden: Admin or owner role required" },
       { status: 403 },

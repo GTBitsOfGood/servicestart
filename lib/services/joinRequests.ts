@@ -1,12 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
-import {
-  joinRequests,
-  JoinRequestStatus,
-  members,
-  organizations,
-} from "@/lib/schema";
+import { joinRequests, JoinRequestStatus } from "@/lib/schema";
 
 async function findByUserAndOrganization(
   userId: string,
@@ -108,36 +103,6 @@ async function deleteById(joinRequestId: string) {
   await db.delete(joinRequests).where(eq(joinRequests.id, joinRequestId));
 }
 
-async function getUserMembership(userId: string, organizationId: string) {
-  const [membership] = await db
-    .select({ role: members.role })
-    .from(members)
-    .where(
-      and(
-        eq(members.userId, userId),
-        eq(members.organizationId, organizationId),
-      ),
-    )
-    .limit(1);
-
-  return membership ?? null;
-}
-
-function isAdminOrOwner(role: string | undefined): boolean {
-  const ADMIN_ROLES = ["admin", "owner"];
-  return role !== undefined && ADMIN_ROLES.includes(role);
-}
-
-async function findOrganizationBySlug(slug: string) {
-  const [organization] = await db
-    .select({ id: organizations.id })
-    .from(organizations)
-    .where(eq(organizations.slug, slug))
-    .limit(1);
-
-  return organization ?? null;
-}
-
 async function create(userId: string, organizationId: string) {
   const id = randomUUID();
   await db.insert(joinRequests).values({
@@ -156,8 +121,5 @@ export const JoinRequestsService = {
   listByOrganization,
   updateStatus,
   deleteById,
-  getUserMembership,
-  isAdminOrOwner,
-  findOrganizationBySlug,
   create,
 };
