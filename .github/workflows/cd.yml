@@ -27,5 +27,5 @@ jobs:
       - name: Load DB_URL from secrets
         run: echo "DB_URL=${{ secrets.DB_URL }}" >> $GITHUB_ENV
 
-      - name: Push migrations
-        run: pnpm drizzle-kit push
+      - name: Migrate database
+        run: pnpm run db:migrate
