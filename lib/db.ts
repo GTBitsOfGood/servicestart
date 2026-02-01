@@ -15,6 +15,8 @@ export function getDbUrl(): string {
   let branchName = process.env.NEXT_PUBLIC_BRANCH_NAME || "main";
   if (branchName.startsWith("pull/")) {
     branchName = branchName.slice("pull/".length);
+  } else if (branchName.startsWith('"pull/')) {
+    branchName = `"${branchName.slice('"pull/'.length)}`;
   }
 
   return process.env.DB_URL.replace("<branch>", `"${branchName}"`);

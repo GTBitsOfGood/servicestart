@@ -32,5 +32,9 @@ describe(getDbUrl, () => {
 
     const url = getDbUrl();
     expect(url).toBe('postgres://user:pass@host:5432/"123"');
+
+    process.env.NEXT_PUBLIC_BRANCH_NAME = '"pull/123"';
+    const url2 = getDbUrl();
+    expect(url2).toBe('postgres://user:pass@host:5432/"123"');
   });
 });
