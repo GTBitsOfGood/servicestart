@@ -29,8 +29,7 @@ jobs:
 
       - name: Create database
         run: |
-          echo "PGPASSWORD=\"${{ secrets.DB_PASSWORD }}\"" >> $GITHUB_ENV
-          psql -h ${{ secrets.DB_HOST }} -p ${{ secrets.DB_PORT }} -U ${{ secrets.DB_USER }} -c 'create database ${{ github.ref_name }};'
+          PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h ${{ secrets.DB_HOST }} -p ${{ secrets.DB_PORT }} -U ${{ secrets.DB_USER }} -c 'create database ${{ github.ref_name }};'
 
       - name: Migrate database
         run: pnpm run db:migrate
