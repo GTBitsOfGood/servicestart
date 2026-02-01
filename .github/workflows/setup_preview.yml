@@ -1,0 +1,32 @@
+name: Setup Preview
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+  workflow_dispatch:
+
+jobs:
+  create-db:
+    runs-on: ubuntu-latest
+    environment: "Preview"
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Load DB_URL from secrets
+        run: echo "DB_URL=${{ secrets.DB_URL }}/pr${{ github.event.number }}" >> $GITHUB_ENV
+
+      - name: Create database
+        run: |
+          psql "${{ secrets.DB_URL }}/postgres" -c 'create database "pr${{ github.event.number }}";'
+      - name: Migrate database
+        run: pnpm run db:migrate

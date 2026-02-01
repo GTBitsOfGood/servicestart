@@ -1,0 +1,20 @@
+name: Teardown Preview
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+  workflow_dispatch:
+
+jobs:
+  drop-db:
+    runs-on: ubuntu-latest
+    environment: "Preview"
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Drop database
+        run: |
+          psql "${{ secrets.DB_URL }}/postgres" -c 'drop database if exists "pr${{ github.event.number }}" with (force);'

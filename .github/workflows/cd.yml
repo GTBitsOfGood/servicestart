@@ -4,12 +4,17 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+    types:
+      - synchronize
   workflow_dispatch:
 
 jobs:
   migrate-db:
     runs-on: ubuntu-latest
-    environment: Staging
+    environment: ${{ github.ref_name == 'main' && 'Staging' || 'Preview' }}
     permissions:
       contents: write
     steps:
@@ -25,7 +30,7 @@ jobs:
         run: pnpm run db:check
 
       - name: Load DB_URL from secrets
-        run: echo "DB_URL=${{ secrets.DB_URL }}" >> $GITHUB_ENV
+        run: echo "DB_URL=${{ secrets.DB_URL }}${{ github.ref_name == 'main' && '' || '/pr' }}${{ github.ref_name  == 'main' && '' || github.event.number }}" >> $GITHUB_ENV
 
       - name: Migrate database
         run: pnpm run db:migrate
