@@ -23,11 +23,11 @@ jobs:
         run: pnpm install
 
       - name: Load DB_URL from secrets
-        run: echo "DB_URL=postgres://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ github.ref_name }}" >> $GITHUB_ENV
+        run: echo "DB_URL=${{ secrets.DB_URL }}/${{ github.ref_name }}" >> $GITHUB_ENV
 
       - name: Create database
         run: |
-          PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h ${{ secrets.DB_HOST }} -p ${{ secrets.DB_PORT }} -U ${{ secrets.DB_USER }} -d postgres -c 'create database "${{ github.ref_name }}";'
+          psql ${{ secrets.DB_URL }}/postgres -c 'create database "${{ github.ref_name }}";'
 
       - name: Migrate database
         run: pnpm run db:migrate
