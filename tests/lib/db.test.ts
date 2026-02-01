@@ -19,10 +19,10 @@ describe(getDbUrl, () => {
   });
 
   it("replaces <branch> with NEXT_PUBLIC_BRANCH_NAME", () => {
-    process.env.DB_URL = "postgres://user:pass@host:5432/db_<branch>";
+    process.env.DB_URL = "postgres://user:pass@host:5432/<branch>";
     process.env.NEXT_PUBLIC_BRANCH_NAME = "feature-xyz";
 
     const url = getDbUrl();
-    expect(url).toBe("postgres://user:pass@host:5432/db_feature-xyz");
+    expect(url).toBe('postgres://user:pass@host:5432/"feature-xyz"');
   });
 });
