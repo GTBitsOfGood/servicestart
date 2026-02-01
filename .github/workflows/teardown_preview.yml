@@ -15,12 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4.2.0
-
-      - name: Install dependencies
-        run: pnpm install
-
       - name: Drop database
         run: |
           psql "${{ secrets.DB_URL }}/postgres" -c 'drop database if exists "${{ github.ref_name }}" with (force);'
