@@ -2,14 +2,12 @@ name: CD
 
 on:
   push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
   migrate-db:
     runs-on: ubuntu-latest
-    environment: Staging
+    environment: ${{ github.ref_name == 'main' && 'Staging' || 'Preview' }}
     permissions:
       contents: write
     steps:
