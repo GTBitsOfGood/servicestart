@@ -11,6 +11,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v6
+      - name: Fetch changes
+        run: git fetch origin ${{ github.ref }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v4.2.0
       - name: Install dependencies
