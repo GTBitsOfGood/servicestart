@@ -3,16 +3,14 @@ import { relations, schema } from "./schema";
 
 export function getDbUrl(): string {
   if (!process.env.DB_URL) {
-    throw new Error("DB_URL is not defined in environment variables");
+    return "";
   }
 
   if (
     process.env.DB_URL.includes("<branch>") &&
     !process.env.NEXT_PUBLIC_BRANCH_NAME
   ) {
-    throw new Error(
-      "NEXT_PUBLIC_BRANCH_NAME is not defined in environment variables, but is required to replace <branch> in DB_URL",
-    );
+    return process.env.DB_URL.replace("<branch>", "main");
   }
 
   return process.env.DB_URL.replace(
