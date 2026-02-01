@@ -7,7 +7,8 @@ export async function GET() {
     .then(() => {
       dbConnected = true;
     })
-    .catch(() => {
+    .catch((error) => {
+      console.error(error);
       dbConnected = false;
     });
 
