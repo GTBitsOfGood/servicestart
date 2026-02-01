@@ -4,6 +4,7 @@ export declare global {
       DB_URL: string;
       BETTER_AUTH_SECRET: string;
       BETTER_AUTH_URL: string;
+      NEXT_PUBLIC_BRANCH_NAME: string | undefined;
     }
   }
 }
