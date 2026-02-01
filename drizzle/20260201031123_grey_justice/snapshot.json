@@ -1,11 +1,21 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "88fadfee-05e0-4a72-b3d8-c10c237fcc56",
+  "id": "56e3b365-a0c0-4b09-a359-b52214efa6f4",
   "prevIds": [
-    "8201f5b0-ccc4-4767-8a98-a98f1441918a"
+    "00000000-0000-0000-0000-000000000000"
   ],
   "ddl": [
+    {
+      "values": [
+        "pending",
+        "approved",
+        "denied"
+      ],
+      "name": "join_request_status",
+      "entityType": "enums",
+      "schema": "public"
+    },
     {
       "isRlsEnabled": false,
       "name": "accounts",
@@ -15,6 +25,12 @@
     {
       "isRlsEnabled": false,
       "name": "invitations",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "join_requests",
       "entityType": "tables",
       "schema": "public"
     },
@@ -320,6 +336,71 @@
       "entityType": "columns",
       "schema": "public",
       "table": "invitations"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_requests"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_requests"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "organization_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_requests"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_requests"
+    },
+    {
+      "type": "join_request_status",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_requests"
     },
     {
       "type": "text",
@@ -796,6 +877,27 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "organization_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "join_request_organizationId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "join_requests"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "user_id",
           "isExpression": false,
           "asc": true,
@@ -939,6 +1041,40 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
+      "name": "join_requests_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "join_requests"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "organization_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "organizations",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "join_requests_organization_id_organizations_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "join_requests"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
       "name": "members_user_id_users_id_fkey",
       "entityType": "fks",
       "schema": "public",
@@ -1013,6 +1149,16 @@
       "name": "invitations_pkey",
       "schema": "public",
       "table": "invitations",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "join_requests_pkey",
+      "schema": "public",
+      "table": "join_requests",
       "entityType": "pks"
     },
     {
