@@ -23,18 +23,14 @@ describe(getDbUrl, () => {
     process.env.NEXT_PUBLIC_BRANCH_NAME = "feature-xyz";
 
     const url = getDbUrl();
-    expect(url).toBe('postgres://user:pass@host:5432/"feature-xyz"');
+    expect(url).toBe("postgres://user:pass@host:5432/feature-xyz");
   });
 
-  it("removes the pull/ prefix from NEXT_PUBLIC_BRANCH_NAME", () => {
+  it("removes the pull/ prefix and /head suffix from NEXT_PUBLIC_BRANCH_NAME", () => {
     process.env.DB_URL = "postgres://user:pass@host:5432/<branch>";
-    process.env.NEXT_PUBLIC_BRANCH_NAME = "pull/123";
+    process.env.NEXT_PUBLIC_BRANCH_NAME = "pull/123/head";
 
     const url = getDbUrl();
-    expect(url).toBe('postgres://user:pass@host:5432/"123"');
-
-    process.env.NEXT_PUBLIC_BRANCH_NAME = '"pull/123"';
-    const url2 = getDbUrl();
-    expect(url2).toBe('postgres://user:pass@host:5432/"123"');
+    expect(url).toBe("postgres://user:pass@host:5432/pr123");
   });
 });

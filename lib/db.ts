@@ -13,13 +13,11 @@ export function getDbUrl(): string {
   }
 
   let branchName = process.env.NEXT_PUBLIC_BRANCH_NAME || "main";
-  if (branchName.startsWith("pull/")) {
-    branchName = branchName.slice("pull/".length);
-  } else if (branchName.startsWith('"pull/')) {
-    branchName = `"${branchName.slice('"pull/'.length)}`;
+  if (branchName.startsWith("pull/") && branchName.endsWith("/head")) {
+    branchName = `pr${branchName.slice("pull/".length, -"/head".length)}`;
   }
 
-  return process.env.DB_URL.replace("<branch>", `"${branchName}"`);
+  return process.env.DB_URL.replace("<branch>", `${branchName}`);
 }
 
 export default drizzle(getDbUrl(), {

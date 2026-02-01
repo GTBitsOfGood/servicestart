@@ -17,4 +17,4 @@ jobs:
 
       - name: Drop database
         run: |
-          psql "${{ secrets.DB_URL }}/postgres" -c 'drop database if exists "${{ github.ref_name }}" with (force);'
+          psql "${{ secrets.DB_URL }}/postgres" -c 'drop database if exists "pr${{ github.event.number }}" with (force);'
