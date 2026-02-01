@@ -32,7 +32,7 @@
     "@tailwindcss/cli": "^4.1.18",
     "better-auth": "^1.4.18",
     "dotenv": "^17.2.3",
-    "drizzle-orm": "1.0.0-beta.12-a5629fb",
+    "drizzle-orm": "1.0.0-beta.12-5845444",
     "next": "latest",
     "pg": "^8.18.0",
     "postcss": "^8.5.6",
