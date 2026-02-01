@@ -1,4 +1,6 @@
 import { JoinRequestsService } from "@/lib/services/joinRequests";
+import { MembersService } from "@/lib/services/members";
+import { OrganizationsService } from "@/lib/services/organizations";
 
 const defaultOrganizationSlug = "servicestart";
 
@@ -14,10 +16,10 @@ export function getSlugFromHost(host?: string): string {
 export async function createJoinRequestIfNeeded(userId: string, host?: string) {
   const slug = getSlugFromHost(host);
 
-  const organization = await JoinRequestsService.findOrganizationBySlug(slug);
+  const organization = await OrganizationsService.findBySlug(slug);
   if (!organization) return;
 
-  const membership = await JoinRequestsService.getUserMembership(
+  const membership = await MembersService.findByUserAndOrganization(
     userId,
     organization.id,
   );
