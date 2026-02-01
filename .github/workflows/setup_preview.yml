@@ -13,8 +13,6 @@ jobs:
   create-db:
     runs-on: ubuntu-latest
     environment: "Preview"
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v6
 

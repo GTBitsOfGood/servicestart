@@ -1,0 +1,26 @@
+name: Teardown Preview
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+  workflow_dispatch:
+
+jobs:
+  delete-db:
+    runs-on: ubuntu-latest
+    environment: "Preview"
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Drop database
+        run: |
+          PGPASSWORD="${{ secrets.DB_PASSWORD }}" psql -h ${{ secrets.DB_HOST }} -p ${{ secrets.DB_PORT }} -U ${{ secrets.DB_USER }} -d postgres -c 'drop database if exists "${{ github.ref_name }}";'
