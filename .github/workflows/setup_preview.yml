@@ -7,6 +7,7 @@ on:
     types:
       - opened
       - reopened
+  workflow_dispatch:
 
 jobs:
   create-db:
@@ -28,7 +29,7 @@ jobs:
 
       - name: Create database
         run: |
-          PGPASSWORD=${{ secrets.DB_PASSWORD }}
+          echo "PGPASSWORD=${{ secrets.DB_PASSWORD }}" >> $GITHUB_ENV
           psql -h ${{ secrets.DB_HOST }} -p ${{ secrets.DB_PORT }} -U ${{ secrets.DB_USER }} -c 'create database ${{ github.ref_name }};'
 
       - name: Migrate database
