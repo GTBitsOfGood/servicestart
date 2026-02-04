@@ -1,12 +1,6 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import * as schema from "../lib/schema";
 import "dotenv/config";
-
-if (!process.env.DB_URL) {
-  throw new Error("DB_URL is not set");
-}
-
-const db = drizzle(process.env.DB_URL, { schema, casing: "snake_case" });
+import { schema } from "../lib/schema";
+import db from "../lib/db";
 
 async function main() {
   console.log("Seeding database...");
