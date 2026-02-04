@@ -2,18 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import authClient from "@/lib/authClient";
-
-const ROOT_DOMAIN = "servicestart.com";
-const DEFAULT_SLUG = "servicestart";
-
-function getSlugFromHostname(hostname: string): string {
-  if (hostname === ROOT_DOMAIN) return DEFAULT_SLUG;
-  if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
-    const subdomain = hostname.slice(0, -ROOT_DOMAIN.length - 1);
-    return subdomain || DEFAULT_SLUG;
-  }
-  return DEFAULT_SLUG;
-}
+import { DEFAULT_SLUG, getSlugFromHostname } from "@/lib/utils";
 
 export function useActiveOrganization() {
   const organization = authClient.useActiveOrganization();
@@ -28,8 +17,6 @@ export function useActiveOrganization() {
   const lastSetSlugRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
     const updateSlug = () =>
       setSlug(getSlugFromHostname(window.location.hostname));
 
@@ -39,7 +26,6 @@ export function useActiveOrganization() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     const hasSession = !!session?.data;
     const activeSlug = organization?.data?.slug ?? null;
 
