@@ -9,8 +9,10 @@ import {
   users,
   verification,
 } from "@/lib/schema";
-import { beforeEach, beforeAll } from "vitest";
+import { beforeEach, beforeAll, afterAll } from "vitest";
 import { execSync } from "child_process";
+import { randomUUID } from "node:crypto";
+import { testState } from "./testState";
 
 beforeEach(async () => {
   // Wipe DB before each test - delete in order to respect FK constraints
@@ -30,16 +32,16 @@ beforeAll(async () => {
   // Create a random DB name and port
   const id = randomUUID().split("-")[0]; // e.g. 'f3a9c2'
   const port = 5433 + Math.floor(Math.random() * 100); // Avoid port collisions
-  const dbName = `testdb_${id}`;
-  const containerName = `test-db-${id}`;
+  testState.dbName = `testdb_${id}`;
+  testState.containerName = `test-db-${id}`;
 
   // Set environment variable
-  const dbUrl = `postgresql://postgres:postgres@localhost:${port}/${dbName}`;
+  const dbUrl = `postgresql://postgres:postgres@localhost:${port}/${testState.dbName}`;
   process.env.DB_URL = dbUrl;
 
   // Launch a Postgres container
   execSync(
-    `docker run --name ${containerName} -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=${dbName} -p ${port}:5432 -d postgres:15`,
+    `docker run --name ${testState.containerName} -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=${testState.dbName} -p ${port}:5432 -d postgres:15`,
     { stdio: "inherit" },
   );
 
@@ -54,4 +56,10 @@ beforeAll(async () => {
       DATABASE_URL: dbUrl,
     },
   });
+});
+
+afterAll(async () => {
+  if (testState.containerName) {
+    execSync(`docker rm -f ${testState.containerName}`, { stdio: "inherit" });
+  }
 });
