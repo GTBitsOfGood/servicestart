@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "dotenv/config"; //must be first to load environment variables
 import { schema } from "../lib/schema";
 import db from "../lib/db";
 
