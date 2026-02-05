@@ -1,6 +1,8 @@
 import db from "@/lib/db";
+import { Hono } from "hono";
+import { handle } from "hono/netlify";
 
-export async function GET() {
+const app = new Hono().get("/ping", async (c) => {
   let dbConnected: boolean = false;
   await db
     .execute(`SELECT 1`)
@@ -14,5 +16,9 @@ export async function GET() {
 
   const msg = `DB connected: ${dbConnected}. Branch: ${process.env.NEXT_PUBLIC_BRANCH_NAME}`;
 
-  return new Response(msg);
-}
+  return c.text(msg);
+});
+
+export const GET = handle(app);
+
+export default app;
