@@ -9,6 +9,10 @@ import {
   organizations,
   sessions,
 } from "@/lib/schema";
+import { testClient } from "hono/testing";
+import app from "@/app/api/[[...route]]/route";
+
+export const testApi = testClient(app).api;
 
 export const baseTestUser = {
   email: "test@example.com",

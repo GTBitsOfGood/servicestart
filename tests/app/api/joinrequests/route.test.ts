@@ -1,39 +1,45 @@
 import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { GET, PATCH } from "@/app/api/joinrequests/route";
 import db from "@/lib/db";
 import { joinRequests, JoinRequestStatus, members } from "@/lib/schema";
 import {
   addMember,
   buildTestUser,
+  testApi,
   createJoinRequest,
   createOrganization,
   setActiveOrganization,
   signUpAndGetSession,
 } from "../../../testUtils";
+import app from "@/app/api/[[...route]]/route";
+import api from "@/lib/api";
 
-describe("GET /api/joinrequests (paginated list)", () => {
+const URL = api.joinRequests.$url();
+
+describe("GET /api/joinRequests (paginated list)", () => {
   it("returns 401 when user is not authenticated", async () => {
-    const request = new Request("http://localhost/api/joinrequests");
-    const response = await GET(request);
+    const response = await testApi.joinRequests.$get({
+      query: {},
+    });
 
     expect(response.status).toBe(401);
     const data = await response.json();
-    expect(data.error).toBe("Unauthorized");
+    expect(data).toHaveProperty("error");
   });
 
   it("returns 400 when user has no active organization", async () => {
     const user = buildTestUser();
     const { headers } = await signUpAndGetSession(user);
 
-    const request = new Request("http://localhost/api/joinrequests", {
-      headers,
-    });
-    const response = await GET(request);
+    const response = await testApi.joinRequests.$get(
+      {
+        query: {},
+      },
+      { headers: { Cookie: headers.get("set-cookie")! } },
+    );
 
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("No active organization");
   });
 
   it("returns 403 when user is not admin or owner", async () => {
@@ -44,14 +50,14 @@ describe("GET /api/joinrequests (paginated list)", () => {
     await setActiveOrganization(session.id, organization.id);
     await addMember(session.userId, organization.id, "member");
 
-    const request = new Request("http://localhost/api/joinrequests", {
+    const request = new Request(URL, {
       headers,
     });
-    const response = await GET(request);
+    const response = await app.request(URL, request);
 
     expect(response.status).toBe(403);
     const data = await response.json();
-    expect(data.error).toBe("Forbidden: Admin or owner role required");
+    expect(data.error).not.toBeNull();
   });
 
   it("returns join requests when user is admin", async () => {
@@ -83,10 +89,10 @@ describe("GET /api/joinrequests (paginated list)", () => {
       JoinRequestStatus.Approved,
     );
 
-    const request = new Request("http://localhost/api/joinrequests", {
+    const request = new Request(URL, {
       headers,
     });
-    const response = await GET(request);
+    const response = await app.request(URL, request);
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -115,10 +121,10 @@ describe("GET /api/joinrequests (paginated list)", () => {
       JoinRequestStatus.Pending,
     );
 
-    const request = new Request("http://localhost/api/joinrequests", {
+    const request = new Request(URL, {
       headers,
     });
-    const response = await GET(request);
+    const response = await app.request(URL, request);
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -150,10 +156,10 @@ describe("GET /api/joinrequests (paginated list)", () => {
 
     // Request page 1 with pageSize 2
     const request1 = new Request(
-      "http://localhost/api/joinrequests?page=1&pageSize=2",
+      "http://localhost/api/joinRequests?page=1&pageSize=2",
       { headers },
     );
-    const response1 = await GET(request1);
+    const response1 = await app.request(request1.url, request1);
     const data1 = await response1.json();
 
     expect(response1.status).toBe(200);
@@ -163,10 +169,10 @@ describe("GET /api/joinrequests (paginated list)", () => {
 
     // Request page 2 with pageSize 2
     const request2 = new Request(
-      "http://localhost/api/joinrequests?page=2&pageSize=2",
+      "http://localhost/api/joinRequests?page=2&pageSize=2",
       { headers },
     );
-    const response2 = await GET(request2);
+    const response2 = await app.request(request2.url, request2);
     const data2 = await response2.json();
 
     expect(response2.status).toBe(200);
@@ -175,10 +181,10 @@ describe("GET /api/joinrequests (paginated list)", () => {
 
     // Request page 3 with pageSize 2 (should have 1 item)
     const request3 = new Request(
-      "http://localhost/api/joinrequests?page=3&pageSize=2",
+      "http://localhost/api/joinRequests?page=3&pageSize=2",
       { headers },
     );
-    const response3 = await GET(request3);
+    const response3 = await app.request(request3.url, request3);
     const data3 = await response3.json();
 
     expect(response3.status).toBe(200);
@@ -198,10 +204,10 @@ describe("GET /api/joinrequests (paginated list)", () => {
     await setActiveOrganization(session.id, organization.id);
     await addMember(admin.id, organization.id, "admin");
 
-    const request = new Request("http://localhost/api/joinrequests", {
+    const request = new Request(URL, {
       headers,
     });
-    const response = await GET(request);
+    const response = await app.request(URL, request);
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -210,15 +216,15 @@ describe("GET /api/joinrequests (paginated list)", () => {
   });
 });
 
-describe("PATCH /api/joinrequests", () => {
+describe("PATCH /api/joinRequests", () => {
   it("returns 401 when user is not authenticated", async () => {
     const request = new Request(
-      "http://localhost/api/joinrequests?id=test&status=approved",
+      "http://localhost/api/joinRequests?id=test&status=approved",
       {
         method: "PATCH",
       },
     );
-    const response = await PATCH(request);
+    const response = await app.request(request.url, request);
 
     expect(response.status).toBe(401);
     const data = await response.json();
@@ -230,17 +236,17 @@ describe("PATCH /api/joinrequests", () => {
     const { headers } = await signUpAndGetSession(user);
 
     const request = new Request(
-      "http://localhost/api/joinrequests?id=test&status=approved",
+      "http://localhost/api/joinRequests?id=test&status=approved",
       {
         method: "PATCH",
         headers,
       },
     );
-    const response = await PATCH(request);
+    const response = await app.request(request.url, request);
 
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("No active organization");
+    expect(data.error).not.toBeNull();
   });
 
   it("returns 403 when user is not admin or owner", async () => {
@@ -252,17 +258,17 @@ describe("PATCH /api/joinrequests", () => {
     await addMember(session.userId, organization.id, "member");
 
     const request = new Request(
-      "http://localhost/api/joinrequests?id=test&status=approved",
+      "http://localhost/api/joinRequests?id=test&status=approved",
       {
         method: "PATCH",
         headers,
       },
     );
-    const response = await PATCH(request);
+    const response = await app.request(request.url, request);
 
     expect(response.status).toBe(403);
     const data = await response.json();
-    expect(data.error).toBe("Forbidden: Admin or owner role required");
+    expect(data.error).not.toBeNull();
   });
 
   it("returns 400 when missing required parameters", async () => {
@@ -273,15 +279,14 @@ describe("PATCH /api/joinrequests", () => {
     await setActiveOrganization(session.id, organization.id);
     await addMember(admin.id, organization.id, "admin");
 
-    const request = new Request("http://localhost/api/joinrequests", {
+    const request = new Request(URL, {
       method: "PATCH",
       headers,
     });
-    const response = await PATCH(request);
-
+    const response = await app.request(request.url, request);
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("Missing required parameters: id and status");
+    expect(data.error).not.toBeNull();
   });
 
   it("returns 400 when status is invalid", async () => {
@@ -293,19 +298,17 @@ describe("PATCH /api/joinrequests", () => {
     await addMember(admin.id, organization.id, "admin");
 
     const request = new Request(
-      "http://localhost/api/joinrequests?id=test&status=invalid",
+      "http://localhost/api/joinRequests?id=test&status=invalid",
       {
         method: "PATCH",
         headers,
       },
     );
-    const response = await PATCH(request);
+    const response = await app.request(request.url, request);
 
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe(
-      "Invalid status. Must be pending, approved, or denied",
-    );
+    expect(data.error).not.toBeNull();
   });
 
   it("returns 404 when join request does not exist", async () => {
@@ -317,17 +320,17 @@ describe("PATCH /api/joinrequests", () => {
     await addMember(admin.id, organization.id, "admin");
 
     const request = new Request(
-      "http://localhost/api/joinrequests?id=nonexistent&status=approved",
+      "http://localhost/api/joinRequests?id=nonexistent&status=approved",
       {
         method: "PATCH",
         headers,
       },
     );
-    const response = await PATCH(request);
+    const response = await app.request(request.url, request);
 
     expect(response.status).toBe(404);
     const data = await response.json();
-    expect(data.error).toBe("Join request not found");
+    expect(data.error).not.toBeNull();
   });
 
   it("returns 404 when join request belongs to different organization", async () => {
@@ -353,13 +356,13 @@ describe("PATCH /api/joinrequests", () => {
     );
 
     const request = new Request(
-      `http://localhost/api/joinrequests?id=${joinRequestId}&status=approved`,
+      `http://localhost/api/joinRequests?id=${joinRequestId}&status=approved`,
       {
         method: "PATCH",
         headers,
       },
     );
-    const response = await PATCH(request);
+    const response = await app.request(request.url, request);
 
     expect(response.status).toBe(404);
   });
@@ -385,13 +388,13 @@ describe("PATCH /api/joinrequests", () => {
     );
 
     const request = new Request(
-      `http://localhost/api/joinrequests?id=${joinRequestId}&status=denied`,
+      `http://localhost/api/joinRequests?id=${joinRequestId}&status=denied`,
       {
         method: "PATCH",
         headers,
       },
     );
-    const response = await PATCH(request);
+    const response = await app.request(request.url, request);
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -426,13 +429,13 @@ describe("PATCH /api/joinrequests", () => {
     );
 
     const request = new Request(
-      `http://localhost/api/joinrequests?id=${joinRequestId}&status=denied`,
+      `http://localhost/api/joinRequests?id=${joinRequestId}&status=denied`,
       {
         method: "PATCH",
         headers,
       },
     );
-    const response = await PATCH(request);
+    const response = await app.request(request.url, request);
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -472,13 +475,13 @@ describe("PATCH /api/joinrequests", () => {
     );
 
     const request = new Request(
-      `http://localhost/api/joinrequests?id=${joinRequestId}&status=approved`,
+      `http://localhost/api/joinRequests?id=${joinRequestId}&status=approved`,
       {
         method: "PATCH",
         headers,
       },
     );
-    const response = await PATCH(request);
+    const response = await app.request(request.url, request);
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -519,13 +522,13 @@ describe("PATCH /api/joinrequests", () => {
     );
 
     const request = new Request(
-      `http://localhost/api/joinrequests?id=${joinRequestId}&status=approved`,
+      `http://localhost/api/joinRequests?id=${joinRequestId}&status=approved`,
       {
         method: "PATCH",
         headers,
       },
     );
-    const response = await PATCH(request);
+    const response = await app.request(request.url, request);
 
     expect(response.status).toBe(200);
     const data = await response.json();

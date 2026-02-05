@@ -1,6 +1,5 @@
 import db from "@/lib/db";
 import { Hono } from "hono";
-import { handle } from "hono/netlify";
 
 const app = new Hono().get("/", async (c) => {
   let dbConnected: boolean = false;
@@ -18,7 +17,5 @@ const app = new Hono().get("/", async (c) => {
 
   return c.text(msg);
 });
-
-export const GET = handle(app);
 
 export default app;
