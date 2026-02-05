@@ -21,6 +21,7 @@
     "db:test:push": "DB_URL=postgres://test:root@localhost:5433/postgres drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:seed": "tsx scripts/seed.ts",
     "db:check": "drizzle-kit check",
     "db:view": "drizzle-kit studio"
   },
