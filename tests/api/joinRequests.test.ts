@@ -11,10 +11,7 @@ import {
   setActiveOrganization,
   signUpAndGetSession,
 } from "@/tests/testUtils";
-import app from "@/app/api/[[...route]]/route";
-import api from "@/lib/api";
-
-const URL = api.joinRequests.$url();
+import { InferRequestType } from "hono";
 
 describe("GET /api/joinRequests (paginated list)", () => {
   it("returns 401 when user is not authenticated", async () => {
@@ -274,12 +271,6 @@ describe("GET /api/joinRequests (paginated list)", () => {
 
 describe("PATCH /api/joinRequests", () => {
   it("returns 401 when user is not authenticated", async () => {
-    const request = new Request(
-      "http://localhost/api/joinRequests?id=test&status=approved",
-      {
-        method: "PATCH",
-      },
-    );
     const response = await testApi.joinRequests.$patch({
       query: {
         id: "test",
@@ -353,7 +344,7 @@ describe("PATCH /api/joinRequests", () => {
 
     const response = await testApi.joinRequests.$patch(
       {
-        query: {} as any,
+        query: {} as unknown as InferRequestType<"patch">["query"],
       },
       { headers },
     );
@@ -378,7 +369,8 @@ describe("PATCH /api/joinRequests", () => {
       {
         query: {
           id: "test",
-          status: "invalid_status" as any,
+          status:
+            "invalid_status" as unknown as InferRequestType<"patch">["query"]["status"],
         },
       },
       { headers },
