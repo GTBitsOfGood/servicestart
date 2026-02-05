@@ -2,7 +2,7 @@ import db from "@/lib/db";
 import { Hono } from "hono";
 import { handle } from "hono/netlify";
 
-const app = new Hono().get("/ping", async (c) => {
+const app = new Hono().get("/", async (c) => {
   let dbConnected: boolean = false;
   await db
     .execute(`SELECT 1`)

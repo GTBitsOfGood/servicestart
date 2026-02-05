@@ -1,38 +1,13 @@
-// import ping from "@/lib/ping/ping";
-// import { Hono } from "hono";
-// import { handle } from "hono/netlify";
-// import { PageConfig } from "next/dist/types";
-
-// export const config: PageConfig = {
-//   api: {
-//     bodyParser: false,
-//   },
-// };
-
-// const app = new Hono().basePath("/api");
-
-// app.route("/ping", ping).get("/", (c) => {
-//   return c.text("API is running");
-// });
-
-// export const GET = handle(app);
-// export const POST = handle(app);
-// export const PUT = handle(app);
-// export const DELETE = handle(app);
-// export const PATCH = handle(app);
-
-// export type AppType = typeof app;
-
+import ping from "@/lib/ping/ping";
 import { Hono } from "hono";
-import { handle } from "hono/vercel";
+import { handle } from "hono/netlify";
 
-const app = new Hono().basePath("/api");
-
-app.get("/hello", (c) => {
-  return c.json({
-    message: "Hello Next.js!",
-  });
-});
+const app = new Hono().basePath("/api").route("/ping", ping);
 
 export const GET = handle(app);
 export const POST = handle(app);
+export const PUT = handle(app);
+export const DELETE = handle(app);
+export const PATCH = handle(app);
+
+export type AppType = typeof app;
