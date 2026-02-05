@@ -5,22 +5,23 @@ import { zValidator } from "@hono/zod-validator";
 import { JoinRequestsService } from "@/lib/services/joinRequests";
 import { MembersService } from "@/lib/services/members";
 import { auth } from "@/lib/auth";
-import { request } from "http";
 
 const getParamsSchema = z.object({
   page: z
     .string()
+    .or(z.number()) // Number inputs get converted to strings by Hono
     .optional()
     .transform((val) => {
-      const num = parseInt(val || "1", 10);
+      const num = parseInt(String(val) || "1");
       return isNaN(num) ? 1 : num;
     })
     .pipe(z.number().int().min(1, "Page must be at least 1")),
   pageSize: z
     .string()
+    .or(z.number())
     .optional()
     .transform((val) => {
-      const num = parseInt(val || "20", 10);
+      const num = parseInt(String(val) || "20");
       return isNaN(num) ? 20 : num;
     })
     .pipe(
@@ -34,7 +35,7 @@ const getParamsSchema = z.object({
 
 // Schema for PATCH parameters
 const patchParamsSchema = z.object({
-  id: z.string({ error: "Missing required parameters: id and status" }).min(1),
+  id: z.string({ error: "Missing required parameter: id" }).min(1),
   status: z.enum(JOIN_REQUEST_STATUS_VALUES, {
     error: "Invalid status. Must be pending, approved, or denied",
   }),
@@ -69,21 +70,7 @@ const app = new Hono()
       );
     }
 
-    // Parse and validate pagination parameters with Zod
-    const url = new URL(c.req.url);
-    const parsed = getParamsSchema.safeParse({
-      page: url.searchParams.get("page") ?? undefined,
-      pageSize: url.searchParams.get("pageSize") ?? undefined,
-    });
-
-    if (!parsed.success) {
-      return c.json(
-        { error: parsed.error.issues.map((i) => i.message).join(", ") },
-        { status: 400 },
-      );
-    }
-
-    const { page, pageSize } = parsed.data;
+    const { page, pageSize } = c.req.valid("query");
     const offset = (page - 1) * pageSize;
 
     // Query join requests for the organization
@@ -126,18 +113,7 @@ const app = new Hono()
       );
     }
 
-    // Parse and validate query parameters with Zod
-    const url = new URL(c.req.url);
-    const parsed = patchParamsSchema.safeParse({
-      id: url.searchParams.get("id"),
-      status: url.searchParams.get("status"),
-    });
-
-    if (!parsed.success) {
-      return c.json({ error: parsed.error.issues[0].message }, { status: 400 });
-    }
-
-    const { id: joinRequestId, status: newStatus } = parsed.data;
+    const { id: joinRequestId, status: newStatus } = c.req.valid("query");
 
     // Find the join request
     const joinRequest = await JoinRequestsService.findByIdAndOrganization(
