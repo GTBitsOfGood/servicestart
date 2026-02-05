@@ -9,7 +9,7 @@ export default defineConfig({
     environment: "jsdom",
     env: loadEnv("test", process.cwd(), ""),
     passWithNoTests: true,
-    setupFiles: ["./tests/setup.ts"],
+    setupFiles: ["./tests/unit/setup.ts"],
     fileParallelism: false, // Necessary for DB tests
   },
   resolve: {

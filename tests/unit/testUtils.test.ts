@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTestUser } from "@/tests/testUtils";
+import { createTestUser } from "@/tests/unit/testUtils";
 import db from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { sessions } from "@/lib/schema";
