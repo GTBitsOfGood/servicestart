@@ -167,6 +167,27 @@ export const joinRequests = pgTable(
   ],
 );
 
+export const announcements = pgTable(
+  "announcements",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("title").notNull(),
+    body: text("body").notNull(),
+    // when this is null, it means that the announcement is not published (e.g. its a draft)
+    publishedAt: timestamp("published_at"),
+    publishedById: text("published_by_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("announcement_organizationId_idx").on(table.organizationId),
+  ],
+);
+
 export const relations = defineRelations(
   {
     users,
@@ -176,6 +197,7 @@ export const relations = defineRelations(
     members,
     invitations,
     joinRequests,
+    announcements,
   },
   (r) => ({
     users: {
@@ -222,6 +244,17 @@ export const relations = defineRelations(
       organizations: r.one.organizations({
         from: r.joinRequests.organizationId,
         to: r.organizations.id,
+      }),
+    },
+    announcements: {
+      organizations: r.one.organizations({
+        from: r.announcements.organizationId,
+        to: r.organizations.id,
+      }),
+      users: r.one.users({
+        from: r.announcements.publishedById,
+        to: r.users.id,
+        optional: true,
       }),
     },
   }),
