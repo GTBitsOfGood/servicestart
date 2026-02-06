@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { JoinRequestStatus, JOIN_REQUEST_STATUS_VALUES } from "@/lib/schema";
 import { JoinRequestsService } from "@/lib/services/joinRequests";
 import { MembersService } from "@/lib/services/members";
-import { paginationQuerySchema } from "@/api/lib";
+import { paginationQuerySchema } from "@/lib/apiUtils";
 
 // Schema for PATCH parameters
 const patchParamsSchema = z.object({

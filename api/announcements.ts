@@ -4,7 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { AnnouncementsService } from "@/lib/services/announcements";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/members";
-import { paginationQuerySchema } from "./lib";
+import { paginationQuerySchema } from "../lib/apiUtils";
 
 const app = new Hono()
   .post(

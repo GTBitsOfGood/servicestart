@@ -5,7 +5,7 @@ import { zValidator } from "@hono/zod-validator";
 import { JoinRequestsService } from "@/lib/services/joinRequests";
 import { MembersService } from "@/lib/services/members";
 import { auth } from "@/lib/auth";
-import { paginationQuerySchema } from "./lib";
+import { paginationQuerySchema } from "../lib/apiUtils";
 
 // Schema for PATCH parameters
 const patchParamsSchema = z.object({
