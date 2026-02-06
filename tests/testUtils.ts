@@ -8,6 +8,7 @@ import {
   members,
   organizations,
   sessions,
+  announcements,
 } from "@/lib/schema";
 import { testClient } from "hono/testing";
 import app from "@/app/api/[[...route]]/route";
@@ -139,6 +140,31 @@ export async function createJoinRequest(
     userId,
     organizationId,
     status,
+  });
+  return id;
+}
+
+/**
+ * Creates an announcement for an organization.
+ */
+export async function createAnnouncement(
+  organizationId: string,
+  opts: {
+    name?: string;
+    body?: string;
+    draft?: boolean;
+    publishedById?: string | null;
+  } = {},
+) {
+  const id = randomUUID();
+  const isDraft = opts.draft ?? false;
+  await db.insert(announcements).values({
+    id,
+    organizationId,
+    name: opts.name ?? "Test Announcement",
+    body: opts.body ?? "Test body",
+    publishedAt: isDraft ? null : new Date(),
+    publishedById: isDraft ? null : (opts.publishedById ?? null),
   });
   return id;
 }
