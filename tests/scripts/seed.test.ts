@@ -7,7 +7,7 @@ import { expect, it } from "vitest";
 import { DEFAULT_TEST_PASSWORD } from "../testUtils";
 
 it("should run the seed script without errors", async () => {
-  await main();
+  await expect(main()).resolves.not.toThrow();
 });
 
 it("should create an organization with the slug 'servicestart'", async () => {
@@ -19,9 +19,7 @@ it("should create an organization with the slug 'servicestart'", async () => {
     .where(eq(organizations.slug, "servicestart"))
     .limit(1);
 
-  if (org.length === 0) {
-    throw new Error("Organization with slug 'servicestart' not found");
-  }
+  expect(org.length).toBe(1);
 });
 
 it("should not create duplicate organizations on multiple runs", async () => {
@@ -33,9 +31,7 @@ it("should not create duplicate organizations on multiple runs", async () => {
     .from(organizations)
     .where(eq(organizations.slug, "servicestart"));
 
-  if (orgs.length > 1) {
-    throw new Error("Duplicate organizations with slug 'servicestart' found");
-  }
+  expect(orgs.length).toBe(1); // Only one organization with the slug 'servicestart' should exist
 });
 
 it("creates users/accounts such that they can be signed into", async () => {

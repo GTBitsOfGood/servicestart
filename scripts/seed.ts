@@ -6,7 +6,7 @@ import { DEFAULT_TEST_PASSWORD } from "@/tests/testUtils";
 
 const isTest = require.main !== module; // Check if the script is being run directly or imported in tests
 
-function log(...args: any[]) {
+function log(...args: unknown[]) {
   if (!isTest) {
     console.log(...args);
   }
