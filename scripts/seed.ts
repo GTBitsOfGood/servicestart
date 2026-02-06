@@ -1,9 +1,19 @@
 import "dotenv/config"; //must be first to load environment variables
 import { schema } from "../lib/schema";
 import db from "../lib/db";
+import { auth } from "@/lib/auth";
+import { DEFAULT_TEST_PASSWORD } from "@/tests/testUtils";
 
-async function main() {
-  console.log("Seeding database...");
+const isTest = require.main !== module; // Check if the script is being run directly or imported in tests
+
+function log(...args: any[]) {
+  if (!isTest) {
+    console.log(...args);
+  }
+}
+
+export async function main() {
+  log("Seeding database...");
 
   const orgId = "org_servicestart";
   await db
@@ -15,35 +25,30 @@ async function main() {
     })
     .onConflictDoNothing();
 
-  console.log("Organization created or already exists.");
+  log("Organization created or already exists.");
 
   const usersData = [
     {
-      id: "user_owner",
       name: "Owner User",
       email: "owner@example.com",
       role: "owner",
     },
     {
-      id: "user_admin",
       name: "Admin User",
       email: "admin@example.com",
       role: "admin",
     },
     {
-      id: "user_member1",
       name: "Member One",
       email: "member1@example.com",
       role: "member",
     },
     {
-      id: "user_member2",
       name: "Member Two",
       email: "member2@example.com",
       role: "member",
     },
     {
-      id: "user_non_member",
       name: "Non Member",
       email: "nonmember@example.com",
       role: null,
@@ -51,22 +56,30 @@ async function main() {
   ];
 
   for (const userData of usersData) {
-    await db
-      .insert(schema.users)
-      .values({
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        emailVerified: true,
+    const res = await auth.api
+      .signUpEmail({
+        body: {
+          email: userData.email,
+          password: DEFAULT_TEST_PASSWORD,
+          name: userData.name,
+        },
       })
-      .onConflictDoNothing();
+      .catch(() =>
+        // User already exists, sign in to get the user info
+        auth.api.signInEmail({
+          body: {
+            email: userData.email,
+            password: DEFAULT_TEST_PASSWORD,
+          },
+        }),
+      );
 
     if (userData.role) {
       await db
         .insert(schema.members)
         .values({
-          id: `member_${userData.id}`,
-          userId: userData.id,
+          id: `member_${res.user.id}`,
+          userId: res.user.id,
           organizationId: orgId,
           role: userData.role,
         })
@@ -74,12 +87,16 @@ async function main() {
     }
   }
 
-  console.log("Users and members created.");
-  console.log("Seeding completed successfully.");
-  process.exit(0);
+  log("Users and members created.");
+  log("Seeding completed successfully.");
 }
 
-main().catch((err) => {
-  console.error("Seeding failed:", err);
-  process.exit(1);
-});
+// Only run the seed script if this file is executed directly, not when imported in tests
+if (!isTest) {
+  main()
+    .then(() => process.exit(0)) // Exit here instead of in main so we can call it in tests
+    .catch((err) => {
+      console.error("Seeding failed:", err);
+      process.exit(1);
+    });
+}

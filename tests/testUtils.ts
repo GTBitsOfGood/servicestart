@@ -15,9 +15,11 @@ import app from "@/app/api/[[...route]]/route";
 
 export const testApi = testClient(app).api;
 
+export const DEFAULT_TEST_PASSWORD = "password123";
+
 export const baseTestUser = {
   email: "test@example.com",
-  password: "password123",
+  password: DEFAULT_TEST_PASSWORD,
   name: "Test User",
 };
 
@@ -31,7 +33,7 @@ export function buildTestUser() {
   return {
     name: `Test User ${seed}`,
     email: `test-${seed}@example.com`,
-    password: "password123",
+    password: DEFAULT_TEST_PASSWORD,
   };
 }
 
