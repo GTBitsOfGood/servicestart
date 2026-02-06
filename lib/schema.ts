@@ -269,4 +269,5 @@ export const schema = {
   members,
   invitations,
   joinRequests,
+  announcements,
 };

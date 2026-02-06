@@ -5,33 +5,7 @@ import { zValidator } from "@hono/zod-validator";
 import { JoinRequestsService } from "@/lib/services/joinRequests";
 import { MembersService } from "@/lib/services/members";
 import { auth } from "@/lib/auth";
-
-const getParamsSchema = z.object({
-  page: z
-    .string()
-    .or(z.number()) // Number inputs get converted to strings by Hono
-    .optional()
-    .transform((val) => {
-      const num = parseInt(String(val) || "1");
-      return isNaN(num) ? 1 : num;
-    })
-    .pipe(z.number().int().min(1, "Page must be at least 1")),
-  pageSize: z
-    .string()
-    .or(z.number())
-    .optional()
-    .transform((val) => {
-      const num = parseInt(String(val) || "20");
-      return isNaN(num) ? 20 : num;
-    })
-    .pipe(
-      z
-        .number()
-        .int()
-        .min(1, "Page size must be at least 1")
-        .max(100, "Page size must be at most 100"),
-    ),
-});
+import { paginationQuerySchema } from "./lib";
 
 // Schema for PATCH parameters
 const patchParamsSchema = z.object({
@@ -42,7 +16,7 @@ const patchParamsSchema = z.object({
 });
 
 const app = new Hono()
-  .get("/", zValidator("query", getParamsSchema), async (c) => {
+  .get("/", zValidator("query", paginationQuerySchema), async (c) => {
     const session = await auth.api.getSession({
       headers: c.req.header(),
     });
