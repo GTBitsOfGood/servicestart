@@ -9,6 +9,10 @@ import {
   organizations,
   sessions,
 } from "@/lib/schema";
+import { testClient } from "hono/testing";
+import app from "@/app/api/[[...route]]/route";
+
+export const testApi = testClient(app).api;
 
 export const baseTestUser = {
   email: "test@example.com",
@@ -88,7 +92,7 @@ export async function signUpAndGetSession(
   return {
     user: res.response.user,
     session,
-    headers: new Headers({ Cookie: res.headers.get("set-cookie")! }),
+    headers: { Cookie: res.headers.get("set-cookie")! },
   };
 }
 
