@@ -27,6 +27,21 @@ export const joinRequestStatusEnum = pgEnum(
   JOIN_REQUEST_STATUS_VALUES,
 );
 
+//TypeScript enum for org config key values
+export enum OrganizationConfigKey {
+  Description = "description",
+}
+
+// Array of enum values for use with pgEnum and Zod
+export const ORGANIZATION_CONFIG_KEY_VALUES = [
+  OrganizationConfigKey.Description,
+] as const;
+
+export const organizationConfigKeyEnum = pgEnum(
+  "organization_config_key",
+  ORGANIZATION_CONFIG_KEY_VALUES,
+);
+
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -167,6 +182,24 @@ export const joinRequests = pgTable(
   ],
 );
 
+export const organizationConfig = pgTable(
+  "organization_config",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    key: organizationConfigKeyEnum("key").notNull(),
+    value: text("value").notNull(),
+  },
+  (table) => [
+    index("organization_config_orgId_key_idx").on(
+      table.organizationId,
+      table.key,
+    ),
+  ],
+);
+
 export const relations = defineRelations(
   {
     users,
@@ -236,4 +269,5 @@ export const schema = {
   members,
   invitations,
   joinRequests,
+  organizationConfig,
 };
