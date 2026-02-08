@@ -6,6 +6,8 @@ import {
   boolean,
   index,
   text,
+  interval,
+  integer,
 } from "drizzle-orm/pg-core";
 
 // TypeScript enum for join request status values
@@ -188,6 +190,31 @@ export const announcements = pgTable(
   ],
 );
 
+export const shifts = pgTable(
+  "shifts",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    startTimestamp: timestamp("start_timestamp").notNull(),
+    duration: interval("duration").notNull(),
+    rsvpLimit: integer("rsvp_limit"),
+  },
+  (table) => [index("shift_organizationId_idx").on(table.organizationId)],
+);
+
+export const shiftRSVPs = pgTable("shift_rsvps", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  shiftId: text("shift_id")
+    .notNull()
+    .references(() => shifts.id, { onDelete: "cascade" }),
+});
+
 export const relations = defineRelations(
   {
     users,
@@ -198,6 +225,8 @@ export const relations = defineRelations(
     invitations,
     joinRequests,
     announcements,
+    shifts,
+    shiftRSVPs,
   },
   (r) => ({
     users: {
@@ -209,11 +238,21 @@ export const relations = defineRelations(
         from: r.users.id,
         to: r.accounts.userId,
       }),
+      rsvps: r.many.shiftRSVPs({
+        from: r.users.id,
+        to: r.shiftRSVPs.userId,
+      }),
     },
     sessions: {
       organizations: r.one.organizations({
         from: r.sessions.activeOrganizationId,
         to: r.organizations.id,
+      }),
+    },
+    organizations: {
+      shifts: r.many.shifts({
+        from: r.organizations.id,
+        to: r.shifts.organizationId,
       }),
     },
     members: {
@@ -257,6 +296,26 @@ export const relations = defineRelations(
         optional: true,
       }),
     },
+    shifts: {
+      organizations: r.one.organizations({
+        from: r.shifts.organizationId,
+        to: r.organizations.id,
+      }),
+      rsvps: r.many.shiftRSVPs({
+        from: r.shifts.id,
+        to: r.shiftRSVPs.shiftId,
+      }),
+    },
+    shiftRSVPs: {
+      users: r.one.users({
+        from: r.shiftRSVPs.userId,
+        to: r.users.id,
+      }),
+      shifts: r.one.shifts({
+        from: r.shiftRSVPs.shiftId,
+        to: r.shifts.id,
+      }),
+    },
   }),
 );
 
@@ -270,4 +329,6 @@ export const schema = {
   invitations,
   joinRequests,
   announcements,
+  shifts,
+  shiftRSVPs,
 };
