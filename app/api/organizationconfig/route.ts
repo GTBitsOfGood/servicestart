@@ -6,6 +6,7 @@ import {
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { OrganizationsService } from "@/lib/services/organizations";
 import { MembersService } from "@/lib/services/members";
+import { getSlugFromHost } from "@/lib/authUtils";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
   const keysStr = searchParams.get("keys");
-  const organizationSlug = searchParams.get("organizationSlug");
+  const organizationSlugParam = searchParams.get("organizationSlug");
 
   if (keysStr === null) {
     return NextResponse.json({}, { status: 200 });
@@ -21,22 +22,10 @@ export async function GET(request: Request) {
   const keys = keysStr.split(",");
 
   let organizationId;
-  if (organizationSlug === null) {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-
-    if (session?.session.activeOrganizationId) {
-      organizationId = session?.session.activeOrganizationId;
-    } else {
-      return NextResponse.json(
-        { error: "No organizationId provided" },
-        { status: 400 },
-      );
-    }
-  } else {
-    const organization =
-      await OrganizationsService.findBySlug(organizationSlug);
+  if (organizationSlugParam) {
+    const organization = await OrganizationsService.findBySlug(
+      organizationSlugParam,
+    );
 
     if (!organization) {
       return NextResponse.json(
@@ -46,6 +35,33 @@ export async function GET(request: Request) {
     }
 
     organizationId = organization.id;
+  } else {
+    // Try deriving slug from request headers (x-forwarded-host/host)
+    const hostHeader =
+      request.headers.get("x-forwarded-host") ??
+      request.headers.get("host") ??
+      undefined;
+    const derivedSlug = getSlugFromHost(hostHeader);
+
+    if (derivedSlug && derivedSlug !== "servicestart") {
+      const organization = await OrganizationsService.findBySlug(derivedSlug);
+      if (organization) {
+        organizationId = organization.id;
+      }
+    }
+
+    // Fallback to session active organization
+    if (!organizationId) {
+      const session = await auth.api.getSession({ headers: request.headers });
+      if (session?.session.activeOrganizationId) {
+        organizationId = session.session.activeOrganizationId;
+      } else {
+        return NextResponse.json(
+          { error: "No organizationId provided" },
+          { status: 400 },
+        );
+      }
+    }
   }
 
   const result = await OrganizationConfigService.getConfig(

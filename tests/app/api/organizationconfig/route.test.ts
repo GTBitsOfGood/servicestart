@@ -10,7 +10,7 @@ import {
   createOrganization,
   setActiveOrganization,
   signUpAndGetSession,
-} from "../../../testUtils";
+} from "@/tests/testUtils";
 
 describe("GET /api/organizationconfig", () => {
   it("returns 200 and empty object when keys is missing", async () => {

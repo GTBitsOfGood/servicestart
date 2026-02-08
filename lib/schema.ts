@@ -33,9 +33,9 @@ export enum OrganizationConfigKey {
 }
 
 // Array of enum values for use with pgEnum and Zod
-export const ORGANIZATION_CONFIG_KEY_VALUES = [
-  OrganizationConfigKey.Description,
-] as const;
+export const ORGANIZATION_CONFIG_KEY_VALUES = Object.values(
+  OrganizationConfigKey,
+) as unknown as readonly [string, ...string[]];
 
 export const organizationConfigKeyEnum = pgEnum(
   "organization_config_key",
@@ -193,7 +193,7 @@ export const organizationConfig = pgTable(
     value: text("value").notNull(),
   },
   (table) => [
-    index("organization_config_orgId_key_idx").on(
+    index("organization_config_organizationId_key_idx").on(
       table.organizationId,
       table.key,
     ),
@@ -209,6 +209,7 @@ export const relations = defineRelations(
     members,
     invitations,
     joinRequests,
+    organizationConfig,
   },
   (r) => ({
     users: {
@@ -254,6 +255,12 @@ export const relations = defineRelations(
       }),
       organizations: r.one.organizations({
         from: r.joinRequests.organizationId,
+        to: r.organizations.id,
+      }),
+    },
+    organizationConfig: {
+      organizations: r.one.organizations({
+        from: r.organizationConfig.organizationId,
         to: r.organizations.id,
       }),
     },
