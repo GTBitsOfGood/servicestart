@@ -42,7 +42,7 @@ describe("GET /api/organizationconfig", () => {
   it("falls back to active organization when organizationSlug is not provided", async () => {
     const org = await createOrganization("cfg-get-active");
     const user = buildTestUser();
-    const { user: u, session, headers } = await signUpAndGetSession(user);
+    const { session, headers } = await signUpAndGetSession(user);
     await setActiveOrganization(session.id, org.id);
     // No membership required
 
@@ -64,7 +64,7 @@ describe("GET /api/organizationconfig", () => {
   });
 
   it("returns default value when key is not set", async () => {
-    const org = await createOrganization("cfg-get-default");
+    await createOrganization("cfg-get-default");
     const request = new Request(
       "http://localhost/api/organizationconfig?keys=description&organizationSlug=cfg-get-default",
     );
@@ -114,7 +114,7 @@ describe("PUT /api/organizationconfig", () => {
   });
 
   it("returns 400 when user has no active organization", async () => {
-    const org = await createOrganization("cfg-put-no-active");
+    await createOrganization("cfg-put-no-active");
     const user = buildTestUser();
     const { headers } = await signUpAndGetSession(user);
 
@@ -135,7 +135,7 @@ describe("PUT /api/organizationconfig", () => {
   it("returns 403 when user is not admin or owner", async () => {
     const org = await createOrganization("cfg-put-no-admin");
     const user = buildTestUser();
-    const { user: u, session, headers } = await signUpAndGetSession(user);
+    const { session, headers } = await signUpAndGetSession(user);
     await setActiveOrganization(session.id, org.id);
     // user is not a member or is member with insufficient role
 
