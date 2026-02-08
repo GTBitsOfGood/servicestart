@@ -53,7 +53,7 @@ beforeAll(async () => {
     stdio: "inherit",
     env: {
       ...process.env,
-      DATABASE_URL: dbUrl,
+      DB_URL: dbUrl,
     },
   });
 });
