@@ -14,6 +14,8 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - ESLint: Linting
 - Prettier: Code formatting
 - [Vitest](https://vitest.dev/): Testing
+- Unit tests: _.test.ts files; E2E tests: _.spec.ts files
+- [Playwright](https://playwright.dev/): E2E testing
 - [Drizzle ORM](https://orm.drizzle.team/): Database ORM
 - PostgreSQL: Database
 - [BetterAuth](https://www.better-auth.com/): Authentication
