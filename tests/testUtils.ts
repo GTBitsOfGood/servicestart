@@ -9,6 +9,8 @@ import {
   organizations,
   sessions,
   announcements,
+  shifts,
+  shiftRSVPs,
 } from "@/lib/schema";
 import { testClient } from "hono/testing";
 import app from "@/app/api/[[...route]]/route";
@@ -169,6 +171,36 @@ export async function createAnnouncement(
     publishedById: isDraft ? null : (opts.publishedById ?? null),
   });
   return id;
+}
+
+export async function createShift(
+  organizationId: string,
+  opts: {
+    name?: string;
+    description?: string;
+    startTimestamp?: Date;
+    duration?: number;
+    rsvpLimit?: number;
+  } = {},
+) {
+  const id = randomUUID();
+  await db.insert(shifts).values({
+    id,
+    organizationId,
+    name: opts.name ?? "Test Shift",
+    description: opts.description ?? "Test Description",
+    startTimestamp: opts.startTimestamp ?? new Date(),
+    duration: String(opts.duration ?? 60),
+    rsvpLimit: opts.rsvpLimit ?? null,
+  });
+  return id;
+}
+
+export async function createShiftRSVP(shiftId: string, userId: string) {
+  await db.insert(shiftRSVPs).values({
+    shiftId,
+    userId,
+  });
 }
 
 /**
