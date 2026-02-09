@@ -2,12 +2,18 @@ import { NextResponse } from "next/server";
 import { ShiftService } from "@/lib/services/ShiftService";
 import { MembersService } from "@/lib/services/members";
 import { auth } from "@/lib/auth";
-import { InferInsertModel } from "drizzle-orm";
-import { shifts } from "@/lib/schema";
+import z from "zod";
 
-type ShiftInsert = InferInsertModel<typeof shifts>;
-type CreateShiftInput = Omit<ShiftInsert, "id">;
-type UpdateShiftInput = Partial<Omit<CreateShiftInput, "organizationId">>;
+export const UpdateShiftSchema = z.object({
+  name: z.string().optional(),
+  description: z.string().optional(),
+  startTimestamp: z
+    .string()
+    .transform((str) => new Date(str))
+    .optional(),
+  duration: z.string().optional(),
+  rsvpLimit: z.number().optional(),
+});
 
 export async function PATCH(
   request: Request,
@@ -42,14 +48,7 @@ export async function PATCH(
   const { shiftId } = await params;
 
   const body = await request.json();
-  const updateData: UpdateShiftInput = {};
-
-  if (body.name !== undefined) updateData.name = body.name;
-  if (body.description !== undefined) updateData.description = body.description;
-  if (body.startTimestamp !== undefined)
-    updateData.startTimestamp = new Date(body.startTimestamp);
-  if (body.duration !== undefined) updateData.duration = body.duration;
-  if (body.rsvpLimit !== undefined) updateData.rsvpLimit = body.rsvpLimit;
+  const updateData = UpdateShiftSchema.parse(body);
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
