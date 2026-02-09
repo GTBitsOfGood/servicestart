@@ -349,6 +349,7 @@ export const relations = defineRelations(
         from: r.shiftRSVPs.shiftId,
         to: r.shifts.id,
       }),
+    },
     organizationConfig: {
       organizations: r.one.organizations({
         from: r.organizationConfig.organizationId,
