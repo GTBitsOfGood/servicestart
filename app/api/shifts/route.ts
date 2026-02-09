@@ -40,5 +40,5 @@ export async function POST(request: Request) {
     rsvpLimit: body.rsvpLimit || 0,
   });
 
-  return NextResponse.json(shift);
+  return NextResponse.json({ status: 200, shift });
 }

@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ shiftId: string }> },
+  { params }: { params: { shiftId: string } },
 ) {
   const session = await auth.api.getSession({
     headers: request.headers,
@@ -61,7 +61,7 @@ export async function POST(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ shiftId: string }> },
+  { params }: { params: { shiftId: string } },
 ) {
   const session = await auth.api.getSession({
     headers: request.headers,

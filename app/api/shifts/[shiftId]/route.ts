@@ -11,7 +11,7 @@ type UpdateShiftInput = Partial<Omit<CreateShiftInput, "organizationId">>;
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ shiftId: string }> },
+  { params }: { params: { shiftId: string } },
 ) {
   const session = await auth.api.getSession({
     headers: request.headers,
@@ -51,14 +51,19 @@ export async function PATCH(
   if (body.duration !== undefined) updateData.duration = body.duration;
   if (body.rsvpLimit !== undefined) updateData.rsvpLimit = body.rsvpLimit;
 
-  await ShiftService.updateShift(shiftId, updateData);
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+  }
 
-  return NextResponse.json({ success: true });
+  await ShiftService.updateShift(shiftId, updateData);
+  const shift = await ShiftService.findById(shiftId);
+
+  return NextResponse.json({ success: true, shift });
 }
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ shiftId: string }> },
+  { params }: { params: { shiftId: string } },
 ) {
   const session = await auth.api.getSession({
     headers: request.headers,
@@ -93,12 +98,12 @@ export async function DELETE(
     return NextResponse.json({ error: "Shift not found" }, { status: 404 });
   }
 
-  return NextResponse.json(shift);
+  return NextResponse.json({ success: true, shift });
 }
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ shiftId: string }> },
+  { params }: { params: { shiftId: string } },
 ) {
   const session = await auth.api.getSession({
     headers: request.headers,
@@ -127,5 +132,5 @@ export async function GET(
     );
   }
 
-  return NextResponse.json(shift);
+  return NextResponse.json({ status: 200, shift });
 }
