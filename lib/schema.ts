@@ -6,6 +6,8 @@ import {
   boolean,
   index,
   text,
+  interval,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 // TypeScript enum for join request status values
@@ -167,6 +169,40 @@ export const joinRequests = pgTable(
   ],
 );
 
+export const events = pgTable(
+  "events",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    location: text("location").notNull(),
+    description: text("description"),
+    startTimestamp: timestamp("start_timestamp"),
+    duration: interval("duration"),
+    coverImageUrl: text("cover_image_url"),
+  },
+  (table) => [index("events_organizationId_idx").on(table.organizationId)],
+);
+
+export const eventRsvps = pgTable(
+  "event_rsvps",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    {
+      pk: primaryKey({ columns: [table.userId, table.eventId] }),
+    },
+  ],
+);
+
 export const relations = defineRelations(
   {
     users,
@@ -176,6 +212,8 @@ export const relations = defineRelations(
     members,
     invitations,
     joinRequests,
+    events,
+    eventRsvps,
   },
   (r) => ({
     users: {
@@ -224,6 +262,26 @@ export const relations = defineRelations(
         to: r.organizations.id,
       }),
     },
+    events: {
+      organizations: r.one.organizations({
+        from: r.events.organizationId,
+        to: r.organizations.id,
+      }),
+      rsvps: r.many.eventRsvps({
+        from: r.events.id,
+        to: r.eventRsvps.eventId,
+      }),
+    },
+    eventRsvps: {
+      user: r.one.users({
+        from: r.eventRsvps.userId,
+        to: r.users.id,
+      }),
+      event: r.one.events({
+        from: r.eventRsvps.eventId,
+        to: r.events.id,
+      }),
+    },
   }),
 );
 
@@ -236,4 +294,6 @@ export const schema = {
   members,
   invitations,
   joinRequests,
+  events,
+  eventRsvps,
 };
