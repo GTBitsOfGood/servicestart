@@ -7,6 +7,7 @@ import {
   index,
   text,
   interval,
+  primaryKey,
   integer,
 } from "drizzle-orm/pg-core";
 
@@ -184,6 +185,22 @@ export const joinRequests = pgTable(
   ],
 );
 
+export const events = pgTable(
+  "events",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    location: text("location").notNull(),
+    description: text("description"),
+    startTimestamp: timestamp("start_timestamp"),
+    duration: interval("duration"),
+    coverImageUrl: text("cover_image_url"),
+  },
+  (table) => [index("events_organizationId_idx").on(table.organizationId)],
+);
 export const announcements = pgTable(
   "announcements",
   {
@@ -202,6 +219,23 @@ export const announcements = pgTable(
   },
   (table) => [
     index("announcement_organizationId_idx").on(table.organizationId),
+  ],
+);
+
+export const eventRsvps = pgTable(
+  "event_rsvps",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    {
+      pk: primaryKey({ columns: [table.userId, table.eventId] }),
+    },
   ],
 );
 
@@ -257,6 +291,8 @@ export const relations = defineRelations(
     members,
     invitations,
     joinRequests,
+    events,
+    eventRsvps,
     announcements,
     shifts,
     shiftRSVPs,
@@ -319,6 +355,26 @@ export const relations = defineRelations(
         to: r.organizations.id,
       }),
     },
+    events: {
+      organizations: r.one.organizations({
+        from: r.events.organizationId,
+        to: r.organizations.id,
+      }),
+      rsvps: r.many.eventRsvps({
+        from: r.events.id,
+        to: r.eventRsvps.eventId,
+      }),
+    },
+    eventRsvps: {
+      user: r.one.users({
+        from: r.eventRsvps.userId,
+        to: r.users.id,
+      }),
+      event: r.one.events({
+        from: r.eventRsvps.eventId,
+        to: r.events.id,
+      }),
+    },
     announcements: {
       organizations: r.one.organizations({
         from: r.announcements.organizationId,
@@ -368,6 +424,8 @@ export const schema = {
   members,
   invitations,
   joinRequests,
+  events,
+  eventRsvps,
   announcements,
   shifts,
   shiftRSVPs,
