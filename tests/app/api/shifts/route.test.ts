@@ -78,7 +78,9 @@ describe("PATCH /app/api/shifts/[shiftId]", () => {
       method: "PATCH",
     });
 
-    const response = await PATCH(request, { params: { shiftId: "1234" } });
+    const response = await PATCH(request, {
+      params: Promise.resolve({ shiftId: "1234" }),
+    });
 
     expect(response.status).toBe(401);
   });
@@ -96,7 +98,9 @@ describe("PATCH /app/api/shifts/[shiftId]", () => {
       headers,
     });
 
-    const response = await PATCH(request, { params: { shiftId: shiftId } });
+    const response = await PATCH(request, {
+      params: Promise.resolve({ shiftId }),
+    });
     expect(response.status).toBe(403);
   });
 
@@ -116,7 +120,9 @@ describe("PATCH /app/api/shifts/[shiftId]", () => {
       }),
     });
 
-    const response = await PATCH(request, { params: { shiftId } });
+    const response = await PATCH(request, {
+      params: Promise.resolve({ shiftId }),
+    });
     const data = await response.json();
     expect(response.status).toBe(200);
     expect(data.shift.name).toBe("Test Shift");
@@ -139,7 +145,9 @@ describe("PATCH /app/api/shifts/[shiftId]", () => {
       }),
     });
 
-    const response = await PATCH(request, { params: { shiftId } });
+    const response = await PATCH(request, {
+      params: Promise.resolve({ shiftId }),
+    });
     const data = await response.json();
     expect(response.status).toBe(200);
     expect(data.shift.organizationId).toBe(organization.id);
@@ -153,7 +161,9 @@ describe("DELETE /app/api/shifts/[shiftId]", () => {
       method: "DELETE",
     });
 
-    const response = await DELETE(request, { params: { shiftId: "1234" } });
+    const response = await DELETE(request, {
+      params: Promise.resolve({ shiftId: "1234" }),
+    });
 
     expect(response.status).toBe(401);
   });
@@ -171,7 +181,9 @@ describe("DELETE /app/api/shifts/[shiftId]", () => {
       headers,
     });
 
-    const response = await DELETE(request, { params: { shiftId: shiftId } });
+    const response = await DELETE(request, {
+      params: Promise.resolve({ shiftId }),
+    });
     expect(response.status).toBe(403);
   });
 
@@ -188,7 +200,9 @@ describe("DELETE /app/api/shifts/[shiftId]", () => {
       headers,
     });
 
-    const response = await DELETE(request, { params: { shiftId: shiftId } });
+    const response = await DELETE(request, {
+      params: Promise.resolve({ shiftId }),
+    });
 
     expect(response.status).toBe(200);
     expect(await ShiftService.findById(shiftId)).toBe(null);
@@ -207,7 +221,9 @@ describe("DELETE /app/api/shifts/[shiftId]", () => {
       headers,
     });
 
-    const response = await DELETE(request, { params: { shiftId: "1234" } });
+    const response = await DELETE(request, {
+      params: Promise.resolve({ shiftId: "1234" }),
+    });
     expect(response.status).toBe(404);
   });
 });
@@ -218,7 +234,9 @@ describe("GET /app/api/shifts/[shiftId]", () => {
       method: "GET",
     });
 
-    const response = await GET(request, { params: { shiftId: "1234" } });
+    const response = await GET(request, {
+      params: Promise.resolve({ shiftId: "1234" }),
+    });
     expect(response.status).toBe(401);
   });
 
@@ -239,7 +257,9 @@ describe("GET /app/api/shifts/[shiftId]", () => {
       headers,
     });
 
-    const response = await GET(request, { params: { shiftId: shiftId } });
+    const response = await GET(request, {
+      params: Promise.resolve({ shiftId }),
+    });
     expect(response.status).toBe(404);
   });
 
@@ -256,7 +276,9 @@ describe("GET /app/api/shifts/[shiftId]", () => {
       headers,
     });
 
-    const response = await GET(request, { params: { shiftId: shiftId } });
+    const response = await GET(request, {
+      params: Promise.resolve({ shiftId }),
+    });
     const data = await response.json();
     expect(response.status).toBe(200);
     expect(data.shift.name).toBe("Test Shift");
@@ -274,7 +296,9 @@ describe("GET /app/api/shifts/[shiftId]", () => {
       headers,
     });
 
-    const response = await GET(request, { params: { shiftId: "1234" } });
+    const response = await GET(request, {
+      params: Promise.resolve({ shiftId: "1234" }),
+    });
     expect(response.status).toBe(404);
   });
 });
@@ -285,7 +309,9 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
       method: "POST",
     });
 
-    const response = await POST_RSVP(request, { params: { shiftId: "1234" } });
+    const response = await POST_RSVP(request, {
+      params: Promise.resolve({ shiftId: "1234" }),
+    });
 
     expect(response.status).toBe(401);
   });
@@ -310,7 +336,9 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await POST_RSVP(request, { params: { shiftId: shiftId } });
+    const response = await POST_RSVP(request, {
+      params: Promise.resolve({ shiftId }),
+    });
     expect(response.status).toBe(404);
   });
 
@@ -330,7 +358,9 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await POST_RSVP(request, { params: { shiftId: shiftId } });
+    const response = await POST_RSVP(request, {
+      params: Promise.resolve({ shiftId }),
+    });
     expect(response.status).toBe(200);
 
     const rsvp = await db
@@ -359,7 +389,9 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await POST_RSVP(request, { params: { shiftId: shiftId } });
+    const response = await POST_RSVP(request, {
+      params: Promise.resolve({ shiftId }),
+    });
     expect(response.status).toBe(403);
   });
 
@@ -382,7 +414,9 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await POST_RSVP(request, { params: { shiftId: shiftId } });
+    const response = await POST_RSVP(request, {
+      params: Promise.resolve({ shiftId }),
+    });
     expect(response.status).toBe(200);
 
     const rsvp = await db
@@ -403,7 +437,7 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
     });
 
     const response = await DELETE_RSVP(request, {
-      params: { shiftId: "1234" },
+      params: Promise.resolve({ shiftId: "1234" }),
     });
 
     expect(response.status).toBe(401);
@@ -430,7 +464,7 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
     );
 
     const response = await DELETE_RSVP(request, {
-      params: { shiftId: shiftId },
+      params: Promise.resolve({ shiftId }),
     });
     expect(response.status).toBe(404);
   });
@@ -453,7 +487,7 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
     );
 
     const response = await DELETE_RSVP(request, {
-      params: { shiftId: shiftId },
+      params: Promise.resolve({ shiftId }),
     });
     expect(response.status).toBe(200);
 
@@ -485,7 +519,7 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
     );
 
     const response = await DELETE_RSVP(request, {
-      params: { shiftId: shiftId },
+      params: Promise.resolve({ shiftId }),
     });
     expect(response.status).toBe(403);
   });
@@ -512,7 +546,7 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
     );
 
     const response = await DELETE_RSVP(request, {
-      params: { shiftId: shiftId },
+      params: Promise.resolve({ shiftId }),
     });
     expect(response.status).toBe(200);
 

@@ -11,7 +11,7 @@ type UpdateShiftInput = Partial<Omit<CreateShiftInput, "organizationId">>;
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { shiftId: string } },
+  { params }: { params: Promise<{ shiftId: string }> },
 ) {
   const session = await auth.api.getSession({
     headers: request.headers,
@@ -63,7 +63,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { shiftId: string } },
+  { params }: { params: Promise<{ shiftId: string }> },
 ) {
   const session = await auth.api.getSession({
     headers: request.headers,
@@ -103,7 +103,7 @@ export async function DELETE(
 
 export async function GET(
   request: Request,
-  { params }: { params: { shiftId: string } },
+  { params }: { params: Promise<{ shiftId: string }> },
 ) {
   const session = await auth.api.getSession({
     headers: request.headers,
