@@ -29,6 +29,21 @@ export const joinRequestStatusEnum = pgEnum(
   JOIN_REQUEST_STATUS_VALUES,
 );
 
+//TypeScript enum for org config key values
+export enum OrganizationConfigKey {
+  Description = "description",
+}
+
+// Array of enum values for use with pgEnum and Zod
+export const ORGANIZATION_CONFIG_KEY_VALUES = Object.values(
+  OrganizationConfigKey,
+) as unknown as readonly [string, ...string[]];
+
+export const organizationConfigKeyEnum = pgEnum(
+  "organization_config_key",
+  ORGANIZATION_CONFIG_KEY_VALUES,
+);
+
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -215,6 +230,24 @@ export const shiftRSVPs = pgTable("shift_rsvps", {
     .references(() => shifts.id, { onDelete: "cascade" }),
 });
 
+export const organizationConfig = pgTable(
+  "organization_config",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    key: organizationConfigKeyEnum("key").notNull(),
+    value: text("value").notNull(),
+  },
+  (table) => [
+    index("organization_config_organizationId_key_idx").on(
+      table.organizationId,
+      table.key,
+    ),
+  ],
+);
+
 export const relations = defineRelations(
   {
     users,
@@ -227,6 +260,7 @@ export const relations = defineRelations(
     announcements,
     shifts,
     shiftRSVPs,
+    organizationConfig,
   },
   (r) => ({
     users: {
@@ -315,6 +349,11 @@ export const relations = defineRelations(
         from: r.shiftRSVPs.shiftId,
         to: r.shifts.id,
       }),
+    organizationConfig: {
+      organizations: r.one.organizations({
+        from: r.organizationConfig.organizationId,
+        to: r.organizations.id,
+      }),
     },
   }),
 );
@@ -331,4 +370,5 @@ export const schema = {
   announcements,
   shifts,
   shiftRSVPs,
+  organizationConfig,
 };
