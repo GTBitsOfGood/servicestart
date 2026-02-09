@@ -221,7 +221,6 @@ export const announcements = pgTable(
     index("announcement_organizationId_idx").on(table.organizationId),
   ],
 );
-    
 
 export const eventRsvps = pgTable(
   "event_rsvps",
@@ -237,7 +236,7 @@ export const eventRsvps = pgTable(
     {
       pk: primaryKey({ columns: [table.userId, table.eventId] }),
     },
- ]
+  ],
 );
 
 export const shifts = pgTable(
