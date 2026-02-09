@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/lib/db";
-import { shifts, shiftRSVPs } from "@/lib/schema";
+import { shiftRSVPs } from "@/lib/schema";
 import { ShiftService } from "@/lib/services/ShiftService";
 import {
   addMember,
@@ -214,7 +214,6 @@ describe("DELETE /app/api/shifts/[shiftId]", () => {
     const { user, session, headers } = await signUpAndGetSession(theUser);
     await addMember(user.id, organization.id, "admin");
     await setActiveOrganization(session.id, organization.id);
-    const shiftId = await createShift(organization.id, { name: "Test Shift" });
 
     const request = new Request("http://localhost/api/shifts/1234", {
       method: "DELETE",

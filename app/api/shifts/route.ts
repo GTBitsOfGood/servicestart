@@ -31,11 +31,17 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
+
+  const startTimestamp =
+    body.startTimestamp && !isNaN(new Date(body.startTimestamp).getTime())
+      ? new Date(body.startTimestamp)
+      : new Date();
+
   const shift = await ShiftService.createShift({
     organizationId,
     name: body.name || "",
     description: body.description || "",
-    startTimestamp: new Date(body.startTimestamp) || new Date(),
+    startTimestamp: startTimestamp,
     duration: body.duration || "",
     rsvpLimit: body.rsvpLimit || 0,
   });
