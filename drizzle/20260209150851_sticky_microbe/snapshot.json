@@ -1,9 +1,9 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "7248d194-fe2a-4cfa-b291-dab5d2549722",
+  "id": "58fd7918-59f8-4e85-a219-8335a44b9696",
   "prevIds": [
-    "ccc4172e-dfb7-496c-9572-b0c2942bf54d"
+    "629ab2d5-21e5-4aed-9e90-c98fef7df1b5"
   ],
   "ddl": [
     {
@@ -13,6 +13,14 @@
         "denied"
       ],
       "name": "join_request_status",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "description"
+      ],
+      "name": "organization_config_key",
       "entityType": "enums",
       "schema": "public"
     },
@@ -43,6 +51,12 @@
     {
       "isRlsEnabled": false,
       "name": "members",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "organization_config",
       "entityType": "tables",
       "schema": "public"
     },
@@ -575,6 +589,58 @@
       "entityType": "columns",
       "schema": "public",
       "table": "members"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "organization_config"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "organization_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "organization_config"
+    },
+    {
+      "type": "organization_config_key",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "key",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "organization_config"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "value",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "organization_config"
     },
     {
       "type": "text",
@@ -1187,6 +1253,34 @@
       "nameExplicit": true,
       "columns": [
         {
+          "value": "organization_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "key",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "organization_config_organizationId_key_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "organization_config"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
           "value": "user_id",
           "isExpression": false,
           "asc": true,
@@ -1402,6 +1496,23 @@
     {
       "nameExplicit": false,
       "columns": [
+        "organization_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "organizations",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "organization_config_organization_id_organizations_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "organization_config"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
         "user_id"
       ],
       "schemaTo": "public",
@@ -1532,6 +1643,16 @@
       "name": "members_pkey",
       "schema": "public",
       "table": "members",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "organization_config_pkey",
+      "schema": "public",
+      "table": "organization_config",
       "entityType": "pks"
     },
     {
