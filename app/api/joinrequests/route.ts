@@ -4,32 +4,7 @@ import { auth } from "@/lib/auth";
 import { JoinRequestStatus, JOIN_REQUEST_STATUS_VALUES } from "@/lib/schema";
 import { JoinRequestsService } from "@/lib/services/joinRequests";
 import { MembersService } from "@/lib/services/members";
-
-// Schema for GET pagination parameters
-const getParamsSchema = z.object({
-  page: z
-    .string()
-    .optional()
-    .transform((val) => {
-      const num = parseInt(val || "1", 10);
-      return isNaN(num) ? 1 : num;
-    })
-    .pipe(z.number().int().min(1, "Page must be at least 1")),
-  pageSize: z
-    .string()
-    .optional()
-    .transform((val) => {
-      const num = parseInt(val || "20", 10);
-      return isNaN(num) ? 20 : num;
-    })
-    .pipe(
-      z
-        .number()
-        .int()
-        .min(1, "Page size must be at least 1")
-        .max(100, "Page size must be at most 100"),
-    ),
-});
+import { paginationQuerySchema } from "@/lib/apiUtils";
 
 // Schema for PATCH parameters
 const patchParamsSchema = z.object({
@@ -72,7 +47,7 @@ export async function GET(request: Request) {
 
   // Parse and validate pagination parameters with Zod
   const url = new URL(request.url);
-  const parsed = getParamsSchema.safeParse({
+  const parsed = paginationQuerySchema.safeParse({
     page: url.searchParams.get("page") ?? undefined,
     pageSize: url.searchParams.get("pageSize") ?? undefined,
   });

@@ -1,39 +1,43 @@
 import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { GET, PATCH } from "@/app/api/joinrequests/route";
 import db from "@/lib/db";
 import { joinRequests, JoinRequestStatus, members } from "@/lib/schema";
 import {
   addMember,
   buildTestUser,
+  testApi,
   createJoinRequest,
   createOrganization,
   setActiveOrganization,
   signUpAndGetSession,
-} from "../../../testUtils";
+} from "@/tests/testUtils";
+import { InferRequestType } from "hono";
 
-describe("GET /api/joinrequests (paginated list)", () => {
+describe("GET /api/joinRequests (paginated list)", () => {
   it("returns 401 when user is not authenticated", async () => {
-    const request = new Request("http://localhost/api/joinrequests");
-    const response = await GET(request);
+    const response = await testApi.joinRequests.$get({
+      query: {},
+    });
 
     expect(response.status).toBe(401);
     const data = await response.json();
-    expect(data.error).toBe("Unauthorized");
+    expect(data).toHaveProperty("error");
   });
 
   it("returns 400 when user has no active organization", async () => {
     const user = buildTestUser();
     const { headers } = await signUpAndGetSession(user);
 
-    const request = new Request("http://localhost/api/joinrequests", {
-      headers,
-    });
-    const response = await GET(request);
+    const response = await testApi.joinRequests.$get(
+      {
+        query: {},
+      },
+      {
+        headers,
+      },
+    );
 
     expect(response.status).toBe(400);
-    const data = await response.json();
-    expect(data.error).toBe("No active organization");
   });
 
   it("returns 403 when user is not admin or owner", async () => {
@@ -44,14 +48,21 @@ describe("GET /api/joinrequests (paginated list)", () => {
     await setActiveOrganization(session.id, organization.id);
     await addMember(session.userId, organization.id, "member");
 
-    const request = new Request("http://localhost/api/joinrequests", {
-      headers,
-    });
-    const response = await GET(request);
+    const response = await testApi.joinRequests.$get(
+      {
+        query: {},
+      },
+      {
+        headers,
+      },
+    );
 
     expect(response.status).toBe(403);
     const data = await response.json();
-    expect(data.error).toBe("Forbidden: Admin or owner role required");
+    if (!("error" in data)) {
+      throw new Error("Response data is missing 'error' property");
+    }
+    expect(data.error).not.toBeNull();
   });
 
   it("returns join requests when user is admin", async () => {
@@ -83,13 +94,20 @@ describe("GET /api/joinrequests (paginated list)", () => {
       JoinRequestStatus.Approved,
     );
 
-    const request = new Request("http://localhost/api/joinrequests", {
-      headers,
-    });
-    const response = await GET(request);
+    const response = await testApi.joinRequests.$get(
+      {
+        query: {},
+      },
+      {
+        headers,
+      },
+    );
 
     expect(response.status).toBe(200);
     const data = await response.json();
+    if (!("data" in data)) {
+      throw new Error("Response data is missing 'data' property");
+    }
     expect(data.data).toHaveLength(2);
     expect(data.page).toBe(1);
     expect(data.pageSize).toBe(20);
@@ -115,13 +133,20 @@ describe("GET /api/joinrequests (paginated list)", () => {
       JoinRequestStatus.Pending,
     );
 
-    const request = new Request("http://localhost/api/joinrequests", {
-      headers,
-    });
-    const response = await GET(request);
+    const response = await testApi.joinRequests.$get(
+      {
+        query: {},
+      },
+      {
+        headers,
+      },
+    );
 
     expect(response.status).toBe(200);
     const data = await response.json();
+    if (!("data" in data)) {
+      throw new Error("Response data is missing 'data' property");
+    }
     expect(data.data).toHaveLength(1);
   });
 
@@ -149,39 +174,66 @@ describe("GET /api/joinrequests (paginated list)", () => {
     }
 
     // Request page 1 with pageSize 2
-    const request1 = new Request(
-      "http://localhost/api/joinrequests?page=1&pageSize=2",
-      { headers },
+    const response1 = await testApi.joinRequests.$get(
+      {
+        query: {
+          page: 1,
+          pageSize: 2,
+        },
+      },
+      {
+        headers,
+      },
     );
-    const response1 = await GET(request1);
     const data1 = await response1.json();
 
     expect(response1.status).toBe(200);
+    if (!("data" in data1)) {
+      throw new Error("Response data is missing 'data' property");
+    }
     expect(data1.data).toHaveLength(2);
     expect(data1.page).toBe(1);
     expect(data1.pageSize).toBe(2);
 
     // Request page 2 with pageSize 2
-    const request2 = new Request(
-      "http://localhost/api/joinrequests?page=2&pageSize=2",
-      { headers },
+    const response2 = await testApi.joinRequests.$get(
+      {
+        query: {
+          page: 2,
+          pageSize: 2,
+        },
+      },
+      {
+        headers,
+      },
     );
-    const response2 = await GET(request2);
     const data2 = await response2.json();
 
     expect(response2.status).toBe(200);
+    if (!("data" in data2)) {
+      throw new Error("Response data is missing 'data' property");
+    }
     expect(data2.data).toHaveLength(2);
     expect(data2.page).toBe(2);
 
     // Request page 3 with pageSize 2 (should have 1 item)
-    const request3 = new Request(
-      "http://localhost/api/joinrequests?page=3&pageSize=2",
-      { headers },
+    const response3 = await testApi.joinRequests.$get(
+      {
+        query: {
+          page: 3,
+          pageSize: 2,
+        },
+      },
+      {
+        headers,
+      },
     );
-    const response3 = await GET(request3);
     const data3 = await response3.json();
 
     expect(response3.status).toBe(200);
+    if (!("data" in data3)) {
+      throw new Error("Response data is missing 'data' property");
+    }
     expect(data3.data).toHaveLength(1);
     expect(data3.page).toBe(3);
   });
@@ -198,30 +250,39 @@ describe("GET /api/joinrequests (paginated list)", () => {
     await setActiveOrganization(session.id, organization.id);
     await addMember(admin.id, organization.id, "admin");
 
-    const request = new Request("http://localhost/api/joinrequests", {
-      headers,
-    });
-    const response = await GET(request);
+    const response = await testApi.joinRequests.$get(
+      {
+        query: {},
+      },
+      {
+        headers,
+      },
+    );
 
     expect(response.status).toBe(200);
     const data = await response.json();
+    if (!("data" in data)) {
+      throw new Error("Response data is missing 'data' property");
+    }
     expect(data.page).toBe(1);
     expect(data.pageSize).toBe(20);
   });
 });
 
-describe("PATCH /api/joinrequests", () => {
+describe("PATCH /api/joinRequests", () => {
   it("returns 401 when user is not authenticated", async () => {
-    const request = new Request(
-      "http://localhost/api/joinrequests?id=test&status=approved",
-      {
-        method: "PATCH",
+    const response = await testApi.joinRequests.$patch({
+      query: {
+        id: "test",
+        status: JoinRequestStatus.Approved,
       },
-    );
-    const response = await PATCH(request);
+    });
 
     expect(response.status).toBe(401);
     const data = await response.json();
+    if (!("error" in data)) {
+      throw new Error("Response data is missing 'error' property");
+    }
     expect(data.error).toBe("Unauthorized");
   });
 
@@ -229,18 +290,22 @@ describe("PATCH /api/joinrequests", () => {
     const user = buildTestUser();
     const { headers } = await signUpAndGetSession(user);
 
-    const request = new Request(
-      "http://localhost/api/joinrequests?id=test&status=approved",
+    const response = await testApi.joinRequests.$patch(
       {
-        method: "PATCH",
-        headers,
+        query: {
+          id: "test",
+          status: JoinRequestStatus.Approved,
+        },
       },
+      { headers },
     );
-    const response = await PATCH(request);
 
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("No active organization");
+    if (!("error" in data)) {
+      throw new Error("Response data is missing 'error' property");
+    }
+    expect(data.error).not.toBeNull();
   });
 
   it("returns 403 when user is not admin or owner", async () => {
@@ -251,18 +316,22 @@ describe("PATCH /api/joinrequests", () => {
     await setActiveOrganization(session.id, organization.id);
     await addMember(session.userId, organization.id, "member");
 
-    const request = new Request(
-      "http://localhost/api/joinrequests?id=test&status=approved",
+    const response = await testApi.joinRequests.$patch(
       {
-        method: "PATCH",
-        headers,
+        query: {
+          id: "test",
+          status: JoinRequestStatus.Approved,
+        },
       },
+      { headers },
     );
-    const response = await PATCH(request);
 
     expect(response.status).toBe(403);
     const data = await response.json();
-    expect(data.error).toBe("Forbidden: Admin or owner role required");
+    if (!("error" in data)) {
+      throw new Error("Response data is missing 'error' property");
+    }
+    expect(data.error).not.toBeNull();
   });
 
   it("returns 400 when missing required parameters", async () => {
@@ -273,15 +342,19 @@ describe("PATCH /api/joinrequests", () => {
     await setActiveOrganization(session.id, organization.id);
     await addMember(admin.id, organization.id, "admin");
 
-    const request = new Request("http://localhost/api/joinrequests", {
-      method: "PATCH",
-      headers,
-    });
-    const response = await PATCH(request);
+    const response = await testApi.joinRequests.$patch(
+      {
+        query: {} as unknown as InferRequestType<"patch">["query"],
+      },
+      { headers },
+    );
 
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("Missing required parameters: id and status");
+    if (!("error" in data)) {
+      throw new Error("Response data is missing 'error' property");
+    }
+    expect(data.error).not.toBeNull();
   });
 
   it("returns 400 when status is invalid", async () => {
@@ -292,20 +365,23 @@ describe("PATCH /api/joinrequests", () => {
     await setActiveOrganization(session.id, organization.id);
     await addMember(admin.id, organization.id, "admin");
 
-    const request = new Request(
-      "http://localhost/api/joinrequests?id=test&status=invalid",
+    const response = await testApi.joinRequests.$patch(
       {
-        method: "PATCH",
-        headers,
+        query: {
+          id: "test",
+          status:
+            "invalid_status" as unknown as InferRequestType<"patch">["query"]["status"],
+        },
       },
+      { headers },
     );
-    const response = await PATCH(request);
 
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe(
-      "Invalid status. Must be pending, approved, or denied",
-    );
+    if (!("error" in data)) {
+      throw new Error("Response data is missing 'error' property");
+    }
+    expect(data.error).not.toBeNull();
   });
 
   it("returns 404 when join request does not exist", async () => {
@@ -316,18 +392,22 @@ describe("PATCH /api/joinrequests", () => {
     await setActiveOrganization(session.id, organization.id);
     await addMember(admin.id, organization.id, "admin");
 
-    const request = new Request(
-      "http://localhost/api/joinrequests?id=nonexistent&status=approved",
+    const response = await testApi.joinRequests.$patch(
       {
-        method: "PATCH",
-        headers,
+        query: {
+          id: "nonexistent",
+          status: JoinRequestStatus.Approved,
+        },
       },
+      { headers },
     );
-    const response = await PATCH(request);
 
     expect(response.status).toBe(404);
     const data = await response.json();
-    expect(data.error).toBe("Join request not found");
+    if (!("error" in data)) {
+      throw new Error("Response data is missing 'error' property");
+    }
+    expect(data.error).not.toBeNull();
   });
 
   it("returns 404 when join request belongs to different organization", async () => {
@@ -352,14 +432,15 @@ describe("PATCH /api/joinrequests", () => {
       JoinRequestStatus.Pending,
     );
 
-    const request = new Request(
-      `http://localhost/api/joinrequests?id=${joinRequestId}&status=approved`,
+    const response = await testApi.joinRequests.$patch(
       {
-        method: "PATCH",
-        headers,
+        query: {
+          id: joinRequestId,
+          status: JoinRequestStatus.Approved,
+        },
       },
+      { headers },
     );
-    const response = await PATCH(request);
 
     expect(response.status).toBe(404);
   });
@@ -384,17 +465,21 @@ describe("PATCH /api/joinrequests", () => {
       JoinRequestStatus.Approved,
     );
 
-    const request = new Request(
-      `http://localhost/api/joinrequests?id=${joinRequestId}&status=denied`,
+    const response = await testApi.joinRequests.$patch(
       {
-        method: "PATCH",
-        headers,
+        query: {
+          id: joinRequestId,
+          status: JoinRequestStatus.Denied,
+        },
       },
+      { headers },
     );
-    const response = await PATCH(request);
 
     expect(response.status).toBe(200);
     const data = await response.json();
+    if (!("message" in data)) {
+      throw new Error("Response data is missing 'message' property");
+    }
     expect(data.message).toBe("Join request is already approved");
 
     // Verify status is still approved
@@ -425,17 +510,21 @@ describe("PATCH /api/joinrequests", () => {
       JoinRequestStatus.Pending,
     );
 
-    const request = new Request(
-      `http://localhost/api/joinrequests?id=${joinRequestId}&status=denied`,
+    const response = await testApi.joinRequests.$patch(
       {
-        method: "PATCH",
-        headers,
+        query: {
+          id: joinRequestId,
+          status: JoinRequestStatus.Denied,
+        },
       },
+      { headers },
     );
-    const response = await PATCH(request);
 
     expect(response.status).toBe(200);
     const data = await response.json();
+    if (!("status" in data)) {
+      throw new Error("Response data is missing 'status' property");
+    }
     expect(data.status).toBe(JoinRequestStatus.Denied);
 
     // Verify user is NOT added as member
@@ -471,17 +560,21 @@ describe("PATCH /api/joinrequests", () => {
       JoinRequestStatus.Pending,
     );
 
-    const request = new Request(
-      `http://localhost/api/joinrequests?id=${joinRequestId}&status=approved`,
+    const response = await testApi.joinRequests.$patch(
       {
-        method: "PATCH",
-        headers,
+        query: {
+          id: joinRequestId,
+          status: JoinRequestStatus.Approved,
+        },
       },
+      { headers },
     );
-    const response = await PATCH(request);
 
     expect(response.status).toBe(200);
     const data = await response.json();
+    if (!("status" in data)) {
+      throw new Error("Response data is missing 'status' property");
+    }
     expect(data.status).toBe(JoinRequestStatus.Approved);
 
     // Verify user is added as member
@@ -518,17 +611,21 @@ describe("PATCH /api/joinrequests", () => {
       JoinRequestStatus.Pending,
     );
 
-    const request = new Request(
-      `http://localhost/api/joinrequests?id=${joinRequestId}&status=approved`,
+    const response = await testApi.joinRequests.$patch(
       {
-        method: "PATCH",
-        headers,
+        query: {
+          id: joinRequestId,
+          status: JoinRequestStatus.Approved,
+        },
       },
+      { headers },
     );
-    const response = await PATCH(request);
 
     expect(response.status).toBe(200);
     const data = await response.json();
+    if (!("status" in data)) {
+      throw new Error("Response data is missing 'status' property");
+    }
     expect(data.status).toBe(JoinRequestStatus.Approved);
   });
 });

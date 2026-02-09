@@ -8,11 +8,20 @@ import {
   members,
   organizations,
   sessions,
+  announcements,
+  shifts,
+  shiftRSVPs,
 } from "@/lib/schema";
+import { testClient } from "hono/testing";
+import app from "@/app/api/[[...route]]/route";
+
+export const testApi = testClient(app).api;
+
+export const DEFAULT_TEST_PASSWORD = "password123";
 
 export const baseTestUser = {
   email: "test@example.com",
-  password: "password123",
+  password: DEFAULT_TEST_PASSWORD,
   name: "Test User",
 };
 
@@ -26,7 +35,7 @@ export function buildTestUser() {
   return {
     name: `Test User ${seed}`,
     email: `test-${seed}@example.com`,
-    password: "password123",
+    password: DEFAULT_TEST_PASSWORD,
   };
 }
 
@@ -88,7 +97,7 @@ export async function signUpAndGetSession(
   return {
     user: res.response.user,
     session,
-    headers: new Headers({ Cookie: res.headers.get("set-cookie")! }),
+    headers: { Cookie: res.headers.get("set-cookie")! },
   };
 }
 
@@ -137,6 +146,61 @@ export async function createJoinRequest(
     status,
   });
   return id;
+}
+
+/**
+ * Creates an announcement for an organization.
+ */
+export async function createAnnouncement(
+  organizationId: string,
+  opts: {
+    name?: string;
+    body?: string;
+    draft?: boolean;
+    publishedById?: string | null;
+  } = {},
+) {
+  const id = randomUUID();
+  const isDraft = opts.draft ?? false;
+  await db.insert(announcements).values({
+    id,
+    organizationId,
+    name: opts.name ?? "Test Announcement",
+    body: opts.body ?? "Test body",
+    publishedAt: isDraft ? null : new Date(),
+    publishedById: isDraft ? null : (opts.publishedById ?? null),
+  });
+  return id;
+}
+
+export async function createShift(
+  organizationId: string,
+  opts: {
+    name?: string;
+    description?: string;
+    startTimestamp?: Date;
+    duration?: number;
+    rsvpLimit?: number;
+  } = {},
+) {
+  const id = randomUUID();
+  await db.insert(shifts).values({
+    id,
+    organizationId,
+    name: opts.name ?? "Test Shift",
+    description: opts.description ?? "Test Description",
+    startTimestamp: opts.startTimestamp ?? new Date(),
+    duration: String(opts.duration ?? 60),
+    rsvpLimit: opts.rsvpLimit ?? null,
+  });
+  return id;
+}
+
+export async function createShiftRSVP(shiftId: string, userId: string) {
+  await db.insert(shiftRSVPs).values({
+    shiftId,
+    userId,
+  });
 }
 
 /**

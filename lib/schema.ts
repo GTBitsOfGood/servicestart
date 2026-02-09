@@ -8,6 +8,7 @@ import {
   text,
   interval,
   primaryKey,
+  integer,
 } from "drizzle-orm/pg-core";
 
 // TypeScript enum for join request status values
@@ -27,6 +28,21 @@ export const JOIN_REQUEST_STATUS_VALUES = [
 export const joinRequestStatusEnum = pgEnum(
   "join_request_status",
   JOIN_REQUEST_STATUS_VALUES,
+);
+
+//TypeScript enum for org config key values
+export enum OrganizationConfigKey {
+  Description = "description",
+}
+
+// Array of enum values for use with pgEnum and Zod
+export const ORGANIZATION_CONFIG_KEY_VALUES = Object.values(
+  OrganizationConfigKey,
+) as unknown as readonly [string, ...string[]];
+
+export const organizationConfigKeyEnum = pgEnum(
+  "organization_config_key",
+  ORGANIZATION_CONFIG_KEY_VALUES,
 );
 
 export const users = pgTable("users", {
@@ -185,6 +201,27 @@ export const events = pgTable(
   },
   (table) => [index("events_organizationId_idx").on(table.organizationId)],
 );
+export const announcements = pgTable(
+  "announcements",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("title").notNull(),
+    body: text("body").notNull(),
+    // when this is null, it means that the announcement is not published (e.g. its a draft)
+    publishedAt: timestamp("published_at"),
+    publishedById: text("published_by_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("announcement_organizationId_idx").on(table.organizationId),
+  ],
+);
+    
 
 export const eventRsvps = pgTable(
   "event_rsvps",
@@ -200,6 +237,49 @@ export const eventRsvps = pgTable(
     {
       pk: primaryKey({ columns: [table.userId, table.eventId] }),
     },
+ ]
+);
+
+export const shifts = pgTable(
+  "shifts",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organizationId")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    startTimestamp: timestamp("start_timestamp").notNull(),
+    duration: interval("duration").notNull(),
+    rsvpLimit: integer("rsvp_limit"),
+  },
+  (table) => [index("shift_organizationId_idx").on(table.organizationId)],
+);
+
+export const shiftRSVPs = pgTable("shift_rsvps", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  shiftId: text("shift_id")
+    .notNull()
+    .references(() => shifts.id, { onDelete: "cascade" }),
+});
+
+export const organizationConfig = pgTable(
+  "organization_config",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    key: organizationConfigKeyEnum("key").notNull(),
+    value: text("value").notNull(),
+  },
+  (table) => [
+    index("organization_config_organizationId_key_idx").on(
+      table.organizationId,
+      table.key,
+    ),
   ],
 );
 
@@ -214,6 +294,10 @@ export const relations = defineRelations(
     joinRequests,
     events,
     eventRsvps,
+    announcements,
+    shifts,
+    shiftRSVPs,
+    organizationConfig,
   },
   (r) => ({
     users: {
@@ -225,11 +309,21 @@ export const relations = defineRelations(
         from: r.users.id,
         to: r.accounts.userId,
       }),
+      rsvps: r.many.shiftRSVPs({
+        from: r.users.id,
+        to: r.shiftRSVPs.userId,
+      }),
     },
     sessions: {
       organizations: r.one.organizations({
         from: r.sessions.activeOrganizationId,
         to: r.organizations.id,
+      }),
+    },
+    organizations: {
+      shifts: r.many.shifts({
+        from: r.organizations.id,
+        to: r.shifts.organizationId,
       }),
     },
     members: {
@@ -282,6 +376,43 @@ export const relations = defineRelations(
         to: r.events.id,
       }),
     },
+    announcements: {
+      organizations: r.one.organizations({
+        from: r.announcements.organizationId,
+        to: r.organizations.id,
+      }),
+      users: r.one.users({
+        from: r.announcements.publishedById,
+        to: r.users.id,
+        optional: true,
+      }),
+    },
+    shifts: {
+      organizations: r.one.organizations({
+        from: r.shifts.organizationId,
+        to: r.organizations.id,
+      }),
+      rsvps: r.many.shiftRSVPs({
+        from: r.shifts.id,
+        to: r.shiftRSVPs.shiftId,
+      }),
+    },
+    shiftRSVPs: {
+      users: r.one.users({
+        from: r.shiftRSVPs.userId,
+        to: r.users.id,
+      }),
+      shifts: r.one.shifts({
+        from: r.shiftRSVPs.shiftId,
+        to: r.shifts.id,
+      }),
+    },
+    organizationConfig: {
+      organizations: r.one.organizations({
+        from: r.organizationConfig.organizationId,
+        to: r.organizations.id,
+      }),
+    },
   }),
 );
 
@@ -296,4 +427,8 @@ export const schema = {
   joinRequests,
   events,
   eventRsvps,
+  announcements,
+  shifts,
+  shiftRSVPs,
+  organizationConfig,
 };
