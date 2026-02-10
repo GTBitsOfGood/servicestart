@@ -19,6 +19,7 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - [BetterAuth](https://www.better-auth.com/): Authentication
 - [BoG Design System](https://github.com/GTBitsOfGood/design-system): UI components
 - [Zod](https://zod.dev/): Schema validation
+- [Hono](https://hono.dev/): API and RPC framework
 
 ## Getting Started
 

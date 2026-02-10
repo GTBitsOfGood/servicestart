@@ -1,5 +1,6 @@
 import {
   accounts,
+  announcements,
   invitations,
   joinRequests,
   members,
@@ -7,6 +8,8 @@ import {
   sessions,
   users,
   verification,
+  shifts,
+  shiftRSVPs,
 } from "@/lib/schema";
 import { beforeEach, beforeAll, afterAll } from "vitest";
 import { execSync } from "child_process";
@@ -59,6 +62,10 @@ beforeEach(async () => {
   if (!db) throw new Error("DB not initialized yet (beforeAll did not run)");
 
   // Child tables first, then parent tables
+  // Add line here when you create a new table
+  await db.delete(shiftRSVPs);
+  await db.delete(shifts);
+  await db.delete(announcements);
   await db.delete(joinRequests);
   await db.delete(invitations);
   await db.delete(members);
