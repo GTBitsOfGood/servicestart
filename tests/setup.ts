@@ -18,17 +18,18 @@ import { testState } from "./testState";
 
 let db: typeof import("@/lib/db").default;
 
+const id = randomUUID().split("-")[0];
+const port = 5433 + Math.floor(Math.random() * 100);
+
+testState.dbName = `testdb_${id}`;
+testState.containerName = `test-db-${id}`;
+
+// Prefer IPv4 loopback (avoids ::1 / IPv6 localhost issues)
+const dbUrl = `postgresql://postgres:postgres@127.0.0.1:${port}/${testState.dbName}`;
+// Set before test files import db
+process.env.DB_URL = dbUrl;
+
 beforeAll(async () => {
-  const id = randomUUID().split("-")[0];
-  const port = 5433 + Math.floor(Math.random() * 100);
-
-  testState.dbName = `testdb_${id}`;
-  testState.containerName = `test-db-${id}`;
-
-  // Prefer IPv4 loopback (avoids ::1 / IPv6 localhost issues)
-  const dbUrl = `postgresql://postgres:postgres@127.0.0.1:${port}/${testState.dbName}`;
-  process.env.DB_URL = dbUrl;
-
   // Start Postgres container
   execSync(
     `docker run --name ${testState.containerName} -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=${testState.dbName} -p 127.0.0.1:${port}:5432 -d postgres:15`,
@@ -77,6 +78,14 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
+  if (db && "$client" in db && typeof db.$client?.end === "function") {
+    try {
+      await db.$client.end();
+    } catch {
+      // Ignore shutdown errors; container teardown will proceed.
+    }
+  }
+
   if (testState.containerName) {
     execSync(`docker rm -f ${testState.containerName}`, { stdio: "inherit" });
   }

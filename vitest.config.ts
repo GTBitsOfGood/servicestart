@@ -11,6 +11,8 @@ export default defineConfig({
     passWithNoTests: true,
     setupFiles: ["./tests/setup.ts"],
     fileParallelism: true,
+    hookTimeout: 120_000,
+    testTimeout: 120_000,
   },
   resolve: {
     alias: {
