@@ -55,7 +55,7 @@
     "@types/pg": "^8.16.0",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.1.2",
+    "@vitejs/plugin-react": "^5.1.4",
     "@vitest/eslint-plugin": "^1.6.6",
     "bog-cli": "^1.0.1",
     "drizzle-kit": "1.0.0-beta.15-859cf75",
