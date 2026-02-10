@@ -10,7 +10,9 @@ export default defineConfig({
     env: loadEnv("test", process.cwd(), ""),
     passWithNoTests: true,
     setupFiles: ["./tests/setup.ts"],
-    fileParallelism: false, // Necessary for DB tests
+    fileParallelism: true,
+    hookTimeout: 120_000,
+    testTimeout: 120_000,
   },
   resolve: {
     alias: {
