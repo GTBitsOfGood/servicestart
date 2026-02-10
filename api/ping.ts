@@ -1,6 +1,7 @@
 import db from "@/lib/db";
+import { Hono } from "hono";
 
-export async function GET() {
+const app = new Hono().get("/", async (c) => {
   let dbConnected: boolean = false;
   await db
     .execute(`SELECT 1`)
@@ -14,5 +15,7 @@ export async function GET() {
 
   const msg = `DB connected: ${dbConnected}. Branch: ${process.env.NEXT_PUBLIC_BRANCH_NAME}`;
 
-  return new Response(msg);
-}
+  return c.text(msg);
+});
+
+export default app;
