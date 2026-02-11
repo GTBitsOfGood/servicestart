@@ -2,7 +2,7 @@ import "dotenv/config"; //must be first to load environment variables
 import { schema } from "../lib/schema";
 import db from "../lib/db";
 import { auth } from "@/lib/auth";
-import { DEFAULT_TEST_PASSWORD } from "@/tests/testUtils";
+import { DEFAULT_TEST_PASSWORD } from "@/tests/unit/testUtils";
 
 const isTest = require.main !== module; // Check if the script is being run directly or imported in tests
 
