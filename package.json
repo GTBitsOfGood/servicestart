@@ -17,6 +17,7 @@
     "db:stop": "docker container stop servicestart-db; docker container stop servicestart-test-db",
     "db:push": "pnpm run db:start && pnpm drizzle-kit push",
     "db:test:create": "docker pull postgres && docker run --name servicestart-test-db -e POSTGRES_PASSWORD=root -e POSTGRES_USER=test -d -p 5433:5432 postgres",
+    "db:test:migrate": "DB_URL=postgres://test:root@localhost:5433/postgres drizzle-kit migrate",
     "db:test:start": "docker container start servicestart-test-db",
     "db:test:stop": "docker container stop servicestart-test-db",
     "db:test:push": "DB_URL=postgres://test:root@localhost:5433/postgres drizzle-kit push",
