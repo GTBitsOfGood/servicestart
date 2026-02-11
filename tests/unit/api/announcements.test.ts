@@ -10,7 +10,7 @@ import {
   setActiveOrganization,
   signUpAndGetSession,
   testApi,
-} from "@/tests/testUtils";
+} from "@/tests/unit/testUtils";
 
 async function setupOrgAndUser(role: "owner" | "admin" | "member") {
   const organization = await createOrganization("acme");
