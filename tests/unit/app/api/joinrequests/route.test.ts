@@ -10,7 +10,7 @@ import {
   createOrganization,
   setActiveOrganization,
   signUpAndGetSession,
-} from "@/tests/testUtils";
+} from "@/tests/unit/testUtils";
 import { InferRequestType } from "hono";
 
 describe("GET /api/joinRequests (paginated list)", () => {

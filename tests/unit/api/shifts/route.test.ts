@@ -11,7 +11,7 @@ import {
   signUpAndGetSession,
   createShift,
   createShiftRSVP,
-} from "@/tests/testUtils";
+} from "@/tests/unit/testUtils";
 import { POST } from "@/app/api/shifts/route";
 import { PATCH, DELETE, GET } from "@/app/api/shifts/[shiftId]/route";
 import {
