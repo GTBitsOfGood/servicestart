@@ -11,51 +11,30 @@ import {
   shifts,
   shiftRSVPs,
 } from "@/lib/schema";
-import { beforeEach, beforeAll, afterAll } from "vitest";
+import { beforeAll, beforeEach, afterAll } from "vitest";
 import { execSync } from "child_process";
 import { randomUUID } from "node:crypto";
-import { testState } from "./testState";
-
-let db: typeof import("@/lib/db").default;
 
 const id = randomUUID().split("-")[0];
-const port = 5433 + Math.floor(Math.random() * 100);
+const dbName = `testdb_${id}`;
+process.env.NEXT_PUBLIC_BRANCH_NAME = dbName;
 
-testState.dbName = `testdb_${id}`;
-testState.containerName = `test-db-${id}`;
-
-// Prefer IPv4 loopback (avoids ::1 / IPv6 localhost issues)
-const dbUrl = `postgresql://postgres:postgres@127.0.0.1:${port}/${testState.dbName}`;
-// Set before test files import db
-process.env.DB_URL = dbUrl;
+// We need to configure env vars before importing later
+let db: typeof import("@/lib/db").default;
+let getDbUrl: typeof import("@/lib/db").getDbUrl;
 
 beforeAll(async () => {
+  getDbUrl = (await import("@/lib/db")).getDbUrl;
+
   // Start Postgres container
-  execSync(
-    `docker run --name ${testState.containerName} -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=${testState.dbName} -p 127.0.0.1:${port}:5432 -d postgres:15`,
-    { stdio: "inherit" },
-  );
-
-  // Wait until Postgres is ready
-  for (let i = 0; i < 30; i++) {
-    try {
-      execSync(
-        `docker exec ${testState.containerName} pg_isready -U postgres -d ${testState.dbName}`,
-        { stdio: "ignore" },
-      );
-      break;
-    } catch {
-      await new Promise((r) => setTimeout(r, 500));
-    }
-  }
-
-  // Run migrations against THIS dbUrl
-  execSync(`pnpm db:migrate`, {
+  execSync(`psql ${getDbUrl("postgres")} -c "CREATE DATABASE ${dbName};"`, {
     stdio: "inherit",
-    env: { ...process.env, DB_URL: dbUrl },
   });
 
-  // Import db AFTER env is set and DB exists
+  execSync(`pnpm run db:migrate`, {
+    stdio: "inherit",
+  });
+
   db = (await import("@/lib/db")).default;
 });
 
@@ -78,15 +57,14 @@ beforeEach(async () => {
 });
 
 afterAll(async () => {
-  if (db && "$client" in db && typeof db.$client?.end === "function") {
-    try {
-      await db.$client.end();
-    } catch {
-      // Ignore shutdown errors; container teardown will proceed.
-    }
-  }
+  // Reset branch name because we can't drop the DB we're connected to
+  process.env.NEXT_PUBLIC_BRANCH_NAME = "postgres";
 
-  if (testState.containerName) {
-    execSync(`docker rm -f ${testState.containerName}`, { stdio: "inherit" });
-  }
+  // Terminate connection so we can drop the DB
+  db.$client.end();
+
+  // Drop the test database
+  execSync(`psql ${getDbUrl()} -c "DROP DATABASE ${dbName};"`, {
+    stdio: "inherit",
+  });
 });

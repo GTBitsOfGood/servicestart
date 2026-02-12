@@ -7,12 +7,12 @@ import { relations, schema } from "./schema";
  * default to "main". If NEXT_PUBLIC_BRANCH_NAME starts with "pull/", that
  * prefix will be removed.
  */
-export function getDbUrl(): string {
+export function getDbUrl(branchName: string | undefined = undefined): string {
   if (!process.env.DB_URL) {
     return "";
   }
 
-  let branchName = process.env.NEXT_PUBLIC_BRANCH_NAME || "main";
+  branchName ??= process.env.NEXT_PUBLIC_BRANCH_NAME || "main";
   if (branchName.startsWith("pull/") && branchName.endsWith("/head")) {
     branchName = `pr${branchName.slice("pull/".length, -"/head".length)}`;
   }
