@@ -1,5 +1,5 @@
 import "@/styles/globals.css";
-import { ActiveOrganizationSync } from "./ActiveOrganizationSync";
+import { ActiveOrganizationSync } from "../components/ActiveOrganizationSync";
 
 export default function RootLayout({
   children,
