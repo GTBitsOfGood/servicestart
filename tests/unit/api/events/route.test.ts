@@ -501,7 +501,7 @@ describe("POST /api/events/:eventId/rsvps", () => {
   });
 
   it("is idempotent - adding same RSVP twice succeeds", async () => {
-    const { organization, user, headers } = await setupOrgAndUser("member");
+    const { organization, headers } = await setupOrgAndUser("member");
     const eventId = await createEvent(organization.id, { name: "Event" });
 
     await testApi.events[":eventId"].rsvps.$post(
