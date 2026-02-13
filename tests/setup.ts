@@ -11,6 +11,8 @@ import {
   verification,
   shifts,
   shiftRSVPs,
+  events,
+  eventRsvps,
 } from "@/lib/schema";
 import { beforeEach } from "vitest";
 
@@ -18,6 +20,8 @@ beforeEach(async () => {
   // Wipe DB before each test - delete in order to respect FK constraints
   // Child tables first, then parent tables
   // Add line here when you create a new table
+  await db.delete(eventRsvps);
+  await db.delete(events);
   await db.delete(shiftRSVPs);
   await db.delete(shifts);
   await db.delete(announcements);

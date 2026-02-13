@@ -224,7 +224,10 @@ const app = new Hono()
       );
     }
 
-    const deleted = await EventService.deleteById(eventId);
+    const deleted = await EventService.deleteById(
+      eventId,
+      activeOrganizationId,
+    );
 
     if (!deleted) {
       return c.json({ error: "Event not found" }, { status: 404 });

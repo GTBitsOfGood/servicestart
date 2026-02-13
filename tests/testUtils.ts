@@ -11,6 +11,8 @@ import {
   announcements,
   shifts,
   shiftRSVPs,
+  events,
+  eventRsvps,
 } from "@/lib/schema";
 import { testClient } from "hono/testing";
 import app from "@/app/api/[[...route]]/route";
@@ -202,7 +204,40 @@ export async function createShiftRSVP(shiftId: string, userId: string) {
     userId,
   });
 }
+/**
+ * Creates an event for an organization.
+ */
+export async function createEvent(
+  organizationId: string,
+  opts: {
+    name?: string;
+    location?: string;
+    description?: string | null;
+    startTimestamp?: Date | null;
+    duration?: string | null;
+    coverImageUrl?: string | null;
+  } = {},
+) {
+  const id = randomUUID();
+  await db.insert(events).values({
+    id,
+    organizationId,
+    name: opts.name ?? "Test Event",
+    location: opts.location ?? "Test Location",
+    description: opts.description ?? null,
+    startTimestamp: opts.startTimestamp ?? null,
+    duration: opts.duration ?? null,
+    coverImageUrl: opts.coverImageUrl ?? null,
+  });
+  return id;
+}
 
+export async function createEventRSVP(eventId: string, userId: string) {
+  await db.insert(eventRsvps).values({
+    eventId,
+    userId,
+  });
+}
 /**
  * @deprecated Use buildTestUser + signUpAndGetHeaders instead
  * Signs up a test user, which you can use to run API routes.

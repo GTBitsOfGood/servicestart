@@ -40,9 +40,9 @@ async function create(
   return event ?? null;
 }
 
-async function deleteById(eventId: string) {
+async function deleteById(eventId: string, organizationId: string) {
   const event = await findById(eventId);
-  if (!event) {
+  if (!event || event.organizationId !== organizationId) {
     return null;
   }
 
@@ -115,6 +115,14 @@ async function updateEvent(
 }
 
 async function addRSVP(eventId: string, userId: string) {
+  const [existing] = await db
+    .select()
+    .from(eventRsvps)
+    .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)))
+    .limit(1);
+  if (existing) {
+    return;
+  }
   await db.insert(eventRsvps).values({
     eventId,
     userId,
