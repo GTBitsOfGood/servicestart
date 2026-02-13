@@ -14,6 +14,8 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - ESLint: Linting
 - Prettier: Code formatting
 - [Vitest](https://vitest.dev/): Testing
+- Unit tests: _.test.ts files; E2E tests: _.spec.ts files
+- [Playwright](https://playwright.dev/): E2E testing
 - [Drizzle ORM](https://orm.drizzle.team/): Database ORM
 - PostgreSQL: Database
 - [BetterAuth](https://www.better-auth.com/): Authentication
@@ -64,7 +66,8 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - PRs automatically create preview deployments on Netlify for easy UX testing.
 - There's a pre-commit hook for Prettier. If you get an error when committing, click "Show command output" in the popup to see the issue.
 - Use `pnpm run db:view` to open Drizzle Studio and view the database schema and contents.
-- Use the `createTestUser` function in `tests/testUtils.ts` to get a user that you can use for API endpoints in tests.
+- Use the `createTestUser` function in `tests/unit/testUtils.ts` to get a user that you can use for API endpoints in tests.
 - Use `pnpx bog-cli design edit` to configure the BoG design system.
 - Run scripts in the `scripts` folder with `pnpx tsx <script-name>`.
 - Set the `DB_URL` environment variable on GitHub. For the preview environment, leave out the `/database-name` part so that the workflow can create databases for each PR.
+- Read about our database infrastructure setup in [DB_INFRA.md](DB_INFRA.md).
