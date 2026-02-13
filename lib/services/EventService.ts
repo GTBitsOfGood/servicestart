@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
-import { events, eventRsvps, users } from "@/lib/schema";
+import { events, eventRsvps } from "@/lib/schema";
 import { randomUUID } from "node:crypto";
 
 async function create(
