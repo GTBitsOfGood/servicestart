@@ -1,0 +1,225 @@
+import { Hono } from "hono";
+import { z } from "zod";
+import { zValidator } from "@hono/zod-validator";
+import { auth } from "@/lib/auth";
+import { MembersService } from "@/lib/services/members";
+import { FileService } from "@/lib/services/FileService";
+import { MediaService } from "@/lib/services/MediaService";
+import { MediaType } from "@/lib/schema";
+import { paginationQuerySchema } from "@/lib/apiUtils";
+
+const patchMediaSchema = z.object({
+  title: z.string().optional(),
+  altText: z.string().optional(),
+});
+
+const app = new Hono()
+  .post("/", async (c) => {
+    const session = await auth.api.getSession({
+      headers: c.req.header(),
+    });
+
+    if (!session?.user) {
+      return c.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const activeOrganizationId = session.session.activeOrganizationId;
+    if (!activeOrganizationId) {
+      return c.json({ error: "No active organization" }, { status: 403 });
+    }
+
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      activeOrganizationId,
+    );
+
+    if (!MembersService.isAdminOrOwner(membership?.role)) {
+      return c.json(
+        { error: "Forbidden: Admin or owner role required" },
+        { status: 403 },
+      );
+    }
+
+    const body = await c.req.parseBody();
+    const file = body["file"];
+
+    if (!file || typeof file === "string") {
+      return c.json(
+        {
+          error:
+            "File is required. Send multipart/form-data with a 'file' field",
+        },
+        { status: 400 },
+      );
+    }
+
+    const title =
+      (typeof body["title"] === "string" ? body["title"] : undefined) ??
+      file.name ??
+      "Untitled";
+    const altText = typeof body["altText"] === "string" ? body["altText"] : "";
+    const fileName = file.name ?? `upload-${Date.now()}`;
+
+    const mediaInput = {
+      organizationId: activeOrganizationId,
+      title,
+      fileName,
+      type: MediaType.Image,
+      altText,
+    };
+
+    try {
+      await FileService.upload(mediaInput, file);
+      const media = await MediaService.create(mediaInput);
+      return c.json(media);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to upload file";
+      return c.json({ error: message }, { status: 500 });
+    }
+  })
+  .get("/", zValidator("query", paginationQuerySchema), async (c) => {
+    const session = await auth.api.getSession({
+      headers: c.req.header(),
+    });
+
+    if (!session?.user) {
+      return c.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const activeOrganizationId = session.session.activeOrganizationId;
+    if (!activeOrganizationId) {
+      return c.json({ error: "No active organization" }, { status: 403 });
+    }
+
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      activeOrganizationId,
+    );
+    if (!MembersService.isAdminOrOwner(membership?.role)) {
+      return c.json(
+        { error: "Forbidden: Admin or owner role required" },
+        { status: 403 },
+      );
+    }
+
+    const { page, pageSize } = c.req.valid("query");
+    const data = await MediaService.listByOrganization(activeOrganizationId, {
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+    });
+
+    return c.json({ data, page, pageSize });
+  })
+  .get("/:id", async (c) => {
+    const { id } = c.req.param();
+    const session = await auth.api.getSession({ headers: c.req.header() });
+
+    if (!session?.user) {
+      return c.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const mediaRecord = await MediaService.findById(id);
+    if (!mediaRecord) {
+      return c.json({ error: "Media not found" }, { status: 404 });
+    }
+
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      mediaRecord.organizationId,
+    );
+    if (!membership) {
+      return c.json({ error: "Media not found" }, { status: 404 });
+    }
+
+    return c.json(mediaRecord);
+  })
+  .patch("/:id", zValidator("json", patchMediaSchema), async (c) => {
+    const { id } = c.req.param();
+    const session = await auth.api.getSession({ headers: c.req.header() });
+
+    if (!session?.user) {
+      return c.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const activeOrganizationId = session.session.activeOrganizationId;
+    if (!activeOrganizationId) {
+      return c.json({ error: "No active organization" }, { status: 403 });
+    }
+
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      activeOrganizationId,
+    );
+    if (!MembersService.isAdminOrOwner(membership?.role)) {
+      return c.json(
+        { error: "Forbidden: Admin or owner role required" },
+        { status: 403 },
+      );
+    }
+
+    const data = c.req.valid("json");
+    const updates: { title?: string; altText?: string } = {};
+    if (data.title !== undefined) updates.title = data.title;
+    if (data.altText !== undefined) updates.altText = data.altText;
+
+    const updated = await MediaService.update(
+      id,
+      activeOrganizationId,
+      updates,
+    );
+    if (!updated) {
+      return c.json({ error: "Media not found" }, { status: 404 });
+    }
+
+    return c.json(updated);
+  })
+  .delete("/:id", async (c) => {
+    const { id } = c.req.param();
+    const session = await auth.api.getSession({ headers: c.req.header() });
+
+    if (!session?.user) {
+      return c.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const activeOrganizationId = session.session.activeOrganizationId;
+    if (!activeOrganizationId) {
+      return c.json({ error: "No active organization" }, { status: 403 });
+    }
+
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      activeOrganizationId,
+    );
+    if (!MembersService.isAdminOrOwner(membership?.role)) {
+      return c.json(
+        { error: "Forbidden: Admin or owner role required" },
+        { status: 403 },
+      );
+    }
+
+    const mediaRecord = await MediaService.findById(id);
+    if (!mediaRecord || mediaRecord.organizationId !== activeOrganizationId) {
+      return c.json({ error: "Media not found" }, { status: 404 });
+    }
+
+    try {
+      await FileService.deleteFile(
+        mediaRecord.organizationId,
+        mediaRecord.fileName,
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete file";
+      return c.json({ error: message }, { status: 500 });
+    }
+
+    const deleted = await MediaService.deleteById(id, activeOrganizationId);
+    if (!deleted) {
+      return c.json({ error: "Media not found" }, { status: 404 });
+    }
+
+    return c.json({ success: true });
+  });
+
+export default app;

@@ -12,10 +12,12 @@ import {
   shiftRSVPs,
   events,
   eventRsvps,
+  media,
 } from "@/lib/schema";
 import { beforeAll, beforeEach, afterAll } from "vitest";
 import { execSync } from "child_process";
 import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 
 const id = randomUUID().split("-")[0];
 const dbName = `testdb_${id}`;
@@ -43,8 +45,16 @@ beforeAll(async () => {
 beforeEach(async () => {
   if (!db) throw new Error("DB not initialized yet (beforeAll did not run)");
 
+  // Wipe file storage directory
+  const fileStorageDir = process.env.FILE_STORAGE_DIR;
+  if (fileStorageDir && existsSync(fileStorageDir)) {
+    rmSync(fileStorageDir, { recursive: true, force: true });
+    mkdirSync(fileStorageDir, { recursive: true });
+  }
+
   // Child tables first, then parent tables
   // Add line here when you create a new table
+  await db.delete(media);
   await db.delete(eventRsvps);
   await db.delete(events);
   await db.delete(shiftRSVPs);

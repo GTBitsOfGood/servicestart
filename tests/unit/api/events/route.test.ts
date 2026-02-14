@@ -79,7 +79,7 @@ describe("POST /api/events", () => {
     const [row] = await db.select().from(events).where(eq(events.id, data.id));
     expect(row).toBeDefined();
     expect(row.organizationId).toBe(organization.id);
-    expect(row.name).toBe("Temp Event 1");
+    expect(row.name).toBe("Temp Event 2");
     expect(row.location).toBe("Atlanta");
     expect(row.description).toBe("Annual event");
     expect(row.duration).toBe("03:00:00");
