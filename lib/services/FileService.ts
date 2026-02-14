@@ -13,11 +13,16 @@ export type MediaUploadInput = Omit<
   "id" | "uploadedAt"
 >;
 
-async function upload(mediaInput: MediaUploadInput, file: File) {
+function getStorageDir(): string {
   const dir = process.env.FILE_STORAGE_DIR;
   if (!dir) {
     throw new Error("FILE_STORAGE_DIR environment variable is not set");
   }
+  return dir;
+}
+
+async function upload(mediaInput: MediaUploadInput, file: File) {
+  const dir = getStorageDir();
 
   const filePath = path.join(
     dir,
@@ -34,10 +39,7 @@ async function upload(mediaInput: MediaUploadInput, file: File) {
 }
 
 async function deleteFile(organizationId: string, fileName: string) {
-  const dir = process.env.FILE_STORAGE_DIR;
-  if (!dir) {
-    throw new Error("FILE_STORAGE_DIR environment variable is not set");
-  }
+  const dir = getStorageDir();
 
   const filePath = path.join(dir, organizationId, fileName);
   try {
@@ -52,10 +54,7 @@ async function deleteFile(organizationId: string, fileName: string) {
 }
 
 async function readFile(organizationId: string, fileName: string) {
-  const dir = process.env.FILE_STORAGE_DIR;
-  if (!dir) {
-    throw new Error("FILE_STORAGE_DIR environment variable is not set");
-  }
+  const dir = getStorageDir();
   const filePath = path.join(dir, organizationId, fileName);
   return fsReadFile(filePath);
 }

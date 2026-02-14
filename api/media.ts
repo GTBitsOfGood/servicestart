@@ -13,6 +13,11 @@ const patchMediaSchema = z.object({
   altText: z.string().optional(),
 });
 
+const postMediaBodySchema = z.object({
+  title: z.string().optional(),
+  altText: z.string().default(""),
+});
+
 const app = new Hono()
   .post("/", async (c) => {
     const session = await auth.api.getSession({
@@ -53,11 +58,16 @@ const app = new Hono()
       );
     }
 
-    const title =
-      (typeof body["title"] === "string" ? body["title"] : undefined) ??
-      file.name ??
-      "Untitled";
-    const altText = typeof body["altText"] === "string" ? body["altText"] : "";
+    const parsed = postMediaBodySchema.safeParse({
+      title: body["title"],
+      altText: body["altText"],
+    });
+    if (!parsed.success) {
+      return c.json({ error: parsed.error.message }, { status: 400 });
+    }
+
+    const title = parsed.data.title ?? file.name ?? "Untitled";
+    const altText = parsed.data.altText;
     const fileName = file.name ?? `upload-${Date.now()}`;
 
     const mediaInput = {

@@ -50,7 +50,9 @@ export enum MediaType {
   Image = "image",
 }
 
-export const MEDIA_TYPE_VALUES = [MediaType.Image] as const;
+export const MEDIA_TYPE_VALUES = Object.values(
+  MediaType,
+) as unknown as readonly [string, ...string[]];
 export const mediaTypeEnum = pgEnum("media_type", MEDIA_TYPE_VALUES);
 
 export const users = pgTable("users", {
