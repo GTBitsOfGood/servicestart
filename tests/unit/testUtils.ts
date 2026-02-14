@@ -14,6 +14,7 @@ import {
   events,
   eventRsvps,
   media,
+  MediaType,
 } from "@/lib/schema";
 import { testClient } from "hono/testing";
 import app from "@/app/api/[[...route]]/route";
@@ -258,7 +259,7 @@ export async function createMedia(
     organizationId,
     title: opts.title ?? "Test Media",
     fileName: opts.fileName ?? "test.jpg",
-    type: "image",
+    type: MediaType.Image,
     altText: opts.altText ?? "",
   });
   return id;

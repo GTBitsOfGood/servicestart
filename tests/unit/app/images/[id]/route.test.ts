@@ -1,7 +1,6 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { existsSync } from "node:fs";
 import {
   addMember,
   buildTestUser,

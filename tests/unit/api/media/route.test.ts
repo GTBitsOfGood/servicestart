@@ -94,7 +94,7 @@ describe("POST /api/media", () => {
     });
 
     expect(response.status).toBe(400);
-    const data: any = await response.json();
+    const data = (await response.json()) as Record<string, unknown>;
     expect(data.error).toContain("File is required");
   });
 
@@ -112,7 +112,7 @@ describe("POST /api/media", () => {
     });
 
     expect(response.status).toBe(200);
-    const data: any = await response.json();
+    const data = (await response.json()) as Record<string, unknown>;
     expect(data.id).toBeDefined();
     expect(data.title).toBe("My Photo");
     expect(typeof data.fileName).toBe("string");
@@ -168,7 +168,7 @@ describe("GET /api/media (list)", () => {
     );
 
     expect(response.status).toBe(200);
-    const data: any = await response.json();
+    const data = (await response.json()) as Record<string, unknown>;
     expect(data.data).toHaveLength(2);
     expect(data.page).toBe(1);
     expect(data.pageSize).toBe(10);
@@ -184,14 +184,14 @@ describe("GET /api/media (list)", () => {
       { query: { page: 1, pageSize: 2 } },
       { headers },
     );
-    const data: any = await response.json();
+    const data = (await response.json()) as Record<string, unknown>;
     expect(data.data).toHaveLength(2);
 
     const response2 = await testApi.media.$get(
       { query: { page: 2, pageSize: 2 } },
       { headers },
     );
-    const data2: any = await response2.json();
+    const data2 = (await response2.json()) as Record<string, unknown>;
     expect(data2.data).toHaveLength(1);
     expect(data2.page).toBe(2);
   });
@@ -205,9 +205,9 @@ describe("GET /api/media (list)", () => {
     const response = await testApi.media.$get({ query: {} }, { headers });
 
     expect(response.status).toBe(200);
-    const data: any = await response.json();
+    const data = (await response.json()) as Record<string, unknown>;
     expect(data.data).toHaveLength(1);
-    expect(data.data[0].title).toBe("Ours");
+    expect((data.data as Record<string, unknown>[])[0].title).toBe("Ours");
   });
 });
 
@@ -256,7 +256,7 @@ describe("GET /api/media/:id", () => {
     );
 
     expect(response.status).toBe(200);
-    const data: any = await response.json();
+    const data = (await response.json()) as Record<string, unknown>;
     expect(data.id).toBe(mediaId);
     expect(data.title).toBe("Shared Media");
     expect(data.altText).toBe("For members");
@@ -338,7 +338,7 @@ describe("PATCH /api/media/:id", () => {
     );
 
     expect(response.status).toBe(200);
-    const data: any = await response.json();
+    const data = (await response.json()) as Record<string, unknown>;
     expect(data.title).toBe("New Title");
     expect(data.altText).toBe("New alt");
   });
@@ -414,7 +414,7 @@ describe("DELETE /api/media/:id", () => {
     );
 
     expect(response.status).toBe(200);
-    const data: any = await response.json();
+    const data = (await response.json()) as Record<string, unknown>;
     expect(data.success).toBe(true);
 
     const rows = await db.select().from(media).where(eq(media.id, mediaId));
