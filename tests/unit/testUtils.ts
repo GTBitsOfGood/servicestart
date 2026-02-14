@@ -13,6 +13,8 @@ import {
   shiftRSVPs,
   events,
   eventRsvps,
+  media,
+  MediaType,
 } from "@/lib/schema";
 import { testClient } from "hono/testing";
 import app from "@/app/api/[[...route]]/route";
@@ -237,6 +239,30 @@ export async function createEventRSVP(eventId: string, userId: string) {
     eventId,
     userId,
   });
+}
+
+/**
+ * Creates a media record for an organization.
+ * Does not create the actual file on disk - use for GET/PATCH/DELETE tests.
+ */
+export async function createMedia(
+  organizationId: string,
+  opts: {
+    title?: string;
+    fileName?: string;
+    altText?: string;
+  } = {},
+) {
+  const id = randomUUID();
+  await db.insert(media).values({
+    id,
+    organizationId,
+    title: opts.title ?? "Test Media",
+    fileName: opts.fileName ?? "test.jpg",
+    type: MediaType.Image,
+    altText: opts.altText ?? "",
+  });
+  return id;
 }
 /**
  * @deprecated Use buildTestUser + signUpAndGetHeaders instead

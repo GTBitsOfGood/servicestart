@@ -45,6 +45,16 @@ export const organizationConfigKeyEnum = pgEnum(
   ORGANIZATION_CONFIG_KEY_VALUES,
 );
 
+// Enum for media type values
+export enum MediaType {
+  Image = "image",
+}
+
+export const MEDIA_TYPE_VALUES = Object.values(
+  MediaType,
+) as unknown as readonly [string, ...string[]];
+export const mediaTypeEnum = pgEnum("media_type", MEDIA_TYPE_VALUES);
+
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -282,6 +292,22 @@ export const organizationConfig = pgTable(
   ],
 );
 
+export const media = pgTable(
+  "media",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    fileName: text("file_name").notNull(),
+    type: mediaTypeEnum("type").notNull(),
+    altText: text("alt_text").notNull(),
+    uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+  },
+  (table) => [index("media_fileName_idx").on(table.fileName)],
+);
+
 export const relations = defineRelations(
   {
     users,
@@ -297,6 +323,7 @@ export const relations = defineRelations(
     shifts,
     shiftRSVPs,
     organizationConfig,
+    media,
   },
   (r) => ({
     users: {
@@ -323,6 +350,10 @@ export const relations = defineRelations(
       shifts: r.many.shifts({
         from: r.organizations.id,
         to: r.shifts.organizationId,
+      }),
+      media: r.many.media({
+        from: r.organizations.id,
+        to: r.media.organizationId,
       }),
     },
     members: {
@@ -412,6 +443,12 @@ export const relations = defineRelations(
         to: r.organizations.id,
       }),
     },
+    media: {
+      organizations: r.one.organizations({
+        from: r.media.organizationId,
+        to: r.organizations.id,
+      }),
+    },
   }),
 );
 
@@ -430,4 +467,5 @@ export const schema = {
   shifts,
   shiftRSVPs,
   organizationConfig,
+  media,
 };
