@@ -5,7 +5,28 @@ import db from "@/lib/db";
 import { createJoinRequestIfNeeded } from "@/lib/authUtils";
 
 export const auth = betterAuth({
-  plugins: [organization()],
+  plugins: [
+    organization({
+      additionalFields: {
+        phoneNumber: {
+          type: "string",
+          required: false,
+        },
+        email: {
+          type: "string",
+          required: false,
+        },
+      },
+    }),
+  ],
+  user: {
+    additionalFields: {
+      phoneNumber: {
+        type: "string",
+        required: false,
+      },
+    },
+  },
   database: drizzleAdapter(db, {
     provider: "pg",
     usePlural: true,
