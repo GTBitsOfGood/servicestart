@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { GET, DELETE } from "@/app/api/joinrequests/[organizationId]/route";
 import db from "@/lib/db";
 import { joinRequests, JoinRequestStatus } from "@/lib/schema";
 import {
@@ -9,9 +8,10 @@ import {
   createJoinRequest,
   createOrganization,
   signUpAndGetHeaders,
+  testApi,
 } from "../../../../testUtils";
 
-describe("GET /api/joinrequests/[organizationId]", () => {
+describe("GET /api/joinRequests/:organizationId", () => {
   it("returns the join request status for an authenticated user", async () => {
     const organization = await createOrganization("acme");
     const user = buildTestUser();
@@ -25,14 +25,12 @@ describe("GET /api/joinrequests/[organizationId]", () => {
       status: JoinRequestStatus.Pending,
     });
 
-    const request = new Request(
-      `http://localhost/api/joinrequests/${organization.id}`,
+    const response = await testApi.joinRequests[":organizationId"].$get(
+      {
+        param: { organizationId: organization.id },
+      },
       { headers },
     );
-
-    const response = await GET(request, {
-      params: Promise.resolve({ organizationId: organization.id }),
-    });
 
     expect(response.status).toBe(200);
 
@@ -45,12 +43,8 @@ describe("GET /api/joinrequests/[organizationId]", () => {
   it("returns 401 when user is not authenticated", async () => {
     const organization = await createOrganization("acme");
 
-    const request = new Request(
-      `http://localhost/api/joinrequests/${organization.id}`,
-    );
-
-    const response = await GET(request, {
-      params: Promise.resolve({ organizationId: organization.id }),
+    const response = await testApi.joinRequests[":organizationId"].$get({
+      param: { organizationId: organization.id },
     });
 
     expect(response.status).toBe(401);
@@ -65,14 +59,12 @@ describe("GET /api/joinrequests/[organizationId]", () => {
 
     const { headers } = await signUpAndGetHeaders(user);
 
-    const request = new Request(
-      `http://localhost/api/joinrequests/${organization.id}`,
+    const response = await testApi.joinRequests[":organizationId"].$get(
+      {
+        param: { organizationId: organization.id },
+      },
       { headers },
     );
-
-    const response = await GET(request, {
-      params: Promise.resolve({ organizationId: organization.id }),
-    });
 
     expect(response.status).toBe(404);
 
@@ -93,14 +85,12 @@ describe("GET /api/joinrequests/[organizationId]", () => {
       status: JoinRequestStatus.Approved,
     });
 
-    const request = new Request(
-      `http://localhost/api/joinrequests/${organization.id}`,
+    const response = await testApi.joinRequests[":organizationId"].$get(
+      {
+        param: { organizationId: organization.id },
+      },
       { headers },
     );
-
-    const response = await GET(request, {
-      params: Promise.resolve({ organizationId: organization.id }),
-    });
 
     expect(response.status).toBe(200);
 
@@ -109,17 +99,12 @@ describe("GET /api/joinrequests/[organizationId]", () => {
   });
 });
 
-describe("DELETE /api/joinrequests/[organizationId]", () => {
+describe("DELETE /api/joinRequests/:organizationId", () => {
   it("returns 401 when user is not authenticated", async () => {
     const organization = await createOrganization("acme");
 
-    const request = new Request(
-      `http://localhost/api/joinrequests/${organization.id}`,
-      { method: "DELETE" },
-    );
-
-    const response = await DELETE(request, {
-      params: Promise.resolve({ organizationId: organization.id }),
+    const response = await testApi.joinRequests[":organizationId"].$delete({
+      param: { organizationId: organization.id },
     });
 
     expect(response.status).toBe(401);
@@ -132,14 +117,12 @@ describe("DELETE /api/joinrequests/[organizationId]", () => {
     const user = buildTestUser();
     const { headers } = await signUpAndGetHeaders(user);
 
-    const request = new Request(
-      `http://localhost/api/joinrequests/${organization.id}`,
-      { method: "DELETE", headers },
+    const response = await testApi.joinRequests[":organizationId"].$delete(
+      {
+        param: { organizationId: organization.id },
+      },
+      { headers },
     );
-
-    const response = await DELETE(request, {
-      params: Promise.resolve({ organizationId: organization.id }),
-    });
 
     expect(response.status).toBe(404);
     const data = await response.json();
@@ -157,14 +140,12 @@ describe("DELETE /api/joinrequests/[organizationId]", () => {
       JoinRequestStatus.Approved,
     );
 
-    const request = new Request(
-      `http://localhost/api/joinrequests/${organization.id}`,
-      { method: "DELETE", headers },
+    const response = await testApi.joinRequests[":organizationId"].$delete(
+      {
+        param: { organizationId: organization.id },
+      },
+      { headers },
     );
-
-    const response = await DELETE(request, {
-      params: Promise.resolve({ organizationId: organization.id }),
-    });
 
     expect(response.status).toBe(403);
     const data = await response.json();
@@ -194,14 +175,12 @@ describe("DELETE /api/joinrequests/[organizationId]", () => {
       JoinRequestStatus.Denied,
     );
 
-    const request = new Request(
-      `http://localhost/api/joinrequests/${organization.id}`,
-      { method: "DELETE", headers },
+    const response = await testApi.joinRequests[":organizationId"].$delete(
+      {
+        param: { organizationId: organization.id },
+      },
+      { headers },
     );
-
-    const response = await DELETE(request, {
-      params: Promise.resolve({ organizationId: organization.id }),
-    });
 
     expect(response.status).toBe(403);
   });
