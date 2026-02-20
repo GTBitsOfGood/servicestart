@@ -61,6 +61,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  phoneNumber: text("phone_number"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -136,6 +137,8 @@ export const organizations = pgTable("organizations", {
   slug: text("slug").notNull().unique(),
   logo: text("logo"),
   metadata: text("metadata"),
+  phoneNumber: text("phone_number"),
+  email: text("email"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
