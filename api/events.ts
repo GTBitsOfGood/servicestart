@@ -1,7 +1,10 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
+import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import db from "@/lib/db";
+import { shifts } from "@/lib/schema";
 import { EventService } from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/members";
 import { paginationQuerySchema } from "../lib/apiUtils";
@@ -112,6 +115,49 @@ const app = new Hono()
 
     return c.json(event);
   })
+  .get(
+    "/:eventId/shifts",
+    zValidator("query", paginationQuerySchema),
+    async (c) => {
+      const { eventId } = c.req.param();
+      const session = await auth.api.getSession({
+        headers: c.req.header(),
+      });
+
+      if (!session?.user) {
+        return c.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      const activeOrganizationId = session.session.activeOrganizationId;
+      if (!activeOrganizationId) {
+        return c.json({ error: "Event not found" }, { status: 404 });
+      }
+
+      const event = await EventService.findById(eventId);
+      if (!event || event.organizationId !== activeOrganizationId) {
+        return c.json({ error: "Event not found" }, { status: 404 });
+      }
+
+      const { page, pageSize } = c.req.valid("query");
+      const data = await db
+        .select()
+        .from(shifts)
+        .where(
+          and(
+            eq(shifts.eventId, eventId),
+            eq(shifts.organizationId, activeOrganizationId),
+          ),
+        )
+        .limit(pageSize)
+        .offset((page - 1) * pageSize);
+
+      return c.json({
+        data,
+        page,
+        pageSize,
+      });
+    },
+  )
   .patch(
     "/:eventId",
     zValidator(

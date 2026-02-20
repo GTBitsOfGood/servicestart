@@ -2,6 +2,7 @@ import ping from "@/api/ping";
 import joinRequests from "@/api/joinRequests";
 import announcements from "@/api/announcements";
 import events from "@/api/events";
+import shifts from "@/api/shifts";
 import media from "@/api/media";
 import { Hono } from "hono";
 import { handle } from "hono/netlify";
@@ -12,6 +13,7 @@ const app = new Hono()
   .route("/joinRequests", joinRequests)
   .route("/announcements", announcements)
   .route("/events", events)
+  .route("/shifts", shifts)
   .route("/media", media);
 
 export const GET = handle(app);
