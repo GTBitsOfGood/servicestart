@@ -1,12 +1,13 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/lib/db";
-import { events, eventRsvps } from "@/lib/schema";
+import { events, eventRsvps, shifts } from "@/lib/schema";
 import {
   addMember,
   buildTestUser,
   createEvent,
   createOrganization,
+  createShift,
   setActiveOrganization,
   signUpAndGetSession,
   testApi,
@@ -71,7 +72,14 @@ describe("POST /api/events", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as {
+      id: string;
+      name: string;
+      location: string;
+      description: string | null;
+      duration: string | null;
+      coverImageUrl: string | null;
+    };
     if (!("id" in data)) {
       throw new Error("Response data is missing 'id' property");
     }
@@ -148,6 +156,7 @@ describe("GET /api/events (list)", () => {
       { query: { page: 1, pageSize: 2 } },
       { headers },
     );
+
     const result = await response.json();
     if (!("data" in result)) {
       throw new Error("Response is missing 'data' property");
@@ -179,6 +188,87 @@ describe("GET /api/events (list)", () => {
       throw new Error("Response is missing 'data' property");
     }
     expect(result.data).toHaveLength(0);
+  });
+});
+
+describe("GET /api/events/:eventId/shifts", () => {
+  it("returns 401 when not logged in", async () => {
+    const response = await testApi.events[":eventId"].shifts.$get({
+      param: { eventId: "event-1" },
+      query: {},
+    });
+
+    expect(response.status).toBe(401);
+  });
+
+  it("returns 404 when event not found", async () => {
+    const { headers } = await setupOrgAndUser("admin");
+
+    const response = await testApi.events[":eventId"].shifts.$get(
+      {
+        param: { eventId: "missing-event" },
+        query: {},
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  it("returns 404 when event not in active organization", async () => {
+    const { headers } = await setupOrgAndUser("admin");
+    const otherOrg = await createOrganization("other");
+    const otherEventId = await createEvent(otherOrg.id);
+
+    const response = await testApi.events[":eventId"].shifts.$get(
+      {
+        param: { eventId: otherEventId },
+        query: {},
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  it("returns paginated shifts for the event", async () => {
+    const { headers, organization } = await setupOrgAndUser("admin");
+    const eventId = await createEvent(organization.id);
+    const otherEventId = await createEvent(organization.id);
+
+    await createShift(organization.id, { eventId, name: "Shift 1" });
+    await createShift(organization.id, { eventId, name: "Shift 2" });
+    await createShift(organization.id, { eventId, name: "Shift 3" });
+    await createShift(organization.id, {
+      eventId: otherEventId,
+      name: "Other",
+    });
+
+    const response = await testApi.events[":eventId"].shifts.$get(
+      {
+        param: { eventId },
+        query: { page: 1, pageSize: 2 },
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as {
+      data: { id: string }[];
+      page: number;
+      pageSize: number;
+    };
+    expect(data.page).toBe(1);
+    expect(data.pageSize).toBe(2);
+    expect(data.data.length).toBe(2);
+
+    const ids = data.data.map((shift) => shift.id);
+    const rows = await db
+      .select()
+      .from(shifts)
+      .where(eq(shifts.eventId, eventId));
+    const rowIds = rows.map((row) => row.id);
+    expect(ids.every((id: string) => rowIds.includes(id))).toBe(true);
   });
 });
 
@@ -327,7 +417,12 @@ describe("PATCH /api/events/:eventId", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as {
+      name: string;
+      location: string;
+      description: string | null;
+      duration: string | null;
+    };
     expect(data.name).toBe("New Event");
     expect(data.location).toBe("New Location");
     expect(data.description).toBe("New Description");
@@ -356,7 +451,11 @@ describe("PATCH /api/events/:eventId", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as {
+      description: string | null;
+      duration: string | null;
+      coverImageUrl: string | null;
+    };
     expect(data.description).toBeNull();
     expect(data.duration).toBeNull();
     expect(data.coverImageUrl).toBeNull();
@@ -417,7 +516,7 @@ describe("DELETE /api/events/:eventId", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as { success: true };
     expect(data.success).toBe(true);
 
     const rows = await db.select().from(events).where(eq(events.id, eventId));
@@ -488,7 +587,11 @@ describe("POST /api/events/:eventId/rsvps", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as {
+      eventId: string;
+      userId: string;
+      status: string;
+    };
     expect(data.eventId).toBe(eventId);
     expect(data.userId).toBe(user.id);
     expect(data.status).toBe("added");
@@ -553,7 +656,7 @@ describe("POST /api/events/:eventId/rsvps", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as { userId: string };
     expect(data.userId).toBe(otherUserRecord.id);
 
     const [rsvp] = await db
@@ -624,7 +727,11 @@ describe("DELETE /api/events/:eventId/rsvps", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as {
+      eventId: string;
+      userId: string;
+      status: string;
+    };
     expect(data.eventId).toBe(eventId);
     expect(data.userId).toBe(user.id);
     expect(data.status).toBe("removed");
@@ -680,7 +787,7 @@ describe("DELETE /api/events/:eventId/rsvps", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as { userId: string };
     expect(data.userId).toBe(otherUserRecord.id);
 
     const rsvps = await db
