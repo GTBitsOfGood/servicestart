@@ -1,12 +1,10 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
-import db from "@/lib/db";
-import { shifts } from "@/lib/schema";
 import { EventService } from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/members";
+import { ShiftService } from "@/lib/services/ShiftService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 
 const app = new Hono()
@@ -139,17 +137,14 @@ const app = new Hono()
       }
 
       const { page, pageSize } = c.req.valid("query");
-      const data = await db
-        .select()
-        .from(shifts)
-        .where(
-          and(
-            eq(shifts.eventId, eventId),
-            eq(shifts.organizationId, activeOrganizationId),
-          ),
-        )
-        .limit(pageSize)
-        .offset((page - 1) * pageSize);
+      const data = await ShiftService.listByEvent(
+        eventId,
+        activeOrganizationId,
+        {
+          limit: pageSize,
+          offset: (page - 1) * pageSize,
+        },
+      );
 
       return c.json({
         data,

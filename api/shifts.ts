@@ -131,23 +131,22 @@ const app = new Hono()
       }
     }
 
-    const updates: {
+    const updates = Object.fromEntries(
+      Object.entries({
+        ...data,
+        startTimestamp:
+          data.startTimestamp !== undefined
+            ? new Date(data.startTimestamp)
+            : undefined,
+      }).filter(([, value]) => value !== undefined),
+    ) as {
       name?: string;
       description?: string;
       startTimestamp?: Date;
       duration?: string;
       rsvpLimit?: number;
       eventId?: string;
-    } = {};
-
-    if (data.name !== undefined) updates.name = data.name;
-    if (data.description !== undefined) updates.description = data.description;
-    if (data.startTimestamp !== undefined) {
-      updates.startTimestamp = new Date(data.startTimestamp);
-    }
-    if (data.duration !== undefined) updates.duration = data.duration;
-    if (data.rsvpLimit !== undefined) updates.rsvpLimit = data.rsvpLimit;
-    if (data.eventId !== undefined) updates.eventId = data.eventId;
+    };
 
     await ShiftService.updateShift(shiftId, updates);
     const shift = await ShiftService.findById(shiftId);
