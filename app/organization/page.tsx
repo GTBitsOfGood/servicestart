@@ -2,6 +2,11 @@ import { redirect } from "next/navigation";
 import { OrganizationsService } from "@/lib/services/organizations";
 import authClient from "@/lib/authClient";
 
+function isAdminOrOwner(role: string | undefined): boolean {
+  const ADMIN_ROLES = ["admin", "owner"];
+  return role !== undefined && ADMIN_ROLES.includes(role);
+}
+
 export default async function OrganizationPage({
   params,
 }: {
@@ -25,8 +30,7 @@ export default async function OrganizationPage({
   if (!membership) {
     redirect("/");
   }
-  const isAdminOrOwner =
-    membership.role === "ADMIN" || membership.role === "OWNER";
+  const adminOrOwner = isAdminOrOwner(membership.role);
   //frontend tbd
   return (
     <div>
