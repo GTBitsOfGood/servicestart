@@ -1,10 +1,24 @@
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
+import type { Context } from "hono";
 import { auth } from "@/lib/auth";
 import db from "@/lib/db";
 import { joinRequests, JoinRequestStatus, members } from "@/lib/schema";
-import { buildHost, buildTestUser, createOrganization } from "../testUtils";
+import {
+  ForbiddenError,
+  NoActiveOrganizationError,
+  UnauthorizedError,
+} from "@/lib/errors";
+import { requireAdmin, requireAuth, requireMembership } from "@/lib/authUtils";
+import {
+  addMember,
+  buildHost,
+  buildTestUser,
+  createOrganization,
+  setActiveOrganization,
+  signUpAndGetSession,
+} from "../testUtils";
 
 async function getJoinRequests(userId: string, organizationId: string) {
   return db
@@ -107,5 +121,101 @@ describe("join request hooks", () => {
     );
 
     expect(requests).toHaveLength(1);
+  });
+});
+
+function buildContext(headers?: Record<string, string>) {
+  return {
+    req: {
+      header: () => headers ?? {},
+    },
+  } as unknown as Context;
+}
+
+describe("auth guard helpers", () => {
+  it("requireAuth throws UnauthorizedError when not signed in", async () => {
+    const context = buildContext();
+
+    await expect(requireAuth(context)).rejects.toBeInstanceOf(
+      UnauthorizedError,
+    );
+  });
+
+  it("requireAuth returns session when signed in", async () => {
+    const user = buildTestUser();
+    const { headers } = await signUpAndGetSession(user);
+    const context = buildContext({ Cookie: headers.Cookie });
+
+    const session = await requireAuth(context);
+    expect(session.user.id).toBeDefined();
+  });
+
+  it("requireMembership throws NoActiveOrganizationError without active org", async () => {
+    const user = buildTestUser();
+    const { headers } = await signUpAndGetSession(user);
+    const context = buildContext({ Cookie: headers.Cookie });
+
+    await expect(requireMembership(context)).rejects.toBeInstanceOf(
+      NoActiveOrganizationError,
+    );
+  });
+
+  it("requireMembership throws ForbiddenError when not a member", async () => {
+    const user = buildTestUser();
+    const organization = await createOrganization("acme");
+    const { session, headers } = await signUpAndGetSession(user);
+    await setActiveOrganization(session.id, organization.id);
+    const context = buildContext({ Cookie: headers.Cookie });
+
+    await expect(requireMembership(context)).rejects.toBeInstanceOf(
+      ForbiddenError,
+    );
+  });
+
+  it("requireMembership returns session for member", async () => {
+    const user = buildTestUser();
+    const organization = await createOrganization("acme");
+    const {
+      user: signedInUser,
+      session,
+      headers,
+    } = await signUpAndGetSession(user);
+    await addMember(signedInUser.id, organization.id, "member");
+    await setActiveOrganization(session.id, organization.id);
+    const context = buildContext({ Cookie: headers.Cookie });
+
+    const result = await requireMembership(context);
+    expect(result.user.id).toBe(signedInUser.id);
+  });
+
+  it("requireAdmin throws ForbiddenError when not admin or owner", async () => {
+    const user = buildTestUser();
+    const organization = await createOrganization("acme");
+    const {
+      user: signedInUser,
+      session,
+      headers,
+    } = await signUpAndGetSession(user);
+    await addMember(signedInUser.id, organization.id, "member");
+    await setActiveOrganization(session.id, organization.id);
+    const context = buildContext({ Cookie: headers.Cookie });
+
+    await expect(requireAdmin(context)).rejects.toBeInstanceOf(ForbiddenError);
+  });
+
+  it("requireAdmin returns session for admin", async () => {
+    const user = buildTestUser();
+    const organization = await createOrganization("acme");
+    const {
+      user: signedInUser,
+      session,
+      headers,
+    } = await signUpAndGetSession(user);
+    await addMember(signedInUser.id, organization.id, "admin");
+    await setActiveOrganization(session.id, organization.id);
+    const context = buildContext({ Cookie: headers.Cookie });
+
+    const result = await requireAdmin(context);
+    expect(result.user.id).toBe(signedInUser.id);
   });
 });
