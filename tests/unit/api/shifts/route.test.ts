@@ -7,25 +7,29 @@ import {
   addMember,
   buildTestUser,
   createOrganization,
+  createEvent,
   setActiveOrganization,
   signUpAndGetSession,
   createShift,
   createShiftRSVP,
 } from "@/tests/unit/testUtils";
-import { POST } from "@/app/api/shifts/route";
-import { PATCH, DELETE, GET } from "@/app/api/shifts/[shiftId]/route";
+import app from "@/app/api/[[...route]]/route";
 import {
   POST as POST_RSVP,
   DELETE as DELETE_RSVP,
 } from "@/app/api/shifts/[shiftId]/rsvps/route";
 
+function withJsonHeaders(headers?: HeadersInit) {
+  const nextHeaders = new Headers(headers);
+  nextHeaders.set("Content-Type", "application/json");
+  return nextHeaders;
+}
+
 describe("POST /app/api/shifts", () => {
   it("returns 401 if not logged in", async () => {
-    const request = new Request("http://localhost/api/shifts", {
+    const response = await app.request("/api/shifts", {
       method: "POST",
     });
-
-    const response = await POST(request);
 
     expect(response.status).toBe(401);
   });
@@ -37,12 +41,10 @@ describe("POST /app/api/shifts", () => {
     await addMember(user.id, organization.id, "member");
     await setActiveOrganization(session.id, organization.id);
 
-    const request = new Request("http://localhost/api/shifts", {
+    const response = await app.request("/api/shifts", {
       method: "POST",
-      headers,
+      headers: withJsonHeaders(headers),
     });
-
-    const response = await POST(request);
     expect(response.status).toBe(403);
   });
 
@@ -52,11 +54,13 @@ describe("POST /app/api/shifts", () => {
     const { user, session, headers } = await signUpAndGetSession(theUser);
     await addMember(user.id, organization.id, "admin");
     await setActiveOrganization(session.id, organization.id);
+    const eventId = await createEvent(organization.id);
 
-    const request = new Request("http://localhost/api/shifts", {
+    const response = await app.request("/api/shifts", {
       method: "POST",
-      headers,
+      headers: withJsonHeaders(headers),
       body: JSON.stringify({
+        eventId,
         name: "Test Shift",
         description: "A test shift",
         startTimestamp: new Date().toISOString(),
@@ -64,22 +68,56 @@ describe("POST /app/api/shifts", () => {
         rsvpLimit: 10,
       }),
     });
-
-    const response = await POST(request);
     const data = await response.json();
     expect(response.status).toBe(200);
     expect(data.shift.name).toBe("Test Shift");
+  });
+
+  it("returns 404 if event not found", async () => {
+    const theUser = await buildTestUser();
+    const organization = await createOrganization("acme");
+    const { user, session, headers } = await signUpAndGetSession(theUser);
+    await addMember(user.id, organization.id, "admin");
+    await setActiveOrganization(session.id, organization.id);
+
+    const response = await app.request("/api/shifts", {
+      method: "POST",
+      headers: withJsonHeaders(headers),
+      body: JSON.stringify({
+        eventId: "missing-event",
+        name: "Test Shift",
+        description: "A test shift",
+      }),
+    });
+    expect(response.status).toBe(404);
+  });
+
+  it("returns 404 if event not in active organization", async () => {
+    const theUser = await buildTestUser();
+    const organization = await createOrganization("acme");
+    const otherOrganization = await createOrganization("other");
+    const { user, session, headers } = await signUpAndGetSession(theUser);
+    await addMember(user.id, organization.id, "admin");
+    await setActiveOrganization(session.id, organization.id);
+    const eventId = await createEvent(otherOrganization.id);
+
+    const response = await app.request("/api/shifts", {
+      method: "POST",
+      headers: withJsonHeaders(headers),
+      body: JSON.stringify({
+        eventId,
+        name: "Test Shift",
+        description: "A test shift",
+      }),
+    });
+    expect(response.status).toBe(404);
   });
 });
 
 describe("PATCH /app/api/shifts/[shiftId]", () => {
   it("returns 401 if not logged in", async () => {
-    const request = new Request("http://localhost/api/shifts/1234", {
+    const response = await app.request("/api/shifts/1234", {
       method: "PATCH",
-    });
-
-    const response = await PATCH(request, {
-      params: Promise.resolve({ shiftId: "1234" }),
     });
 
     expect(response.status).toBe(401);
@@ -93,13 +131,9 @@ describe("PATCH /app/api/shifts/[shiftId]", () => {
     await setActiveOrganization(session.id, organization.id);
     const shiftId = await createShift(organization.id, { name: "Old Shift" });
 
-    const request = new Request(`http://localhost/api/shifts/${shiftId}`, {
+    const response = await app.request(`/api/shifts/${shiftId}`, {
       method: "PATCH",
-      headers,
-    });
-
-    const response = await PATCH(request, {
-      params: Promise.resolve({ shiftId }),
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(403);
   });
@@ -112,20 +146,75 @@ describe("PATCH /app/api/shifts/[shiftId]", () => {
     await setActiveOrganization(session.id, organization.id);
     const shiftId = await createShift(organization.id, { name: "Old Shift" });
 
-    const request = new Request(`http://localhost/api/shifts/${shiftId}`, {
+    const response = await app.request(`/api/shifts/${shiftId}`, {
       method: "PATCH",
-      headers,
+      headers: withJsonHeaders(headers),
       body: JSON.stringify({
         name: "Test Shift",
       }),
     });
-
-    const response = await PATCH(request, {
-      params: Promise.resolve({ shiftId }),
-    });
     const data = await response.json();
     expect(response.status).toBe(200);
     expect(data.shift.name).toBe("Test Shift");
+  });
+
+  it("updates the shift event", async () => {
+    const theUser = await buildTestUser();
+    const organization = await createOrganization("acme");
+    const { user, session, headers } = await signUpAndGetSession(theUser);
+    await addMember(user.id, organization.id, "admin");
+    await setActiveOrganization(session.id, organization.id);
+    const shiftId = await createShift(organization.id, { name: "Old Shift" });
+    const eventId = await createEvent(organization.id);
+
+    const response = await app.request(`/api/shifts/${shiftId}`, {
+      method: "PATCH",
+      headers: withJsonHeaders(headers),
+      body: JSON.stringify({
+        eventId,
+      }),
+    });
+    const data = await response.json();
+    expect(response.status).toBe(200);
+    expect(data.shift.eventId).toBe(eventId);
+  });
+
+  it("returns 404 if new event not found", async () => {
+    const theUser = await buildTestUser();
+    const organization = await createOrganization("acme");
+    const { user, session, headers } = await signUpAndGetSession(theUser);
+    await addMember(user.id, organization.id, "admin");
+    await setActiveOrganization(session.id, organization.id);
+    const shiftId = await createShift(organization.id, { name: "Old Shift" });
+
+    const response = await app.request(`/api/shifts/${shiftId}`, {
+      method: "PATCH",
+      headers: withJsonHeaders(headers),
+      body: JSON.stringify({
+        eventId: "missing-event",
+      }),
+    });
+    expect(response.status).toBe(404);
+  });
+
+  it("returns 404 if new event not in active organization", async () => {
+    const theUser = await buildTestUser();
+    const organization = await createOrganization("acme");
+    const otherOrganization = await createOrganization("other");
+    const { user, session, headers } = await signUpAndGetSession(theUser);
+    await addMember(user.id, organization.id, "admin");
+    await setActiveOrganization(session.id, organization.id);
+    const shiftId = await createShift(organization.id, { name: "Old Shift" });
+    const eventId = await createEvent(otherOrganization.id);
+
+    const response = await app.request(`/api/shifts/${shiftId}`, {
+      method: "PATCH",
+      headers: withJsonHeaders(headers),
+      body: JSON.stringify({
+        eventId,
+      }),
+    });
+    expect(response.status).toBe(404);
   });
 
   it("doesn't update organizationId", async () => {
@@ -136,17 +225,13 @@ describe("PATCH /app/api/shifts/[shiftId]", () => {
     await setActiveOrganization(session.id, organization.id);
     const shiftId = await createShift(organization.id, { name: "Old Shift" });
 
-    const request = new Request(`http://localhost/api/shifts/${shiftId}`, {
+    const response = await app.request(`/api/shifts/${shiftId}`, {
       method: "PATCH",
-      headers,
+      headers: withJsonHeaders(headers),
       body: JSON.stringify({
         organizationId: "update-id",
         name: "Test Shift",
       }),
-    });
-
-    const response = await PATCH(request, {
-      params: Promise.resolve({ shiftId }),
     });
     const data = await response.json();
     expect(response.status).toBe(200);
@@ -157,12 +242,8 @@ describe("PATCH /app/api/shifts/[shiftId]", () => {
 
 describe("DELETE /app/api/shifts/[shiftId]", () => {
   it("returns 401 if not logged in", async () => {
-    const request = new Request("http://localhost/api/shifts/1234", {
+    const response = await app.request("/api/shifts/1234", {
       method: "DELETE",
-    });
-
-    const response = await DELETE(request, {
-      params: Promise.resolve({ shiftId: "1234" }),
     });
 
     expect(response.status).toBe(401);
@@ -176,13 +257,9 @@ describe("DELETE /app/api/shifts/[shiftId]", () => {
     await setActiveOrganization(session.id, organization.id);
     const shiftId = await createShift(organization.id, { name: "Old Shift" });
 
-    const request = new Request(`http://localhost/api/shifts/${shiftId}`, {
+    const response = await app.request(`/api/shifts/${shiftId}`, {
       method: "DELETE",
       headers,
-    });
-
-    const response = await DELETE(request, {
-      params: Promise.resolve({ shiftId }),
     });
     expect(response.status).toBe(403);
   });
@@ -195,13 +272,9 @@ describe("DELETE /app/api/shifts/[shiftId]", () => {
     await setActiveOrganization(session.id, organization.id);
     const shiftId = await createShift(organization.id, { name: "Test Shift" });
 
-    const request = new Request(`http://localhost/api/shifts/${shiftId}`, {
+    const response = await app.request(`/api/shifts/${shiftId}`, {
       method: "DELETE",
       headers,
-    });
-
-    const response = await DELETE(request, {
-      params: Promise.resolve({ shiftId }),
     });
 
     expect(response.status).toBe(200);
@@ -215,13 +288,9 @@ describe("DELETE /app/api/shifts/[shiftId]", () => {
     await addMember(user.id, organization.id, "admin");
     await setActiveOrganization(session.id, organization.id);
 
-    const request = new Request("http://localhost/api/shifts/1234", {
+    const response = await app.request("/api/shifts/1234", {
       method: "DELETE",
       headers,
-    });
-
-    const response = await DELETE(request, {
-      params: Promise.resolve({ shiftId: "1234" }),
     });
     expect(response.status).toBe(404);
   });
@@ -229,12 +298,8 @@ describe("DELETE /app/api/shifts/[shiftId]", () => {
 
 describe("GET /app/api/shifts/[shiftId]", () => {
   it("returns 401 if not logged in", async () => {
-    const request = new Request("http://localhost/api/shifts/1234", {
+    const response = await app.request("/api/shifts/1234", {
       method: "GET",
-    });
-
-    const response = await GET(request, {
-      params: Promise.resolve({ shiftId: "1234" }),
     });
     expect(response.status).toBe(401);
   });
@@ -251,13 +316,9 @@ describe("GET /app/api/shifts/[shiftId]", () => {
     await addMember(user.id, diffOrg.id, "admin");
     await setActiveOrganization(session.id, diffOrg.id);
 
-    const request = new Request(`http://localhost/api/shifts/${shiftId}`, {
+    const response = await app.request(`/api/shifts/${shiftId}`, {
       method: "GET",
       headers,
-    });
-
-    const response = await GET(request, {
-      params: Promise.resolve({ shiftId }),
     });
     expect(response.status).toBe(404);
   });
@@ -270,13 +331,9 @@ describe("GET /app/api/shifts/[shiftId]", () => {
     await setActiveOrganization(session.id, organization.id);
     const shiftId = await createShift(organization.id, { name: "Test Shift" });
 
-    const request = new Request(`http://localhost/api/shifts/${shiftId}`, {
+    const response = await app.request(`/api/shifts/${shiftId}`, {
       method: "GET",
       headers,
-    });
-
-    const response = await GET(request, {
-      params: Promise.resolve({ shiftId }),
     });
     const data = await response.json();
     expect(response.status).toBe(200);
@@ -290,13 +347,9 @@ describe("GET /app/api/shifts/[shiftId]", () => {
     await addMember(user.id, organization.id, "admin");
     await setActiveOrganization(session.id, organization.id);
 
-    const request = new Request("http://localhost/api/shifts/1234", {
+    const response = await app.request("/api/shifts/1234", {
       method: "GET",
       headers,
-    });
-
-    const response = await GET(request, {
-      params: Promise.resolve({ shiftId: "1234" }),
     });
     expect(response.status).toBe(404);
   });

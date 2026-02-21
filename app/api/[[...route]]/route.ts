@@ -2,6 +2,7 @@ import ping from "@/api/ping";
 import joinRequests from "@/api/joinRequests";
 import announcements from "@/api/announcements";
 import events from "@/api/events";
+import shifts from "@/api/shifts";
 import media from "@/api/media";
 import organizationConfig from "@/api/organizationConfig";
 import { Hono } from "hono";
@@ -13,8 +14,9 @@ const app = new Hono()
   .route("/joinRequests", joinRequests)
   .route("/announcements", announcements)
   .route("/events", events)
-  .route("/media", media)
   .route("/organizationconfig", organizationconfig);
+  .route("/shifts", shifts)
+  .route("/media", media);
 
 export const GET = handle(app);
 export const POST = handle(app);

@@ -185,12 +185,15 @@ export async function createShift(
     startTimestamp?: Date;
     duration?: number;
     rsvpLimit?: number;
+    eventId?: string;
   } = {},
 ) {
   const id = randomUUID();
+  const eventId = opts.eventId ?? (await createEvent(organizationId));
   await db.insert(shifts).values({
     id,
     organizationId,
+    eventId,
     name: opts.name ?? "Test Shift",
     description: opts.description ?? "Test Description",
     startTimestamp: opts.startTimestamp ?? new Date(),

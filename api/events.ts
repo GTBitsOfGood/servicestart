@@ -4,6 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { auth } from "@/lib/auth";
 import { EventService } from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/members";
+import { ShiftService } from "@/lib/services/ShiftService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 
 const app = new Hono()
@@ -112,6 +113,46 @@ const app = new Hono()
 
     return c.json(event);
   })
+  .get(
+    "/:eventId/shifts",
+    zValidator("query", paginationQuerySchema),
+    async (c) => {
+      const { eventId } = c.req.param();
+      const session = await auth.api.getSession({
+        headers: c.req.header(),
+      });
+
+      if (!session?.user) {
+        return c.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      const activeOrganizationId = session.session.activeOrganizationId;
+      if (!activeOrganizationId) {
+        return c.json({ error: "Event not found" }, { status: 404 });
+      }
+
+      const event = await EventService.findById(eventId);
+      if (!event || event.organizationId !== activeOrganizationId) {
+        return c.json({ error: "Event not found" }, { status: 404 });
+      }
+
+      const { page, pageSize } = c.req.valid("query");
+      const data = await ShiftService.listByEvent(
+        eventId,
+        activeOrganizationId,
+        {
+          limit: pageSize,
+          offset: (page - 1) * pageSize,
+        },
+      );
+
+      return c.json({
+        data,
+        page,
+        pageSize,
+      });
+    },
+  )
   .patch(
     "/:eventId",
     zValidator(
