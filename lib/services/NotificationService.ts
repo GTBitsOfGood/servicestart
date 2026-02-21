@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import db from "@/lib/db";
-import { members, notifications } from "@/lib/schema";
+import { members, notifications, NotificationType } from "@/lib/schema";
 
 const ADMIN_ROLES = ["admin", "owner"] as const;
 
@@ -9,6 +9,7 @@ async function createForUserIds(
   userIds: string[],
   organizationId: string,
   text: string,
+  type: NotificationType = NotificationType.General,
 ) {
   if (userIds.length === 0) {
     return [];
@@ -22,6 +23,7 @@ async function createForUserIds(
     id: randomUUID(),
     userId,
     organizationId,
+    type,
     text,
   }));
 
@@ -31,6 +33,7 @@ async function createForUserIds(
     organizationId: notifications.organizationId,
     createdAt: notifications.createdAt,
     read: notifications.read,
+    type: notifications.type,
     text: notifications.text,
   });
 }
@@ -69,8 +72,19 @@ async function listByUserAndOrganization(
   userId: string,
   organizationId: string,
   read: boolean,
+  type: NotificationType | undefined,
   options: { limit: number; offset: number },
 ) {
+  const conditions = [
+    eq(notifications.userId, userId),
+    eq(notifications.organizationId, organizationId),
+    eq(notifications.read, read),
+  ];
+
+  if (type) {
+    conditions.push(eq(notifications.type, type));
+  }
+
   return db
     .select({
       id: notifications.id,
@@ -78,16 +92,11 @@ async function listByUserAndOrganization(
       organizationId: notifications.organizationId,
       createdAt: notifications.createdAt,
       read: notifications.read,
+      type: notifications.type,
       text: notifications.text,
     })
     .from(notifications)
-    .where(
-      and(
-        eq(notifications.userId, userId),
-        eq(notifications.organizationId, organizationId),
-        eq(notifications.read, read),
-      ),
-    )
+    .where(and(...conditions))
     .orderBy(desc(notifications.createdAt))
     .limit(options.limit)
     .offset(options.offset);
@@ -117,6 +126,7 @@ async function updateReadStatus(notificationId: string, status: boolean) {
       organizationId: notifications.organizationId,
       createdAt: notifications.createdAt,
       read: notifications.read,
+      type: notifications.type,
       text: notifications.text,
     });
 

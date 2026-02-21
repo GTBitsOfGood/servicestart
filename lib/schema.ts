@@ -55,6 +55,19 @@ export const MEDIA_TYPE_VALUES = Object.values(
 ) as unknown as readonly [string, ...string[]];
 export const mediaTypeEnum = pgEnum("media_type", MEDIA_TYPE_VALUES);
 
+export enum NotificationType {
+  General = "general",
+  Announcement = "announcement",
+}
+
+export const NOTIFICATION_TYPE_VALUES = Object.values(
+  NotificationType,
+) as unknown as readonly [string, ...string[]];
+export const notificationTypeEnum = pgEnum(
+  "notification_type",
+  NOTIFICATION_TYPE_VALUES,
+);
+
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -327,6 +340,9 @@ export const notifications = pgTable(
       .references(() => organizations.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     read: boolean("read").default(false).notNull(),
+    type: notificationTypeEnum("type")
+      .default(NotificationType.General)
+      .notNull(),
     text: text("text").notNull(),
   },
   (table) => [
