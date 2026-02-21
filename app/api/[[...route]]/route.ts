@@ -3,7 +3,7 @@ import joinRequests from "@/api/joinRequests";
 import announcements from "@/api/announcements";
 import events from "@/api/events";
 import media from "@/api/media";
-import organizationconfig from "@/api/organizationconfig";
+import organizationConfig from "@/api/organizationConfig";
 import { Hono } from "hono";
 import { handle } from "hono/netlify";
 
