@@ -1,0 +1,82 @@
+@layer base {
+  .container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    font-size: var(--text-mobile-paragraph-2);
+
+    .input {
+      width: 100%;
+      padding: 0.75rem 0.5rem;
+      background-color: var(--color-solid-bg-sunken);
+      border-radius: 0.4rem;
+      border: 1px solid var(--color-grey-stroke-weak);
+      &:hover:not(:disabled) {
+        border-color: var(--color-brand-stroke-strong);
+      }
+      &:focus {
+        outline: none;
+        border-color: var(--color-brand-stroke-strong);
+        &::placeholder {
+          color: transparent;
+        }
+      }
+      &:disabled {
+        border-color: var(--color-grey-off-state);
+        color: var(--color-grey-off-state);
+        cursor: not-allowed;
+        opacity: 0.85;
+      }
+    }
+
+    .inputWrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+
+      .input {
+        width: 100%;
+        box-sizing: border-box;
+      }
+    }
+
+    .iconLeft .input {
+      padding-left: 2.5rem;
+    }
+
+    .iconRight .input {
+      padding-right: 2.5rem;
+    }
+
+    .iconContainer {
+      position: absolute;
+      left: 0.6rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--color-grey-stroke-strong);
+      pointer-events: none;
+    }
+
+    .iconRight .iconContainer {
+      left: auto;
+      right: 0.6rem;
+    }
+
+    .clickable {
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    .clickable:hover {
+      color: var(--color-brand-stroke-strong);
+    }
+
+    .iconContainer:has(+ textarea),
+    .iconContainer:has(+ .multiline) {
+      align-self: flex-start;
+      padding-top: 0.6rem;
+    }
+  }
+}
