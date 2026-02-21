@@ -4,6 +4,7 @@ import announcements from "@/api/announcements";
 import events from "@/api/events";
 import shifts from "@/api/shifts";
 import media from "@/api/media";
+import notifications from "@/api/notifications";
 import { Hono } from "hono";
 import { handle } from "hono/netlify";
 
@@ -14,6 +15,7 @@ const app = new Hono()
   .route("/announcements", announcements)
   .route("/events", events)
   .route("/shifts", shifts)
+  .route("/notifications", notifications)
   .route("/media", media);
 
 export const GET = handle(app);
