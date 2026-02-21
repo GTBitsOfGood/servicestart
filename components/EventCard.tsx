@@ -1,15 +1,9 @@
 "use client";
 import { useRouter } from "next/navigation";
+import type { InferSelectModel } from "drizzle-orm";
+import { events } from "@/lib/schema";
 
-export type Event = {
-  id: string;
-  name: string;
-  location: string;
-  description?: string | null;
-  startTimestamp: string | null;
-  coverImageUrl?: string | null;
-  organizationId: string;
-};
+export type Event = InferSelectModel<typeof events>;
 
 export default function EventCard({ event }: { event: Event }) {
   const router = useRouter();
