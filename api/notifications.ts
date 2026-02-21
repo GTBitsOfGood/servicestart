@@ -2,10 +2,10 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { and, desc, eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
 import db from "@/lib/db";
 import { notifications } from "@/lib/schema";
 import { paginationQuerySchema } from "../lib/apiUtils";
+import { requireMembership } from "@/lib/authUtils";
 
 const notificationsQuerySchema = paginationQuerySchema.and(
   z.object({
@@ -24,18 +24,9 @@ const updateReadStatusSchema = z.object({
 
 const app = new Hono()
   .get("/", zValidator("query", notificationsQuerySchema), async (c) => {
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
+    const session = await requireMembership(c);
 
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const activeOrganizationId = session.session.activeOrganizationId;
-    if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 400 });
-    }
+    const activeOrganizationId = session.session.activeOrganizationId!;
 
     const { page, pageSize, read } = c.req.valid("query");
     const data = await db
@@ -66,15 +57,8 @@ const app = new Hono()
     });
   })
   .patch("/:id", zValidator("json", updateReadStatusSchema), async (c) => {
-    // pulling session info based on request headers
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
-
-    // if no session(no logged in user), return unauthorized
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // pulling session info and verifying user is a member of active organization
+    const session = await requireMembership(c);
 
     // getting notification id from request params
     const { id } = c.req.param();
