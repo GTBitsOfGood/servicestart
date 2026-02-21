@@ -18,21 +18,20 @@ const notificationsQuerySchema = paginationQuerySchema.and(
   }),
 );
 
-const app = new Hono().get(
-  "/",
-  zValidator("query", notificationsQuerySchema),
-  async (c) => {
-    // pulling session info based on request headers
+const updateReadStatusSchema = z.object({
+  read: z.boolean(),
+});
+
+const app = new Hono()
+  .get("/", zValidator("query", notificationsQuerySchema), async (c) => {
     const session = await auth.api.getSession({
       headers: c.req.header(),
     });
 
-    // if no session(no logged in user), return unauthorized
     if (!session?.user) {
       return c.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // check for active organization and if not found, return bad request
     const activeOrganizationId = session.session.activeOrganizationId;
     if (!activeOrganizationId) {
       return c.json({ error: "No active organization" }, { status: 400 });
@@ -65,7 +64,56 @@ const app = new Hono().get(
       page,
       pageSize,
     });
-  },
-);
+  })
+  .patch("/:id", zValidator("json", updateReadStatusSchema), async (c) => {
+    // pulling session info based on request headers
+    const session = await auth.api.getSession({
+      headers: c.req.header(),
+    });
+
+    // if no session(no logged in user), return unauthorized
+    if (!session?.user) {
+      return c.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // getting notification id from request params
+    const { id } = c.req.param();
+    const { read } = c.req.valid("json");
+
+    // checking if notification exists
+    const [notification] = await db
+      .select({
+        id: notifications.id,
+        userId: notifications.userId,
+      })
+      .from(notifications)
+      .where(eq(notifications.id, id))
+      .limit(1);
+
+    // if notification not found, return not found
+    if (!notification) {
+      return c.json({ error: "Notification not found" }, { status: 404 });
+    }
+
+    // if notification does not belong to the user, return forbidden
+    if (notification.userId !== session.user.id) {
+      return c.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const [updated] = await db
+      .update(notifications)
+      .set({ read })
+      .where(eq(notifications.id, id))
+      .returning({
+        id: notifications.id,
+        userId: notifications.userId,
+        organizationId: notifications.organizationId,
+        createdAt: notifications.createdAt,
+        read: notifications.read,
+        text: notifications.text,
+      });
+
+    return c.json(updated);
+  });
 
 export default app;
