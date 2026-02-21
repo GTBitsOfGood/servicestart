@@ -1,11 +1,9 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { and, desc, eq } from "drizzle-orm";
-import db from "@/lib/db";
-import { notifications } from "@/lib/schema";
 import { paginationQuerySchema } from "../lib/apiUtils";
 import { requireMembership } from "@/lib/authUtils";
+import { NotificationService } from "@/lib/services/NotificationService";
 
 const notificationsQuerySchema = paginationQuerySchema.and(
   z.object({
@@ -29,26 +27,12 @@ const app = new Hono()
     const activeOrganizationId = session.session.activeOrganizationId!;
 
     const { page, pageSize, read } = c.req.valid("query");
-    const data = await db
-      .select({
-        id: notifications.id,
-        userId: notifications.userId,
-        organizationId: notifications.organizationId,
-        createdAt: notifications.createdAt,
-        read: notifications.read,
-        text: notifications.text,
-      })
-      .from(notifications)
-      .where(
-        and(
-          eq(notifications.userId, session.user.id),
-          eq(notifications.organizationId, activeOrganizationId),
-          eq(notifications.read, read),
-        ),
-      )
-      .orderBy(desc(notifications.createdAt))
-      .limit(pageSize)
-      .offset((page - 1) * pageSize);
+    const data = await NotificationService.listByUserAndOrganization(
+      session.user.id,
+      activeOrganizationId,
+      read,
+      { limit: pageSize, offset: (page - 1) * pageSize },
+    );
 
     return c.json({
       data,
@@ -65,14 +49,7 @@ const app = new Hono()
     const { read } = c.req.valid("json");
 
     // checking if notification exists
-    const [notification] = await db
-      .select({
-        id: notifications.id,
-        userId: notifications.userId,
-      })
-      .from(notifications)
-      .where(eq(notifications.id, id))
-      .limit(1);
+    const notification = await NotificationService.findById(id);
 
     // if notification not found, return not found
     if (!notification) {
@@ -84,18 +61,7 @@ const app = new Hono()
       return c.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const [updated] = await db
-      .update(notifications)
-      .set({ read })
-      .where(eq(notifications.id, id))
-      .returning({
-        id: notifications.id,
-        userId: notifications.userId,
-        organizationId: notifications.organizationId,
-        createdAt: notifications.createdAt,
-        read: notifications.read,
-        text: notifications.text,
-      });
+    const updated = await NotificationService.updateReadStatus(id, read);
 
     return c.json(updated);
   });

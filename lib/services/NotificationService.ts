@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import db from "@/lib/db";
 import { members, notifications } from "@/lib/schema";
 
@@ -65,6 +65,47 @@ async function notifyAllMembers(organizationId: string, text: string) {
   return createForUserIds(userIds, organizationId, text);
 }
 
+async function listByUserAndOrganization(
+  userId: string,
+  organizationId: string,
+  read: boolean,
+  options: { limit: number; offset: number },
+) {
+  return db
+    .select({
+      id: notifications.id,
+      userId: notifications.userId,
+      organizationId: notifications.organizationId,
+      createdAt: notifications.createdAt,
+      read: notifications.read,
+      text: notifications.text,
+    })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        eq(notifications.organizationId, organizationId),
+        eq(notifications.read, read),
+      ),
+    )
+    .orderBy(desc(notifications.createdAt))
+    .limit(options.limit)
+    .offset(options.offset);
+}
+
+async function findById(notificationId: string) {
+  const [notification] = await db
+    .select({
+      id: notifications.id,
+      userId: notifications.userId,
+    })
+    .from(notifications)
+    .where(eq(notifications.id, notificationId))
+    .limit(1);
+
+  return notification ?? null;
+}
+
 async function updateReadStatus(notificationId: string, status: boolean) {
   const [updated] = await db
     .update(notifications)
@@ -86,6 +127,8 @@ export const NotificationService = {
   notify,
   notifyAdmins,
   notifyAllMembers,
+  listByUserAndOrganization,
+  findById,
   updateReadStatus,
 };
 
