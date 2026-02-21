@@ -2,13 +2,11 @@ import { redirect } from "next/navigation";
 import { OrganizationsService } from "@/lib/services/organizations";
 import authClient from "@/lib/authClient";
 
-interface Props {
-  params: {
-    slug: string;
-  };
-}
-
-export default async function OrganizationPage({ params }: Props) {
+export default async function OrganizationPage({
+  params,
+}: {
+  params: { slug: string };
+}) {
   const session = await authClient.getSession();
 
   if (!session?.user) {
