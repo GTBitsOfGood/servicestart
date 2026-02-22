@@ -14,12 +14,11 @@ export default function LoginPage() {
   const logo = authClient.useActiveOrganization().data?.logo;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const config = useOrganizationConfig([
-    OrganizationConfigKey.PrimaryColor,
-    OrganizationConfigKey.SecondaryColor,
-  ] as const);
-  const primaryColor = config.primary_color || "#FD8033";
-  const secondaryColor = config.secondary_color || "#FB3552";
+  const { primary_color = "#FFFFFF", secondary_color = "#FFFFFF" } =
+    useOrganizationConfig([
+      OrganizationConfigKey.PrimaryColor,
+      OrganizationConfigKey.SecondaryColor,
+    ]);
   const org = authClient.useActiveOrganization();
 
   const handleLogin = async () => {
@@ -33,11 +32,12 @@ export default function LoginPage() {
         onSuccess: () => {
           router.push("/");
         },
-        onError: (e) => {
-          console.error("Login error:", e);
-        },
       },
     );
+
+    if (error) {
+      console.error("Login error:", error);
+    }
   };
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export default function LoginPage() {
         return;
       }
 
-      if (org.data?.slug === getSlugFromHost(window.location.hostname)) {
+      if (org.data?.slug === getSlugFromHost(window.location.host)) {
         router.replace("/");
       }
 
@@ -61,14 +61,14 @@ export default function LoginPage() {
     <div
       className="flex h-screen w-screen items-center"
       style={{
-        background: `linear-gradient(75deg, ${primaryColor[0]} 0%, ${secondaryColor[0]} 100%)`,
+        background: `linear-gradient(75deg, ${primary_color} 0%, ${secondary_color} 100%)`,
       }}
     >
       <div className="w-[53%] h-full flex justify-between items-center flex-shrink-0 px-[30px]">
         <div
           className="h-[94%] w-full flex flex-col justify-flex-end rounded-[20px] pt-[90%] pb-[20px] pl-[20px] pr-[60%]"
           style={{
-            background: `linear-gradient(180deg, ${primaryColor[0]} 0%, #FFF 100%)`,
+            background: `linear-gradient(180deg, ${primary_color} 0%, #FFF 100%)`,
           }}
         >
           <div className="w-[339px] h-[130px]">

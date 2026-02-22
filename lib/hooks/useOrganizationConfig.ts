@@ -10,6 +10,7 @@ export default function useOrganizationConfig<K extends readonly string[]>(
   keys: K,
 ) {
   const [data, setData] = useState<ConfigResult<K>>({});
+  const keyString = keys.join(",");
 
   useEffect(() => {
     const host =
@@ -30,7 +31,7 @@ export default function useOrganizationConfig<K extends readonly string[]>(
       })
       .then(setData)
       .catch(() => {});
-  }, [keys]);
+  }, [keyString]);
 
   return data;
 }

@@ -1,5 +1,5 @@
 CREATE TYPE "join_request_status" AS ENUM('pending', 'approved', 'denied');--> statement-breakpoint
-CREATE TYPE "organization_config_key" AS ENUM('description');--> statement-breakpoint
+CREATE TYPE "organization_config_key" AS ENUM('description','primary_color','secondary_color');--> statement-breakpoint
 CREATE TABLE "accounts" (
 	"id" text PRIMARY KEY,
 	"account_id" text NOT NULL,
