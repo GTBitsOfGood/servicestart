@@ -6,7 +6,7 @@ import {
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { OrganizationsService } from "@/lib/services/organizations";
 import { MembersService } from "@/lib/services/members";
-import { getSlugFromHost } from "@/lib/authUtils";
+import { getSlugFromHost } from "@/lib/clientAuthUtils";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 

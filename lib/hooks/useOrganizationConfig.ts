@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { getSlugFromHost } from "@/lib/authUtils";
+import { getSlugFromHost } from "@/lib/clientAuthUtils";
 
 type ConfigResult<K extends readonly string[]> = Partial<
   Record<K[number], string>
