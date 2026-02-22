@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { randomUUID } from "node:crypto";
-import { GET, PUT } from "@/app/api/organizationconfig/route";
 import { eq } from "drizzle-orm";
 import db from "@/lib/db";
 import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
@@ -10,12 +9,14 @@ import {
   createOrganization,
   setActiveOrganization,
   signUpAndGetSession,
+  testApi,
 } from "@/tests/unit/testUtils";
 
 describe("GET /api/organizationconfig", () => {
   it("returns 200 and empty object when keys is missing", async () => {
-    const request = new Request("http://localhost/api/organizationconfig");
-    const response = await GET(request);
+    const response = await testApi.organizationconfig.$get({
+      query: {},
+    });
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data).toEqual({});
@@ -30,10 +31,12 @@ describe("GET /api/organizationconfig", () => {
       value: "Org description",
     });
 
-    const request = new Request(
-      "http://localhost/api/organizationconfig?keys=description&organizationSlug=cfg-get-slug",
-    );
-    const response = await GET(request);
+    const response = await testApi.organizationconfig.$get({
+      query: {
+        keys: "description",
+        organizationSlug: "cfg-get-slug",
+      },
+    });
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data).toEqual({ description: "Org description" });
@@ -53,11 +56,16 @@ describe("GET /api/organizationconfig", () => {
       value: "Active description",
     });
 
-    const request = new Request(
-      "http://localhost/api/organizationconfig?keys=description",
-      { headers },
+    const response = await testApi.organizationconfig.$get(
+      {
+        query: {
+          keys: "description",
+        },
+      },
+      {
+        headers,
+      },
     );
-    const response = await GET(request);
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data).toEqual({ description: "Active description" });
@@ -65,20 +73,24 @@ describe("GET /api/organizationconfig", () => {
 
   it("returns default value when key is not set", async () => {
     await createOrganization("cfg-get-default");
-    const request = new Request(
-      "http://localhost/api/organizationconfig?keys=description&organizationSlug=cfg-get-default",
-    );
-    const response = await GET(request);
+    const response = await testApi.organizationconfig.$get({
+      query: {
+        keys: "description",
+        organizationSlug: "cfg-get-default",
+      },
+    });
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data).toEqual({ description: "No description has been set" });
   });
 
   it("returns 400 for non-existent organizationSlug", async () => {
-    const request = new Request(
-      "http://localhost/api/organizationconfig?keys=description&organizationSlug=does-not-exist",
-    );
-    const response = await GET(request);
+    const response = await testApi.organizationconfig.$get({
+      query: {
+        keys: "description",
+        organizationSlug: "does-not-exist",
+      },
+    });
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toBe("Requested organization does not exist");
@@ -87,11 +99,14 @@ describe("GET /api/organizationconfig", () => {
   it("returns 400 when no organizationSlug and no active organization", async () => {
     const user = buildTestUser();
     const { headers } = await signUpAndGetSession(user);
-    const request = new Request(
-      "http://localhost/api/organizationconfig?keys=description",
+    const response = await testApi.organizationconfig.$get(
+      {
+        query: {
+          keys: "description",
+        },
+      },
       { headers },
     );
-    const response = await GET(request);
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toBe("No organizationId provided");
@@ -100,14 +115,12 @@ describe("GET /api/organizationconfig", () => {
 
 describe("PUT /api/organizationconfig", () => {
   it("returns 401 when user is not authenticated", async () => {
-    const request = new Request("http://localhost/api/organizationconfig", {
-      method: "PUT",
-      body: JSON.stringify({
+    const response = await testApi.organizationconfig.$put({
+      json: {
         key: OrganizationConfigKey.Description,
         value: "x",
-      }),
+      },
     });
-    const response = await PUT(request);
     expect(response.status).toBe(401);
     const data = await response.json();
     expect(data.error).toBe("Unauthorized");
@@ -118,15 +131,15 @@ describe("PUT /api/organizationconfig", () => {
     const user = buildTestUser();
     const { headers } = await signUpAndGetSession(user);
 
-    const request = new Request("http://localhost/api/organizationconfig", {
-      method: "PUT",
-      headers,
-      body: JSON.stringify({
-        key: OrganizationConfigKey.Description,
-        value: "x",
-      }),
-    });
-    const response = await PUT(request);
+    const response = await testApi.organizationconfig.$put(
+      {
+        json: {
+          key: OrganizationConfigKey.Description,
+          value: "x",
+        },
+      },
+      { headers },
+    );
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toBe("No active organization");
@@ -139,15 +152,15 @@ describe("PUT /api/organizationconfig", () => {
     await setActiveOrganization(session.id, org.id);
     // user is not a member or is member with insufficient role
 
-    const request = new Request("http://localhost/api/organizationconfig", {
-      method: "PUT",
-      headers,
-      body: JSON.stringify({
-        key: OrganizationConfigKey.Description,
-        value: "x",
-      }),
-    });
-    const response = await PUT(request);
+    const response = await testApi.organizationconfig.$put(
+      {
+        json: {
+          key: OrganizationConfigKey.Description,
+          value: "x",
+        },
+      },
+      { headers },
+    );
     expect(response.status).toBe(403);
     const data = await response.json();
     expect(data.error).toBe("Forbidden: Admin or owner role required");
@@ -164,12 +177,15 @@ describe("PUT /api/organizationconfig", () => {
     await setActiveOrganization(session.id, org.id);
     await addMember(admin.id, org.id, "admin");
 
-    const request = new Request("http://localhost/api/organizationconfig", {
-      method: "PUT",
-      headers,
-      body: JSON.stringify({ key: "not-a-key", value: "x" }),
-    });
-    const response = await PUT(request);
+    const response = await testApi.organizationconfig.$put(
+      {
+        json: { key: "not-a-key", value: "x" } as unknown as {
+          key: OrganizationConfigKey;
+          value: string;
+        },
+      },
+      { headers },
+    );
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toBe("Invalid key");
@@ -186,15 +202,15 @@ describe("PUT /api/organizationconfig", () => {
     await setActiveOrganization(session.id, org.id);
     await addMember(admin.id, org.id, "admin");
 
-    const request = new Request("http://localhost/api/organizationconfig", {
-      method: "PUT",
-      headers,
-      body: JSON.stringify({
-        key: OrganizationConfigKey.Description,
-        value: "<b>bad</b>",
-      }),
-    });
-    const response = await PUT(request);
+    const response = await testApi.organizationconfig.$put(
+      {
+        json: {
+          key: OrganizationConfigKey.Description,
+          value: "<b>bad</b>",
+        },
+      },
+      { headers },
+    );
     expect(response.status).toBe(400);
     const data = await response.json();
     expect(data.error).toBe("Description must not contain HTML tags");
@@ -211,15 +227,15 @@ describe("PUT /api/organizationconfig", () => {
     await setActiveOrganization(session.id, org.id);
     await addMember(admin.id, org.id, "admin");
 
-    const request = new Request("http://localhost/api/organizationconfig", {
-      method: "PUT",
-      headers,
-      body: JSON.stringify({
-        key: OrganizationConfigKey.Description,
-        value: "Updated description",
-      }),
-    });
-    const response = await PUT(request);
+    const response = await testApi.organizationconfig.$put(
+      {
+        json: {
+          key: OrganizationConfigKey.Description,
+          value: "Updated description",
+        },
+      },
+      { headers },
+    );
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.ok).toBe(true);
