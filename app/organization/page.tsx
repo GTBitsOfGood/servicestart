@@ -26,7 +26,7 @@ export default async function OrganizationPage({
   if (!membership) {
     redirect("/");
   }
-  const adminOrOwner = MembersService.isAdminOrOwner(membership.role);
+  //const adminOrOwner = MembersService.isAdminOrOwner(membership.role);
   //frontend tbd
   return (
     <div>
