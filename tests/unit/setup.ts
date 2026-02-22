@@ -21,7 +21,9 @@ import { existsSync, mkdirSync, rmSync } from "node:fs";
 
 const id = randomUUID().split("-")[0];
 const dbName = `testdb_${id}`;
+
 process.env.NEXT_PUBLIC_BRANCH_NAME = dbName;
+process.env.FILE_STORAGE_DIR = `/tmp/servicestart-media-test-${id}`;
 
 // We need to configure env vars before importing later
 let db: typeof import("@/lib/db").default;
@@ -47,8 +49,10 @@ beforeEach(async () => {
 
   // Wipe file storage directory
   const fileStorageDir = process.env.FILE_STORAGE_DIR;
-  if (fileStorageDir && existsSync(fileStorageDir)) {
-    rmSync(fileStorageDir, { recursive: true, force: true });
+  if (fileStorageDir) {
+    if (existsSync(fileStorageDir)) {
+      rmSync(fileStorageDir, { recursive: true, force: true });
+    }
     mkdirSync(fileStorageDir, { recursive: true });
   }
 
