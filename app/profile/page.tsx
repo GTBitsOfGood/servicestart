@@ -46,7 +46,9 @@ export default function ProfilePage() {
     }
   }, [isPending, session, router]);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (isPending || !session?.user) return null;
   if (!mounted) return null;
