@@ -19,7 +19,7 @@ export default function ProfilePage() {
     async function getEvents() {
       const res = await client.events.$get({ query: {} });
       if (!res.ok) {
-        const error = await res.json();
+        const error = (await res.json()) as { error: string };
         console.error(error.error);
         return;
       }

@@ -3,7 +3,9 @@ import { useRouter } from "next/navigation";
 import type { InferSelectModel } from "drizzle-orm";
 import { events } from "@/lib/schema";
 
-export type Event = InferSelectModel<typeof events>;
+export type Event = Omit<InferSelectModel<typeof events>, "startTimestamp"> & {
+  startTimestamp: string | null;
+};
 
 export default function EventCard({ event }: { event: Event }) {
   const router = useRouter();
