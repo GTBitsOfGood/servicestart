@@ -13,9 +13,11 @@ import {
 } from "@/tests/unit/testUtils";
 
 describe("GET /api/organizationConfig", () => {
-  it("returns 200 and empty object when keys is missing", async () => {
+  it("returns 200 and empty object when keys is []", async () => {
     const response = await testApi.organizationConfig.$get({
-      query: {},
+      query: {
+        keys: [],
+      },
     });
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -33,7 +35,7 @@ describe("GET /api/organizationConfig", () => {
 
     const response = await testApi.organizationConfig.$get({
       query: {
-        keys: "description",
+        keys: ["description"],
         organizationSlug: "cfg-get-slug",
       },
     });
@@ -59,7 +61,7 @@ describe("GET /api/organizationConfig", () => {
     const response = await testApi.organizationConfig.$get(
       {
         query: {
-          keys: "description",
+          keys: ["description"],
         },
       },
       {
@@ -75,7 +77,7 @@ describe("GET /api/organizationConfig", () => {
     await createOrganization("cfg-get-default");
     const response = await testApi.organizationConfig.$get({
       query: {
-        keys: "description",
+        keys: ["description"],
         organizationSlug: "cfg-get-default",
       },
     });
@@ -87,7 +89,7 @@ describe("GET /api/organizationConfig", () => {
   it("returns 400 for non-existent organizationSlug", async () => {
     const response = await testApi.organizationConfig.$get({
       query: {
-        keys: "description",
+        keys: ["description"],
         organizationSlug: "does-not-exist",
       },
     });
@@ -105,7 +107,7 @@ describe("GET /api/organizationConfig", () => {
     const response = await testApi.organizationConfig.$get(
       {
         query: {
-          keys: "description",
+          keys: ["description"],
         },
       },
       { headers },

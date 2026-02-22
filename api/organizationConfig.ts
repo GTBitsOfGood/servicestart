@@ -10,6 +10,7 @@ import { OrganizationConfigService } from "@/lib/services/OrganizationConfigServ
 import { OrganizationsService } from "@/lib/services/organizations";
 import { MembersService } from "@/lib/services/members";
 import { getSlugFromHost } from "@/lib/authUtils";
+import { zValidator } from "@hono/zod-validator";
 
 const bodySchema = z.object({
   key: z.enum(ORGANIZATION_CONFIG_KEY_VALUES, { error: "Invalid key" }),
@@ -17,58 +18,75 @@ const bodySchema = z.object({
 });
 
 const app = new Hono()
-  .get("/", async (c: Context) => {
-    const url = new URL(c.req.url);
-    const keysStr = url.searchParams.get("keys");
-    const organizationSlugParam = url.searchParams.get("organizationSlug");
+  .get(
+    "/",
+    zValidator(
+      "query",
+      z.object({
+        keys: z
+          .string()
+          .array()
+          .or(z.string().transform((val) => val.split(",")))
+          .optional(),
+        organizationSlug: z.string().optional(),
+      }),
+    ),
+    async (c) => {
+      const keys = c.req.valid("query").keys;
+      const organizationSlugParam = c.req.valid("query").organizationSlug;
 
-    if (keysStr === null) {
-      return c.json({}, 200);
-    }
+      if (!keys || keys.length === 0) {
+        return c.json({}, 200);
+      }
 
-    const keys = keysStr.split(",");
+      let organizationId: string | undefined;
 
-    let organizationId: string | undefined;
+      if (organizationSlugParam) {
+        const organization = await OrganizationsService.findBySlug(
+          organizationSlugParam,
+        );
 
-    if (organizationSlugParam) {
-      const organization = await OrganizationsService.findBySlug(
-        organizationSlugParam,
+        if (!organization) {
+          return c.json(
+            { error: "Requested organization does not exist" },
+            400,
+          );
+        }
+
+        organizationId = organization.id;
+      } else {
+        const hostHeader =
+          c.req.header("x-forwarded-host") ?? c.req.header("host") ?? undefined;
+        const derivedSlug = getSlugFromHost(hostHeader);
+
+        if (derivedSlug && derivedSlug !== "servicestart") {
+          const organization =
+            await OrganizationsService.findBySlug(derivedSlug);
+          if (organization) {
+            organizationId = organization.id;
+          }
+        }
+
+        if (!organizationId) {
+          const session = await auth.api.getSession({
+            headers: c.req.header(),
+          });
+          if (session?.session.activeOrganizationId) {
+            organizationId = session.session.activeOrganizationId;
+          } else {
+            return c.json({ error: "No organizationId provided" }, 400);
+          }
+        }
+      }
+
+      const result = await OrganizationConfigService.getConfig(
+        organizationId,
+        keys as OrganizationConfigKey[],
       );
 
-      if (!organization) {
-        return c.json({ error: "Requested organization does not exist" }, 400);
-      }
-
-      organizationId = organization.id;
-    } else {
-      const hostHeader =
-        c.req.header("x-forwarded-host") ?? c.req.header("host") ?? undefined;
-      const derivedSlug = getSlugFromHost(hostHeader);
-
-      if (derivedSlug && derivedSlug !== "servicestart") {
-        const organization = await OrganizationsService.findBySlug(derivedSlug);
-        if (organization) {
-          organizationId = organization.id;
-        }
-      }
-
-      if (!organizationId) {
-        const session = await auth.api.getSession({ headers: c.req.header() });
-        if (session?.session.activeOrganizationId) {
-          organizationId = session.session.activeOrganizationId;
-        } else {
-          return c.json({ error: "No organizationId provided" }, 400);
-        }
-      }
-    }
-
-    const result = await OrganizationConfigService.getConfig(
-      organizationId,
-      keys as OrganizationConfigKey[],
-    );
-
-    return c.json(result, 200);
-  })
+      return c.json(result, 200);
+    },
+  )
   .put("/", async (c: Context) => {
     const session = await auth.api.getSession({ headers: c.req.header() });
 
