@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
-import { members } from "@/lib/schema";
+import { members, users } from "@/lib/schema";
 
 async function findByUserAndOrganization(
   userId: string,
@@ -25,7 +25,27 @@ function isAdminOrOwner(role: string | undefined): boolean {
   return role !== undefined && ADMIN_ROLES.includes(role);
 }
 
+async function listMemberContacts(organizationId: string) {
+  const rows = await db
+    .select({ email: users.email, name: users.name })
+    .from(members)
+    .innerJoin(users, eq(users.id, members.userId))
+    .where(eq(members.organizationId, organizationId));
+
+  const contactsByEmail = new Map<string, { email: string; name: string }>();
+
+  for (const row of rows) {
+    const email = row.email.trim().toLowerCase();
+    if (!email) continue;
+
+    contactsByEmail.set(email, { email, name: row.name });
+  }
+
+  return Array.from(contactsByEmail.values());
+}
+
 export const MembersService = {
   findByUserAndOrganization,
   isAdminOrOwner,
+  listMemberContacts,
 };
