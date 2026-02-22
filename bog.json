@@ -5,10 +5,10 @@
       "icon": {
         "version": "1.0.0"
       },
-      "text-input": {
+      "button": {
         "version": "1.0.0"
       },
-      "button": {
+      "text-input": {
         "version": "1.0.0"
       }
     }
