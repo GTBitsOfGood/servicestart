@@ -1,5 +1,4 @@
 import { JOIN_REQUEST_STATUS_VALUES, JoinRequestStatus } from "@/lib/schema";
-import type { Context } from "hono";
 import { Hono } from "hono";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";
@@ -16,7 +15,7 @@ const patchParamsSchema = z.object({
 });
 
 const app = new Hono()
-  .get("/", zValidator("query", paginationQuerySchema), async (c: Context) => {
+  .get("/", zValidator("query", paginationQuerySchema), async (c) => {
     const session = await auth.api.getSession({
       headers: c.req.header(),
     });
@@ -57,7 +56,7 @@ const app = new Hono()
       pageSize,
     });
   })
-  .patch("/", zValidator("query", patchParamsSchema), async (c: Context) => {
+  .patch("/", zValidator("query", patchParamsSchema), async (c) => {
     const session = await auth.api.getSession({
       headers: c.req.header(),
     });
@@ -120,7 +119,7 @@ const app = new Hono()
 
     return c.json(updatedRequest);
   })
-  .get("/:organizationId", async (c: Context) => {
+  .get("/:organizationId", async (c) => {
     const session = await auth.api.getSession({
       headers: c.req.header(),
     });
@@ -142,7 +141,7 @@ const app = new Hono()
 
     return c.json(joinRequest);
   })
-  .delete("/:organizationId", async (c: Context) => {
+  .delete("/:organizationId", async (c) => {
     const session = await auth.api.getSession({
       headers: c.req.header(),
     });
