@@ -3,8 +3,9 @@
   "packageManager": "pnpm@10.17.1",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "build:netlify": "NEXT_PUBLIC_BRANCH_NAME=$BRANCH NEXT_PUBLIC_BASE_URL=$DEPLOY_PRIME_URL NEXT_PUBLIC_PROD_URL=$URL pnpm run build",
+    "build": "next build --webpack",
     "start": "next start",
     "test": "pnpm run db:test:start && vitest run; pnpm run db:test:stop",
     "test:e2e": "pnpm exec playwright install --with-deps && DB_URL=postgres://test:root@localhost:5433/postgres pnpm exec playwright test --pass-with-no-tests",

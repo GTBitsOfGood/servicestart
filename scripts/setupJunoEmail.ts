@@ -17,7 +17,7 @@ const senderDomain = (
 ).toLowerCase();
 
 async function main() {
-  await juno.email.setupEmail({ sendgridKey });
+  await juno.email.setupEmail({ sendgridKey: sendgridKey! });
 
   const registration = await juno.email.registerDomain({
     domain: senderDomain,
