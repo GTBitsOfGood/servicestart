@@ -8,10 +8,10 @@ import BogButton from "@/components/BogButton/BogButton";
 import { useRouter } from "next/navigation";
 import { OrganizationConfigKey } from "@/lib/schema";
 import { getSlugFromHost } from "@/lib/clientAuthUtils";
+import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 
 export default function LoginPage() {
   const router = useRouter();
-  const logo = authClient.useActiveOrganization().data?.logo;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { primary_color = "#FFFFFF", secondary_color = "#FFFFFF" } =
@@ -19,7 +19,8 @@ export default function LoginPage() {
       OrganizationConfigKey.PrimaryColor,
       OrganizationConfigKey.SecondaryColor,
     ]);
-  const org = authClient.useActiveOrganization();
+  const org = useActiveOrganization();
+  const logo = org?.organization.data?.logo;
 
   const handleLogin = async () => {
     const { data, error } = await authClient.signIn.email(
@@ -47,7 +48,7 @@ export default function LoginPage() {
         return;
       }
 
-      if (org.data?.slug === getSlugFromHost(window.location.host)) {
+      if (org?.slug === getSlugFromHost(window.location.host)) {
         router.replace("/");
       }
 

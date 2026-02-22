@@ -8,10 +8,10 @@ import { useRouter } from "next/navigation";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import { OrganizationConfigKey } from "@/lib/schema";
 import { getSlugFromHost } from "@/lib/clientAuthUtils";
+import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 
 export default function SignupPage() {
   const router = useRouter();
-  const logo = authClient.useActiveOrganization().data?.logo;
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -21,7 +21,8 @@ export default function SignupPage() {
       OrganizationConfigKey.PrimaryColor,
       OrganizationConfigKey.SecondaryColor,
     ]);
-  const org = authClient.useActiveOrganization();
+  const org = useActiveOrganization();
+  const logo = org?.organization.data?.logo;
 
   const handleSignup = async () => {
     const { data, error } = await authClient.signUp.email(
@@ -50,7 +51,7 @@ export default function SignupPage() {
         return;
       }
 
-      if (org.data?.slug === getSlugFromHost(window.location.host)) {
+      if (org?.slug === getSlugFromHost(window.location.host)) {
         router.replace("/");
       }
 
