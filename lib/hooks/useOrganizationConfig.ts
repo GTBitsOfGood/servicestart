@@ -7,7 +7,6 @@ import api from "@/lib/api";
 type ConfigResult<K extends readonly string[]> = Partial<
   Record<K[number], string>
 >;
-
 export default function useOrganizationConfig<K extends string[]>(keys: K) {
   const [data, setData] = useState<ConfigResult<K>>({});
   const keyString = keys.join(",");
@@ -24,8 +23,8 @@ export default function useOrganizationConfig<K extends string[]>(keys: K) {
           organizationSlug: slug,
         },
       })
-      .then(setData)
-      .catch(() => {});
+      .then((res) => res.json())
+      .then(setData);
   }, [keyString]);
 
   return data;
