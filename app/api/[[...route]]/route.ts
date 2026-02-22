@@ -14,7 +14,7 @@ const app = new Hono()
   .route("/joinRequests", joinRequests)
   .route("/announcements", announcements)
   .route("/events", events)
-  .route("/organizationconfig", organizationconfig);
+  .route("/organizationConfig", organizationConfig)
   .route("/shifts", shifts)
   .route("/media", media);
 
