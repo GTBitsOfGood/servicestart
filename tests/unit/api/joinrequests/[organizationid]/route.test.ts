@@ -9,7 +9,7 @@ import {
   createOrganization,
   signUpAndGetHeaders,
   testApi,
-} from "../../../../testUtils";
+} from "@/tests/unit/testUtils";
 
 describe("GET /api/joinRequests/:organizationId", () => {
   it("returns the join request status for an authenticated user", async () => {
@@ -35,9 +35,9 @@ describe("GET /api/joinRequests/:organizationId", () => {
     expect(response.status).toBe(200);
 
     const data = await response.json();
-    expect(data.status).toBe(JoinRequestStatus.Pending);
-    expect(data.id).toBeDefined();
-    expect(data.createdAt).toBeDefined();
+    expect(data).toHaveProperty("status", JoinRequestStatus.Pending);
+    expect(data).toHaveProperty("id");
+    expect(data).toHaveProperty("createdAt");
   });
 
   it("returns 401 when user is not authenticated", async () => {
@@ -50,7 +50,7 @@ describe("GET /api/joinRequests/:organizationId", () => {
     expect(response.status).toBe(401);
 
     const data = await response.json();
-    expect(data.error).toBe("Unauthorized");
+    expect(data).toHaveProperty("error", "Unauthorized");
   });
 
   it("returns 404 when no join request exists", async () => {
@@ -69,7 +69,7 @@ describe("GET /api/joinRequests/:organizationId", () => {
     expect(response.status).toBe(404);
 
     const data = await response.json();
-    expect(data.error).toBe("Join request not found");
+    expect(data).toHaveProperty("error", "Join request not found");
   });
 
   it("returns the correct status when join request is approved", async () => {
@@ -95,7 +95,7 @@ describe("GET /api/joinRequests/:organizationId", () => {
     expect(response.status).toBe(200);
 
     const data = await response.json();
-    expect(data.status).toBe(JoinRequestStatus.Approved);
+    expect(data).toHaveProperty("status", JoinRequestStatus.Approved);
   });
 });
 
@@ -109,7 +109,7 @@ describe("DELETE /api/joinRequests/:organizationId", () => {
 
     expect(response.status).toBe(401);
     const data = await response.json();
-    expect(data.error).toBe("Unauthorized");
+    expect(data).toHaveProperty("error", "Unauthorized");
   });
 
   it("returns 404 when no join request exists", async () => {
@@ -126,7 +126,7 @@ describe("DELETE /api/joinRequests/:organizationId", () => {
 
     expect(response.status).toBe(404);
     const data = await response.json();
-    expect(data.error).toBe("Join request not found");
+    expect(data).toHaveProperty("error", "Join request not found");
   });
 
   it("returns 403 when join request is not pending (approved)", async () => {
@@ -149,7 +149,10 @@ describe("DELETE /api/joinRequests/:organizationId", () => {
 
     expect(response.status).toBe(403);
     const data = await response.json();
-    expect(data.error).toBe("Cannot delete a non-pending join request");
+    expect(data).toHaveProperty(
+      "error",
+      "Cannot delete a non-pending join request",
+    );
 
     // Verify request still exists
     const [existingRequest] = await db
@@ -196,18 +199,16 @@ describe("DELETE /api/joinRequests/:organizationId", () => {
       JoinRequestStatus.Pending,
     );
 
-    const request = new Request(
-      `http://localhost/api/joinrequests/${organization.id}`,
-      { method: "DELETE", headers },
+    const response = await testApi.joinRequests[":organizationId"].$delete(
+      {
+        param: { organizationId: organization.id },
+      },
+      { headers },
     );
-
-    const response = await DELETE(request, {
-      params: Promise.resolve({ organizationId: organization.id }),
-    });
 
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.success).toBe(true);
+    expect(data).toHaveProperty("success", true);
 
     // Verify request is deleted
     const [deletedRequest] = await db
