@@ -4,124 +4,40 @@ import { useRouter } from "next/navigation";
 import authClient from "@/lib/authClient";
 import BogButton from "@/components/BogButton/BogButton";
 import BogTabs from "@/components/BogTabs/BogTabs";
-
-type Event = {
-  id: string;
-  name: string;
-  location: string;
-  description?: string | null;
-  startTimestamp: string | null;
-  coverImageUrl?: string | null;
-  organizationId: string;
-};
-
-function EventCard({ event }: { event: Event }) {
-  const router = useRouter();
-
-  const date = event.startTimestamp
-    ? new Date(event.startTimestamp).toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "long",
-      })
-    : "TBD";
-  const time = event.startTimestamp
-    ? new Date(event.startTimestamp).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      })
-    : "";
-
-  return (
-    <div
-      style={{
-        width: 230,
-        minWidth: 230,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          height: 145,
-          backgroundColor: "#D9D9D9",
-          borderRadius: 12,
-          marginBottom: 12,
-          backgroundImage: event.coverImageUrl
-            ? `url(${event.coverImageUrl})`
-            : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      />
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div
-          className="text-paragraph-2"
-          style={{ fontWeight: 700, color: "#000", fontSize: 18 }}
-        >
-          {event.name}
-        </div>
-        <div
-          className="text-small"
-          style={{ fontWeight: 600, color: "#000", fontSize: 15 }}
-        >
-          {date}
-          {time ? ` • ${time}` : ""}
-        </div>
-        <div className="text-small" style={{ color: "#000", fontSize: 15 }}>
-          {event.organizationId}
-        </div>
-        <div className="text-small" style={{ color: "#000", fontSize: 14 }}>
-          {event.location}
-        </div>
-        <button
-          onClick={() => router.push(`/event/${event.id}`)}
-          className="text-small"
-          style={{
-            background: "none",
-            border: "none",
-            padding: 0,
-            color: "#rgba(34, 7, 11, 0.50)",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            width: "fit-content",
-            fontSize: 14,
-          }}
-        >
-          View details <span style={{ fontSize: 14 }}>{">"}</span>
-        </button>
-      </div>
-    </div>
-  );
-}
+import EventCard, { type Event } from "@/components/EventCard";
+import client from "@/lib/api";
 
 export default function ProfilePage() {
   const router = useRouter();
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [pastEvents, setPastEvents] = useState<Event[]>([]);
   const { data: session, isPending } = authClient.useSession();
-  const [mounted, setMounted] = useState(false); //need this for bogtabs
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     if (!session?.user) return;
-    fetch("/api/events")
-      .then((r) => r.json())
-      .then((data) => {
-        const events: Event[] = data.data ?? [];
-        const now = new Date();
-        setUpcomingEvents(
-          events.filter(
-            (e) => e.startTimestamp && new Date(e.startTimestamp) >= now,
-          ),
-        );
-        setPastEvents(
-          events.filter(
-            (e) => !e.startTimestamp || new Date(e.startTimestamp) < now,
-          ),
-        );
-      });
+    async function getEvents() {
+      const res = await client.events.$get({ query: {} });
+      if (!res.ok) {
+        const error = await res.json();
+        console.error(error.error);
+        return;
+      }
+      const data = await res.json();
+      const events: Event[] = data.data ?? [];
+      const now = new Date();
+      setUpcomingEvents(
+        events.filter(
+          (e) => e.startTimestamp && new Date(e.startTimestamp) >= now,
+        ),
+      );
+      setPastEvents(
+        events.filter(
+          (e) => !e.startTimestamp || new Date(e.startTimestamp) < now,
+        ),
+      );
+    }
+    getEvents();
   }, [session]);
 
   useEffect(() => {
@@ -129,7 +45,9 @@ export default function ProfilePage() {
       router.replace("/login");
     }
   }, [isPending, session, router]);
+
   useEffect(() => setMounted(true), []);
+
   if (isPending || !session?.user) return null;
   if (!mounted) return null;
 
@@ -139,68 +57,43 @@ export default function ProfilePage() {
     image?: string;
     phoneNumber?: string;
   };
+
   const handleEdit = () => router.push("/profile/edit");
 
   return (
-    <div style={{ maxWidth: 1300, margin: "0 auto", padding: "60px 48px" }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          marginBottom: 32,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 24 }}>
+    <div className="max-w-[1300px] mx-auto px-12 py-[60px]">
+      <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start gap-6">
           {user.image ? (
             <img
               src={user.image}
               alt={user.name}
-              style={{
-                width: 110,
-                height: 110,
-                borderRadius: "50%",
-                objectFit: "cover",
-                flexShrink: 0,
-              }}
+              className="w-[110px] h-[110px] rounded-full object-cover shrink-0"
             />
           ) : (
-            <div
-              style={{
-                width: 110,
-                height: 110,
-                borderRadius: "50%",
-                backgroundColor: "#D9D9D9",
-                flexShrink: 0,
-              }}
-            />
+            <div className="w-[110px] h-[110px] rounded-full bg-[#D9D9D9] shrink-0" />
           )}
 
           <div>
-            <div
-              className="text-heading-3"
-              style={{ fontWeight: 500, color: "#000", marginBottom: 20 }}
-            >
+            <div className="text-heading-3 font-medium text-black mb-5">
               {user.name}
             </div>
             {user.phoneNumber && (
-              <div className="text-paragraph-2" style={{ marginBottom: 6 }}>
-                <span style={{ fontWeight: 700 }}>Phone : </span>
-                <span style={{ color: "rgba(34, 7, 11, 0.50)" }}>
+              <div className="text-paragraph-2 mb-1.5">
+                <span className="font-bold">Phone : </span>
+                <span className="text-[rgba(34,7,11,0.50)]">
                   {user.phoneNumber}
                 </span>
               </div>
             )}
             <div className="text-paragraph-2">
-              <span style={{ fontWeight: 700 }}>Email : </span>
-              <span style={{ color: "rgba(34, 7, 11, 0.50)" }}>
-                {user.email}
-              </span>
+              <span className="font-bold">Email : </span>
+              <span className="text-[rgba(34,7,11,0.50)]">{user.email}</span>
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className="flex gap-2">
           <BogButton
             variant="primary"
             size="responsive"
@@ -219,46 +112,22 @@ export default function ProfilePage() {
             label: "Events",
             content: (
               <>
-                <div style={{ marginTop: 30, marginBottom: 0 }}>
-                  <h2
-                    className="text-heading-3"
-                    style={{ fontWeight: 500, color: "#000", marginBottom: 30 }}
-                  >
+                <div className="mt-[30px]">
+                  <h2 className="text-heading-3 font-medium text-black mb-[30px]">
                     Upcoming events [{upcomingEvents.length}]
                   </h2>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 24,
-                      flexWrap: "wrap",
-                      alignItems: "flex-start",
-                    }}
-                  >
+                  <div className="flex gap-6 flex-wrap items-start">
                     {upcomingEvents.map((event) => (
                       <EventCard key={event.id} event={event} />
                     ))}
                   </div>
                 </div>
 
-                <div style={{ marginTop: 40 }}>
-                  <h2
-                    className="text-heading-3"
-                    style={{
-                      fontWeight: 500,
-                      color: "#000",
-                      marginBottom: 30,
-                    }}
-                  >
+                <div className="mt-10">
+                  <h2 className="text-heading-3 font-medium text-black mb-[30px]">
                     Past events [{pastEvents.length}]
                   </h2>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 24,
-                      flexWrap: "wrap",
-                      alignItems: "flex-start",
-                    }}
-                  >
+                  <div className="flex gap-6 flex-wrap items-start">
                     {pastEvents.map((event) => (
                       <EventCard key={event.id} event={event} />
                     ))}
@@ -270,7 +139,7 @@ export default function ProfilePage() {
           hours: {
             label: "Hours",
             content: (
-              <div className="text-paragraph-2" style={{ color: "#888" }}>
+              <div className="text-paragraph-2 text-[#888]">
                 Hours content will be here (tbd).
               </div>
             ),
