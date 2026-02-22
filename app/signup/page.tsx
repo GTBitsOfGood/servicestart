@@ -1,16 +1,17 @@
 "use client";
 
 import authClient from "@/lib/authClient";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BogTextInput from "@/components/BogTextInput/BogTextInput";
 import BogButton from "@/components/BogButton/BogButton";
 import { useRouter } from "next/navigation";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import { OrganizationConfigKey } from "@/lib/schema";
+import { getSlugFromHost } from "@/lib/clientAuthUtils";
 
 export default function SignupPage() {
   const router = useRouter();
-  const organization = authClient.useActiveOrganization();
+  const logo = authClient.useActiveOrganization().data?.logo;
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -19,8 +20,9 @@ export default function SignupPage() {
     OrganizationConfigKey.PrimaryColor,
     OrganizationConfigKey.SecondaryColor,
   ] as const);
-  const primaryColor = "#FD8033";
-  const secondaryColor = "#FB3552";
+  const primaryColor = config.primary_color || "#FD8033";
+  const secondaryColor = config.secondary_color || "#FB3552";
+  const org = authClient.useActiveOrganization();
 
   const handleSignup = async () => {
     const { data, error } = await authClient.signUp.email(
@@ -28,7 +30,7 @@ export default function SignupPage() {
         email,
         password,
         name: `${firstName} ${lastName}`,
-        callbackURL: "/",
+        callbackURL: "/login",
       },
       {
         onSuccess: () => {
@@ -40,6 +42,23 @@ export default function SignupPage() {
       },
     );
   };
+
+  useEffect(() => {
+    const checkLoggedIn = async () => {
+      const session = await authClient.getSession();
+      if (!session?.data?.user) {
+        return;
+      }
+
+      if (org.data?.slug === getSlugFromHost(window.location.hostname)) {
+        router.replace("/");
+      }
+
+      return;
+    };
+
+    checkLoggedIn();
+  }, [router]);
 
   return (
     <div
@@ -56,9 +75,9 @@ export default function SignupPage() {
           }}
         >
           <div className="w-[339px] h-[130px]">
-            {organization?.data?.logo && (
+            {logo && (
               <img
-                src={`/images/${organization?.data?.logo}`}
+                src={`/images/${logo}`}
                 alt="Organization Logo"
                 className="w-[107px] h-[107px]"
               />
