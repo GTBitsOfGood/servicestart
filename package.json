@@ -25,6 +25,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx scripts/seed.ts",
+    "email:setup": "tsx scripts/setupJunoEmail.ts",
     "db:check": "drizzle-kit check",
     "db:view": "drizzle-kit studio"
   },
@@ -39,6 +40,7 @@
     "dotenv": "^17.3.1",
     "drizzle-orm": "1.0.0-beta.15-859cf75",
     "hono": "^4.11.10",
+    "juno-sdk": "^0.0.9",
     "next": "latest",
     "pg": "^8.18.0",
     "postcss": "^8.5.6",
