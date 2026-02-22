@@ -7,14 +7,20 @@ import { createJoinRequestIfNeeded } from "@/lib/authUtils";
 export const auth = betterAuth({
   plugins: [
     organization({
-      additionalFields: {
-        phoneNumber: {
-          type: "string",
-          required: false,
-        },
-        email: {
-          type: "string",
-          required: false,
+      schema: {
+        organization: {
+          additionalFields: {
+            phoneNumber: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+            email: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+          },
         },
       },
     }),
