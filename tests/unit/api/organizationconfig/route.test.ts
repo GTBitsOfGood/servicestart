@@ -12,9 +12,9 @@ import {
   testApi,
 } from "@/tests/unit/testUtils";
 
-describe("GET /api/organizationconfig", () => {
+describe("GET /api/organizationConfig", () => {
   it("returns 200 and empty object when keys is missing", async () => {
-    const response = await testApi.organizationconfig.$get({
+    const response = await testApi.organizationConfig.$get({
       query: {},
     });
     expect(response.status).toBe(200);
@@ -31,7 +31,7 @@ describe("GET /api/organizationconfig", () => {
       value: "Org description",
     });
 
-    const response = await testApi.organizationconfig.$get({
+    const response = await testApi.organizationConfig.$get({
       query: {
         keys: "description",
         organizationSlug: "cfg-get-slug",
@@ -56,7 +56,7 @@ describe("GET /api/organizationconfig", () => {
       value: "Active description",
     });
 
-    const response = await testApi.organizationconfig.$get(
+    const response = await testApi.organizationConfig.$get(
       {
         query: {
           keys: "description",
@@ -73,7 +73,7 @@ describe("GET /api/organizationconfig", () => {
 
   it("returns default value when key is not set", async () => {
     await createOrganization("cfg-get-default");
-    const response = await testApi.organizationconfig.$get({
+    const response = await testApi.organizationConfig.$get({
       query: {
         keys: "description",
         organizationSlug: "cfg-get-default",
@@ -85,7 +85,7 @@ describe("GET /api/organizationconfig", () => {
   });
 
   it("returns 400 for non-existent organizationSlug", async () => {
-    const response = await testApi.organizationconfig.$get({
+    const response = await testApi.organizationConfig.$get({
       query: {
         keys: "description",
         organizationSlug: "does-not-exist",
@@ -93,13 +93,16 @@ describe("GET /api/organizationconfig", () => {
     });
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("Requested organization does not exist");
+    expect(data).toHaveProperty(
+      "error",
+      "Requested organization does not exist",
+    );
   });
 
   it("returns 400 when no organizationSlug and no active organization", async () => {
     const user = buildTestUser();
     const { headers } = await signUpAndGetSession(user);
-    const response = await testApi.organizationconfig.$get(
+    const response = await testApi.organizationConfig.$get(
       {
         query: {
           keys: "description",
@@ -109,13 +112,13 @@ describe("GET /api/organizationconfig", () => {
     );
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("No organizationId provided");
+    expect(data).toHaveProperty("error", "No organizationId provided");
   });
 });
 
-describe("PUT /api/organizationconfig", () => {
+describe("PUT /api/organizationConfig", () => {
   it("returns 401 when user is not authenticated", async () => {
-    const response = await testApi.organizationconfig.$put({
+    const response = await testApi.organizationConfig.$put({
       json: {
         key: OrganizationConfigKey.Description,
         value: "x",
@@ -123,7 +126,7 @@ describe("PUT /api/organizationconfig", () => {
     });
     expect(response.status).toBe(401);
     const data = await response.json();
-    expect(data.error).toBe("Unauthorized");
+    expect(data).toHaveProperty("error", "Unauthorized");
   });
 
   it("returns 400 when user has no active organization", async () => {
@@ -131,7 +134,7 @@ describe("PUT /api/organizationconfig", () => {
     const user = buildTestUser();
     const { headers } = await signUpAndGetSession(user);
 
-    const response = await testApi.organizationconfig.$put(
+    const response = await testApi.organizationConfig.$put(
       {
         json: {
           key: OrganizationConfigKey.Description,
@@ -142,7 +145,7 @@ describe("PUT /api/organizationconfig", () => {
     );
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("No active organization");
+    expect(data).toHaveProperty("error", "No active organization");
   });
 
   it("returns 403 when user is not admin or owner", async () => {
@@ -152,7 +155,7 @@ describe("PUT /api/organizationconfig", () => {
     await setActiveOrganization(session.id, org.id);
     // user is not a member or is member with insufficient role
 
-    const response = await testApi.organizationconfig.$put(
+    const response = await testApi.organizationConfig.$put(
       {
         json: {
           key: OrganizationConfigKey.Description,
@@ -163,7 +166,10 @@ describe("PUT /api/organizationconfig", () => {
     );
     expect(response.status).toBe(403);
     const data = await response.json();
-    expect(data.error).toBe("Forbidden: Admin or owner role required");
+    expect(data).toHaveProperty(
+      "error",
+      "Forbidden: Admin or owner role required",
+    );
   });
 
   it("returns 400 for invalid key", async () => {
@@ -177,7 +183,7 @@ describe("PUT /api/organizationconfig", () => {
     await setActiveOrganization(session.id, org.id);
     await addMember(admin.id, org.id, "admin");
 
-    const response = await testApi.organizationconfig.$put(
+    const response = await testApi.organizationConfig.$put(
       {
         json: { key: "not-a-key", value: "x" } as unknown as {
           key: OrganizationConfigKey;
@@ -188,7 +194,7 @@ describe("PUT /api/organizationconfig", () => {
     );
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("Invalid key");
+    expect(data).toHaveProperty("error", "Invalid key");
   });
 
   it("returns 400 for invalid value (HTML tags)", async () => {
@@ -202,7 +208,7 @@ describe("PUT /api/organizationconfig", () => {
     await setActiveOrganization(session.id, org.id);
     await addMember(admin.id, org.id, "admin");
 
-    const response = await testApi.organizationconfig.$put(
+    const response = await testApi.organizationConfig.$put(
       {
         json: {
           key: OrganizationConfigKey.Description,
@@ -213,7 +219,10 @@ describe("PUT /api/organizationconfig", () => {
     );
     expect(response.status).toBe(400);
     const data = await response.json();
-    expect(data.error).toBe("Description must not contain HTML tags");
+    expect(data).toHaveProperty(
+      "error",
+      "Description must not contain HTML tags",
+    );
   });
 
   it("updates config when admin or owner", async () => {
@@ -227,7 +236,7 @@ describe("PUT /api/organizationconfig", () => {
     await setActiveOrganization(session.id, org.id);
     await addMember(admin.id, org.id, "admin");
 
-    const response = await testApi.organizationconfig.$put(
+    const response = await testApi.organizationConfig.$put(
       {
         json: {
           key: OrganizationConfigKey.Description,
@@ -238,7 +247,7 @@ describe("PUT /api/organizationconfig", () => {
     );
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.ok).toBe(true);
+    expect(data).toHaveProperty("ok", true);
 
     const rows = await db
       .select()
