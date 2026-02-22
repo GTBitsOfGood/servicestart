@@ -33,6 +33,8 @@ export const joinRequestStatusEnum = pgEnum(
 //TypeScript enum for org config key values
 export enum OrganizationConfigKey {
   Description = "description",
+  PrimaryColor = "primary_color",
+  SecondaryColor = "secondary_color",
 }
 
 // Array of enum values for use with pgEnum and Zod
