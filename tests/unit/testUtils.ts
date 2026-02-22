@@ -78,7 +78,7 @@ export async function signUpAndGetHeaders(
 
   return {
     user: res.response.user,
-    headers: new Headers({ Cookie: res.headers.get("set-cookie")! }),
+    headers: { Cookie: res.headers.get("set-cookie")! },
   };
 }
 
