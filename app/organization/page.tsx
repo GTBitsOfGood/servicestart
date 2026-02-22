@@ -1,11 +1,7 @@
 import { redirect } from "next/navigation";
 import { OrganizationsService } from "@/lib/services/organizations";
+import { MembersService } from "@/lib/services/members";
 import authClient from "@/lib/authClient";
-
-function isAdminOrOwner(role: string | undefined): boolean {
-  const ADMIN_ROLES = ["admin", "owner"];
-  return role !== undefined && ADMIN_ROLES.includes(role);
-}
 
 export default async function OrganizationPage({
   params,
@@ -14,23 +10,23 @@ export default async function OrganizationPage({
 }) {
   const session = await authClient.getSession();
 
-  if (!session?.user) {
+  if (!session?.data?.user) {
     redirect("/login");
   }
-
-  const user = session.user;
+  const user = session.data!.user!;
   const organization = await OrganizationsService.findBySlug(params.slug);
 
   if (!organization) {
     redirect("/");
   }
-  const membership = organization.members.find(
-    (member: any) => member.userId === user.id,
+  const membership = await MembersService.findByUserAndOrganization(
+    user.id,
+    organization!.id,
   );
   if (!membership) {
     redirect("/");
   }
-  const adminOrOwner = isAdminOrOwner(membership.role);
+  const adminOrOwner = MembersService.isAdminOrOwner(membership.role);
   //frontend tbd
   return (
     <div>
