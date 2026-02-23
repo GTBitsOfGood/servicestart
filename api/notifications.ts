@@ -3,9 +3,9 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { paginationQuerySchema } from "../lib/apiUtils";
 import { requireMembership } from "@/lib/authUtils";
+import { ForbiddenError } from "@/lib/errors";
 import { NotificationService } from "@/lib/services/NotificationService";
 import { NOTIFICATION_TYPE_VALUES, NotificationType } from "@/lib/schema";
-import { ForbiddenError } from "hono/http-error";
 
 const notificationsQuerySchema = paginationQuerySchema.and(
   z.object({
