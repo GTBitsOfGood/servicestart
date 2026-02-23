@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "23319e46-6d10-40eb-b6f8-5f684f01668b",
+  "id": "150314c9-58a2-4216-89ae-b06c9c1273d9",
   "prevIds": [
     "2e2513ce-22de-478d-9fba-7e0c2d618d76"
   ],
@@ -2165,7 +2165,5 @@
       "entityType": "uniques"
     }
   ],
-  "renames": [
-    "public.media.media_file_name_idx->public.media.media_fileName_idx"
-  ]
+  "renames": []
 }
