@@ -21,7 +21,7 @@ async function main() {
 
   const registration = await juno.email.registerDomain({
     domain: senderDomain,
-    subdomain: undefined,
+    subdomain: "mail",
   });
 
   console.log(`Domain ID: ${registration.id}`);
