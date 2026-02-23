@@ -1,6 +1,13 @@
 import { test, expect } from "@playwright/test";
 import { createTestUserAndSignIn } from "./testUtils";
-import { buildTestUser } from "../unit/testUtils";
+import {
+  buildTestUser,
+  createOrganization,
+  signUpAndGetSession,
+  setActiveOrganization,
+} from "../unit/testUtils";
+import OrganizationConfigService from "@/lib/services/OrganizationConfigService";
+import { OrganizationConfigKey } from "@/lib/schema";
 
 test.describe("Login Page", () => {
   test("login", async ({ page }) => {
@@ -20,5 +27,31 @@ test.describe("Login Page", () => {
     await createTestUserAndSignIn(page);
     await page.goto("/login");
     await expect(page).toHaveURL(/\//);
+  });
+
+  test("check colors", async ({ page }) => {
+    const testUser = await buildTestUser();
+    const { id } = await createOrganization("acme");
+    const { session } = await signUpAndGetSession(testUser);
+    await setActiveOrganization(session.id, id);
+
+    await OrganizationConfigService.setConfig(
+      id,
+      OrganizationConfigKey.PrimaryColor,
+      "#FD8033",
+    );
+
+    await OrganizationConfigService.setConfig(
+      id,
+      OrganizationConfigKey.SecondaryColor,
+      "#FB3552",
+    );
+
+    await page.goto("/login");
+
+    await expect(page.locator("div").first()).toHaveCSS(
+      "background-image",
+      /rgb\(253, 128, 51\).*rgb\(251, 53, 82\)/,
+    );
   });
 });

@@ -25,7 +25,7 @@ export default function useOrganizationConfig<K extends string[]>(keys: K) {
       })
       .then((res) => res.json())
       .then(setData);
-  }, [keyString]);
+  }, keys);
 
   return data;
 }
