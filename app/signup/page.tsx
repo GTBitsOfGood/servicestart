@@ -25,7 +25,7 @@ export default function SignupPage() {
   const logo = org?.organization.data?.logo;
 
   const handleSignup = async () => {
-    const { data, error } = await authClient.signUp.email(
+    const { error } = await authClient.signUp.email(
       {
         email,
         password,
@@ -59,7 +59,7 @@ export default function SignupPage() {
     };
 
     checkLoggedIn();
-  }, [router]);
+  }, [org?.slug, router]);
 
   return (
     <div

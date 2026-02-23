@@ -23,7 +23,7 @@ export default function LoginPage() {
   const logo = org?.organization.data?.logo;
 
   const handleLogin = async () => {
-    const { data, error } = await authClient.signIn.email(
+    const { error } = await authClient.signIn.email(
       {
         email,
         password,
@@ -56,7 +56,7 @@ export default function LoginPage() {
     };
 
     checkLoggedIn();
-  }, [router]);
+  }, [org?.slug, router]);
 
   return (
     <div

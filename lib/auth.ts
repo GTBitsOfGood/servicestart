@@ -67,7 +67,7 @@ export const auth = betterAuth({
               .from(sessions)
               .where(eq(sessions.id, session.session.id))
               .limit(1);
-            const data = await auth.api.setActiveOrganization({
+            await auth.api.setActiveOrganization({
               body: {
                 organizationId: result?.activeOrganizationId,
                 organizationSlug: slug,
