@@ -17,7 +17,7 @@ import {
   MediaType,
 } from "@/lib/schema";
 import { testClient } from "hono/testing";
-import app from "@/app/api/[[...route]]/route";
+import { app } from "@/app/api/[[...route]]/route";
 
 export const testApi = testClient(app).api;
 

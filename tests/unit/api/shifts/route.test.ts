@@ -13,7 +13,7 @@ import {
   createShift,
   createShiftRSVP,
 } from "@/tests/unit/testUtils";
-import app from "@/app/api/[[...route]]/route";
+import { app } from "@/app/api/[[...route]]/route";
 
 function withJsonHeaders(headers?: HeadersInit) {
   const nextHeaders = new Headers(headers);

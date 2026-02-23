@@ -6,6 +6,7 @@ import { createJoinRequestIfNeeded } from "@/lib/authUtils";
 
 export const auth = betterAuth({
   plugins: [organization()],
+  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL,
   database: drizzleAdapter(db, {
     provider: "pg",
     usePlural: true,

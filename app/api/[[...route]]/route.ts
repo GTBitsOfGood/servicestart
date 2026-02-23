@@ -8,7 +8,7 @@ import organizationConfig from "@/api/organizationConfig";
 import { Hono } from "hono";
 import { handle } from "hono/netlify";
 
-const app = new Hono()
+export const app = new Hono()
   .basePath("/api")
   .route("/ping", ping)
   .route("/joinRequests", joinRequests)
@@ -25,5 +25,3 @@ export const DELETE = handle(app);
 export const PATCH = handle(app);
 
 export type AppType = typeof app;
-
-export default app;

@@ -13,7 +13,7 @@ import {
   signUpAndGetSession,
   testApi,
 } from "@/tests/unit/testUtils";
-import app from "@/app/api/[[...route]]/route";
+import { app } from "@/app/api/[[...route]]/route";
 
 const FILE_STORAGE_DIR =
   process.env.FILE_STORAGE_DIR ?? "/tmp/servicestart-media-test";
