@@ -2,6 +2,17 @@ import { juno } from "@/lib/services/junoClient";
 import { MembersService } from "@/lib/services/members";
 import { OrganizationsService } from "@/lib/services/organizations";
 
+function senderDomain() {
+  if (process.env.EMAIL_SENDER_DOMAIN?.trim()) {
+    return process.env.EMAIL_SENDER_DOMAIN?.trim();
+  } else {
+    const url = new URL(
+      process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
+    );
+    return url.hostname;
+  }
+}
+
 async function emailMembers(
   organizationId: string,
   email: { subject: string; textBody: string; htmlBody?: string },
@@ -14,14 +25,6 @@ async function emailMembers(
   if (!organization || recipients.length === 0) {
     return;
   }
-
-  const senderDomain =
-    process.env.EMAIL_SENDER_DOMAIN?.trim() ||
-    new URL(
-      process.env.BETTER_AUTH_URL ||
-        process.env.NEXT_PUBLIC_BASE_URL ||
-        "http://localhost:3000",
-    ).hostname;
 
   if (!organization.slug) {
     throw new Error(
@@ -42,7 +45,7 @@ async function emailMembers(
     );
   }
 
-  const senderEmail = `${normalizedOrganization}@${senderDomain}`;
+  const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
 
   await juno.email.sendEmail({
     recipients,
@@ -69,14 +72,6 @@ async function registerOrganizationSender({
   organizationName: string;
   organizationSlug?: string | null;
 }) {
-  const senderDomain =
-    process.env.EMAIL_SENDER_DOMAIN?.trim() ||
-    new URL(
-      process.env.BETTER_AUTH_URL ||
-        process.env.NEXT_PUBLIC_BASE_URL ||
-        "http://localhost:3000",
-    ).hostname;
-
   if (!organizationSlug) {
     throw new Error(
       `Organization ${organizationId} is missing slug for sender email`,
@@ -96,7 +91,7 @@ async function registerOrganizationSender({
     );
   }
 
-  const senderEmail = `${normalizedOrganization}@${senderDomain}`;
+  const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
 
   await juno.email.registerSenderAddress({
     email: senderEmail,

@@ -86,7 +86,7 @@ describe("EmailService", () => {
     expect(payload).toBeDefined();
 
     expect(payload?.sender).toEqual({
-      email: "alpha-team@notifications.test",
+      email: "alpha-team@mail.notifications.test",
       name: "Organization alpha-team",
     });
     expect(payload?.subject).toBe("Release Notes");
