@@ -2,13 +2,18 @@ import { redirect } from "next/navigation";
 import { OrganizationsService } from "@/lib/services/organizations";
 import { MembersService } from "@/lib/services/members";
 import authClient from "@/lib/authClient";
+import { headers } from "next/headers";
 
 export default async function OrganizationPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  const session = await authClient.getSession();
+  const session = await authClient.getSession({
+    fetchOptions: {
+      headers: await headers(),
+    },
+  });
 
   if (!session?.data?.user) {
     redirect("/login");

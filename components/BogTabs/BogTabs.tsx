@@ -1,3 +1,4 @@
+"use client";
 import * as Tabs from "@radix-ui/react-tabs";
 import React from "react";
 import styles from "./styles.module.css";
@@ -72,7 +73,7 @@ export const BogTabs: React.FC<BogTabsProps> = ({
 
       {/* Only render content for tabs that do not have an href (navigational tabs shouldn't render content) */}
       {Object.entries(tabContents)
-        .filter(([_, tab]) => !tab.href)
+        .filter(([, tab]) => !tab.href)
         .map(([value, { content }]) => (
           <Tabs.Content
             key={value}

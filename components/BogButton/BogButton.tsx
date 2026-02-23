@@ -1,3 +1,4 @@
+"use client";
 import React, { ButtonHTMLAttributes, ReactNode, CSSProperties } from "react";
 import type { IconProps } from "../../utils/design-system/types/types";
 import styles from "./styles.module.css";

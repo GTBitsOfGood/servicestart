@@ -1,66 +1,33 @@
-"use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 import authClient from "@/lib/authClient";
 import BogButton from "@/components/BogButton/BogButton";
 import BogTabs from "@/components/BogTabs/BogTabs";
 import EventCard, { type Event } from "@/components/EventCard";
-import client from "@/lib/api";
+import EventService from "@/lib/services/EventService";
+import Link from "next/link";
+import { headers } from "next/headers";
 
-export default function ProfilePage() {
-  const router = useRouter();
-  const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
-  const [pastEvents, setPastEvents] = useState<Event[]>([]);
-  const { data: session, isPending } = authClient.useSession();
-  const [mounted, setMounted] = useState(false);
+export default async function ProfilePage() {
+  const session = await authClient.getSession({
+    fetchOptions: {
+      headers: await headers(),
+    },
+  });
+  if (!session?.data?.user) {
+    redirect("/login");
+  }
 
-  useEffect(() => {
-    if (!session?.user) return;
-    async function getEvents() {
-      const res = await client.events.$get({ query: {} });
-      if (!res.ok) {
-        const error = (await res.json()) as { error: string };
-        console.error(error.error);
-        return;
-      }
-      const data = await res.json();
-      const events: Event[] = data.data ?? [];
-      const now = new Date();
-      setUpcomingEvents(
-        events.filter(
-          (e) => e.startTimestamp && new Date(e.startTimestamp) >= now,
-        ),
-      );
-      setPastEvents(
-        events.filter(
-          (e) => !e.startTimestamp || new Date(e.startTimestamp) < now,
-        ),
-      );
-    }
-    getEvents();
-  }, [session]);
+  const user = session.data!.user!;
+  const allEvents = await EventService.findByUser(user.id);
+  const now = new Date();
 
-  useEffect(() => {
-    if (!isPending && !session?.user) {
-      router.replace("/login");
-    }
-  }, [isPending, session, router]);
+  const upcomingEvents = allEvents.filter(
+    (e) => e.startTimestamp && new Date(e.startTimestamp) >= now,
+  ) as Event[];
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (isPending || !session?.user) return null;
-  if (!mounted) return null;
-
-  const user = session.user as {
-    name: string;
-    email: string;
-    image?: string;
-    phoneNumber?: string;
-  };
-
-  const handleEdit = () => router.push("/profile/edit");
+  const pastEvents = allEvents.filter(
+    (e) => !e.startTimestamp || new Date(e.startTimestamp) < now,
+  ) as Event[];
 
   return (
     <div className="max-w-[1300px] mx-auto px-12 py-[60px]">
@@ -80,11 +47,11 @@ export default function ProfilePage() {
             <div className="text-heading-3 font-medium text-black mb-5">
               {user.name}
             </div>
-            {user.phoneNumber && (
+            {(user as { phoneNumber?: string }).phoneNumber && (
               <div className="text-paragraph-2 mb-1.5">
                 <span className="font-bold">Phone : </span>
                 <span className="text-[rgba(34,7,11,0.50)]">
-                  {user.phoneNumber}
+                  {(user as { phoneNumber?: string }).phoneNumber}
                 </span>
               </div>
             )}
@@ -96,14 +63,15 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex gap-2">
-          <BogButton
-            variant="primary"
-            size="responsive"
-            onClick={handleEdit}
-            style={{ background: "rgba(34, 7, 11, 0.50)" }}
-          >
-            Edit Details
-          </BogButton>
+          <Link href="/profile/edit">
+            <BogButton
+              variant="primary"
+              size="responsive"
+              style={{ background: "rgba(34, 7, 11, 0.50)" }}
+            >
+              Edit Details
+            </BogButton>
+          </Link>
         </div>
       </div>
 
