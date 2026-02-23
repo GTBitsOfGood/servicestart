@@ -9,7 +9,6 @@ type ConfigResult<K extends readonly string[]> = Partial<
 >;
 export default function useOrganizationConfig<K extends string[]>(keys: K) {
   const [data, setData] = useState<ConfigResult<K>>({});
-  const keyString = keys.join(",");
 
   useEffect(() => {
     const host =
@@ -25,7 +24,7 @@ export default function useOrganizationConfig<K extends string[]>(keys: K) {
       })
       .then((res) => res.json())
       .then(setData);
-  }, keys);
+  }, [keys]);
 
   return data;
 }
