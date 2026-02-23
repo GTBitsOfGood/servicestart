@@ -11,7 +11,7 @@ import {
 test.describe("Login Page", () => {
   test("login", async ({ page }) => {
     const theUser = await buildTestUser();
-    // const { user, session, headers } = await signUpAndGetSession(theUser);
+    const { user, session, headers } = await signUpAndGetSession(theUser);
 
     await page.goto("/login");
     await page.getByPlaceholder("example@email.com").fill(theUser.email);
