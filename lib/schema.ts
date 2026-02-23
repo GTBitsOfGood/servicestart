@@ -35,6 +35,7 @@ export enum OrganizationConfigKey {
   Description = "description",
   PrimaryColor = "primary_color",
   SecondaryColor = "secondary_color",
+  Tagline = "tagline",
 }
 
 // Array of enum values for use with pgEnum and Zod

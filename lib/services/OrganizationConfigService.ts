@@ -174,6 +174,68 @@ async function setSecondaryColor(organizationId: string, color: string) {
   }
 }
 
+async function getTagline(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.Tagline),
+      ),
+    )
+    .limit(1);
+
+  return row?.value ?? "No description has been set";
+}
+
+async function setTagline(organizationId: string, tagline: string) {
+  const htmlRegex = /<(?:"[^"]*"['"]*|'[^']*'['"]*|[^'">])+>/g;
+  // sanitization?
+  // desc = desc.replace(htmlRegex, "");
+
+  if (tagline.length > 100) {
+    throw new Error("Tagline must be no longer than 100 characters");
+  }
+
+  if (tagline.match(htmlRegex)) {
+    throw new Error("Tagline must not contain HTML tags");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.Tagline),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: tagline })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.Tagline),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.Tagline,
+      value: tagline,
+    });
+  }
+}
+
 const keyMap = {
   [OrganizationConfigKey.Description]: { get: getDesc, set: setDesc },
   [OrganizationConfigKey.PrimaryColor]: {
@@ -183,6 +245,10 @@ const keyMap = {
   [OrganizationConfigKey.SecondaryColor]: {
     get: getSecondaryColor,
     set: setSecondaryColor,
+  },
+  [OrganizationConfigKey.Tagline]: {
+    get: getTagline,
+    set: setTagline,
   },
 };
 

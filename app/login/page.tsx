@@ -14,11 +14,15 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { primary_color = "#FFFFFF", secondary_color = "#FFFFFF" } =
-    useOrganizationConfig([
-      OrganizationConfigKey.PrimaryColor,
-      OrganizationConfigKey.SecondaryColor,
-    ]);
+  const {
+    primary_color = "#FFFFFF",
+    secondary_color = "#FFFFFF",
+    tagline = "Welcome",
+  } = useOrganizationConfig([
+    OrganizationConfigKey.PrimaryColor,
+    OrganizationConfigKey.SecondaryColor,
+    OrganizationConfigKey.Tagline,
+  ]);
   const org = useActiveOrganization();
   const logo = org?.organization.data?.logo;
 
@@ -86,9 +90,7 @@ export default function LoginPage() {
       <div className="h-full flex flex-col justify-between items-center flex-1 pt-[12%]">
         <div className="w-[78%] flex flex-col items-center gap-[23px] p-[35px] pt-[100px] border-[2px] border-[#FFF] rounded-[30px] shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
           <p className="text-black text-[48px] font-bold self-stretch">Login</p>
-          <p className="text-white text-[24px] letter-spacing-[-0.48px] self-stretch">
-            Nonprofit tagline here...
-          </p>
+          <p className="text-white text-[24px] self-stretch">{tagline}</p>
           <BogTextInput
             name="email"
             type="email"

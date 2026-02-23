@@ -16,11 +16,15 @@ export default function SignupPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { primary_color = "#FFFFFF", secondary_color = "#FFFFFF" } =
-    useOrganizationConfig([
-      OrganizationConfigKey.PrimaryColor,
-      OrganizationConfigKey.SecondaryColor,
-    ]);
+  const {
+    primary_color = "#FFFFFF",
+    secondary_color = "#FFFFFF",
+    tagline = "Welcome",
+  } = useOrganizationConfig([
+    OrganizationConfigKey.PrimaryColor,
+    OrganizationConfigKey.SecondaryColor,
+    OrganizationConfigKey.Tagline,
+  ]);
   const org = useActiveOrganization();
   const logo = org?.organization.data?.logo;
 
@@ -92,7 +96,7 @@ export default function SignupPage() {
             Sign Up
           </p>
           <p className="text-white text-[20px] letter-spacing-[-0.48px] self-stretch">
-            Welcome to Nonprofit!
+            {tagline}
           </p>
           <BogTextInput
             name="first_name"
