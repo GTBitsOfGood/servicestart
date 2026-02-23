@@ -65,6 +65,7 @@ export default function LoginPage() {
   return (
     <div
       className="flex h-screen w-screen items-center"
+      data-testid="page"
       style={{
         background: `linear-gradient(75deg, ${primary_color} 0%, ${secondary_color} 100%)`,
       }}

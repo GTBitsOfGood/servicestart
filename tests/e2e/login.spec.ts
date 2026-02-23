@@ -12,6 +12,7 @@ import { OrganizationConfigKey } from "@/lib/schema";
 test.describe("Login Page", () => {
   test("login", async ({ page }) => {
     const user = await buildTestUser();
+    await signUpAndGetSession(user);
 
     await page.goto("/login");
     await page.getByPlaceholder("example@email.com").fill(user.email);
@@ -51,9 +52,15 @@ test.describe("Login Page", () => {
 
     await page.goto("/login");
 
-    await expect(page.locator("div").first()).toHaveCSS(
-      "background-image",
-      /rgb\(253, 128, 51\).*rgb\(251, 53, 82\)/,
+    const loginPage = page.getByTestId("page");
+
+    await expect(loginPage).toBeVisible();
+    await expect(loginPage).toHaveCSS("background-image", /linear-gradient/);
+
+    const background = await loginPage.evaluate(
+      (e) => getComputedStyle(e).backgroundImage,
     );
+    expect(background).toContain("253, 128, 51");
+    expect(background).toContain("251, 53, 82");
   });
 });
