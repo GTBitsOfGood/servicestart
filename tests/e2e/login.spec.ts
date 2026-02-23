@@ -30,37 +30,17 @@ test.describe("Login Page", () => {
     await expect(page).toHaveURL(/\//);
   });
 
-  test("check colors", async ({ page }) => {
-    const testUser = await buildTestUser();
-    const { id } = await createOrganization(
-      `org-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
-    );
-    const { session } = await signUpAndGetSession(testUser);
-    await setActiveOrganization(session.id, id);
-
-    await OrganizationConfigService.setConfig(
-      id,
-      OrganizationConfigKey.PrimaryColor,
-      "#FD8033",
-    );
-
-    await OrganizationConfigService.setConfig(
-      id,
-      OrganizationConfigKey.SecondaryColor,
-      "#FB3552",
-    );
-
+  test("default colors", async ({ page }) => {
     await page.goto("/login");
 
     const loginPage = page.getByTestId("page");
 
     await expect(loginPage).toBeVisible();
-    await expect(loginPage).toHaveCSS("background-image", /linear-gradient/);
-
     const background = await loginPage.evaluate(
       (e) => getComputedStyle(e).backgroundImage,
     );
-    expect(background).toContain("253, 128, 51");
-    expect(background).toContain("251, 53, 82");
+    expect(background).toContain(
+      "linear-gradient(75deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)",
+    );
   });
 });
