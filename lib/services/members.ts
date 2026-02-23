@@ -20,6 +20,15 @@ async function findByUserAndOrganization(
   return membership ?? null;
 }
 
+async function getUserIdsByOrganization(organizationId: string) {
+  const organizationMembers = await db
+    .select({ userId: members.userId })
+    .from(members)
+    .where(eq(members.organizationId, organizationId));
+
+  return organizationMembers.map((member) => member.userId);
+}
+
 function isAdminOrOwner(role: string | undefined): boolean {
   const ADMIN_ROLES = ["admin", "owner"];
   return role !== undefined && ADMIN_ROLES.includes(role);
@@ -27,5 +36,6 @@ function isAdminOrOwner(role: string | undefined): boolean {
 
 export const MembersService = {
   findByUserAndOrganization,
+  getUserIdsByOrganization,
   isAdminOrOwner,
 };

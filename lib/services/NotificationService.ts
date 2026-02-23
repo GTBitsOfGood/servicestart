@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import db from "@/lib/db";
-import { members, notifications, NotificationType } from "@/lib/schema";
+import { notifications, NotificationType, members } from "@/lib/schema";
+import { MembersService } from "@/lib/services/members";
 
 const ADMIN_ROLES = ["admin", "owner"] as const;
 
@@ -59,12 +60,7 @@ async function notifyAdmins(organizationId: string, text: string) {
 }
 
 async function notifyAllMembers(organizationId: string, text: string) {
-  const organizationMembers = await db
-    .select({ userId: members.userId })
-    .from(members)
-    .where(eq(members.organizationId, organizationId));
-
-  const userIds = organizationMembers.map((member) => member.userId);
+  const userIds = await MembersService.getUserIdsByOrganization(organizationId);
   return createForUserIds(userIds, organizationId, text);
 }
 
