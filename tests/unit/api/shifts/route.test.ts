@@ -14,10 +14,6 @@ import {
   createShiftRSVP,
 } from "@/tests/unit/testUtils";
 import app from "@/app/api/[[...route]]/route";
-import {
-  POST as POST_RSVP,
-  DELETE as DELETE_RSVP,
-} from "@/app/api/shifts/[shiftId]/rsvps/route";
 
 function withJsonHeaders(headers?: HeadersInit) {
   const nextHeaders = new Headers(headers);
@@ -361,8 +357,9 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
       method: "POST",
     });
 
-    const response = await POST_RSVP(request, {
-      params: Promise.resolve({ shiftId: "1234" }),
+    const response = await app.request("/api/shifts/1234/rsvps", {
+      method: "POST",
+      headers: withJsonHeaders(),
     });
 
     expect(response.status).toBe(401);
@@ -388,8 +385,9 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await POST_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(`/api/shifts/${shiftId}/rsvps`, {
+      method: "POST",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(404);
   });
@@ -410,8 +408,9 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await POST_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(`/api/shifts/${shiftId}/rsvps`, {
+      method: "POST",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(200);
 
@@ -441,8 +440,9 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await POST_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(request, {
+      method: "POST",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(403);
   });
@@ -466,9 +466,13 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await POST_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
-    });
+    const response = await app.request(
+      `/api/shifts/${shiftId}/rsvps?userId=${user2.id}`,
+      {
+        method: "POST",
+        headers: withJsonHeaders(headers),
+      },
+    );
     expect(response.status).toBe(200);
 
     const rsvp = await db
@@ -488,8 +492,8 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
       method: "DELETE",
     });
 
-    const response = await DELETE_RSVP(request, {
-      params: Promise.resolve({ shiftId: "1234" }),
+    const response = await app.request("/api/shifts/1234/rsvps", {
+      method: "DELETE",
     });
 
     expect(response.status).toBe(401);
@@ -515,8 +519,9 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await DELETE_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(request, {
+      method: "DELETE",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(404);
   });
@@ -538,8 +543,9 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await DELETE_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(request, {
+      method: "DELETE",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(200);
 
@@ -570,8 +576,9 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await DELETE_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(request, {
+      method: "DELETE",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(403);
   });
@@ -597,8 +604,9 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await DELETE_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(request, {
+      method: "DELETE",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(200);
 
