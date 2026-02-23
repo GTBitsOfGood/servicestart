@@ -353,10 +353,6 @@ describe("GET /app/api/shifts/[shiftId]", () => {
 
 describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
   it("returns 401 if not logged in", async () => {
-    const request = new Request("http://localhost/api/shifts/1234/rsvps", {
-      method: "POST",
-    });
-
     const response = await app.request("/api/shifts/1234/rsvps", {
       method: "POST",
       headers: withJsonHeaders(),
@@ -377,14 +373,6 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
     await addMember(user.id, diffOrg.id, "admin");
     await setActiveOrganization(session.id, diffOrg.id);
 
-    const request = new Request(
-      `http://localhost/api/shifts/${shiftId}/rsvps`,
-      {
-        method: "POST",
-        headers,
-      },
-    );
-
     const response = await app.request(`/api/shifts/${shiftId}/rsvps`, {
       method: "POST",
       headers: withJsonHeaders(headers),
@@ -399,14 +387,6 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
     await addMember(user.id, organization.id, "admin");
     await setActiveOrganization(session.id, organization.id);
     const shiftId = await createShift(organization.id, { name: "Test Shift" });
-
-    const request = new Request(
-      `http://localhost/api/shifts/${shiftId}/rsvps`,
-      {
-        method: "POST",
-        headers,
-      },
-    );
 
     const response = await app.request(`/api/shifts/${shiftId}/rsvps`, {
       method: "POST",
@@ -458,14 +438,6 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
     await setActiveOrganization(session.id, organization.id);
     const shiftId = await createShift(organization.id, { name: "Test Shift" });
 
-    const request = new Request(
-      `http://localhost/api/shifts/${shiftId}/rsvps?userId=${user2.id}`,
-      {
-        method: "POST",
-        headers,
-      },
-    );
-
     const response = await app.request(
       `/api/shifts/${shiftId}/rsvps?userId=${user2.id}`,
       {
@@ -488,10 +460,6 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
 
 describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
   it("returns 401 if not logged in", async () => {
-    const request = new Request("http://localhost/api/shifts/1234/rsvps", {
-      method: "DELETE",
-    });
-
     const response = await app.request("/api/shifts/1234/rsvps", {
       method: "DELETE",
     });
