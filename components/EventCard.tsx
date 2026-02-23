@@ -1,5 +1,4 @@
-"use client";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { InferSelectModel } from "drizzle-orm";
 import { events } from "@/lib/schema";
 
@@ -8,8 +7,6 @@ export type Event = Omit<InferSelectModel<typeof events>, "startTimestamp"> & {
 };
 
 export default function EventCard({ event }: { event: Event }) {
-  const router = useRouter();
-
   const date = event.startTimestamp
     ? new Date(event.startTimestamp).toLocaleDateString("en-US", {
         day: "numeric",
@@ -47,12 +44,12 @@ export default function EventCard({ event }: { event: Event }) {
         <div className="text-small text-black text-[14px]">
           {event.location}
         </div>
-        <button
-          onClick={() => router.push(`/event/${event.id}`)}
-          className="text-small bg-transparent border-none p-0 text-[rgba(34,7,11,0.50)] cursor-pointer flex items-center gap-1 w-fit text-[14px]"
+        <Link
+          href={`/event/${event.id}`}
+          className="text-small text-black/50 flex items-center gap-1 w-fit text-[14px]"
         >
-          View details <span className="text-[14px]">{">"}</span>
-        </button>
+          View details {">"}
+        </Link>
       </div>
     </div>
   );

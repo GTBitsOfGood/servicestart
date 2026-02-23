@@ -50,14 +50,14 @@ export default async function ProfilePage() {
             {(user as { phoneNumber?: string }).phoneNumber && (
               <div className="text-paragraph-2 mb-1.5">
                 <span className="font-bold">Phone : </span>
-                <span className="text-[rgba(34,7,11,0.50)]">
+                <span className="text-[#22070b80]">
                   {(user as { phoneNumber?: string }).phoneNumber}
                 </span>
               </div>
             )}
             <div className="text-paragraph-2">
               <span className="font-bold">Email : </span>
-              <span className="text-[rgba(34,7,11,0.50)]">{user.email}</span>
+              <span className="text-[#22070b80]">{user.email}</span>
             </div>
           </div>
         </div>
@@ -67,7 +67,7 @@ export default async function ProfilePage() {
             <BogButton
               variant="primary"
               size="responsive"
-              style={{ background: "rgba(34, 7, 11, 0.50)" }}
+              className="bg-[#22070b]/50"
             >
               Edit Details
             </BogButton>
