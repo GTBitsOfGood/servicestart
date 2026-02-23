@@ -1,13 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createTestUserAndSignIn } from "./testUtils";
-import {
-  buildTestUser,
-  createOrganization,
-  signUpAndGetSession,
-  setActiveOrganization,
-} from "../unit/testUtils";
-import OrganizationConfigService from "@/lib/services/OrganizationConfigService";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { buildTestUser, signUpAndGetSession } from "../unit/testUtils";
 
 test.describe("Login Page", () => {
   test("login", async ({ page }) => {
