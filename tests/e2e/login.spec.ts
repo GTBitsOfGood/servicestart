@@ -31,7 +31,9 @@ test.describe("Login Page", () => {
 
   test("check colors", async ({ page }) => {
     const testUser = await buildTestUser();
-    const { id } = await createOrganization("acme");
+    const { id } = await createOrganization(
+      `org-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+    );
     const { session } = await signUpAndGetSession(testUser);
     await setActiveOrganization(session.id, id);
 
