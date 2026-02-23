@@ -2,6 +2,12 @@
   "design-system": {
     "path": "components",
     "components": {
+      "button": {
+        "version": "1.0.0"
+      },
+      "text-input": {
+        "version": "1.0.0"
+      },
       "icon": {
         "version": "1.0.0"
       }
