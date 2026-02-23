@@ -25,23 +25,28 @@ export default function LoginPage() {
   ]);
   const org = useActiveOrganization();
   const logo = org?.organization.data?.logo;
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    const { error } = await authClient.signIn.email(
-      {
-        email,
-        password,
-        callbackURL: "/",
-      },
-      {
-        onSuccess: () => {
-          router.push("/");
+    setLoading(true);
+    try {
+      await authClient.signIn.email(
+        {
+          email,
+          password,
+          callbackURL: "/",
         },
-      },
-    );
-
-    if (error) {
-      console.error("Login error:", error);
+        {
+          onSuccess: () => {
+            router.push("/");
+          },
+          onError: (ctx) => {
+            alert(ctx.error.message || "Invalid email or password");
+          },
+        },
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -115,6 +120,7 @@ export default function LoginPage() {
           </button>
           <BogButton
             onClick={handleLogin}
+            disabled={loading}
             className="flex h-[10%] text-white text-center text-[18px] leading-[24px] justify-center items-center py-[8px] px-[25px] bg-[#22070B] rounded-[4px]"
           >
             Login

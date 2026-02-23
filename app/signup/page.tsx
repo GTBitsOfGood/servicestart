@@ -16,6 +16,8 @@ export default function SignupPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const {
     primary_color = "#FFFFFF",
     secondary_color = "#FFFFFF",
@@ -29,22 +31,44 @@ export default function SignupPage() {
   const logo = org?.organization.data?.logo;
 
   const handleSignup = async () => {
-    const { error } = await authClient.signUp.email(
-      {
-        email,
-        password,
-        name: `${firstName} ${lastName}`,
-        callbackURL: "/login",
-      },
-      {
-        onSuccess: () => {
-          router.push("/login");
-        },
-      },
-    );
+    setLoading(true);
 
-    if (error) {
-      console.error("Sign Up error:", error);
+    if (!firstName || !lastName) {
+      alert("Please enter your name.");
+      setLoading(false);
+      return;
+    }
+
+    if (!email) {
+      alert("Please enter your email.");
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      alert("Password should be at least 8 characters.");
+      setLoading(false);
+      return;
+    }
+    try {
+      await authClient.signUp.email(
+        {
+          email,
+          password,
+          name: `${firstName} ${lastName}`,
+          callbackURL: "/",
+        },
+        {
+          onSuccess: () => {
+            router.push("/");
+          },
+          onError: (ctx) => {
+            alert(ctx.error.message || "Invalid email or password");
+          },
+        },
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -136,6 +160,7 @@ export default function SignupPage() {
           />
           <BogButton
             onClick={handleSignup}
+            disabled={loading}
             className="flex h-[10%] text-white text-center text-[18px] leading-[24px] justify-center items-center py-[8px] px-[25px] bg-[#22070B] rounded-[4px]"
           >
             Create Account
