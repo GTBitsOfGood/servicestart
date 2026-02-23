@@ -24,7 +24,7 @@ export default function useOrganizationConfig<K extends string[]>(keys: K) {
       })
       .then((res) => res.json())
       .then(setData);
-  }, [keys]);
+  }, keys); // eslint-disable-line react-hooks/exhaustive-deps
 
   return data;
 }

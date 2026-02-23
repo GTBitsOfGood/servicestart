@@ -188,7 +188,7 @@ async function getTagline(organizationId: string) {
     )
     .limit(1);
 
-  return row?.value ?? "No tagline has been set";
+  return row?.value ?? "";
 }
 
 async function setTagline(organizationId: string, tagline: string) {
