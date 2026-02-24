@@ -1,0 +1,106 @@
+@layer base {
+  .button {
+    cursor: pointer;
+    border-radius: 0.25rem;
+    border: none;
+    font-family: var(--font-paragraph);
+    height: fit-content;
+    display: inline-block;
+
+    &.small {
+      padding: 0.4rem 0.4rem;
+      font-size: var(--text-mobile-small);
+      line-height: var(--text-mobile-small--line-height);
+      @media (width >= 1024px) {
+        font-size: var(--text-desktop-small);
+        line-height: var(--text-desktop-small--line-height);
+      }
+    }
+
+    &.medium {
+      padding: 0.8rem 0.8rem;
+      font-size: var(--text-mobile-paragraph-2);
+      line-height: var(--text-mobile-paragraph-2--line-height);
+      @media (width >= 1024px) {
+        font-size: var(--text-desktop-paragraph-2);
+        line-height: var(--text-desktop-paragraph-2--line-height);
+      }
+    }
+
+    &.large {
+      padding: 0.8rem 1.2rem;
+      font-size: var(--text-mobile-paragraph-1);
+      line-height: var(--text-mobile-paragraph-1--line-height);
+      @media (width >= 1024px) {
+        font-size: var(--text-desktop-paragraph-1);
+        line-height: var(--text-desktop-paragraph-1--line-height);
+      }
+    }
+
+    &.primary {
+      background-color: var(--color-brand-text);
+      color: white;
+
+      &:disabled {
+        cursor: not-allowed;
+        background-color: var(--color-grey-fill-weak);
+      }
+
+      &:not(:disabled):hover {
+        background-color: var(--color-brand-hover);
+      }
+
+      &:not(:disabled):active {
+        background-color: var(--color-brand-text);
+      }
+    }
+
+    &.secondary {
+      border: 1px solid var(--color-brand-stroke-strong);
+      color: var(--color-brand-text);
+      background-color: white;
+
+      &:disabled {
+        cursor: not-allowed;
+        border-color: var(--color-grey-stroke-weak);
+        color: var(--color-grey-off-state);
+      }
+
+      &:not(:disabled):hover {
+        border-color: var(--color-brand-hover);
+        color: var(--color-brand-hover);
+      }
+
+      &:not(:disabled):active {
+        border-color: var(--color-brand-stroke-strong);
+        color: var(--color-brand-hover);
+      }
+    }
+
+    &.tertiary {
+      color: var(--color-brand-text);
+      background-color: transparent;
+
+      &:disabled {
+        cursor: not-allowed;
+        color: var(--color-grey-off-state);
+      }
+
+      &:not(:disabled):hover {
+        color: var(--color-brand-hover);
+      }
+
+      &:not(:disabled):active {
+        color: var(--color-brand-text);
+      }
+    }
+
+    .contentContainer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.4rem;
+      height: fit-content;
+    }
+  }
+}

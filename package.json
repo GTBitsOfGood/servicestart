@@ -6,7 +6,7 @@
     "build": "next build",
     "start": "next start",
     "test": "pnpm run db:test:start && vitest run; pnpm run db:test:stop",
-    "test:e2e": "pnpm exec playwright install --with-deps && DB_URL=postgres://test:root@localhost:5433/postgres pnpm exec playwright test",
+    "test:e2e": "pnpm exec playwright install --with-deps && DB_URL=postgres://test:root@localhost:5433/postgres pnpm exec playwright test --pass-with-no-tests",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier . --check",

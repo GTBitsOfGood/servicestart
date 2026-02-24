@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { ShiftService } from "@/lib/services/ShiftService";
 import { MembersService } from "@/lib/services/members";
 import { EventService } from "@/lib/services/EventService";
+import shiftRsvpApp from "@/api/shifts/rsvps";
 
 const createShiftSchema = z.object({
   eventId: z.string().min(1, "eventId is required"),
@@ -210,6 +211,7 @@ const app = new Hono()
     }
 
     return c.json({ success: true, shift });
-  });
+  })
+  .route("", shiftRsvpApp);
 
 export default app;

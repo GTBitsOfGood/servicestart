@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSlugFromHost } from "@/lib/authUtils";
+import { getSlugFromHost } from "@/lib/clientAuthUtils";
 import api from "@/lib/api";
 
 type ConfigResult<K extends readonly string[]> = Partial<
   Record<K[number], string>
 >;
-
 export default function useOrganizationConfig<K extends string[]>(keys: K) {
   const [data, setData] = useState<ConfigResult<K>>({});
 
@@ -25,7 +24,7 @@ export default function useOrganizationConfig<K extends string[]>(keys: K) {
       })
       .then((res) => res.json())
       .then(setData);
-  }, [keys]);
+  }, keys); // eslint-disable-line react-hooks/exhaustive-deps
 
   return data;
 }
