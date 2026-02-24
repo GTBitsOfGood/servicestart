@@ -7,7 +7,6 @@ import { MembersService } from "@/lib/services/members";
 import { auth } from "@/lib/auth";
 import { paginationQuerySchema } from "../lib/apiUtils";
 
-// Schema for PATCH parameters
 const patchParamsSchema = z.object({
   id: z.string({ error: "Missing required parameter: id" }).min(1),
   status: z.enum(JOIN_REQUEST_STATUS_VALUES, {
@@ -31,7 +30,6 @@ const app = new Hono()
       return c.json({ error: "No active organization" }, { status: 400 });
     }
 
-    // Check if user is admin or owner of the active organization
     const membership = await MembersService.findByUserAndOrganization(
       session.user.id,
       activeOrganizationId,
@@ -47,7 +45,6 @@ const app = new Hono()
     const { page, pageSize } = c.req.valid("query");
     const offset = (page - 1) * pageSize;
 
-    // Query join requests for the organization
     const requests = await JoinRequestsService.listByOrganization(
       activeOrganizationId,
       { limit: pageSize, offset },
@@ -89,7 +86,6 @@ const app = new Hono()
 
     const { id: joinRequestId, status: newStatus } = c.req.valid("query");
 
-    // Find the join request
     const joinRequest = await JoinRequestsService.findByIdAndOrganization(
       joinRequestId,
       activeOrganizationId,
@@ -99,7 +95,6 @@ const app = new Hono()
       return c.json({ error: "Join request not found" }, { status: 404 });
     }
 
-    // If already approved, don't change anything
     if (joinRequest.status === JoinRequestStatus.Approved) {
       return c.json({
         message: "Join request is already approved",
@@ -107,13 +102,11 @@ const app = new Hono()
       });
     }
 
-    // Update the status
     const updatedRequest = await JoinRequestsService.updateStatus(
       joinRequestId,
       newStatus as JoinRequestStatus,
     );
 
-    // If new status is approved, add the user to the organization
     if (newStatus === JoinRequestStatus.Approved) {
       await auth.api.addMember({
         body: {
@@ -125,6 +118,59 @@ const app = new Hono()
     }
 
     return c.json(updatedRequest);
+  })
+  .get("/:organizationId", async (c) => {
+    const session = await auth.api.getSession({
+      headers: c.req.header(),
+    });
+
+    if (!session?.user) {
+      return c.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { organizationId } = c.req.param();
+
+    const joinRequest = await JoinRequestsService.findByUserAndOrganization(
+      session.user.id,
+      organizationId,
+    );
+
+    if (!joinRequest) {
+      return c.json({ error: "Join request not found" }, { status: 404 });
+    }
+
+    return c.json(joinRequest);
+  })
+  .delete("/:organizationId", async (c) => {
+    const session = await auth.api.getSession({
+      headers: c.req.header(),
+    });
+
+    if (!session?.user) {
+      return c.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { organizationId } = c.req.param();
+
+    const joinRequest = await JoinRequestsService.findByUserAndOrganization(
+      session.user.id,
+      organizationId,
+    );
+
+    if (!joinRequest) {
+      return c.json({ error: "Join request not found" }, { status: 404 });
+    }
+
+    if (joinRequest.status !== JoinRequestStatus.Pending) {
+      return c.json(
+        { error: "Cannot delete a non-pending join request" },
+        { status: 403 },
+      );
+    }
+
+    await JoinRequestsService.deleteById(joinRequest.id);
+
+    return c.json({ success: true });
   });
 
 export default app;

@@ -66,6 +66,7 @@ export async function createOrganization(slug: string) {
 
 /**
  * Signs up a test user and returns the user with auth headers.
+ * @deprecated - use signUpAndGetSession
  */
 export async function signUpAndGetHeaders(
   user: ReturnType<typeof buildTestUser>,
@@ -77,7 +78,7 @@ export async function signUpAndGetHeaders(
 
   return {
     user: res.response.user,
-    headers: new Headers({ Cookie: res.headers.get("set-cookie")! }),
+    headers: { Cookie: res.headers.get("set-cookie")! },
   };
 }
 
