@@ -13,7 +13,7 @@ import {
   signUpAndGetSession,
   testApi,
 } from "@/tests/unit/testUtils";
-import app from "@/app/api/[[...route]]/route";
+import { app } from "@/lib/app";
 
 const FILE_STORAGE_DIR =
   process.env.FILE_STORAGE_DIR ?? "/tmp/servicestart-media-test";
@@ -116,19 +116,22 @@ describe("POST /api/media", () => {
     expect(data.id).toBeDefined();
     expect(data.title).toBe("My Photo");
     expect(typeof data.fileName).toBe("string");
-    expect(data.fileName.length).toBeGreaterThan(0);
+    expect((data.fileName as string).length).toBeGreaterThan(0);
     expect(data.altText).toBe("A sunset");
     expect(data.organizationId).toBe(organization.id);
     expect(data.type).toBe("image");
     expect(data.uploadedAt).toBeDefined();
 
-    const [row] = await db.select().from(media).where(eq(media.id, data.id));
+    const [row] = await db
+      .select()
+      .from(media)
+      .where(eq(media.id, data.id as typeof media.id));
     expect(row).toBeDefined();
 
     const filePath = path.join(
       FILE_STORAGE_DIR,
       organization.id,
-      data.fileName,
+      data.fileName as string,
     );
     expect(existsSync(filePath)).toBe(true);
   });

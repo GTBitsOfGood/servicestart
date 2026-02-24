@@ -1,17 +1,14 @@
+import type { Context } from "hono";
+import { auth } from "@/lib/auth";
+import {
+  ForbiddenError,
+  NoActiveOrganizationError,
+  UnauthorizedError,
+} from "@/lib/errors";
 import { JoinRequestsService } from "@/lib/services/joinRequests";
 import { MembersService } from "@/lib/services/members";
 import { OrganizationsService } from "@/lib/services/organizations";
-
-const defaultOrganizationSlug = "servicestart";
-
-export function getSlugFromHost(host?: string): string {
-  if (!host) return defaultOrganizationSlug;
-
-  const normalized = host.toLowerCase().split(":")[0]; // Remove port if present
-  const match = normalized.match(/^([a-z0-9-]+)\.servicestart\.com$/);
-
-  return match ? match[1] : defaultOrganizationSlug;
-}
+import { getSlugFromHost } from "./clientAuthUtils";
 
 export async function createJoinRequestIfNeeded(userId: string, host?: string) {
   const slug = getSlugFromHost(host);
@@ -32,4 +29,68 @@ export async function createJoinRequestIfNeeded(userId: string, host?: string) {
   if (existingRequest) return;
 
   await JoinRequestsService.create(userId, organization.id);
+}
+
+/**
+ * Returns the current session or throws UnauthorizedError if not signed in.
+ * Use this to avoid duplicating auth checks in route handlers.
+ */
+export async function requireAuth(c: Context) {
+  const session = await auth.api.getSession({
+    headers: c.req.header(),
+  });
+
+  if (!session?.user) {
+    throw new UnauthorizedError();
+  }
+
+  return session;
+}
+
+/**
+ * Returns the current session only if the user has an active organization
+ * and is a member of it; otherwise throws an auth-related error.
+ */
+export async function requireMembership(c: Context) {
+  const session = await requireAuth(c);
+  const organizationId = session.session.activeOrganizationId;
+
+  if (!organizationId) {
+    throw new NoActiveOrganizationError();
+  }
+
+  const membership = await MembersService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+
+  if (!membership) {
+    throw new ForbiddenError();
+  }
+
+  return session;
+}
+
+/**
+ * Returns the current session only if the user has an active organization
+ * and is an admin/owner of it; otherwise throws an auth-related error.
+ */
+export async function requireAdmin(c: Context) {
+  const session = await requireAuth(c);
+  const organizationId = session.session.activeOrganizationId;
+
+  if (!organizationId) {
+    throw new NoActiveOrganizationError();
+  }
+
+  const membership = await MembersService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+
+  if (!MembersService.isAdminOrOwner(membership?.role)) {
+    throw new ForbiddenError();
+  }
+
+  return session;
 }

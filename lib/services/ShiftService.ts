@@ -57,6 +57,24 @@ async function deleteRSVP(shiftId: string, userId: string) {
     .where(and(eq(shiftRSVPs.shiftId, shiftId), eq(shiftRSVPs.userId, userId)));
 }
 
+async function listByEvent(
+  eventId: string,
+  organizationId: string,
+  options: { limit: number; offset: number },
+) {
+  return await db
+    .select()
+    .from(shifts)
+    .where(
+      and(
+        eq(shifts.eventId, eventId),
+        eq(shifts.organizationId, organizationId),
+      ),
+    )
+    .limit(options.limit)
+    .offset(options.offset);
+}
+
 export const ShiftService = {
   createShift,
   updateShift,
@@ -64,6 +82,7 @@ export const ShiftService = {
   deleteById,
   addRSVP,
   deleteRSVP,
+  listByEvent,
 };
 
 export default ShiftService;

@@ -2,18 +2,22 @@
 
 import authClient from "@/lib/authClient";
 import { useState, useEffect } from "react";
-import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import BogTextInput from "@/components/BogTextInput/BogTextInput";
 import BogButton from "@/components/BogButton/BogButton";
 import { useRouter } from "next/navigation";
+import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import { OrganizationConfigKey } from "@/lib/schema";
 import { getSlugFromHost } from "@/lib/clientAuthUtils";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const {
     primary_color = "#FFFFFF",
     secondary_color = "#FFFFFF",
@@ -25,15 +29,33 @@ export default function LoginPage() {
   ]);
   const org = useActiveOrganization();
   const logo = org?.organization.data?.logo;
-  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleSignup = async () => {
     setLoading(true);
+
+    if (!firstName || !lastName) {
+      alert("Please enter your name.");
+      setLoading(false);
+      return;
+    }
+
+    if (!email) {
+      alert("Please enter your email.");
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      alert("Password should be at least 8 characters.");
+      setLoading(false);
+      return;
+    }
     try {
-      await authClient.signIn.email(
+      await authClient.signUp.email(
         {
           email,
           password,
+          name: `${firstName} ${lastName}`,
           callbackURL: "/",
         },
         {
@@ -70,7 +92,6 @@ export default function LoginPage() {
   return (
     <div
       className="flex h-screen w-screen items-center"
-      data-testid="page"
       style={{
         background: `linear-gradient(75deg, ${primary_color} 0%, ${secondary_color} 100%)`,
       }}
@@ -93,10 +114,32 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <div className="h-full flex flex-col justify-between items-center flex-1 pt-[12%]">
-        <div className="w-[78%] flex flex-col items-center gap-[23px] p-[35px] pt-[100px] border-[2px] border-[#FFF] rounded-[30px] shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
-          <p className="text-black text-[48px] font-bold self-stretch">Login</p>
-          <p className="text-white text-[24px] self-stretch">{tagline}</p>
+      <div className="h-full flex flex-col justify-between items-center flex-1 pt-[8%]">
+        <div className="w-[78%] h-full flex flex-col items-center gap-[23px] p-[35px] pt-[12%] border-[2px] border-[#FFF] rounded-[30px] shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
+          <p className="text-black text-[48px] font-bold self-stretch">
+            Sign Up
+          </p>
+          <p className="text-white text-[20px] letter-spacing-[-0.48px] self-stretch">
+            {tagline}
+          </p>
+          <BogTextInput
+            name="first_name"
+            type="text"
+            label="First Name"
+            placeholder="John"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className="text-[18px] leading-[24px] px-[12px] rounded-[4px] self-stretch font-semibold text-[#22070B]"
+          />
+          <BogTextInput
+            name="last_name"
+            type="text"
+            label="Last Name"
+            placeholder="Smith"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            className="text-[18px] leading-[24px] px-[12px] rounded-[4px] self-stretch font-semibold text-[#22070B]"
+          />
           <BogTextInput
             name="email"
             type="email"
@@ -115,23 +158,20 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="text-[18px] leading-[24px] px-[12px] rounded-[4px] self-stretch font-semibold text-[#22070B]"
           />
-          <button className="font-bold text-[16px] leading-[24px] underline">
-            Forgot Password?
-          </button>
           <BogButton
-            onClick={handleLogin}
+            onClick={handleSignup}
             disabled={loading}
             className="flex h-[10%] text-white text-center text-[18px] leading-[24px] justify-center items-center py-[8px] px-[25px] bg-[#22070B] rounded-[4px]"
           >
-            Login
+            Create Account
           </BogButton>
           <p className="text-[16px] leading-[20px]">
-            Don't have an account?{" "}
+            Already have an account?{" "}
             <button
-              onClick={() => router.push("/signup")}
+              onClick={() => router.push("/login")}
               className="underline font-bold text-[18px]"
             >
-              Sign Up
+              Login
             </button>
           </p>
         </div>

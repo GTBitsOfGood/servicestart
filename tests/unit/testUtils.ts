@@ -17,7 +17,7 @@ import {
   MediaType,
 } from "@/lib/schema";
 import { testClient } from "hono/testing";
-import app from "@/app/api/[[...route]]/route";
+import { app } from "@/lib/app";
 
 export const testApi = testClient(app).api;
 
@@ -66,6 +66,7 @@ export async function createOrganization(slug: string) {
 
 /**
  * Signs up a test user and returns the user with auth headers.
+ * @deprecated - use signUpAndGetSession
  */
 export async function signUpAndGetHeaders(
   user: ReturnType<typeof buildTestUser>,
@@ -77,7 +78,7 @@ export async function signUpAndGetHeaders(
 
   return {
     user: res.response.user,
-    headers: new Headers({ Cookie: res.headers.get("set-cookie")! }),
+    headers: { Cookie: res.headers.get("set-cookie")! },
   };
 }
 
@@ -185,12 +186,15 @@ export async function createShift(
     startTimestamp?: Date;
     duration?: number;
     rsvpLimit?: number;
+    eventId?: string;
   } = {},
 ) {
   const id = randomUUID();
+  const eventId = opts.eventId ?? (await createEvent(organizationId));
   await db.insert(shifts).values({
     id,
     organizationId,
+    eventId,
     name: opts.name ?? "Test Shift",
     description: opts.description ?? "Test Description",
     startTimestamp: opts.startTimestamp ?? new Date(),

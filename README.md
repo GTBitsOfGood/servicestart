@@ -70,4 +70,7 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - Use `pnpx bog-cli design edit` to configure the BoG design system.
 - Run scripts in the `scripts` folder with `pnpx tsx <script-name>`.
 - Set the `DB_URL` environment variable on GitHub. For the preview environment, leave out the `/database-name` part so that the workflow can create databases for each PR.
-- Read about our database infrastructure setup in [DB_INFRA.md](DB_INFRA.md).
+
+## Docs & Writeups
+
+Various parts of ServiceStart's architecture and design decisions are documented in the `docs` folder. Check it out for details about our design decisions and infrastructure.

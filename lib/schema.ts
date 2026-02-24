@@ -33,6 +33,9 @@ export const joinRequestStatusEnum = pgEnum(
 //TypeScript enum for org config key values
 export enum OrganizationConfigKey {
   Description = "description",
+  PrimaryColor = "primary_color",
+  SecondaryColor = "secondary_color",
+  Tagline = "tagline",
 }
 
 // Array of enum values for use with pgEnum and Zod
@@ -264,8 +267,14 @@ export const shifts = pgTable(
     startTimestamp: timestamp("start_timestamp").notNull(),
     duration: interval("duration").notNull(),
     rsvpLimit: integer("rsvp_limit"),
+    eventId: text("eventId")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
   },
-  (table) => [index("shift_organizationId_idx").on(table.organizationId)],
+  (table) => [
+    index("shift_organizationId_idx").on(table.organizationId),
+    index("shift_eventId_idx").on(table.eventId),
+  ],
 );
 
 export const shiftRSVPs = pgTable("shift_rsvps", {
@@ -398,6 +407,10 @@ export const relations = defineRelations(
         from: r.events.id,
         to: r.eventRsvps.eventId,
       }),
+      shifts: r.many.shifts({
+        from: r.events.id,
+        to: r.shifts.eventId,
+      }),
     },
     eventRsvps: {
       user: r.one.users({
@@ -424,6 +437,10 @@ export const relations = defineRelations(
       organizations: r.one.organizations({
         from: r.shifts.organizationId,
         to: r.organizations.id,
+      }),
+      event: r.one.events({
+        from: r.shifts.eventId,
+        to: r.events.id,
       }),
       rsvps: r.many.shiftRSVPs({
         from: r.shifts.id,

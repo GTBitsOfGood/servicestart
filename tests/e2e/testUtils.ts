@@ -21,7 +21,7 @@ export async function createTestUserAndSignIn(
 ) {
   const user = buildTestUser();
   const { headers } = await signUpAndGetHeaders(user);
-  const cookieHeader = headers.get("Cookie");
+  const cookieHeader = headers["Cookie"];
 
   if (!cookieHeader) {
     throw new Error("No auth cookie returned when signing up test user.");
