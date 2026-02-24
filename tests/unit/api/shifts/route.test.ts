@@ -13,11 +13,7 @@ import {
   createShift,
   createShiftRSVP,
 } from "@/tests/unit/testUtils";
-import app from "@/app/api/[[...route]]/route";
-import {
-  POST as POST_RSVP,
-  DELETE as DELETE_RSVP,
-} from "@/app/api/shifts/[shiftId]/rsvps/route";
+import { app } from "@/lib/app";
 
 function withJsonHeaders(headers?: HeadersInit) {
   const nextHeaders = new Headers(headers);
@@ -357,12 +353,9 @@ describe("GET /app/api/shifts/[shiftId]", () => {
 
 describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
   it("returns 401 if not logged in", async () => {
-    const request = new Request("http://localhost/api/shifts/1234/rsvps", {
+    const response = await app.request("/api/shifts/1234/rsvps", {
       method: "POST",
-    });
-
-    const response = await POST_RSVP(request, {
-      params: Promise.resolve({ shiftId: "1234" }),
+      headers: withJsonHeaders(),
     });
 
     expect(response.status).toBe(401);
@@ -380,16 +373,9 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
     await addMember(user.id, diffOrg.id, "admin");
     await setActiveOrganization(session.id, diffOrg.id);
 
-    const request = new Request(
-      `http://localhost/api/shifts/${shiftId}/rsvps`,
-      {
-        method: "POST",
-        headers,
-      },
-    );
-
-    const response = await POST_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(`/api/shifts/${shiftId}/rsvps`, {
+      method: "POST",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(404);
   });
@@ -402,16 +388,9 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
     await setActiveOrganization(session.id, organization.id);
     const shiftId = await createShift(organization.id, { name: "Test Shift" });
 
-    const request = new Request(
-      `http://localhost/api/shifts/${shiftId}/rsvps`,
-      {
-        method: "POST",
-        headers,
-      },
-    );
-
-    const response = await POST_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(`/api/shifts/${shiftId}/rsvps`, {
+      method: "POST",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(200);
 
@@ -441,8 +420,9 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await POST_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(request, {
+      method: "POST",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(403);
   });
@@ -458,17 +438,13 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
     await setActiveOrganization(session.id, organization.id);
     const shiftId = await createShift(organization.id, { name: "Test Shift" });
 
-    const request = new Request(
-      `http://localhost/api/shifts/${shiftId}/rsvps?userId=${user2.id}`,
+    const response = await app.request(
+      `/api/shifts/${shiftId}/rsvps?userId=${user2.id}`,
       {
         method: "POST",
-        headers,
+        headers: withJsonHeaders(headers),
       },
     );
-
-    const response = await POST_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
-    });
     expect(response.status).toBe(200);
 
     const rsvp = await db
@@ -484,12 +460,8 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
 
 describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
   it("returns 401 if not logged in", async () => {
-    const request = new Request("http://localhost/api/shifts/1234/rsvps", {
+    const response = await app.request("/api/shifts/1234/rsvps", {
       method: "DELETE",
-    });
-
-    const response = await DELETE_RSVP(request, {
-      params: Promise.resolve({ shiftId: "1234" }),
     });
 
     expect(response.status).toBe(401);
@@ -515,8 +487,9 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await DELETE_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(request, {
+      method: "DELETE",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(404);
   });
@@ -538,8 +511,9 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await DELETE_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(request, {
+      method: "DELETE",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(200);
 
@@ -570,8 +544,9 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await DELETE_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(request, {
+      method: "DELETE",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(403);
   });
@@ -597,8 +572,9 @@ describe("DELETE /app/api/shifts/[shiftId]/rsvps", () => {
       },
     );
 
-    const response = await DELETE_RSVP(request, {
-      params: Promise.resolve({ shiftId }),
+    const response = await app.request(request, {
+      method: "DELETE",
+      headers: withJsonHeaders(headers),
     });
     expect(response.status).toBe(200);
 
