@@ -1,0 +1,2 @@
+-- no-op: notifications table was introduced in 20260221023128_nostalgic_valeria_richards
+-- and notification_type was introduced in 20260221192635_faithful_mauler

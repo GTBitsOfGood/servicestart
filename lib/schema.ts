@@ -58,6 +58,19 @@ export const MEDIA_TYPE_VALUES = Object.values(
 ) as unknown as readonly [string, ...string[]];
 export const mediaTypeEnum = pgEnum("media_type", MEDIA_TYPE_VALUES);
 
+export enum NotificationType {
+  General = "general",
+  Announcement = "announcement",
+}
+
+export const NOTIFICATION_TYPE_VALUES = Object.values(
+  NotificationType,
+) as unknown as readonly [string, ...string[]];
+export const notificationTypeEnum = pgEnum(
+  "notification_type",
+  NOTIFICATION_TYPE_VALUES,
+);
+
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -214,6 +227,7 @@ export const events = pgTable(
   },
   (table) => [index("events_organizationId_idx").on(table.organizationId)],
 );
+
 export const announcements = pgTable(
   "announcements",
   {
@@ -317,6 +331,31 @@ export const media = pgTable(
   (table) => [index("media_fileName_idx").on(table.fileName)],
 );
 
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    read: boolean("read").default(false).notNull(),
+    type: notificationTypeEnum("type")
+      .default(NotificationType.General)
+      .notNull(),
+    text: text("text").notNull(),
+  },
+  (table) => [
+    index("notification_userId_organizationId_idx").on(
+      table.userId,
+      table.organizationId,
+    ),
+  ],
+);
+
 export const relations = defineRelations(
   {
     users,
@@ -333,6 +372,7 @@ export const relations = defineRelations(
     shiftRSVPs,
     organizationConfig,
     media,
+    notifications,
   },
   (r) => ({
     users: {
@@ -347,6 +387,10 @@ export const relations = defineRelations(
       rsvps: r.many.shiftRSVPs({
         from: r.users.id,
         to: r.shiftRSVPs.userId,
+      }),
+      notifications: r.many.notifications({
+        from: r.users.id,
+        to: r.notifications.userId,
       }),
     },
     sessions: {
@@ -363,6 +407,10 @@ export const relations = defineRelations(
       media: r.many.media({
         from: r.organizations.id,
         to: r.media.organizationId,
+      }),
+      notifications: r.many.notifications({
+        from: r.organizations.id,
+        to: r.notifications.organizationId,
       }),
     },
     members: {
@@ -466,6 +514,16 @@ export const relations = defineRelations(
         to: r.organizations.id,
       }),
     },
+    notifications: {
+      users: r.one.users({
+        from: r.notifications.userId,
+        to: r.users.id,
+      }),
+      organizations: r.one.organizations({
+        from: r.notifications.organizationId,
+        to: r.organizations.id,
+      }),
+    },
   }),
 );
 
@@ -485,4 +543,5 @@ export const schema = {
   shiftRSVPs,
   organizationConfig,
   media,
+  notifications,
 };
