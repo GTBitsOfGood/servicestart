@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import authClient from "@/lib/authClient";
+import { auth } from "@/lib/auth";
 import BogButton from "@/components/BogButton/BogButton";
 import BogTabs from "@/components/BogTabs/BogTabs";
 import EventCard, { type Event } from "@/components/EventCard";
@@ -8,16 +8,14 @@ import Link from "next/link";
 import { headers } from "next/headers";
 
 export default async function ProfilePage() {
-  const session = await authClient.getSession({
-    fetchOptions: {
-      headers: await headers(),
-    },
+  const session = await auth.api.getSession({
+    headers: await headers(),
   });
-  if (!session?.data?.user) {
+  if (!session?.user) {
     redirect("/login");
   }
 
-  const user = session.data!.user!;
+  const user = session.user!;
   const allEvents = await EventService.findByUser(user.id);
   const now = new Date();
 
