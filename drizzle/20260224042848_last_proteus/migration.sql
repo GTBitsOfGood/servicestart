@@ -9,5 +9,8 @@ CREATE TABLE "media" (
 	"uploaded_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE INDEX "media_file_name_idx" ON "media" ("file_name");--> statement-breakpoint
+ALTER TABLE "organizations" ADD COLUMN "phone_number" text;--> statement-breakpoint
+ALTER TABLE "organizations" ADD COLUMN "email" text;--> statement-breakpoint
+ALTER TABLE "users" ADD COLUMN "phone_number" text;--> statement-breakpoint
+CREATE INDEX "media_fileName_idx" ON "media" ("file_name");--> statement-breakpoint
 ALTER TABLE "media" ADD CONSTRAINT "media_organization_id_organizations_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "organizations"("id") ON DELETE CASCADE;
