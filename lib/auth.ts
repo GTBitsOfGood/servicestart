@@ -7,22 +7,9 @@ import { headers } from "next/headers";
 import { getSlugFromHost } from "./clientAuthUtils";
 import { sessions } from "./schema";
 import { eq } from "drizzle-orm";
-import { EmailService } from "@/lib/services/EmailService";
 
 export const auth = betterAuth({
-  plugins: [
-    organization({
-      organizationHooks: {
-        afterCreateOrganization: async ({ organization }) => {
-          await EmailService.registerOrganizationSender({
-            organizationId: organization.id,
-            organizationName: organization.name,
-            organizationSlug: organization.slug,
-          });
-        },
-      },
-    }),
-  ],
+  plugins: [organization()],
   baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL,
   database: drizzleAdapter(db, {
     provider: "pg",

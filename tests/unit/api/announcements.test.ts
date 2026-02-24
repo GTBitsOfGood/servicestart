@@ -1,8 +1,7 @@
 import { eq } from "drizzle-orm";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import db from "@/lib/db";
 import { announcements } from "@/lib/schema";
-import { EmailService } from "@/lib/services/EmailService";
 import {
   addMember,
   buildTestUser,
@@ -12,20 +11,6 @@ import {
   signUpAndGetSession,
   testApi,
 } from "@/tests/unit/testUtils";
-
-vi.mock("@/lib/services/EmailService", () => ({
-  EmailService: {
-    emailMembers: vi.fn(async () => {}),
-    registerOrganizationSender: vi.fn(async () => {}),
-  },
-}));
-
-const mockEmailMembers = vi.mocked(EmailService.emailMembers);
-
-beforeEach(() => {
-  mockEmailMembers.mockReset();
-  mockEmailMembers.mockResolvedValue(undefined);
-});
 
 async function setupOrgAndUser(role: "owner" | "admin" | "member") {
   const organization = await createOrganization("acme");
@@ -78,30 +63,6 @@ describe("POST /api/announcements", () => {
     expect(row.organizationId).toBe(organization.id);
     expect(row.name).toBe("Release Notes");
     expect(row.body).toBe("v1.0 is out");
-    expect(mockEmailMembers).toHaveBeenCalledTimes(1);
-    expect(mockEmailMembers).toHaveBeenCalledWith(organization.id, {
-      subject: "New announcement: Release Notes",
-      textBody: "v1.0 is out",
-    });
-  });
-
-  it("does not send emails when creating a draft announcement", async () => {
-    const { organization, headers } = await setupOrgAndUser("admin");
-
-    const response = await testApi.announcements.$post(
-      { json: { name: "Draft", body: "Not live", draft: true } },
-      { headers },
-    );
-
-    expect(response.status).toBe(200);
-    expect(mockEmailMembers).not.toHaveBeenCalled();
-
-    const rows = await db
-      .select()
-      .from(announcements)
-      .where(eq(announcements.organizationId, organization.id));
-    expect(rows).toHaveLength(1);
-    expect(rows[0].publishedAt).toBeNull();
   });
 });
 
@@ -358,28 +319,6 @@ describe("PATCH /api/announcements/:announcementId", () => {
       .where(eq(announcements.id, announcementId));
     expect(after.publishedAt).toEqual(before.publishedAt);
     expect(after.publishedById).toEqual(before.publishedById);
-    expect(mockEmailMembers).not.toHaveBeenCalled();
-  });
-
-  it("sends announcement email when announcement transitions to published", async () => {
-    const { organization, headers } = await setupOrgAndUser("admin");
-    const announcementId = await createAnnouncement(organization.id, {
-      name: "Draft Announcement",
-      body: "Publish me",
-      draft: true,
-    });
-
-    const response = await testApi.announcements[":announcementId"].$patch(
-      { param: { announcementId }, json: { draft: true } },
-      { headers },
-    );
-
-    expect(response.status).toBe(200);
-    expect(mockEmailMembers).toHaveBeenCalledTimes(1);
-    expect(mockEmailMembers).toHaveBeenCalledWith(organization.id, {
-      subject: "New announcement: Draft Announcement",
-      textBody: "Publish me",
-    });
   });
 });
 

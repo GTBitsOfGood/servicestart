@@ -69,7 +69,6 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
 - Use the `createTestUser` function in `tests/unit/testUtils.ts` to get a user that you can use for API endpoints in tests.
 - Use `pnpx bog-cli design edit` to configure the BoG design system.
 - Run scripts in the `scripts` folder with `pnpx tsx <script-name>`.
-- Run `pnpm run email:setup` to connect SendGrid and register the email domain with Juno.
 - Set the `DB_URL` environment variable on GitHub. For the preview environment, leave out the `/database-name` part so that the workflow can create databases for each PR.
 
 ## Docs & Writeups
