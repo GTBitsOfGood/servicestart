@@ -10,9 +10,9 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
 export const app = new Hono()
+  .basePath("/api")
   .use(logger())
   .use(cors())
-  .basePath("/api")
   .route("/ping", ping)
   .route("/joinRequests", joinRequests)
   .route("/announcements", announcements)
