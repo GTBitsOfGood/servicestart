@@ -6,8 +6,17 @@ import shifts from "@/api/shifts";
 import media from "@/api/media";
 import organizationConfig from "@/api/organizationConfig";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 
 export const app = new Hono()
+  .use(
+    "/api/*",
+    cors({
+      origin: process.env.NEXT_PUBLIC_BASE_URL
+        ? [process.env.NEXT_PUBLIC_BASE_URL, "https://servicestart.netlify.app"]
+        : "http://localhost:3000",
+    }),
+  )
   .basePath("/api")
   .route("/ping", ping)
   .route("/joinRequests", joinRequests)
