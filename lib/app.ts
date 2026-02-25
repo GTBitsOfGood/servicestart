@@ -6,6 +6,7 @@ import shifts from "@/api/shifts";
 import media from "@/api/media";
 import organizationConfig from "@/api/organizationConfig";
 import { Hono } from "hono";
+
 export const app = new Hono()
   .basePath("/api")
   .route("/ping", ping)
