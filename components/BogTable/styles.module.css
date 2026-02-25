@@ -308,7 +308,7 @@
     gap: 2;
   }
 
-  :global(.radix-themes .radix-themes-table-root) {
+  .bogTable :global(.radix-themes .radix-themes-table-root) {
     border-radius: 0.8rem;
   }
 
