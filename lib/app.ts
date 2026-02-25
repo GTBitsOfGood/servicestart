@@ -13,7 +13,10 @@ export const app = new Hono()
     "/api/*",
     cors({
       origin: process.env.NEXT_PUBLIC_BASE_URL
-        ? [process.env.NEXT_PUBLIC_BASE_URL, "https://servicestart.netlify.app"]
+        ? [
+            process.env.NEXT_PUBLIC_BASE_URL,
+            process.env.NEXT_PUBLIC_ADDITIONAL_ALLOWED_ORIGIN,
+          ].filter((url) => url !== undefined)
         : "http://localhost:3000",
     }),
   )
