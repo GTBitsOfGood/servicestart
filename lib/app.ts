@@ -12,12 +12,13 @@ export const app = new Hono()
   .use(
     "/api/*",
     cors({
-      origin: process.env.NEXT_PUBLIC_BASE_URL
-        ? [
-            process.env.NEXT_PUBLIC_BASE_URL,
-            process.env.NEXT_PUBLIC_ADDITIONAL_ALLOWED_ORIGIN,
-          ].filter((url) => url !== undefined)
-        : "http://localhost:3000",
+      //   origin: process.env.NEXT_PUBLIC_BASE_URL
+      //     ? [
+      //         process.env.NEXT_PUBLIC_BASE_URL,
+      //         process.env.NEXT_PUBLIC_ADDITIONAL_ALLOWED_ORIGIN,
+      //       ].filter((url) => url !== undefined)
+      //     : "http://localhost:3000",
+      origin: "*",
     }),
   )
   .basePath("/api")
