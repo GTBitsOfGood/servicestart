@@ -11,8 +11,6 @@ import { logger } from "hono/logger";
 
 export const app = new Hono()
   .basePath("/api")
-  .use("*", logger())
-  .use("*", cors())
   .route("/ping", ping)
   .route("/joinRequests", joinRequests)
   .route("/announcements", announcements)
