@@ -7,10 +7,11 @@ import media from "@/api/media";
 import organizationConfig from "@/api/organizationConfig";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { logger } from "hono/logger";
 
 export const app = new Hono()
+  .use(logger())
   .use(
-    "/api/*",
     cors({
       //   origin: process.env.NEXT_PUBLIC_BASE_URL
       //     ? [
