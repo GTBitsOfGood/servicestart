@@ -104,6 +104,9 @@ export default function BogModal({
     else handleOpenChange(false);
   };
 
+  const { className: contentClassName, ...restContentProps } =
+    contentProps ?? {};
+
   return (
     <Dialog.Root
       open={open}
@@ -115,8 +118,8 @@ export default function BogModal({
       <Dialog.Portal>
         <Dialog.Overlay className={styles.overlay} />
         <Dialog.Content
-          {...contentProps}
-          className={`${styles.content} ${styles[responsiveSize]} min-w-[740px]`}
+          {...restContentProps}
+          className={`${styles.content} ${styles[responsiveSize]} ${contentClassName ?? ""}`}
           onPointerDownOutside={(e) => {
             if (!modal) e.preventDefault();
           }}
