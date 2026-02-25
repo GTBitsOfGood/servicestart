@@ -5,20 +5,19 @@ import { paginationQuerySchema } from "../lib/apiUtils";
 import { requireMembership } from "@/lib/authUtils";
 import { ForbiddenError } from "@/lib/errors";
 import { NotificationService } from "@/lib/services/NotificationService";
-import { NOTIFICATION_TYPE_VALUES, NotificationType } from "@/lib/schema";
+import { NotificationType } from "@/lib/schema";
 
 const notificationsQuerySchema = paginationQuerySchema.and(
   z.object({
     read: z
-      .preprocess(
-        (val) => (val === "" || val === null ? undefined : val),
-        z.enum(["true", "false"]).optional(),
-      )
-      .transform((val) => val === "true"),
-    type: z.preprocess(
-      (val) => (val === "" || val === null ? undefined : val),
-      z.enum(NOTIFICATION_TYPE_VALUES).optional(),
-    ),
+      .string()
+      .or(z.boolean())
+      .optional()
+      .transform((val) => {
+        if (typeof val === "boolean") return val;
+        return val === "true";
+      }),
+    type: z.enum(NotificationType).optional(),
   }),
 );
 
