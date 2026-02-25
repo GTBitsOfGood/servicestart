@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  juno-sdk:
+    hash: ec8eddc2fec47ecd1dadaa9191b4254f19373b4e1af37e7e80f93755018654b6
+    path: patches/juno-sdk.patch
+
 importers:
 
   .:
@@ -40,7 +45,7 @@ importers:
         version: 4.11.10
       juno-sdk:
         specifier: ^0.0.9
-        version: 0.0.9
+        version: 0.0.9(patch_hash=ec8eddc2fec47ecd1dadaa9191b4254f19373b4e1af37e7e80f93755018654b6)
       next:
         specifier: latest
         version: 16.1.6(@babel/core@7.28.6)(@playwright/test@1.58.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -7173,7 +7178,7 @@ snapshots:
       json-schema: 0.4.0
       verror: 1.10.0
 
-  juno-sdk@0.0.9:
+  juno-sdk@0.0.9(patch_hash=ec8eddc2fec47ecd1dadaa9191b4254f19373b4e1af37e7e80f93755018654b6):
     dependencies:
       '@bitauth/libauth': 1.19.1
       request: 2.88.2
