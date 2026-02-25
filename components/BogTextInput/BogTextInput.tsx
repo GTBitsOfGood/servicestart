@@ -28,6 +28,8 @@ interface BogTextInputProps {
   value?: string;
   /** The default value of the text input for uncontrolled components. */
   defaultValue?: string;
+  /** Whether the input has an error state (red outline) */
+  error?: boolean;
   /** Function that is called when the value of the text input changes. */
   onChange?: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -47,6 +49,7 @@ export default function BogTextInput({
   iconProps,
   value,
   defaultValue,
+  error,
   onChange,
 }: BogTextInputProps) {
   const [internalValue, setInternalValue] = useState<string>(
@@ -77,7 +80,7 @@ export default function BogTextInput({
         className={`${styles.inputWrapper} ${
           iconProps &&
           (iconProps.position === "right" ? styles.iconRight : styles.iconLeft)
-        }`}
+        } ${error ? "ring-1 ring-red-500 rounded" : ""}`}
       >
         {multiline ? (
           <textarea

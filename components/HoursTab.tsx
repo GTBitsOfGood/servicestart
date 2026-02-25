@@ -106,14 +106,14 @@ export default function HoursTab({ events }: HoursTabProps) {
           Total Hours: {formatMinutes(totalMinutes)}
         </p>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-6">
           <div className="flex items-center gap-2 border border-black/20 rounded-md px-4 py-2">
             <input
               type="text"
               placeholder="Enter text to search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="text-paragraph-2 outline-none bg-transparent w-72 placeholder:text-black/40"
+              className="text-paragraph-2 outline-none bg-transparent w-120 placeholder:text-black/40"
             />
             <BogIcon name="search" size={16} className="text-black/40" />
           </div>
