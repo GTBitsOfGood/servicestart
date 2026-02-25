@@ -151,6 +151,24 @@ export async function main() {
   await db.insert(schema.events).values(eventsData).onConflictDoNothing();
 
   log("Events created.");
+  const usersToRsvp = [
+    "admin@example.com",
+    "member1@example.com",
+    "member2@example.com",
+  ];
+
+  for (const email of usersToRsvp) {
+    const res = await auth.api.signInEmail({
+      body: { email, password: DEFAULT_TEST_PASSWORD },
+    });
+
+    await db
+      .insert(schema.eventRsvps)
+      .values(eventsData.map((e) => ({ userId: res.user.id, eventId: e.id })))
+      .onConflictDoNothing();
+  }
+
+  log("RSVPs created.");
   log("Seeding completed successfully.");
 }
 

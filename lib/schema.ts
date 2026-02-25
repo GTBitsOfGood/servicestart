@@ -65,6 +65,9 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
   phoneNumber: text("phone_number"),
+  displayName: text("display_name"),
+  pronouns: text("pronouns"),
+  location: text("location"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
