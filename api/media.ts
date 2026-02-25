@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { auth } from "@/lib/auth";
-import { MembersService } from "@/lib/services/members";
+import { MembersService } from "@/lib/services/MemberService";
 import { FileService } from "@/lib/services/FileService";
 import { MediaService } from "@/lib/services/MediaService";
 import { MediaType } from "@/lib/schema";

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import db from "@/lib/db";
 import { notifications, NotificationType, members } from "@/lib/schema";
-import { MembersService } from "@/lib/services/members";
+import { MembersService } from "@/lib/services/MemberService";
 
 const ADMIN_ROLES = ["admin", "owner"] as const;
 

@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { juno } from "../lib/services/junoClient";
+import { juno } from "../lib/junoClient";
 
 const sendgridKey = process.env.SENDGRID_KEY?.trim();
 

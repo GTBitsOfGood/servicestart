@@ -5,9 +5,9 @@ import {
   NoActiveOrganizationError,
   UnauthorizedError,
 } from "@/lib/errors";
-import { JoinRequestsService } from "@/lib/services/joinRequests";
-import { MembersService } from "@/lib/services/members";
-import { OrganizationsService } from "@/lib/services/organizations";
+import { JoinRequestsService } from "@/lib/services/JoinRequestService";
+import { MembersService } from "@/lib/services/MemberService";
+import { OrganizationsService } from "@/lib/services/OrganizationService";
 import { getSlugFromHost } from "./clientAuthUtils";
 
 export async function createJoinRequestIfNeeded(userId: string, host?: string) {

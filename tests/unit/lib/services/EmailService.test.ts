@@ -3,10 +3,10 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import db from "@/lib/db";
 import { members, users } from "@/lib/schema";
 import { EmailService } from "@/lib/services/EmailService";
-import { juno } from "@/lib/services/junoClient";
+import { juno } from "@/lib/junoClient";
 import { createOrganization } from "@/tests/unit/testUtils";
 
-vi.mock("@/lib/services/junoClient", () => ({
+vi.mock("@/lib/junoClient", () => ({
   juno: {
     email: {
       sendEmail: vi.fn(async () => ({ statusCode: 202 })),

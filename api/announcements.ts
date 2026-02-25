@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { AnnouncementsService } from "@/lib/services/announcements";
+import { AnnouncementsService } from "@/lib/services/AnnouncementService";
 import { auth } from "@/lib/auth";
 import { EmailService } from "@/lib/services/EmailService";
-import { MembersService } from "@/lib/services/members";
+import { MembersService } from "@/lib/services/MemberService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 
 const app = new Hono()

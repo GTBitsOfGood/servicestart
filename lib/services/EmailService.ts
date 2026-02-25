@@ -1,6 +1,6 @@
-import { juno } from "@/lib/services/junoClient";
-import { MembersService } from "@/lib/services/members";
-import { OrganizationsService } from "@/lib/services/organizations";
+import { juno } from "@/lib/junoClient";
+import { MembersService } from "@/lib/services/MemberService";
+import { OrganizationsService } from "@/lib/services/OrganizationService";
 
 function senderDomain() {
   if (process.env.EMAIL_SENDER_DOMAIN?.trim()) {
