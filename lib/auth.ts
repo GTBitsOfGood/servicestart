@@ -7,10 +7,20 @@ import { headers } from "next/headers";
 import { getSlugFromHost } from "./clientAuthUtils";
 import { sessions } from "./schema";
 import { eq } from "drizzle-orm";
+import { EmailService } from "@/lib/services/EmailService";
 
 export const auth = betterAuth({
   plugins: [
     organization({
+      organizationHooks: {
+        afterCreateOrganization: async ({ organization }) => {
+          await EmailService.registerOrganizationSender({
+            organizationId: organization.id,
+            organizationName: organization.name,
+            organizationSlug: organization.slug,
+          });
+        },
+      },
       schema: {
         organization: {
           additionalFields: {

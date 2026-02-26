@@ -14,10 +14,25 @@ async function createAnnouncement(
   input: z.infer<typeof insertSchema> & { draft: boolean },
 ) {
   const id = randomUUID();
-  await db
+  const [createdAnnouncement] = await db
     .insert(announcements)
-    .values({ ...input, id, publishedAt: input.draft ? null : new Date() });
-  return { id };
+    .values({ ...input, id, publishedAt: input.draft ? null : new Date() })
+    .returning({
+      id: announcements.id,
+      name: announcements.name,
+      body: announcements.body,
+      publishedAt: announcements.publishedAt,
+      publishedById: announcements.publishedById,
+      organizationId: announcements.organizationId,
+      isDraft: isNull(announcements.publishedAt) as SQL<boolean>,
+    })
+    .execute();
+
+  if (!createdAnnouncement) {
+    throw new Error("Failed to create announcement");
+  }
+
+  return createdAnnouncement;
 }
 
 async function listByOrganization(
@@ -85,7 +100,7 @@ async function updateAnnouncement({
   body: string | undefined;
   draft: boolean | undefined;
 }) {
-  const updated = await db
+  const [updatedAnnouncement] = await db
     .update(announcements)
     .set({
       name,
@@ -113,7 +128,11 @@ async function updateAnnouncement({
     })
     .execute();
 
-  return updated;
+  if (!updatedAnnouncement) {
+    return undefined;
+  }
+
+  return updatedAnnouncement;
 }
 
 async function deleteAnnouncement(id: string, organizationId: string) {

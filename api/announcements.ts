@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { AnnouncementsService } from "@/lib/services/announcements";
+import { AnnouncementsService } from "@/lib/services/AnnouncementService";
 import { auth } from "@/lib/auth";
-import { MembersService } from "@/lib/services/members";
+import { EmailService } from "@/lib/services/EmailService";
+import { MembersService } from "@/lib/services/MemberService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 
 const app = new Hono()
@@ -49,15 +50,24 @@ const app = new Hono()
 
       const data = c.req.valid("json");
 
-      const { id } = await AnnouncementsService.createAnnouncement({
-        ...data,
-        publishedById: session.user.id,
-        organizationId: activeOrganizationId,
-      });
+      const createdAnnouncement = await AnnouncementsService.createAnnouncement(
+        {
+          ...data,
+          publishedById: session.user.id,
+          organizationId: activeOrganizationId,
+        },
+      );
+
+      if (createdAnnouncement.publishedAt) {
+        await EmailService.emailMembers(activeOrganizationId, {
+          subject: `New announcement: ${createdAnnouncement.name}`,
+          textBody: createdAnnouncement.body,
+        });
+      }
 
       return c.json({
         success: true,
-        id,
+        id: createdAnnouncement.id,
       });
     },
   )
@@ -181,19 +191,34 @@ const app = new Hono()
         );
       }
 
-      const updated = await AnnouncementsService.updateAnnouncement({
-        id: announcementId,
-        organizationId: activeOrganizationId,
-        userId: session.user.id,
-        name,
-        body,
-        draft,
-      });
-      // e.g. the combination of (id, organizationId) does not match an announcement
-      if (updated.length === 0) {
+      const existingAnnouncement =
+        await AnnouncementsService.getById(announcementId);
+
+      const updatedAnnouncement = await AnnouncementsService.updateAnnouncement(
+        {
+          id: announcementId,
+          organizationId: activeOrganizationId,
+          userId: session.user.id,
+          name,
+          body,
+          draft,
+        },
+      );
+      if (!updatedAnnouncement) {
         return c.json({ error: "Announcement not found" }, { status: 404 });
       }
-      return c.json(updated[0]);
+
+      if (
+        !existingAnnouncement?.publishedAt &&
+        updatedAnnouncement.publishedAt
+      ) {
+        await EmailService.emailMembers(activeOrganizationId, {
+          subject: `New announcement: ${updatedAnnouncement.name}`,
+          textBody: updatedAnnouncement.body,
+        });
+      }
+
+      return c.json(updatedAnnouncement);
     },
   )
   .delete("/:announcementId", async (c) => {

@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { ShiftService } from "@/lib/services/ShiftService";
-import { MembersService } from "@/lib/services/members";
+import { MembersService } from "@/lib/services/MemberService";
 import { EventService } from "@/lib/services/EventService";
 import shiftRsvpApp from "@/api/shifts/rsvps";
 

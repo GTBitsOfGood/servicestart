@@ -1,5 +1,5 @@
 import { requireMembership } from "@/lib/authUtils";
-import { MembersService } from "@/lib/services/members";
+import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
