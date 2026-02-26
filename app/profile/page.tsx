@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import BogTabs from "@/components/BogTabs/BogTabs";
+import BogTabs from "@/components/bog/BogTabs/BogTabs";
 import EventCard, { type Event } from "@/components/EventCard";
 import EventService from "@/lib/services/EventService";
 import { headers } from "next/headers";

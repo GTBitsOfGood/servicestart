@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
-import BogButton from "@/components/BogButton/BogButton";
-import BogIcon from "@/components/BogIcon/BogIcon";
+import BogButton from "@/components/bog/BogButton/BogButton";
+import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import EditProfileModal from "@/components/EditProfileModal";
 
 type EditProfileButtonProps = {

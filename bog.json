@@ -1,6 +1,6 @@
 {
   "design-system": {
-    "path": "components",
+    "path": "components/bog",
     "components": {
       "button": {
         "version": "1.0.0"

@@ -3,8 +3,8 @@ import styles from "./styles.module.css";
 import { Dialog } from "radix-ui";
 import BogButton from "../BogButton/BogButton";
 import BogIcon from "../BogIcon/BogIcon";
-import { useResponsive } from "../../utils/design-system/hooks/useResponsive";
-import { getSizeFromBreakpoint } from "../../utils/design-system/breakpoints/breakpoints";
+import { useResponsive } from "../../../utils/design-system/hooks/useResponsive";
+import { getSizeFromBreakpoint } from "../../../utils/design-system/breakpoints/breakpoints";
 
 interface BogModalContentProps extends React.ComponentProps<
   typeof Dialog.Content

@@ -1,9 +1,9 @@
 "use client";
 import React, { ButtonHTMLAttributes, ReactNode, CSSProperties } from "react";
-import type { IconProps } from "../../utils/design-system/types/types";
+import type { IconProps } from "../../../utils/design-system/types/types";
 import styles from "./styles.module.css";
-import { useResponsive } from "../../utils/design-system/hooks/useResponsive";
-import { getSizeFromBreakpoint } from "../../utils/design-system/breakpoints/breakpoints";
+import { useResponsive } from "../../../utils/design-system/hooks/useResponsive";
+import { getSizeFromBreakpoint } from "../../../utils/design-system/breakpoints/breakpoints";
 import BogIcon from "../BogIcon/BogIcon";
 
 interface BogButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

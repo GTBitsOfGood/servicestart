@@ -1,5 +1,5 @@
 import React from "react";
-import type { BogIconProps } from "@/components/BogIcon/BogIcon";
+import type { BogIconProps } from "@/components/bog/BogIcon/BogIcon";
 
 /**
  * IconProps describes a small configuration object used to render icons

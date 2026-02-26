@@ -1,6 +1,6 @@
 import styles from "./styles.module.css";
 import React, { useState } from "react";
-import type { IconProps } from "../../utils/design-system/types/types";
+import type { IconProps } from "../../../utils/design-system/types/types";
 import BogIcon from "../BogIcon/BogIcon";
 
 interface BogTextInputProps {

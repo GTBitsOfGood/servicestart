@@ -2,7 +2,7 @@
 import * as Tabs from "@radix-ui/react-tabs";
 import React from "react";
 import styles from "./styles.module.css";
-import { useResponsive } from "../../utils/design-system/hooks/useResponsive";
+import { useResponsive } from "../../../utils/design-system/hooks/useResponsive";
 
 export type BogTab = {
   label: string;

@@ -2,9 +2,9 @@ import * as React from "react";
 import { Badge, type BadgeProps } from "@radix-ui/themes";
 import clsx from "clsx";
 import styles from "./styles.module.css";
-import { useResponsive } from "../../utils/design-system/hooks/useResponsive";
+import { useResponsive } from "../../../utils/design-system/hooks/useResponsive";
 import BogIcon from "../BogIcon/BogIcon";
-import { getNumericalSizeFromBreakpoint } from "../../utils/design-system/breakpoints/breakpoints";
+import { getNumericalSizeFromBreakpoint } from "../../../utils/design-system/breakpoints/breakpoints";
 
 export type BogChipState = "complete" | "failure" | "in-progress" | "in-review";
 

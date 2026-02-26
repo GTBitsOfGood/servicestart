@@ -3,10 +3,10 @@
 import { useState, useRef } from "react";
 import authClient from "@/lib/authClient";
 import { useRouter } from "next/navigation";
-import BogTextInput from "@/components/BogTextInput/BogTextInput";
-import BogButton from "@/components/BogButton/BogButton";
-import BogModal from "@/components/BogModal/BogModal";
-import BogBanner from "@/components/BogBanner/BogBanner";
+import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
+import BogButton from "@/components/bog/BogButton/BogButton";
+import BogModal from "@/components/bog/BogModal/BogModal";
+import BogBanner from "@/components/bog/BogBanner/BogBanner";
 
 interface EditProfileModalProps {
   isOpen: boolean;

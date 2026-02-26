@@ -1,8 +1,8 @@
 import { Table, Theme } from "@radix-ui/themes";
-import React, { ReactNode } from "react";
+import React, { ReactNode, useCallback } from "react";
 import styles from "./styles.module.css";
-import { useResponsive } from "../../utils/design-system/hooks/useResponsive";
-import { getNumericalSizeFromBreakpoint } from "../../utils/design-system/breakpoints/breakpoints";
+import { useResponsive } from "../../../utils/design-system/hooks/useResponsive";
+import { getNumericalSizeFromBreakpoint } from "../../../utils/design-system/breakpoints/breakpoints";
 import BogIcon from "../BogIcon/BogIcon";
 
 type ColumnDatatype = "string" | "string[]" | "number" | "number[]" | "other";
@@ -59,7 +59,7 @@ const BogTable: React.FC<BogTableProps> = ({
 
   const [sorts, setSorts] = React.useState<SortEntry[]>([]);
 
-  const extractText = (node: ReactNode): string => {
+  const extractText = useCallback((node: ReactNode): string => {
     if (node == null || typeof node === "boolean") return "";
     if (typeof node === "string" || typeof node === "number")
       return String(node);
@@ -69,7 +69,7 @@ const BogTable: React.FC<BogTableProps> = ({
       return extractText(children);
     }
     return "";
-  };
+  }, []);
 
   const getSortForColumn = (colIndex: number): SortDirection | undefined =>
     sorts.find((s) => s.index === colIndex)?.direction;
@@ -90,23 +90,23 @@ const BogTable: React.FC<BogTableProps> = ({
     });
   };
 
-  const getSortValue = (
-    node: ReactNode,
-    datatype?: ColumnDatatype,
-  ): number | string => {
-    const text = extractText(node).trim();
-    switch (datatype) {
-      case "number":
-      case "number[]": {
-        const nums = text.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
-        return nums.length ? nums[0] : Number.NaN;
+  const getSortValue = useCallback(
+    (node: ReactNode, datatype?: ColumnDatatype): number | string => {
+      const text = extractText(node).trim();
+      switch (datatype) {
+        case "number":
+        case "number[]": {
+          const nums = text.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
+          return nums.length ? nums[0] : Number.NaN;
+        }
+        case "string":
+        case "string[]":
+        default:
+          return text.toLowerCase();
       }
-      case "string":
-      case "string[]":
-      default:
-        return text.toLowerCase();
-    }
-  };
+    },
+    [extractText],
+  );
 
   const sortedRows = React.useMemo(() => {
     if (sorts.length === 0) return rows;
@@ -135,7 +135,7 @@ const BogTable: React.FC<BogTableProps> = ({
       return a.idx - b.idx;
     });
     return decorated.map((d) => d.row);
-  }, [rows, sorts, columnHeaders]);
+  }, [rows, sorts, columnHeaders, getSortValue]);
 
   const radixSize: "1" | "2" | "3" =
     size === "responsive"

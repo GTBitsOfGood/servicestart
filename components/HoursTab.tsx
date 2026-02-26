@@ -4,9 +4,9 @@ import { useMemo, useState } from "react";
 import BogTable, {
   ColumnHeaderCellContent,
   TableRow,
-} from "@/components/BogTable/BogTable";
-import BogButton from "@/components/BogButton/BogButton";
-import BogIcon from "@/components/BogIcon/BogIcon";
+} from "@/components/bog/BogTable/BogTable";
+import BogButton from "@/components/bog/BogButton/BogButton";
+import BogIcon from "@/components/bog/BogIcon/BogIcon";
 
 interface EventRow {
   id: string;

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import BogBanner from "@/components/BogBanner/BogBanner";
+import BogBanner from "@/components/bog/BogBanner/BogBanner";
 
 interface SaveBannerProps {
   status: "success" | "error" | null;
