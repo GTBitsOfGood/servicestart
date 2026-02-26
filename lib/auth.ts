@@ -8,6 +8,7 @@ import { getSlugFromHost } from "./clientAuthUtils";
 import { sessions } from "./schema";
 import { eq } from "drizzle-orm";
 import { EmailService } from "@/lib/services/EmailService";
+import { getBaseUrl } from "./clientUtils";
 
 export const auth = betterAuth({
   plugins: [
@@ -59,7 +60,7 @@ export const auth = betterAuth({
       },
     },
   },
-  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL,
+  baseURL: process.env.BETTER_AUTH_URL || getBaseUrl(),
   database: drizzleAdapter(db, {
     provider: "pg",
     usePlural: true,
