@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
-import { OrganizationsService } from "@/lib/services/organizations";
-import { MembersService } from "@/lib/services/members";
+import { OrganizationsService } from "@/lib/services/OrganizationService";
+import { MembersService } from "@/lib/services/MemberService";
 import authClient from "@/lib/authClient";
 import { headers } from "next/headers";
 
 export default async function OrganizationPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
   const session = await authClient.getSession({
     fetchOptions: {
@@ -19,7 +19,9 @@ export default async function OrganizationPage({
     redirect("/login");
   }
   const user = session.data!.user!;
-  const organization = await OrganizationsService.findBySlug(params.slug);
+  const organization = await OrganizationsService.findBySlug(
+    (await params).slug,
+  );
 
   if (!organization) {
     redirect("/");
