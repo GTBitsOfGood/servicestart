@@ -75,6 +75,15 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
+  e2e-all:
+    needs: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Playwright reports
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report-shard-*-of-*
+
   lint:
     runs-on: ubuntu-latest
     steps:
