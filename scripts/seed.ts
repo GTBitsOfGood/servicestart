@@ -32,26 +32,31 @@ export async function main() {
       name: "Owner User",
       email: "owner@example.com",
       role: "owner",
+      phoneNumber: null,
     },
     {
       name: "Admin User",
       email: "admin@example.com",
       role: "admin",
+      phoneNumber: "(666) 666-6666",
     },
     {
       name: "Member One",
       email: "member1@example.com",
       role: "member",
+      phoneNumber: null,
     },
     {
       name: "Member Two",
       email: "member2@example.com",
       role: "member",
+      phoneNumber: null,
     },
     {
       name: "Non Member",
       email: "nonmember@example.com",
       role: null,
+      phoneNumber: null,
     },
   ];
 
@@ -62,6 +67,7 @@ export async function main() {
           email: userData.email,
           password: DEFAULT_TEST_PASSWORD,
           name: userData.name,
+          phoneNumber: userData.phoneNumber,
         },
       })
       .catch(() =>
@@ -88,6 +94,81 @@ export async function main() {
   }
 
   log("Users and members created.");
+
+  const eventsData = [
+    {
+      id: "event_001",
+      organizationId: orgId,
+      name: "Event 1",
+      location: "Georgia Tech",
+      description: "Event description 1.",
+      startTimestamp: new Date("2026-03-15T09:00:00"),
+      duration: "2 hours",
+      coverImageUrl: null,
+    },
+    {
+      id: "event_002",
+      organizationId: orgId,
+      name: "Event 2",
+      location: "GT Admissions Center",
+      description: "Event description 2.",
+      startTimestamp: new Date("2026-03-22T10:00:00"),
+      duration: "3 hours",
+      coverImageUrl: null,
+    },
+    {
+      id: "event_003",
+      organizationId: orgId,
+      name: "Event 3",
+      location: "Bits of Good",
+      description: "Event description 3.",
+      startTimestamp: new Date("2026-04-05T13:00:00"),
+      duration: "4 hours",
+      coverImageUrl: null,
+    },
+    {
+      id: "event_004",
+      organizationId: orgId,
+      name: "Event 4",
+      location: "BOG",
+      description: "Event description 4.",
+      startTimestamp: new Date("2026-01-10T11:00:00"),
+      duration: "3 hours",
+      coverImageUrl: null,
+    },
+    {
+      id: "event_005",
+      organizationId: orgId,
+      name: "Event 5",
+      location: "Student Center",
+      description: "Event description 5.",
+      startTimestamp: new Date("2025-12-18T14:00:00"),
+      duration: "2 hours",
+      coverImageUrl: null,
+    },
+  ];
+
+  await db.insert(schema.events).values(eventsData).onConflictDoNothing();
+
+  log("Events created.");
+  const usersToRsvp = [
+    "admin@example.com",
+    "member1@example.com",
+    "member2@example.com",
+  ];
+
+  for (const email of usersToRsvp) {
+    const res = await auth.api.signInEmail({
+      body: { email, password: DEFAULT_TEST_PASSWORD },
+    });
+
+    await db
+      .insert(schema.eventRsvps)
+      .values(eventsData.map((e) => ({ userId: res.user.id, eventId: e.id })))
+      .onConflictDoNothing();
+  }
+
+  log("RSVPs created.");
   log("Seeding completed successfully.");
 }
 

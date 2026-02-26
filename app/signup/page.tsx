@@ -2,8 +2,8 @@
 
 import authClient from "@/lib/authClient";
 import { useState, useEffect } from "react";
-import BogTextInput from "@/components/BogTextInput/BogTextInput";
-import BogButton from "@/components/BogButton/BogButton";
+import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
+import BogButton from "@/components/bog/BogButton/BogButton";
 import { useRouter } from "next/navigation";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import { OrganizationConfigKey } from "@/lib/schema";

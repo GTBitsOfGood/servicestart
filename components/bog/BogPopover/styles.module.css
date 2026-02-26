@@ -1,0 +1,42 @@
+.trigger {
+  cursor: pointer;
+}
+
+.content {
+  box-shadow:
+    0px 1rem 3.8rem -1rem hsl(206 22% 7% / 35%),
+    0px 1rem 2rem -1.5rem hsl(206 22% 7% / 20%);
+  background-color: var(--color-solid-bg-base);
+  color: var(--color-grey-text-strong);
+  border-radius: 1rem;
+  padding: 2rem;
+  position: relative;
+
+  .header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-bottom: 2rem;
+    .close {
+      &:hover {
+        opacity: 75%;
+        cursor: pointer;
+      }
+      &:active {
+        opacity: 100%;
+      }
+    }
+
+    &[data-state="open"] {
+      animation: var(--animate-fade-in);
+    }
+
+    &[data-state="closed"] {
+      animation: var(--animate-fade-out);
+    }
+  }
+
+  .arrow {
+    fill: var(--color-solid-bg-base);
+  }
+}

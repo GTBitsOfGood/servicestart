@@ -1,6 +1,6 @@
 {
   "design-system": {
-    "path": "components",
+    "path": "components/bog",
     "components": {
       "button": {
         "version": "1.0.0"
@@ -9,6 +9,36 @@
         "version": "1.0.0"
       },
       "icon": {
+        "version": "1.0.0"
+      },
+      "tabs": {
+        "version": "1.0.0"
+      },
+      "banner": {
+        "version": "1.0.0"
+      },
+      "modal": {
+        "version": "1.0.0"
+      },
+      "table": {
+        "version": "1.0.0"
+      },
+      "checkbox": {
+        "version": "1.0.0"
+      },
+      "dropdown": {
+        "version": "1.0.0"
+      },
+      "chip": {
+        "version": "1.0.0"
+      },
+      "popover": {
+        "version": "1.0.0"
+      },
+      "radio-group": {
+        "version": "1.0.0"
+      },
+      "radio-item": {
         "version": "1.0.0"
       }
     }
