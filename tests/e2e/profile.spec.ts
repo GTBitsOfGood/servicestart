@@ -24,12 +24,14 @@ test.describe("Profile Page", () => {
     ).toBeVisible();
   });
 
-  test("edit details button navigates to /profile/edit", async ({ page }) => {
+  test("edit details button opens edit details modal", async ({ page }) => {
     await createTestUserAndSignIn(page);
     await page.goto("/profile");
 
     await page.getByRole("button", { name: /edit details/i }).click();
-    await expect(page).toHaveURL(/\/profile\/edit/);
+    await expect(
+      page.getByRole("dialog", { name: /edit details/i }),
+    ).toBeVisible();
   });
 
   test("shows Events and Hours tabs", async ({ page }) => {
@@ -53,7 +55,7 @@ test.describe("Profile Page", () => {
     await page.goto("/profile");
 
     await page.getByRole("tab", { name: /hours/i }).click();
-    await expect(page.getByText(/hours content will be here/i)).toBeVisible();
+    await expect(page.getByText(/total hours/i)).toBeVisible();
   });
 
   test("switching back to Events tab shows events content", async ({
