@@ -79,6 +79,8 @@ jobs:
     needs: e2e
     runs-on: ubuntu-latest
     steps:
+      - name: Log
+        run: echo "All E2E test shards completed successfully."
 
   lint:
     runs-on: ubuntu-latest
