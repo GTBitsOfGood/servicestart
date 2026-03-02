@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BogTable, {
   ColumnHeaderCellContent,
@@ -70,18 +70,21 @@ export default function MembersTable({
   const [activityLoading, setActivityLoading] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
 
-  async function handleRemove(memberEmail: string) {
-    setRemoving(memberEmail);
-    try {
-      await authClient.organization.removeMember({
-        memberIdOrEmail: memberEmail,
-        organizationId,
-      });
-      router.refresh();
-    } finally {
-      setRemoving(null);
-    }
-  }
+  const handleRemove = useCallback(
+    async (memberEmail: string) => {
+      setRemoving(memberEmail);
+      try {
+        await authClient.organization.removeMember({
+          memberIdOrEmail: memberEmail,
+          organizationId,
+        });
+        router.refresh();
+      } finally {
+        setRemoving(null);
+      }
+    },
+    [organizationId, router],
+  );
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -150,7 +153,7 @@ export default function MembersTable({
           ],
         };
       }),
-    [members, activity, activityLoading],
+    [members, activity, activityLoading, currentUserId, handleRemove, removing],
   );
 
   function goToPage(newPage: number) {
