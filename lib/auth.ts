@@ -5,8 +5,8 @@ import db from "@/lib/db";
 import { createJoinRequestIfNeeded } from "@/lib/authUtils";
 import { headers } from "next/headers";
 import { getSlugFromHost } from "./clientAuthUtils";
-import { sessions } from "./schema";
-import { eq } from "drizzle-orm";
+import { eventRsvps, events, sessions, shiftRSVPs, shifts } from "./schema";
+import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
 import { EmailService } from "@/lib/services/EmailService";
 import { getBaseUrl } from "./clientUtils";
 
@@ -20,6 +20,48 @@ export const auth = betterAuth({
             organizationName: organization.name,
             organizationSlug: organization.slug,
           });
+        },
+        beforeRemoveMember: async ({ member }) => {
+          const now = new Date();
+
+          await Promise.all([
+            db.delete(eventRsvps).where(
+              and(
+                eq(eventRsvps.userId, member.userId),
+                inArray(
+                  eventRsvps.eventId,
+                  db
+                    .select({ id: events.id })
+                    .from(events)
+                    .where(
+                      and(
+                        eq(events.organizationId, member.organizationId),
+                        gt(events.startTimestamp, now),
+                        isNotNull(events.startTimestamp),
+                      ),
+                    ),
+                ),
+              ),
+            ),
+
+            db.delete(shiftRSVPs).where(
+              and(
+                eq(shiftRSVPs.userId, member.userId),
+                inArray(
+                  shiftRSVPs.shiftId,
+                  db
+                    .select({ id: shifts.id })
+                    .from(shifts)
+                    .where(
+                      and(
+                        eq(shifts.organizationId, member.organizationId),
+                        gt(shifts.startTimestamp, now),
+                      ),
+                    ),
+                ),
+              ),
+            ),
+          ]);
         },
       },
       schema: {

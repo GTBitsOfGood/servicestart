@@ -5,6 +5,7 @@ import events from "@/api/events";
 import shifts from "@/api/shifts";
 import media from "@/api/media";
 import organizationConfig from "@/api/organizationConfig";
+import members from "@/api/members";
 import { Hono } from "hono";
 import notifications from "@/api/notifications";
 
@@ -17,6 +18,7 @@ export const app = new Hono()
   .route("/organizationConfig", organizationConfig)
   .route("/shifts", shifts)
   .route("/media", media)
-  .route("/notifications", notifications);
+  .route("/notifications", notifications)
+  .route("/members", members);
 
 export type AppType = typeof app;

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import db from "@/lib/db";
 import { members, users } from "@/lib/schema";
 
@@ -53,9 +53,39 @@ async function listMemberContacts(organizationId: string) {
   return Array.from(contactsByEmail.values());
 }
 
+async function listMembers(
+  organizationId: string,
+  { limit, offset }: { limit: number; offset: number },
+) {
+  return db
+    .select({
+      userId: members.userId,
+      name: users.name,
+      email: users.email,
+      phoneNumber: users.phoneNumber,
+      role: members.role,
+      createdAt: members.createdAt,
+    })
+    .from(members)
+    .innerJoin(users, eq(users.id, members.userId))
+    .where(eq(members.organizationId, organizationId))
+    .limit(limit)
+    .offset(offset);
+}
+
+async function countByOrganization(organizationId: string) {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(members)
+    .where(eq(members.organizationId, organizationId));
+  return row?.count ?? 0;
+}
+
 export const MembersService = {
   findByUserAndOrganization,
   getUserIdsByOrganization,
   isAdminOrOwner,
   listMemberContacts,
+  listMembers,
+  countByOrganization,
 };
