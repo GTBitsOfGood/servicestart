@@ -35,11 +35,21 @@ test.describe("Members Page", () => {
     await createTestAdminAndSignIn(page);
     await page.goto("/members");
 
-    await expect(page.getByText("Member")).toBeVisible();
-    await expect(page.getByText("Role")).toBeVisible();
-    await expect(page.getByText("Contact")).toBeVisible();
-    await expect(page.getByText("Hours")).toBeVisible();
-    await expect(page.getByText("Last Active")).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "Member" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "Role" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "Contact" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "Hours" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "Last Active" }),
+    ).toBeVisible();
   });
 
   test("shows the signed-in admin in the member table", async ({ page }) => {
@@ -95,8 +105,10 @@ test.describe("Members Page", () => {
 
     await page.goto("/members");
 
-    await expect(page.getByRole("button", { name: /next/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /previous/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Next page" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Previous page" }),
+    ).toBeVisible();
   });
 
   test("redirects to / when members_page_enabled is false", async ({
@@ -126,7 +138,7 @@ test.describe("Members Page", () => {
     await page.goto("/members");
 
     await expect(
-      page.getByRole("button", { name: /previous/i }),
+      page.getByRole("button", { name: "Previous page" }),
     ).toBeDisabled();
   });
 });
