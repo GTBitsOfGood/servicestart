@@ -13,6 +13,15 @@ import { getBaseUrl } from "./clientUtils";
 export const auth = betterAuth({
   plugins: [
     organization({
+      async sendInvitationEmail(data) {
+        await EmailService.sendInvitationEmail({
+          id: data.id,
+          email: data.email,
+          organization: data.organization,
+          inviter: data.inviter,
+          invitation: data.invitation,
+        });
+      },
       organizationHooks: {
         afterCreateOrganization: async ({ organization }) => {
           await EmailService.registerOrganizationSender({
