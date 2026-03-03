@@ -302,9 +302,7 @@ export default function MembersTable({
           color="#3f3f3f"
           style={{ flexShrink: 0 }}
         />
-        <p
-          role="heading"
-          aria-level={1}
+        <h1
           className="whitespace-nowrap"
           style={{
             fontFamily: FONT_STACK,
@@ -316,7 +314,7 @@ export default function MembersTable({
           }}
         >
           Member Directory
-        </p>
+        </h1>
       </div>
 
       {/* Search bar + Settings button */}

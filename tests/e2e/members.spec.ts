@@ -26,7 +26,9 @@ test.describe("Members Page", () => {
     await createTestAdminAndSignIn(page);
     await page.goto("/members");
 
-    await expect(page.getByRole("heading", { name: /members/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /member directory/i }),
+    ).toBeVisible();
   });
 
   test("shows column headers: Member, Role, Contact, Hours, Last Active", async ({
