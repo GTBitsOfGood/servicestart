@@ -78,10 +78,20 @@ test.describe("Members Page", () => {
 
     await page.goto("/members");
 
-    const removeButtons = page.getByRole("button", {
+    // Remove buttons are revealed on row hover — hover the other user's row first
+    const otherUserRow = page
+      .getByRole("row")
+      .filter({ hasText: otherUser.name });
+    await otherUserRow.hover();
+
+    const removeButton = page.getByRole("button", {
       name: new RegExp(`remove ${otherUser.name}`, "i"),
     });
-    await expect(removeButtons.first()).toBeVisible();
+    await expect(removeButton.first()).toBeVisible();
+
+    // Hover the admin's own row to reveal their remove button, then verify it is disabled
+    const selfRow = page.getByRole("row").filter({ hasText: adminUser.name });
+    await selfRow.hover();
 
     const selfRemoveButton = page.getByRole("button", {
       name: new RegExp(`remove ${adminUser.name}`, "i"),
