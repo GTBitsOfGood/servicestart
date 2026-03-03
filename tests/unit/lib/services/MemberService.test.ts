@@ -4,7 +4,11 @@ import { MembersService } from "@/lib/services/MemberService";
 import {
   addMember,
   buildTestUser,
+  createEvent,
+  createEventRSVP,
   createOrganization,
+  createShift,
+  createShiftRSVP,
   signUpAndGetSession,
 } from "@/tests/unit/testUtils";
 
@@ -117,6 +121,164 @@ describe("MembersService.listMembers", () => {
     const roles = result.map((m) => m.role);
     expect(roles).toContain("admin");
     expect(roles).toContain("member");
+  });
+});
+
+describe("MembersService.getMemberActivity", () => {
+  it("returns zero hours and null lastActive for user with no RSVPs", async () => {
+    const org = await createOrganization("activity-no-rsvps");
+    const { user } = await signUpAndGetSession(buildTestUser());
+    await addMember(user.id, org.id, "member");
+
+    const result = await MembersService.getMemberActivity([user.id], org.id);
+
+    expect(result[user.id]).toEqual({ totalHours: 0, lastActive: null });
+  });
+
+  it("accumulates hours from past event RSVPs", async () => {
+    const org = await createOrganization("activity-event");
+    const { user } = await signUpAndGetSession(buildTestUser());
+    await addMember(user.id, org.id, "member");
+
+    const pastDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const eventId = await createEvent(org.id, {
+      startTimestamp: pastDate,
+      duration: "3600",
+    });
+    await createEventRSVP(eventId, user.id);
+
+    const result = await MembersService.getMemberActivity([user.id], org.id);
+
+    expect(result[user.id].totalHours).toBe(1);
+    expect(result[user.id].lastActive).not.toBeNull();
+  });
+
+  it("accumulates hours from past shift RSVPs", async () => {
+    const org = await createOrganization("activity-shift");
+    const { user } = await signUpAndGetSession(buildTestUser());
+    await addMember(user.id, org.id, "member");
+
+    const pastDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const shiftId = await createShift(org.id, {
+      startTimestamp: pastDate,
+      duration: 3600,
+    });
+    await createShiftRSVP(shiftId, user.id);
+
+    const result = await MembersService.getMemberActivity([user.id], org.id);
+
+    expect(result[user.id].totalHours).toBe(1);
+    expect(result[user.id].lastActive).not.toBeNull();
+  });
+
+  it("does not count future event RSVPs", async () => {
+    const org = await createOrganization("activity-future-event");
+    const { user } = await signUpAndGetSession(buildTestUser());
+    await addMember(user.id, org.id, "member");
+
+    const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const eventId = await createEvent(org.id, {
+      startTimestamp: futureDate,
+      duration: "3600",
+    });
+    await createEventRSVP(eventId, user.id);
+
+    const result = await MembersService.getMemberActivity([user.id], org.id);
+
+    expect(result[user.id].totalHours).toBe(0);
+    expect(result[user.id].lastActive).toBeNull();
+  });
+
+  it("combines hours from both events and shifts", async () => {
+    const org = await createOrganization("activity-combined");
+    const { user } = await signUpAndGetSession(buildTestUser());
+    await addMember(user.id, org.id, "member");
+
+    const pastDate = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+    const eventId = await createEvent(org.id, {
+      startTimestamp: pastDate,
+      duration: "3600",
+    });
+    await createEventRSVP(eventId, user.id);
+
+    const shiftId = await createShift(org.id, {
+      startTimestamp: pastDate,
+      duration: 3600,
+    });
+    await createShiftRSVP(shiftId, user.id);
+
+    const result = await MembersService.getMemberActivity([user.id], org.id);
+
+    expect(result[user.id].totalHours).toBe(2);
+  });
+
+  it("does not count RSVPs from other organizations", async () => {
+    const org = await createOrganization("activity-org-isolation");
+    const otherOrg = await createOrganization("activity-other-org");
+    const { user } = await signUpAndGetSession(buildTestUser());
+    await addMember(user.id, org.id, "member");
+
+    const pastDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    const otherEventId = await createEvent(otherOrg.id, {
+      startTimestamp: pastDate,
+      duration: "3600",
+    });
+    await createEventRSVP(otherEventId, user.id);
+
+    const result = await MembersService.getMemberActivity([user.id], org.id);
+
+    expect(result[user.id].totalHours).toBe(0);
+    expect(result[user.id].lastActive).toBeNull();
+  });
+
+  it("returns results for multiple user IDs", async () => {
+    const org = await createOrganization("activity-multi-user");
+    const { user: user1 } = await signUpAndGetSession(buildTestUser());
+    const { user: user2 } = await signUpAndGetSession(buildTestUser());
+    await addMember(user1.id, org.id, "member");
+    await addMember(user2.id, org.id, "member");
+
+    const pastDate = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
+    const eventId = await createEvent(org.id, {
+      startTimestamp: pastDate,
+      duration: "7200",
+    });
+    await createEventRSVP(eventId, user1.id);
+
+    const result = await MembersService.getMemberActivity(
+      [user1.id, user2.id],
+      org.id,
+    );
+
+    expect(result[user1.id].totalHours).toBe(2);
+    expect(result[user2.id].totalHours).toBe(0);
+  });
+
+  it("uses the most recent lastActive across events and shifts", async () => {
+    const org = await createOrganization("activity-last-active");
+    const { user } = await signUpAndGetSession(buildTestUser());
+    await addMember(user.id, org.id, "member");
+
+    const olderDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+    const newerDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+
+    const eventId = await createEvent(org.id, {
+      startTimestamp: olderDate,
+      duration: "3600",
+    });
+    await createEventRSVP(eventId, user.id);
+
+    const shiftId = await createShift(org.id, {
+      startTimestamp: newerDate,
+      duration: 3600,
+    });
+    await createShiftRSVP(shiftId, user.id);
+
+    const result = await MembersService.getMemberActivity([user.id], org.id);
+
+    expect(result[user.id].lastActive).not.toBeNull();
+    const lastActive = new Date(result[user.id].lastActive!);
+    expect(lastActive.getTime()).toBeGreaterThan(olderDate.getTime());
   });
 });
 
