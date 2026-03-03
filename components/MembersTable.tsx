@@ -633,10 +633,10 @@ export default function MembersTable({
                       </span>
                     ) : (
                       <>
-                        <span className="text-[14px] leading-[24px] block group-hover:hidden">
+                        <span className="text-[14px] leading-[24px] block group-hover:hidden [@media(hover:none)]:hidden">
                           {lastActive}
                         </span>
-                        <div className="hidden group-hover:flex items-center gap-5">
+                        <div className="hidden group-hover:flex [@media(hover:none)]:flex items-center gap-5">
                           <button
                             onClick={() => handleRemove(member.email)}
                             disabled={isSelf || removing === member.email}
