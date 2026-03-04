@@ -1,3 +1,8 @@
+export function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
 export function getBaseUrl() {
   return (
     (process.env.NEXT_PUBLIC_BASE_URL?.includes("main--")

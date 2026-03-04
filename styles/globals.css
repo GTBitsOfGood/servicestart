@@ -36,6 +36,9 @@
   --color-solid-bg-sunken: #f9f9f9;
   --color-solid-bg-base: #ffffff;
   --color-grey-icon-weak: #22070b66;
+  --color-grey-icon-strong: #22070b99;
+  --color-dark-500: #3f3f3f;
+  --color-status-active: #63cc80;
 
   --text-desktop-display: 48px;
   --text-desktop-heading-1: 40px;
@@ -121,7 +124,7 @@
 
   body {
     padding: 0;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--font-paragraph);
   }
 
   h1 {
@@ -460,4 +463,65 @@
   backdrop-filter: var(--backdrop-filter-panel);
   background-clip: padding-box;
   position: relative;
+}
+
+@layer base {
+  /* --- Members table column sizing --- */
+  .members-table .rt-TableRootTable {
+    table-layout: fixed !important;
+  }
+
+  .members-table th,
+  .members-table td {
+    vertical-align: middle !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .members-table th:first-child {
+    width: 55px !important;
+    max-width: 55px !important;
+    padding: 8px !important;
+  }
+
+  .members-table thead th {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+  }
+
+  .members-table tbody th,
+  .members-table tbody td {
+    font-size: 14px !important;
+    font-weight: 400 !important;
+  }
+
+  .members-table tbody span,
+  .members-table tbody p {
+    font-size: inherit !important;
+    line-height: inherit !important;
+  }
+
+  /* --- Delete confirmation modal — matches Figma exactly --- */
+  .confirm-delete-modal.confirm-delete-modal {
+    width: 266px !important;
+    padding: 28px 20px !important;
+    gap: 8px !important;
+    border-radius: 16px !important;
+  }
+
+  .confirm-delete-modal div:last-child {
+    gap: 8px !important;
+  }
+
+  .confirm-delete-modal div:last-child button {
+    padding: 4px 8px 4px 4px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+  }
+
+  .confirm-delete-modal div:last-child button div {
+    font-size: 12px !important;
+    line-height: 16px !important;
+  }
 }
