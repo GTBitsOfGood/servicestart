@@ -45,7 +45,7 @@
     "juno-sdk": "^0.0.9",
     "next": "latest",
     "pg": "^8.19.0",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.8",
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
