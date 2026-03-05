@@ -39,6 +39,18 @@ interface BogModalProps extends React.ComponentProps<typeof Dialog.Root> {
   onSecondary?: () => void;
   /** Whether the primary button is disabled. */
   primaryDisabled?: boolean;
+  /** Additional class names for the buttons container div. */
+  buttonsContainerClassName?: string;
+  /** Additional styles for the buttons container div. */
+  buttonsContainerStyle?: React.CSSProperties;
+  /** Additional class names applied to the primary button. */
+  primaryButtonClassName?: string;
+  /** Additional styles applied to the primary button. */
+  primaryButtonStyle?: React.CSSProperties;
+  /** Additional class names applied to the secondary button. */
+  secondaryButtonClassName?: string;
+  /** Additional styles applied to the secondary button. */
+  secondaryButtonStyle?: React.CSSProperties;
 }
 
 const defaultCloseButton = <BogIcon name="x" size="auto" />;
@@ -65,6 +77,12 @@ export default function BogModal({
   onPrimary,
   onSecondary,
   primaryDisabled = false,
+  buttonsContainerClassName,
+  buttonsContainerStyle,
+  primaryButtonClassName,
+  primaryButtonStyle,
+  secondaryButtonClassName,
+  secondaryButtonStyle,
   ...props
 }: BogModalProps) {
   const breakpoint = useResponsive();
@@ -143,11 +161,16 @@ export default function BogModal({
           <Dialog.Description className={descriptionClass} asChild>
             {description}
           </Dialog.Description>
-          <div className={`${styles.buttonsContainer} justify-end`}>
+          <div
+            className={`${styles.buttonsContainer} justify-end ${buttonsContainerClassName ?? ""}`}
+            style={buttonsContainerStyle}
+          >
             <BogButton
               variant="secondary"
               size={buttonSize}
               onClick={handleSecondary}
+              className={secondaryButtonClassName}
+              style={secondaryButtonStyle}
             >
               {secondaryLabel}
             </BogButton>
@@ -156,6 +179,8 @@ export default function BogModal({
               size={buttonSize}
               onClick={handlePrimary}
               disabled={primaryDisabled}
+              className={primaryButtonClassName}
+              style={primaryButtonStyle}
             >
               {primaryLabel}
             </BogButton>

@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PencilSimpleIcon } from "@/components/icons/PencilSimpleIcon";
-import { UserPlusIcon } from "@/components/icons/UserPlusIcon";
+import { PencilSimple, UserPlus } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import authClient from "@/lib/authClient";
 import { formatDate } from "@/lib/clientUtils";
@@ -229,14 +228,16 @@ export default function MembersTable({
     () =>
       visibleIndices.map((i) => {
         const col = COLUMNS[i];
-        const width =
-          col.key === "checkbox"
-            ? "55px"
-            : `calc((100% - 55px) * ${col.weight} / ${totalWeight})`;
+        const isCheckbox = col.key === "checkbox";
+        const width = isCheckbox
+          ? "55px"
+          : `calc((100% - 55px) * ${col.weight} / ${totalWeight})`;
         return {
           content: col.label,
           datatype: col.datatype,
-          styleProps: { style: { width } },
+          styleProps: {
+            style: isCheckbox ? { width, maxWidth: 55, padding: 8 } : { width },
+          },
         };
       }),
     [visibleIndices, totalWeight],
@@ -340,7 +341,7 @@ export default function MembersTable({
                     aria-label={`Edit ${member.name}`}
                     className="cursor-pointer focus:outline-none leading-none"
                   >
-                    <PencilSimpleIcon
+                    <PencilSimple
                       size={20}
                       color="var(--color-grey-stroke-strong)"
                     />
@@ -383,7 +384,27 @@ export default function MembersTable({
             if (!o) setConfirmTarget(null);
           },
         }}
-        contentProps={{ className: "confirm-modal" }}
+        contentProps={{
+          style: {
+            width: 350,
+            padding: "28px 24px",
+            gap: 10,
+            borderRadius: 16,
+          },
+        }}
+        buttonsContainerStyle={{ gap: 10 }}
+        primaryButtonStyle={{
+          padding: "6px 12px 6px 8px",
+          borderRadius: 4,
+          fontSize: 14,
+          lineHeight: "20px",
+        }}
+        secondaryButtonStyle={{
+          padding: "6px 12px 6px 8px",
+          borderRadius: 4,
+          fontSize: 14,
+          lineHeight: "20px",
+        }}
         trigger={<span />}
         title={
           <p className="!text-desktop-paragraph-2 !leading-[22px] !font-bold !font-paragraph text-grey-text-strong">
@@ -414,7 +435,27 @@ export default function MembersTable({
             if (!o && !batchRemoving) setConfirmBatchDelete(false);
           },
         }}
-        contentProps={{ className: "confirm-modal" }}
+        contentProps={{
+          style: {
+            width: 350,
+            padding: "28px 24px",
+            gap: 10,
+            borderRadius: 16,
+          },
+        }}
+        buttonsContainerStyle={{ gap: 10 }}
+        primaryButtonStyle={{
+          padding: "6px 12px 6px 8px",
+          borderRadius: 4,
+          fontSize: 14,
+          lineHeight: "20px",
+        }}
+        secondaryButtonStyle={{
+          padding: "6px 12px 6px 8px",
+          borderRadius: 4,
+          fontSize: 14,
+          lineHeight: "20px",
+        }}
         trigger={<span />}
         title={
           <p className="!text-desktop-paragraph-2 !leading-[22px] !font-bold !font-paragraph text-grey-text-strong">
@@ -497,7 +538,7 @@ export default function MembersTable({
                 className="font-paragraph text-[20px] leading-[28px] text-black"
                 style={{ fontWeight: 700 }}
               >
-                Dropdown Visibility
+                Information Visibility
               </p>
               <div className="bg-[#f9f9f9] border border-grey-stroke-weak rounded-[4px] p-[4px] flex flex-col">
                 {ALL_TOGGLEABLE_KEYS.map((key) => {
@@ -641,7 +682,7 @@ export default function MembersTable({
             aria-label="Add member"
             className="cursor-pointer leading-none"
           >
-            <UserPlusIcon
+            <UserPlus
               size={24}
               weight="regular"
               color="var(--color-grey-text-weak)"
@@ -651,9 +692,24 @@ export default function MembersTable({
       </div>
 
       {/* Table */}
-      <div className="members-table w-full">
-        <BogTable columnHeaders={filteredColumnHeaders} rows={rows} />
-      </div>
+      <BogTable
+        columnHeaders={filteredColumnHeaders}
+        rows={rows}
+        className="w-full [&_.rt-TableRootTable]:table-fixed [&_tbody_span]:!text-[13px] [&_tbody_span]:!leading-[20px] [&_tbody_p]:!text-[13px] [&_tbody_p]:!leading-[20px]"
+        columnHeaderCellStyle={{
+          fontSize: 16,
+          fontWeight: 700,
+          verticalAlign: "middle",
+          minWidth: 0,
+        }}
+        bodyCellStyle={{
+          fontSize: 13,
+          lineHeight: "20px",
+          fontWeight: 400,
+          verticalAlign: "middle",
+          minWidth: 0,
+        }}
+      />
 
       {/* Pagination */}
       {total > 0 && (

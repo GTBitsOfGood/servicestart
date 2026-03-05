@@ -39,10 +39,18 @@ interface BogTableProps extends Omit<
   rows: TableRow[];
   /** Visual size; responsive maps breakpoints -> small|medium|large */
   size?: "small" | "medium" | "large" | "responsive";
-  /** Tailwind / custom class names */
+  /** Tailwind / custom class names for the Table.Root wrapper */
   className?: string;
-  /** Inline styles */
+  /** Inline styles for the Table.Root wrapper */
   style?: React.CSSProperties;
+  /** Class names applied to every column header cell (thead th) */
+  columnHeaderCellClassName?: string;
+  /** Inline styles applied to every column header cell (thead th) */
+  columnHeaderCellStyle?: React.CSSProperties;
+  /** Class names applied to every body cell (tbody th and tbody td) */
+  bodyCellClassName?: string;
+  /** Inline styles applied to every body cell (tbody th and tbody td) */
+  bodyCellStyle?: React.CSSProperties;
 }
 
 const BogTable: React.FC<BogTableProps> = ({
@@ -51,6 +59,10 @@ const BogTable: React.FC<BogTableProps> = ({
   size = "responsive",
   className,
   style,
+  columnHeaderCellClassName,
+  columnHeaderCellStyle,
+  bodyCellClassName,
+  bodyCellStyle,
   ...rootProps
 }) => {
   const breakpoint = useResponsive();
@@ -163,7 +175,11 @@ const BogTable: React.FC<BogTableProps> = ({
                     <Table.ColumnHeaderCell
                       key={`col-${i}`}
                       {...header.styleProps}
-                      className={`${styles.columnHeaderCell} ${styles.cellBase} ${styles[sizeClass]}`}
+                      className={`${styles.columnHeaderCell} ${styles.cellBase} ${styles[sizeClass]} ${columnHeaderCellClassName ?? ""}`}
+                      style={{
+                        ...columnHeaderCellStyle,
+                        ...header.styleProps?.style,
+                      }}
                     >
                       {header.content}
                       {isSortable && (
@@ -211,7 +227,8 @@ const BogTable: React.FC<BogTableProps> = ({
                       <Table.RowHeaderCell
                         key={`row-${rIdx}-cell-${cIdx}`}
                         {...cell.styleProps}
-                        className={`${styles.rowHeaderCell} ${styles.cellBase} ${styles[sizeClass]}`}
+                        className={`${styles.rowHeaderCell} ${styles.cellBase} ${styles[sizeClass]} ${bodyCellClassName ?? ""}`}
+                        style={{ ...bodyCellStyle, ...cell.styleProps?.style }}
                       >
                         {cell.content}
                       </Table.RowHeaderCell>
@@ -219,7 +236,8 @@ const BogTable: React.FC<BogTableProps> = ({
                       <Table.Cell
                         key={`row-${rIdx}-cell-${cIdx}`}
                         {...cell.styleProps}
-                        className={`${styles.cell} ${styles.cellBase} ${styles[sizeClass]}`}
+                        className={`${styles.cell} ${styles.cellBase} ${styles[sizeClass]} ${bodyCellClassName ?? ""}`}
+                        style={{ ...bodyCellStyle, ...cell.styleProps?.style }}
                       >
                         {cell.content}
                       </Table.Cell>
