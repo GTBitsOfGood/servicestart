@@ -195,7 +195,7 @@
     font-weight: 300 800;
     font-stretch: 100%;
     font-display: swap;
-    src: url("/fonts/opensans-webfont.woff2") format("woff2");
+    src: url("/fonts/opensans-regular-webfont.woff2") format("woff2");
   }
 
   html {
@@ -466,7 +466,6 @@
 }
 
 @layer base {
-  /* --- Members table column sizing --- */
   .members-table .rt-TableRootTable {
     table-layout: fixed !important;
   }
@@ -501,27 +500,26 @@
     line-height: inherit !important;
   }
 
-  /* --- Delete confirmation modal — matches Figma exactly --- */
-  .confirm-delete-modal.confirm-delete-modal {
-    width: 266px !important;
-    padding: 28px 20px !important;
-    gap: 8px !important;
+  .confirm-modal.confirm-modal {
+    width: 350px !important;
+    padding: 28px 24px !important;
+    gap: 10px !important;
     border-radius: 16px !important;
   }
 
-  .confirm-delete-modal div:last-child {
-    gap: 8px !important;
+  .confirm-modal div:last-child {
+    gap: 10px !important;
   }
 
-  .confirm-delete-modal div:last-child button {
-    padding: 4px 8px 4px 4px !important;
+  .confirm-modal div:last-child button {
+    padding: 6px 12px 6px 8px !important;
     border-radius: 4px !important;
-    font-size: 12px !important;
-    line-height: 16px !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
   }
 
-  .confirm-delete-modal div:last-child button div {
-    font-size: 12px !important;
-    line-height: 16px !important;
+  .confirm-modal div:last-child button div {
+    font-size: 14px !important;
+    line-height: 20px !important;
   }
 }
