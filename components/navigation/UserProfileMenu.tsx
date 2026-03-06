@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import BogIcon from "@/components/BogIcon/BogIcon";
+import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import authClient from "@/lib/authClient";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";

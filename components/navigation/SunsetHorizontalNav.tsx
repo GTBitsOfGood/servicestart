@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SunsetLogo } from "@/components/navigation/SunsetLogo";
-import BogIcon from "@/components/BogIcon/BogIcon";
+import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { UserProfileMenu } from "@/components/navigation/UserProfileMenu";
 import { useNavbarVariant } from "@/components/NavbarVariantContext";
 

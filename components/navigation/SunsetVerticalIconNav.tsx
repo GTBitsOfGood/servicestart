@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import BogIcon from "@/components/BogIcon/BogIcon";
+import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import { useNavbarVariant } from "@/components/NavbarVariantContext";
 import authClient from "@/lib/authClient";
