@@ -21,7 +21,7 @@ export function VerticalIconNav() {
 
   return (
     <aside
-      className={`flex h-screen w-24 flex-col items-center justify-between py-8 ${navBgClass}`}
+      className={`flex h-screen w-24 flex-col items-center justify-between py-8 shadow-md ${navBgClass}`}
     >
       <nav className="flex w-full flex-col gap-0.5 text-nav font-normal text-grey-text-strong">
         {MENU_ITEMS.map((item) => {

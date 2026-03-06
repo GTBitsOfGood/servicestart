@@ -61,7 +61,7 @@ export function VerticalSidebarNav() {
 
   return (
     <aside
-      className={`flex h-screen w-[200px] flex-col justify-between py-8 shadow-[4px_0_12px_rgba(0,0,0,0.04)] ${navBgClass}`}
+      className={`flex h-screen w-[200px] flex-col justify-between py-8 shadow-md ${navBgClass}`}
     >
       <div className="flex w-full flex-col">
         <div className="mb-10 px-6">

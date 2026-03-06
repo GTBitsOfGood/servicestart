@@ -17,7 +17,7 @@ export default function Navbar({ children }: NavbarProps) {
   const config = useOrganizationConfig([OrganizationConfigKey.NavbarVariant]);
 
   const rawVariant = config[OrganizationConfigKey.NavbarVariant];
-  const variant = (rawVariant || "sunset-vertical-sidebar") as string;
+  const variant = (rawVariant || "vertical-sidebar") as string;
 
   // Do not render a navbar on auth-only routes
   if (pathname === "/login" || pathname === "/signup") {
@@ -25,7 +25,7 @@ export default function Navbar({ children }: NavbarProps) {
   }
 
   // Determine layout based on organization config
-  if (variant === "sunset-vertical-icon") {
+  if (variant === "vertical-icon") {
     return (
       <div className="flex min-h-screen bg-brand-fill">
         <VerticalIconNav />
@@ -35,14 +35,14 @@ export default function Navbar({ children }: NavbarProps) {
   }
 
   if (
-    variant === "sunset-horizontal-left" ||
-    variant === "sunset-horizontal-center" ||
-    variant === "sunset-horizontal-right"
+    variant === "horizontal-left" ||
+    variant === "horizontal-center" ||
+    variant === "horizontal-right"
   ) {
     const alignment =
-      variant === "sunset-horizontal-left"
+      variant === "horizontal-left"
         ? "left"
-        : variant === "sunset-horizontal-right"
+        : variant === "horizontal-right"
           ? "right"
           : "center";
 

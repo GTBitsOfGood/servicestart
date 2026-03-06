@@ -29,25 +29,25 @@ const ORGS: Array<{
     id: "org_servicestart",
     name: "ServiceStart",
     slug: "servicestart",
-    navbar: { variant: "sunset-vertical-sidebar", color: "red" },
+    navbar: { variant: "vertical-sidebar", color: "red" },
   },
   {
     id: "org_vertical_icon",
     name: "Vertical Icon Org",
     slug: "vertical-icon",
-    navbar: { variant: "sunset-vertical-icon", color: "white" },
+    navbar: { variant: "vertical-icon", color: "white" },
   },
   {
     id: "org_horizontal_left",
     name: "Horizontal Left Org",
     slug: "horizontal-left",
-    navbar: { variant: "sunset-horizontal-left", color: "red" },
+    navbar: { variant: "horizontal-left", color: "red" },
   },
   {
     id: "org_horizontal_center",
     name: "Horizontal Center Org",
     slug: "horizontal-center",
-    navbar: { variant: "sunset-horizontal-center", color: "white" },
+    navbar: { variant: "horizontal-center", color: "white" },
   },
 ];
 

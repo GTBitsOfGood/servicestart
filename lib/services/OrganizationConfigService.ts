@@ -4,11 +4,11 @@ import db from "@/lib/db";
 import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
 
 const ALLOWED_NAVBAR_VARIANTS = [
-  "sunset-vertical-sidebar",
-  "sunset-vertical-icon",
-  "sunset-horizontal-left",
-  "sunset-horizontal-center",
-  "sunset-horizontal-right",
+  "vertical-sidebar",
+  "vertical-icon",
+  "horizontal-left",
+  "horizontal-center",
+  "horizontal-right",
 ] as const;
 
 type AllowedNavbarVariant = (typeof ALLOWED_NAVBAR_VARIANTS)[number];
@@ -321,7 +321,7 @@ async function getNavbarVariant(organizationId: string) {
   ) {
     return value;
   }
-  return "sunset-vertical-sidebar";
+  return "vertical-sidebar";
 }
 
 async function setNavbarVariant(organizationId: string, variant: string) {

@@ -101,7 +101,7 @@ function NavTabs({
             </button>
 
             {isOpen && (
-              <div className="absolute left-0 top-full mt-3 w-56 rounded-xl bg-solid-bg-base p-2 text-small shadow-[0_6px_18px_rgba(0,0,0,0.12)]">
+              <div className="absolute left-0 top-full mt-3 w-56 rounded-xl bg-solid-bg-base p-2 text-small shadow-lg">
                 {item.subpages?.map((sub, index) => {
                   const isSubActive = pathname === sub;
                   return (
@@ -187,7 +187,7 @@ export function HorizontalNav({ alignment }: HorizontalNavProps) {
 
   return (
     <header
-      className={`relative flex h-20 items-center px-10 shadow-[0_2px_10px_rgba(0,0,0,0.04)] ${navBgClass}`}
+      className={`relative flex h-20 items-center px-10 shadow-sm ${navBgClass}`}
     >
       {leftContent}
       {middleContent}
