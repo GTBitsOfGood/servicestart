@@ -148,10 +148,7 @@ export async function main() {
 
   log("Users and members created.");
   log(
-    "Navbar configs by org: servicestart (vertical sidebar, red), vertical-icon (vertical icon, white), horizontal-left (horizontal left, red), horizontal-center (horizontal center, white).",
-  );
-  log(
-    "Add ?org=vertical-icon (or horizontal-left, horizontal-center) to the URL to test different navbar configs.",
+    "Navbar configs by org: servicestart (vertical sidebar, red), vertical-icon (vertical icon, white), horizontal-left (horizontal left, red), horizontal-center (horizontal center, white). Sign in and switch active org to test different navbar configs.",
   );
 
   const orgId = "org_servicestart";

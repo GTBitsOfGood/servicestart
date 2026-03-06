@@ -5,11 +5,8 @@ import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 
 const mockSetActive = vi.fn();
 const mockUseSession = vi.fn();
-const mockUseSearchParams = vi.fn(() => ({ get: () => null }));
 
-vi.mock("next/navigation", () => ({
-  useSearchParams: () => mockUseSearchParams(),
-}));
+vi.mock("next/navigation", () => ({}));
 
 vi.mock("@/lib/authClient", () => ({
   default: {
