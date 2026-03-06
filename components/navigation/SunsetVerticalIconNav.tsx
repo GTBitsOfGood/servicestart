@@ -4,8 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
-import authClient from "@/lib/authClient";
-import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
 
 const MENU_ITEMS = [
@@ -17,17 +15,7 @@ const MENU_ITEMS = [
 
 export function SunsetVerticalIconNav() {
   const pathname = usePathname();
-  const { organization } = useActiveOrganization();
-  const session = authClient.useSession();
   const { count: unreadCount } = useUnreadNotificationCount();
-
-  const user = session.data?.user;
-  const rawRole = (organization?.data as { role?: string } | undefined)?.role;
-  const displayName =
-    user?.name ?? (user?.email as string | undefined) ?? "User";
-  const displayRole = rawRole
-    ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1)
-    : "Member";
 
   const navBgClass = "bg-brand-fill";
 

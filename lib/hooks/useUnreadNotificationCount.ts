@@ -22,15 +22,13 @@ export function useUnreadNotificationCount(): UseUnreadNotificationCountResult {
   const [count, setCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  const canFetch = !!session.data && !!activeOrganizationId;
+
   useEffect(() => {
-    if (!session.data || !activeOrganizationId) {
-      setCount(0);
-      setIsLoading(false);
-      return;
-    }
+    if (!canFetch) return;
 
     const controller = new AbortController();
-    setIsLoading(true);
+    Promise.resolve().then(() => setIsLoading(true));
 
     api.notifications.unreadCount
       .$get({}, { init: { signal: controller.signal } })
@@ -50,7 +48,10 @@ export function useUnreadNotificationCount(): UseUnreadNotificationCountResult {
       });
 
     return () => controller.abort();
-  }, [activeOrganizationId, session.data]);
+  }, [canFetch]);
 
-  return { count, isLoading };
+  return {
+    count: canFetch ? count : 0,
+    isLoading: canFetch ? isLoading : false,
+  };
 }
