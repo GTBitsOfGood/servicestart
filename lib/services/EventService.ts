@@ -135,6 +135,23 @@ async function deleteRSVP(eventId: string, userId: string) {
     .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)));
 }
 
+async function findByUser(userId: string) {
+  return await db
+    .select({
+      id: events.id,
+      organizationId: events.organizationId,
+      name: events.name,
+      location: events.location,
+      description: events.description,
+      startTimestamp: events.startTimestamp,
+      duration: events.duration,
+      coverImageUrl: events.coverImageUrl,
+    })
+    .from(events)
+    .innerJoin(eventRsvps, eq(eventRsvps.eventId, events.id))
+    .where(eq(eventRsvps.userId, userId));
+}
+
 export const EventService = {
   create,
   deleteById,
@@ -143,6 +160,7 @@ export const EventService = {
   updateEvent,
   addRSVP,
   deleteRSVP,
+  findByUser,
 };
 
 export default EventService;

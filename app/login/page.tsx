@@ -3,8 +3,8 @@
 import authClient from "@/lib/authClient";
 import { useState, useEffect } from "react";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
-import BogTextInput from "@/components/BogTextInput/BogTextInput";
-import BogButton from "@/components/BogButton/BogButton";
+import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
+import BogButton from "@/components/bog/BogButton/BogButton";
 import { useRouter } from "next/navigation";
 import { OrganizationConfigKey } from "@/lib/schema";
 import { getSlugFromHost } from "@/lib/clientAuthUtils";

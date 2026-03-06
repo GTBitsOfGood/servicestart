@@ -7,8 +7,8 @@ import {
   ORGANIZATION_CONFIG_KEY_VALUES,
 } from "@/lib/schema";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { OrganizationsService } from "@/lib/services/organizations";
-import { MembersService } from "@/lib/services/members";
+import { OrganizationsService } from "@/lib/services/OrganizationService";
+import { MembersService } from "@/lib/services/MemberService";
 import { getSlugFromHost } from "@/lib/clientAuthUtils";
 import { zValidator } from "@hono/zod-validator";
 

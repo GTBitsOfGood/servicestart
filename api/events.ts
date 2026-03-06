@@ -3,7 +3,7 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { auth } from "@/lib/auth";
 import { EventService } from "@/lib/services/EventService";
-import { MembersService } from "@/lib/services/members";
+import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 

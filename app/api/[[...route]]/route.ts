@@ -6,6 +6,7 @@ import shifts from "@/api/shifts";
 import media from "@/api/media";
 import notifications from "@/api/notifications";
 import organizationConfig from "@/api/organizationConfig";
+import members from "@/api/members";
 import { Hono } from "hono";
 import { handle } from "hono/netlify";
 
@@ -18,7 +19,8 @@ const app = new Hono()
   .route("/organizationConfig", organizationConfig)
   .route("/shifts", shifts)
   .route("/notifications", notifications)
-  .route("/media", media);
+  .route("/media", media)
+  .route("/members", members);
 
 export const GET = handle(app);
 export const POST = handle(app);

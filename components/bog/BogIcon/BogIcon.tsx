@@ -1,3 +1,4 @@
+"use client";
 import React, { ElementType } from "react";
 import * as PhosphorIcons from "@phosphor-icons/react";
 import "./styles.module.css";
@@ -199,3 +200,4 @@ const BogIcon: React.FC<BogIconProps> = ({
 };
 
 export default BogIcon;
+export type { BogIconProps };

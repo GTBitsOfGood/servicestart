@@ -1,0 +1,81 @@
+@layer base {
+  .container {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    font-family: var(--font-paragraph);
+  }
+
+  .container[data-disabled="true"]:hover {
+    cursor: not-allowed;
+  }
+
+  .radio {
+    position: relative;
+    height: 20px;
+    width: 20px;
+    border-radius: 9999px;
+    border: 1px solid;
+    background-color: white;
+    outline: none;
+  }
+
+  .radio:not(:disabled) {
+    border-color: var(--color-grey-stroke-weak);
+  }
+
+  .radio:not(:disabled):hover {
+    border-color: var(--color-brand-stroke-strong);
+  }
+
+  .radio:not(:disabled)[data-state="checked"] {
+    border-color: var(--color-brand-stroke-strong);
+  }
+
+  .radio:disabled {
+    border-color: var(--color-grey-fill-weak);
+    background-color: var(--color-grey-fill-weaker);
+  }
+
+  .radio:disabled:hover {
+    cursor: not-allowed;
+  }
+
+  .indicator {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .indicator::after {
+    content: "";
+    height: 10px;
+    width: 10px;
+    border-radius: 9999px;
+  }
+
+  .radio:not(:disabled) .indicator::after {
+    background-color: var(--color-brand-text);
+  }
+
+  .radio:disabled .indicator::after {
+    background-color: var(--color-grey-fill-weak);
+  }
+
+  .label {
+    font-size: var(--text-desktop-paragraph-2);
+    line-height: var(--text-desktop-paragraph-2--line-height);
+  }
+
+  .label:not([data-disabled="true"]) {
+    color: var(--color-grey-text-strong);
+  }
+
+  .label[data-disabled="true"] {
+    color: var(--color-grey-off-state);
+    cursor: not-allowed;
+  }
+}

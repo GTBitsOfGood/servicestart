@@ -45,7 +45,9 @@ async function createNotification(
 
 describe("GET /api/notifications", () => {
   it("returns 401 when not logged in", async () => {
-    const response = await testApi.notifications.$get({ query: {} });
+    const response = await testApi.notifications.$get({
+      query: {},
+    });
 
     expect(response.status).toBe(401);
   });
@@ -261,9 +263,6 @@ describe("PATCH /api/notifications/:id", () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    if (!("read" in data)) {
-      throw new Error("Response is missing 'read' property");
-    }
-    expect(data.read).toBe(true);
+    expect(data).toHaveProperty("read", true);
   });
 });

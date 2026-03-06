@@ -3,7 +3,7 @@ import path from "node:path";
 import { auth } from "@/lib/auth";
 import { FileService } from "@/lib/services/FileService";
 import { MediaService } from "@/lib/services/MediaService";
-import { MembersService } from "@/lib/services/members";
+import { MembersService } from "@/lib/services/MemberService";
 
 const IMAGE_MIME_TYPES: Record<string, string> = {
   ".jpg": "image/jpeg",

@@ -236,6 +236,60 @@ async function setTagline(organizationId: string, tagline: string) {
   }
 }
 
+async function getMembersPageEnabled(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.MembersPageEnabled),
+      ),
+    )
+    .limit(1);
+
+  return row?.value ?? "true";
+}
+
+async function setMembersPageEnabled(organizationId: string, value: string) {
+  if (value !== "true" && value !== "false") {
+    throw new Error("Value must be 'true' or 'false'");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.MembersPageEnabled),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.MembersPageEnabled),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.MembersPageEnabled,
+      value,
+    });
+  }
+}
+
 async function getNavbarVariant(organizationId: string) {
   const [row] = await db
     .select({
@@ -257,7 +311,6 @@ async function setNavbarVariant(organizationId: string, variant: string) {
   if (!variant || typeof variant !== "string") {
     throw new Error("Navbar variant must be a non-empty string");
   }
-
   const [existing] = await db
     .select({ id: organizationConfig.id })
     .from(organizationConfig)
@@ -366,6 +419,10 @@ const keyMap = {
   [OrganizationConfigKey.NavbarColor]: {
     get: getNavbarColor,
     set: setNavbarColor,
+  },
+  [OrganizationConfigKey.MembersPageEnabled]: {
+    get: getMembersPageEnabled,
+    set: setMembersPageEnabled,
   },
 };
 

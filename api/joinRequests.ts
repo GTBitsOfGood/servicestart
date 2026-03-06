@@ -2,8 +2,8 @@ import { JOIN_REQUEST_STATUS_VALUES, JoinRequestStatus } from "@/lib/schema";
 import { Hono } from "hono";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { JoinRequestsService } from "@/lib/services/joinRequests";
-import { MembersService } from "@/lib/services/members";
+import { JoinRequestsService } from "@/lib/services/JoinRequestService";
+import { MembersService } from "@/lib/services/MemberService";
 import { auth } from "@/lib/auth";
 import { paginationQuerySchema } from "../lib/apiUtils";
 

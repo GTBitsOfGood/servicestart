@@ -1,0 +1,68 @@
+@layer base {
+  .bog-tabs-root {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-paragraph);
+  }
+
+  .bog-tabs-list {
+    display: flex;
+    border-bottom: 0.1rem solid var(--color-grey-stroke-weak);
+    gap: 0.5rem;
+    background: transparent;
+    justify-content: space-between;
+  }
+
+  .bog-tabs-desktop {
+    /* Desktop font size */
+    font-size: var(--text-desktop-paragraph-1);
+    line-height: var(--text-desktop-paragraph-1--line-height);
+  }
+
+  .bog-tabs-mobile {
+    /* Mobile font size */
+    font-size: var(--text-mobile-paragraph-1);
+    line-height: var(--text-mobile-paragraph-1--line-height);
+  }
+
+  .bog-tabs-trigger {
+    background: none;
+    border: none;
+    border-bottom: 0.2rem solid transparent;
+    color: var(--color-grey-text-weak);
+    cursor: pointer;
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .bog-tabs-href {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .bog-tabs-label-wrapper {
+    padding: 0.5rem 1.25rem 0.5rem 1.25rem;
+  }
+
+  .bog-tabs-trigger[data-state="active"] {
+    color: var(--color-grey-text-strong);
+    border-bottom: 0.2rem solid var(--color-grey-stroke-strong);
+  }
+
+  .bog-tabs-label {
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+  }
+
+  .bog-tabs-trigger:hover .bog-tabs-label {
+    background: var(--color-grey-fill-weak);
+  }
+
+  .bog-tabs-content {
+    margin-top: 1rem;
+  }
+}

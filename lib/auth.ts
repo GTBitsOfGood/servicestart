@@ -5,12 +5,104 @@ import db from "@/lib/db";
 import { createJoinRequestIfNeeded } from "@/lib/authUtils";
 import { headers } from "next/headers";
 import { getSlugFromHost } from "./clientAuthUtils";
-import { sessions } from "./schema";
-import { eq } from "drizzle-orm";
+import { eventRsvps, events, sessions, shiftRSVPs, shifts } from "./schema";
+import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
+import { EmailService } from "@/lib/services/EmailService";
+import { getBaseUrl } from "./clientUtils";
 
 export const auth = betterAuth({
-  plugins: [organization()],
-  baseURL: process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_BASE_URL,
+  plugins: [
+    organization({
+      organizationHooks: {
+        afterCreateOrganization: async ({ organization }) => {
+          await EmailService.registerOrganizationSender({
+            organizationId: organization.id,
+            organizationName: organization.name,
+            organizationSlug: organization.slug,
+          });
+        },
+        beforeRemoveMember: async ({ member }) => {
+          const now = new Date();
+
+          await Promise.all([
+            db.delete(eventRsvps).where(
+              and(
+                eq(eventRsvps.userId, member.userId),
+                inArray(
+                  eventRsvps.eventId,
+                  db
+                    .select({ id: events.id })
+                    .from(events)
+                    .where(
+                      and(
+                        eq(events.organizationId, member.organizationId),
+                        gt(events.startTimestamp, now),
+                        isNotNull(events.startTimestamp),
+                      ),
+                    ),
+                ),
+              ),
+            ),
+
+            db.delete(shiftRSVPs).where(
+              and(
+                eq(shiftRSVPs.userId, member.userId),
+                inArray(
+                  shiftRSVPs.shiftId,
+                  db
+                    .select({ id: shifts.id })
+                    .from(shifts)
+                    .where(
+                      and(
+                        eq(shifts.organizationId, member.organizationId),
+                        gt(shifts.startTimestamp, now),
+                      ),
+                    ),
+                ),
+              ),
+            ),
+          ]);
+        },
+      },
+      schema: {
+        organization: {
+          additionalFields: {
+            phoneNumber: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+            email: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+          },
+        },
+      },
+    }),
+  ],
+  user: {
+    additionalFields: {
+      phoneNumber: {
+        type: "string",
+        required: false,
+      },
+      displayName: {
+        type: "string",
+        required: false,
+      },
+      pronouns: {
+        type: "string",
+        required: false,
+      },
+      location: {
+        type: "string",
+        required: false,
+      },
+    },
+  },
+  baseURL: process.env.BETTER_AUTH_URL || getBaseUrl(),
   database: drizzleAdapter(db, {
     provider: "pg",
     usePlural: true,
