@@ -96,7 +96,7 @@ export function SignupForm() {
     >
       <div className="flex h-full w-[53%] flex-shrink-0 items-center justify-between px-[30px]">
         <div
-          className="flex h-[94%] w-full flex-col justify-flex-end rounded-[20px] pt-[90%] pb-[20px] pl-[20px] pr-[60%]"
+          className="flex h-[94%] w-full flex-col justify-end rounded-[20px] pt-[90%] pb-[20px] pl-[20px] pr-[60%]"
           style={{
             background: `linear-gradient(180deg, ${primary_color} 0%, #FFF 100%)`,
           }}
