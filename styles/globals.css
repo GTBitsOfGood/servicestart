@@ -35,6 +35,10 @@
   --color-status-red-fill: #c73a3a0d;
   --color-solid-bg-sunken: #f9f9f9;
   --color-solid-bg-base: #ffffff;
+  --color-grey-icon-weak: #22070b66;
+  --color-grey-icon-strong: #22070b99;
+  --color-dark-500: #3f3f3f;
+  --color-status-active: #63cc80;
 
   --text-desktop-display: 48px;
   --text-desktop-heading-1: 40px;
@@ -120,7 +124,7 @@
 
   body {
     padding: 0;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--font-paragraph);
   }
 
   h1 {
@@ -191,7 +195,7 @@
     font-weight: 300 800;
     font-stretch: 100%;
     font-display: swap;
-    src: url("/fonts/opensans-webfont.woff2") format("woff2");
+    src: url("/fonts/opensans-regular-webfont.woff2") format("woff2");
   }
 
   html {
