@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import authClient from "@/lib/authClient";
@@ -9,9 +9,12 @@ import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 
 export function UserProfileMenu() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const { organization } = useActiveOrganization();
   const session = authClient.useSession();
+
+  useEffect(() => setMounted(true), []);
 
   async function handleSignOut() {
     setOpen(false);
@@ -21,11 +24,10 @@ export function UserProfileMenu() {
 
   const user = session.data?.user;
   const rawRole = (organization?.data as { role?: string } | undefined)?.role;
-  const displayName =
-    user?.name ?? (user?.email as string | undefined) ?? "User";
+  const displayName = user?.name ?? (user?.email as string | undefined) ?? "";
   const displayRole = rawRole
     ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1)
-    : "Member";
+    : "";
 
   return (
     <div className="relative">
@@ -37,14 +39,16 @@ export function UserProfileMenu() {
         }`}
       >
         <ProfileAvatar size="lg" />
-        <div className="flex flex-col items-start gap-0 text-small pr-10">
-          <span className="leading-none font-normal text-grey-text-strong">
-            {displayName}
-          </span>
-          <span className="leading-none text-small font-normal text-grey-text-weak">
-            {displayRole}
-          </span>
-        </div>
+        {mounted && (displayName || displayRole) && (
+          <div className="flex flex-col items-start gap-0 text-small pr-10">
+            <span className="leading-none font-normal text-grey-text-strong">
+              {displayName}
+            </span>
+            <span className="leading-none text-small font-normal text-grey-text-weak">
+              {displayRole}
+            </span>
+          </div>
+        )}
         <BogIcon
           name={open ? "chevron-up" : "chevron-down"}
           size={14}

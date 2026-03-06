@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
@@ -40,9 +40,12 @@ const MENU_ITEMS: SidebarItem[] = [
 export function VerticalSidebarNav() {
   const pathname = usePathname();
   const [openItemLabel, setOpenItemLabel] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const { organization } = useActiveOrganization();
   const session = authClient.useSession();
   const { count: unreadCount } = useUnreadNotificationCount();
+
+  useEffect(() => setMounted(true), []);
 
   const user = session.data?.user;
   const rawRole = (organization?.data as { role?: string } | undefined)?.role;
@@ -167,7 +170,7 @@ export function VerticalSidebarNav() {
 
       <div className="flex items-center gap-3 px-6">
         <ProfileAvatar />
-        {(displayName || displayRole) && (
+        {mounted && (displayName || displayRole) && (
           <div className="flex flex-col gap-0 text-small">
             {displayName && (
               <span className="leading-none font-normal text-grey-text-strong">
