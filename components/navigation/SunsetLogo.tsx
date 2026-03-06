@@ -10,10 +10,9 @@ interface SunsetLogoProps {
 
 export function SunsetLogo({ size = "md" }: SunsetLogoProps) {
   const circleClass =
+    size === "sm" ? "h-16 w-16" : size === "md" ? "h-18 w-18" : "h-18 w-18";
   const bogHeightClass = "h-[10px]";
   const sunsetHeightClass = "h-[15px]";
-  const bogHeightClass = size === "sm" ? "h-[10px]" : "h-[10px]";
-  const sunsetHeightClass = size === "sm" ? "h-[15px]" : "h-[15px]";
 
   return (
     <div className="flex items-center">
