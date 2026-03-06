@@ -46,11 +46,10 @@ export function VerticalSidebarNav() {
 
   const user = session.data?.user;
   const rawRole = (organization?.data as { role?: string } | undefined)?.role;
-  const displayName =
-    user?.name ?? (user?.email as string | undefined) ?? "User";
+  const displayName = user?.name ?? (user?.email as string | undefined) ?? "";
   const displayRole = rawRole
     ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1)
-    : "Member";
+    : "";
 
   const navBgClass = "bg-brand-fill";
 
@@ -168,14 +167,20 @@ export function VerticalSidebarNav() {
 
       <div className="flex items-center gap-3 px-6">
         <ProfileAvatar />
-        <div className="flex flex-col gap-0 text-small">
-          <span className="leading-none font-normal text-grey-text-strong">
-            {displayName}
-          </span>
-          <span className="leading-none text-small font-normal text-grey-text-weak">
-            {displayRole}
-          </span>
-        </div>
+        {(displayName || displayRole) && (
+          <div className="flex flex-col gap-0 text-small">
+            {displayName && (
+              <span className="leading-none font-normal text-grey-text-strong">
+                {displayName}
+              </span>
+            )}
+            {displayRole && (
+              <span className="leading-none text-small font-normal text-grey-text-weak">
+                {displayRole}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </aside>
   );
