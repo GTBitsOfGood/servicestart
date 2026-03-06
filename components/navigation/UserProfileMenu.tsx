@@ -14,7 +14,10 @@ export function UserProfileMenu() {
   const { organization } = useActiveOrganization();
   const session = authClient.useSession();
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const id = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(id);
+  }, []);
 
   async function handleSignOut() {
     setOpen(false);

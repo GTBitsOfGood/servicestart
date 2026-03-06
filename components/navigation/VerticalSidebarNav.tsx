@@ -45,7 +45,10 @@ export function VerticalSidebarNav() {
   const session = authClient.useSession();
   const { count: unreadCount } = useUnreadNotificationCount();
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const id = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(id);
+  }, []);
 
   const user = session.data?.user;
   const rawRole = (organization?.data as { role?: string } | undefined)?.role;
