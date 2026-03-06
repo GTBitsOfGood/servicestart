@@ -3,6 +3,16 @@ import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
 import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
 
+const ALLOWED_NAVBAR_VARIANTS = [
+  "sunset-vertical-sidebar",
+  "sunset-vertical-icon",
+  "sunset-horizontal-left",
+  "sunset-horizontal-center",
+  "sunset-horizontal-right",
+] as const;
+
+type AllowedNavbarVariant = (typeof ALLOWED_NAVBAR_VARIANTS)[number];
+
 async function getDesc(organizationId: string) {
   const [row] = await db
     .select({
@@ -304,12 +314,22 @@ async function getNavbarVariant(organizationId: string) {
     )
     .limit(1);
 
-  return row?.value ?? "sunset-vertical-sidebar";
+  const value = row?.value;
+  if (
+    value &&
+    ALLOWED_NAVBAR_VARIANTS.includes(value as AllowedNavbarVariant)
+  ) {
+    return value;
+  }
+  return "sunset-vertical-sidebar";
 }
 
 async function setNavbarVariant(organizationId: string, variant: string) {
   if (!variant || typeof variant !== "string") {
     throw new Error("Navbar variant must be a non-empty string");
+  }
+  if (!ALLOWED_NAVBAR_VARIANTS.includes(variant as AllowedNavbarVariant)) {
+    throw new Error(`Invalid navbar variant: ${variant}`);
   }
   const [existing] = await db
     .select({ id: organizationConfig.id })

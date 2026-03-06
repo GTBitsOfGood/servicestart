@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { SunsetLogo } from "@/components/navigation/SunsetLogo";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { UserProfileMenu } from "@/components/navigation/UserProfileMenu";
-import { useNavbarVariant } from "@/components/NavbarVariantContext";
+import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
 
 type HorizontalAlignment = "left" | "center" | "right";
 
@@ -42,7 +42,7 @@ function NavTabs({
   );
 
   return (
-    <nav className="flex h-full items-stretch gap-8 text-[14px] font-normal text-[#22070B]">
+    <nav className="flex h-full items-stretch gap-8 text-[14px] font-normal text-grey-text-strong">
       {items.map((item) => {
         const isActive =
           item.href === "/"
@@ -64,7 +64,7 @@ function NavTabs({
                 </span>
                 <div
                   className={`absolute bottom-0 left-0 right-0 h-1 transition-colors ${
-                    isActive ? "bg-[#FC5B43]" : "bg-transparent"
+                    isActive ? "bg-brand-text" : "bg-transparent"
                   }`}
                 />
               </button>
@@ -95,17 +95,17 @@ function NavTabs({
               <BogIcon
                 name={isOpen ? "chevron-up" : "chevron-down"}
                 size={14}
-                color="#22070B"
+                className="text-grey-text-strong"
               />
               <div
                 className={`absolute bottom-0 left-0 right-0 h-1 transition-colors ${
-                  isActive ? "bg-[#FC5B43]" : "bg-transparent"
+                  isActive ? "bg-brand-text" : "bg-transparent"
                 }`}
               />
             </button>
 
             {isOpen && (
-              <div className="absolute left-0 top-full mt-3 w-56 rounded-xl bg-[#FFE9C4] p-2 text-[14px] shadow-[0_6px_18px_rgba(0,0,0,0.12)]">
+              <div className="absolute left-0 top-full mt-3 w-56 rounded-xl bg-solid-bg-base p-2 text-[14px] shadow-[0_6px_18px_rgba(0,0,0,0.12)]">
                 {item.subpages?.map((sub, index) => {
                   const isSubActive = pathname === sub;
                   return (
@@ -113,8 +113,8 @@ function NavTabs({
                       <div
                         className={`rounded-lg px-4 py-2 text-[14px] transition-colors ${
                           isSubActive
-                            ? "bg-[#FC5B43]/20 font-semibold"
-                            : "hover:bg-[#FC5B43]/10"
+                            ? "bg-brand-text/20 font-semibold"
+                            : "hover:bg-brand-text/10"
                         } ${index === 0 ? "mb-1" : ""}`}
                       >
                         Subpage
@@ -132,14 +132,18 @@ function NavTabs({
 }
 
 function RightSide() {
+  const { count: unreadCount } = useUnreadNotificationCount();
+
   return (
     <div className="flex items-center gap-6">
       <button className="relative">
         <span className="relative inline-flex">
-          <BogIcon name="bell" size={22} color="#22070B" />
-          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#FB3552] text-xs font-bold text-white">
-            4
-          </span>
+          <BogIcon name="bell" size={22} className="text-grey-text-strong" />
+          {unreadCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-status-red-text px-1 text-xs font-bold text-white">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
         </span>
       </button>
 
@@ -151,8 +155,7 @@ function RightSide() {
 export function SunsetHorizontalNav({ alignment }: SunsetHorizontalNavProps) {
   const pathname = usePathname();
 
-  const { navbarColor } = useNavbarVariant();
-  const navBgClass = navbarColor === "white" ? "bg-[#FFFFFF]" : "bg-[#FEDED9]";
+  const navBgClass = "bg-brand-fill";
 
   if (alignment === "left") {
     return (

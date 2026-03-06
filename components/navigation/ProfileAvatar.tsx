@@ -8,7 +8,7 @@ export function ProfileAvatar({ size = "md", className }: ProfileAvatarProps) {
 
   return (
     <div
-      className={`${baseSizeClass} rounded-full bg-[#DDDDDD] ${
+      className={`${baseSizeClass} rounded-full bg-grey-off-state ${
         className ?? ""
       }`}
     />

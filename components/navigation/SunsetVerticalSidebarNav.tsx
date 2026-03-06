@@ -4,11 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
+import type { IconName } from "@/components/bog/BogIcon/BogIcon";
 import { SunsetLogo } from "@/components/navigation/SunsetLogo";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
-import { useNavbarVariant } from "@/components/NavbarVariantContext";
 import authClient from "@/lib/authClient";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
+import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
 
 type SidebarSubpage = {
   label: string;
@@ -18,34 +19,30 @@ type SidebarSubpage = {
 type SidebarItem = {
   label: string;
   href: string;
+  icon: IconName;
   subpages?: SidebarSubpage[];
 };
 
 const MENU_ITEMS: SidebarItem[] = [
-  { label: "Home", href: "/" },
+  { label: "Home", href: "/", icon: "house" as const },
   {
     label: "Menu Item",
     href: "/menu-parent",
+    icon: "chats" as const,
     subpages: [
       { label: "Subpage", href: "/subpage-1" },
       { label: "Subpage", href: "/subpage-2" },
     ],
   },
-  { label: "Menu Item", href: "/menu-2" },
+  { label: "Menu Item", href: "/menu-2", icon: "calendar" as const },
 ];
 
-interface SunsetVerticalSidebarNavProps {
-  organizationName?: string;
-}
-
-export function SunsetVerticalSidebarNav({
-  organizationName = "bits of good",
-}: SunsetVerticalSidebarNavProps) {
+export function SunsetVerticalSidebarNav() {
   const pathname = usePathname();
   const [openItemLabel, setOpenItemLabel] = useState<string | null>(null);
-  const { navbarColor } = useNavbarVariant();
   const { organization } = useActiveOrganization();
   const session = authClient.useSession();
+  const { count: unreadCount } = useUnreadNotificationCount();
 
   const user = session.data?.user;
   const rawRole = (organization?.data as { role?: string } | undefined)?.role;
@@ -55,7 +52,7 @@ export function SunsetVerticalSidebarNav({
     ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1)
     : "Member";
 
-  const navBgClass = navbarColor === "white" ? "bg-[#FFFFFF]" : "bg-[#FEDED9]";
+  const navBgClass = "bg-brand-fill";
 
   return (
     <aside
@@ -66,10 +63,11 @@ export function SunsetVerticalSidebarNav({
           <SunsetLogo size="md" />
         </div>
 
-        <nav className="flex w-full flex-col text-[14px] font-normal text-[#22070B]">
+        <nav className="flex w-full flex-col text-[14px] font-normal text-grey-text-strong">
           {MENU_ITEMS.map((item) => {
             const hasDropdown = !!item.subpages?.length;
             const isOpen = openItemLabel === item.label;
+            const isNotifications = item.href === "/notifications";
 
             const isSubActive = item.subpages?.some(
               (sub) => sub.href === pathname,
@@ -82,30 +80,25 @@ export function SunsetVerticalSidebarNav({
 
             const isActive = isActiveTopLevel || !!isSubActive;
 
-            const iconName =
-              item.label === "Home"
-                ? "house"
-                : item.label === "Events"
-                  ? "calendar"
-                  : item.label === "Notifications"
-                    ? "bell"
-                    : "chats";
-
             if (!hasDropdown) {
               return (
                 <Link key={item.href} href={item.href}>
                   <div
                     className={`flex w-full items-center gap-3 px-6 py-5 transition-colors ${
                       isActive
-                        ? "bg-[#FC5B43]/20 font-semibold"
-                        : "hover:bg-[#FC5B43]/10"
+                        ? "bg-brand-text/20 font-semibold"
+                        : "hover:bg-brand-text/10"
                     }`}
                   >
                     <span className="relative shrink-0">
-                      <BogIcon name={iconName} size={20} color="#22070B" />
-                      {item.label === "Notifications" && (
-                        <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#FB3552] text-xs font-bold text-white">
-                          4
+                      <BogIcon
+                        name={item.icon}
+                        size={20}
+                        className="text-grey-text-strong"
+                      />
+                      {isNotifications && unreadCount > 0 && (
+                        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-status-red-text px-1 text-xs font-bold text-white">
+                          {unreadCount > 99 ? "99+" : unreadCount}
                         </span>
                       )}
                     </span>
@@ -121,8 +114,8 @@ export function SunsetVerticalSidebarNav({
                   type="button"
                   className={`flex w-full items-center justify-between px-6 py-5 transition-colors ${
                     isActive
-                      ? "bg-[#FC5B43]/20 font-semibold"
-                      : "hover:bg-[#FC5B43]/10"
+                      ? "bg-brand-text/20 font-semibold"
+                      : "hover:bg-brand-text/10"
                   }`}
                   onClick={() =>
                     setOpenItemLabel((prev) =>
@@ -132,19 +125,23 @@ export function SunsetVerticalSidebarNav({
                 >
                   <div className="flex items-center gap-3">
                     <span className="relative shrink-0">
-                      <BogIcon name={iconName} size={20} color="#22070B" />
+                      <BogIcon
+                        name={item.icon}
+                        size={20}
+                        className="text-grey-text-strong"
+                      />
                     </span>
                     <span className="text-[14px]">{item.label}</span>
                   </div>
                   <BogIcon
                     name={isOpen ? "chevron-down" : "chevron-right"}
                     size={16}
-                    color="#22070B"
+                    className="text-grey-text-strong"
                   />
                 </button>
 
                 {isOpen && (
-                  <div className="flex flex-col gap-2 bg-[#FEDED9] py-2 pl-14 pr-6">
+                  <div className="flex flex-col gap-2 bg-brand-fill py-2 pl-14 pr-6">
                     {item.subpages?.map((sub) => {
                       const isSubpageActive = pathname === sub.href;
                       return (
@@ -152,8 +149,8 @@ export function SunsetVerticalSidebarNav({
                           <div
                             className={`text-[14px] ${
                               isSubpageActive
-                                ? "font-semibold text-[#22070B]"
-                                : "text-[#B08A8A]"
+                                ? "font-semibold text-grey-text-strong"
+                                : "text-grey-text-weak"
                             }`}
                           >
                             {sub.label}
@@ -172,10 +169,10 @@ export function SunsetVerticalSidebarNav({
       <div className="flex items-center gap-3 px-6">
         <ProfileAvatar />
         <div className="flex flex-col gap-0 text-paragraph-2">
-          <span className="leading-none text-[14px] font-normal text-[#22070B]">
+          <span className="leading-none text-[14px] font-normal text-grey-text-strong">
             {displayName}
           </span>
-          <span className="leading-none text-[10px] font-normal text-[#22070B]">
+          <span className="leading-none text-[10px] font-normal text-grey-text-strong">
             {displayRole}
           </span>
         </div>
