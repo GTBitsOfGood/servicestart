@@ -12,7 +12,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ActiveOrganizationSync />
-        <Suspense fallback={null}>
+        <Suspense fallback={children}>
           <Navbar>{children}</Navbar>
         </Suspense>
       </body>

@@ -418,6 +418,62 @@ async function setNavbarColor(organizationId: string, color: string) {
   }
 }
 
+async function getLogoUrl(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.LogoUrl),
+      ),
+    )
+    .limit(1);
+
+  // If no logo URL is configured, return null so callers can
+  // fall back to their own default logo rendering.
+  return row?.value ?? null;
+}
+
+async function setLogoUrl(organizationId: string, logoUrl: string) {
+  if (!logoUrl || typeof logoUrl !== "string") {
+    throw new Error("Logo URL must be a non-empty string");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.LogoUrl),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: logoUrl })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.LogoUrl),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.LogoUrl,
+      value: logoUrl,
+    });
+  }
+}
+
 const keyMap = {
   [OrganizationConfigKey.Description]: { get: getDesc, set: setDesc },
   [OrganizationConfigKey.PrimaryColor]: {
@@ -443,6 +499,10 @@ const keyMap = {
   [OrganizationConfigKey.MembersPageEnabled]: {
     get: getMembersPageEnabled,
     set: setMembersPageEnabled,
+  },
+  [OrganizationConfigKey.LogoUrl]: {
+    get: getLogoUrl,
+    set: setLogoUrl,
   },
 };
 

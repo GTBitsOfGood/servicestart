@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import type { IconName } from "@/components/bog/BogIcon/BogIcon";
-import { SunsetLogo } from "@/components/navigation/SunsetLogo";
+import { SunsetLogo } from "@/components/navigation/Logo";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import authClient from "@/lib/authClient";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
@@ -37,7 +37,7 @@ const MENU_ITEMS: SidebarItem[] = [
   { label: "Menu Item", href: "/menu-2", icon: "calendar" as const },
 ];
 
-export function SunsetVerticalSidebarNav() {
+export function VerticalSidebarNav() {
   const pathname = usePathname();
   const [openItemLabel, setOpenItemLabel] = useState<string | null>(null);
   const { organization } = useActiveOrganization();
@@ -63,7 +63,7 @@ export function SunsetVerticalSidebarNav() {
           <SunsetLogo size="md" />
         </div>
 
-        <nav className="flex w-full flex-col text-[14px] font-normal text-grey-text-strong">
+        <nav className="flex w-full flex-col text-nav font-normal text-grey-text-strong">
           {MENU_ITEMS.map((item) => {
             const hasDropdown = !!item.subpages?.length;
             const isOpen = openItemLabel === item.label;
@@ -102,7 +102,7 @@ export function SunsetVerticalSidebarNav() {
                         </span>
                       )}
                     </span>
-                    <span className="text-[14px]">{item.label}</span>
+                    <span>{item.label}</span>
                   </div>
                 </Link>
               );
@@ -112,7 +112,7 @@ export function SunsetVerticalSidebarNav() {
               <div key={item.href} className="flex flex-col">
                 <button
                   type="button"
-                  className={`flex w-full items-center justify-between px-6 py-5 transition-colors ${
+                  className={`flex w-full cursor-pointer items-center justify-between px-6 py-5 transition-colors ${
                     isActive
                       ? "bg-brand-text/20 font-semibold"
                       : "hover:bg-brand-text/10"
@@ -131,7 +131,7 @@ export function SunsetVerticalSidebarNav() {
                         className="text-grey-text-strong"
                       />
                     </span>
-                    <span className="text-[14px]">{item.label}</span>
+                    <span>{item.label}</span>
                   </div>
                   <BogIcon
                     name={isOpen ? "chevron-down" : "chevron-right"}
@@ -147,7 +147,7 @@ export function SunsetVerticalSidebarNav() {
                       return (
                         <Link key={sub.href} href={sub.href}>
                           <div
-                            className={`text-[14px] ${
+                            className={`${
                               isSubpageActive
                                 ? "font-semibold text-grey-text-strong"
                                 : "text-grey-text-weak"
@@ -168,11 +168,11 @@ export function SunsetVerticalSidebarNav() {
 
       <div className="flex items-center gap-3 px-6">
         <ProfileAvatar />
-        <div className="flex flex-col gap-0 text-paragraph-2">
-          <span className="leading-none text-[14px] font-normal text-grey-text-strong">
+        <div className="flex flex-col gap-0 text-small">
+          <span className="leading-none font-normal text-grey-text-strong">
             {displayName}
           </span>
-          <span className="leading-none text-[10px] font-normal text-grey-text-strong">
+          <span className="leading-none text-small font-normal text-grey-text-weak">
             {displayRole}
           </span>
         </div>

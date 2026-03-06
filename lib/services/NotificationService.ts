@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 import db from "@/lib/db";
 import { notifications, NotificationType, members } from "@/lib/schema";
 import { MembersService } from "@/lib/services/MemberService";
@@ -115,7 +115,7 @@ async function countByUserAndOrganization(
   }
 
   const [row] = await db
-    .select({ count: sql<number>`count(*)` })
+    .select({ count: count() })
     .from(notifications)
     .where(and(...conditions));
 

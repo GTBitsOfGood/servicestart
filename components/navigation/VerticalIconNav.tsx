@@ -13,7 +13,7 @@ const MENU_ITEMS = [
   { label: "Notifications", href: "/notifications", icon: "bell" as const },
 ];
 
-export function SunsetVerticalIconNav() {
+export function VerticalIconNav() {
   const pathname = usePathname();
   const { count: unreadCount } = useUnreadNotificationCount();
 
@@ -23,7 +23,7 @@ export function SunsetVerticalIconNav() {
     <aside
       className={`flex h-screen w-24 flex-col items-center justify-between py-8 ${navBgClass}`}
     >
-      <nav className="flex w-full flex-col gap-0.5 text-[14px] font-normal text-grey-text-strong">
+      <nav className="flex w-full flex-col gap-0.5 text-nav font-normal text-grey-text-strong">
         {MENU_ITEMS.map((item) => {
           const href = item.href;
           const isActive =
