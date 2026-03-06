@@ -5,14 +5,24 @@ import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 
 const mockSetActive = vi.fn();
 const mockUseSession = vi.fn();
+const mockUseSearchParams = vi.fn(() => ({ get: () => null }));
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => mockUseSearchParams(),
+}));
 
 vi.mock("@/lib/authClient", () => ({
   default: {
     useSession: () => mockUseSession(),
+    useActiveOrganization: () => ({ data: null }),
     organization: {
       setActive: (args: { organizationSlug: string }) => mockSetActive(args),
     },
   },
+}));
+
+vi.mock("@/lib/hooks/useActiveOrganization", () => ({
+  useActiveOrganization: () => ({ organization: { data: null } }),
 }));
 
 const ROOT_DOMAIN = "servicestart.com";

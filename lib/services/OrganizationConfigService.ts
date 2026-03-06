@@ -236,6 +236,115 @@ async function setTagline(organizationId: string, tagline: string) {
   }
 }
 
+async function getNavbarVariant(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.NavbarVariant),
+      ),
+    )
+    .limit(1);
+
+  return row?.value ?? "sunset-vertical-sidebar";
+}
+
+async function setNavbarVariant(organizationId: string, variant: string) {
+  if (!variant || typeof variant !== "string") {
+    throw new Error("Navbar variant must be a non-empty string");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.NavbarVariant),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: variant })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.NavbarVariant),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.NavbarVariant,
+      value: variant,
+    });
+  }
+}
+
+async function getNavbarColor(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.NavbarColor),
+      ),
+    )
+    .limit(1);
+
+  const value = row?.value;
+  return value === "white" ? "white" : "red";
+}
+
+async function setNavbarColor(organizationId: string, color: string) {
+  if (color !== "red" && color !== "white") {
+    throw new Error("Navbar color must be either 'red' or 'white'");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.NavbarColor),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: color })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.NavbarColor),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.NavbarColor,
+      value: color,
+    });
+  }
+}
+
 const keyMap = {
   [OrganizationConfigKey.Description]: { get: getDesc, set: setDesc },
   [OrganizationConfigKey.PrimaryColor]: {
@@ -249,6 +358,14 @@ const keyMap = {
   [OrganizationConfigKey.Tagline]: {
     get: getTagline,
     set: setTagline,
+  },
+  [OrganizationConfigKey.NavbarVariant]: {
+    get: getNavbarVariant,
+    set: setNavbarVariant,
+  },
+  [OrganizationConfigKey.NavbarColor]: {
+    get: getNavbarColor,
+    set: setNavbarColor,
   },
 };
 
