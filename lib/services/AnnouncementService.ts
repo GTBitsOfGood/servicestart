@@ -11,9 +11,6 @@ const insertSchema = createInsertSchema(announcements).omit({
 });
 
 const contentSchema = z.object({
-  recipients: z.array(z.object({ email: z.email(), name: z.string() })),
-  sender: z.object({ email: z.email(), name: z.string() }),
-  subject: z.string(),
   content: z.array(z.object({ type: z.string(), value: z.string() })),
 });
 
