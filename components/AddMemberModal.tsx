@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import authClient from "@/lib/authClient";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogModal from "@/components/bog/BogModal/BogModal";
@@ -23,6 +24,7 @@ export default function AddMemberModal({
   organizationId,
   onAddDirectly,
 }: AddMemberModalProps) {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,7 +33,6 @@ export default function AddMemberModal({
   const [error, setError] = useState<string | null>(null);
 
   const isInvalid = !name.trim() || !email.trim();
-  const isEmailOrNameInvalid = !email.trim() && !name.trim();
 
   const reset = () => {
     setName("");
@@ -76,7 +77,7 @@ export default function AddMemberModal({
 
   const handleAddDirectly = async () => {
     setHasAttemptedSave(true);
-    if (isEmailOrNameInvalid) return;
+    if (isInvalid) return;
 
     setLoadingDirect(true);
     setError(null);
@@ -94,6 +95,7 @@ export default function AddMemberModal({
         return;
       }
 
+      router.refresh();
       handleClose();
     } catch (err) {
       console.error(err);
@@ -154,7 +156,7 @@ export default function AddMemberModal({
       primaryLabel="Add & Send Invite Email"
       primaryDisabled={loading || loadingDirect}
       onPrimary={invite}
-      secondaryLabel="Add to Directory Only"
+      secondaryLabel="Add"
       onSecondary={handleAddDirectly}
       onOpenChange={(open) => {
         if (!open) handleClose();

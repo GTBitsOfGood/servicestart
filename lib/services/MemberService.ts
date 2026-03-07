@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { and, eq, inArray, isNotNull, lt, sql } from "drizzle-orm";
 import db from "@/lib/db";
 import {
@@ -188,6 +189,49 @@ async function getMemberActivity(
   return result;
 }
 
+async function addMemberDirectly(
+  email: string,
+  name: string,
+  organizationId: string,
+  role: string = "member",
+) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  let [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, normalizedEmail))
+    .limit(1);
+
+  if (!user) {
+    [user] = await db
+      .insert(users)
+      .values({
+        id: randomUUID(),
+        name: name.trim() || "Unknown",
+        email: normalizedEmail,
+      })
+      .returning();
+  }
+
+  const existing = await findByUserAndOrganization(user.id, organizationId);
+  if (existing) {
+    return existing;
+  }
+
+  const [newMember] = await db
+    .insert(members)
+    .values({
+      id: randomUUID(),
+      userId: user.id,
+      organizationId,
+      role,
+    })
+    .returning();
+
+  return newMember;
+}
+
 export const MembersService = {
   findByUserAndOrganization,
   getMemberActivity,
@@ -196,4 +240,5 @@ export const MembersService = {
   listMemberContacts,
   listMembers,
   countByOrganization,
+  addMemberDirectly,
 };

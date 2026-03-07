@@ -60,6 +60,18 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
     MembersService.countByOrganization(organizationId),
   ]);
 
+  async function addMemberDirectly(orgId: string, email: string, name: string) {
+    "use server";
+    try {
+      await MembersService.addMemberDirectly(email, name, orgId);
+      return { success: true };
+    } catch (error) {
+      console.error("Error adding member directly:", error);
+      if (error instanceof Error) return { error: error.message };
+      return { error: "Failed to add member directly" };
+    }
+  }
+
   return (
     <div className="max-w-[1300px] mx-auto px-12 py-[60px]">
       <MembersTable
@@ -69,6 +81,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
         pageSize={pageSize}
         organizationId={organizationId}
         currentUserId={session.user.id}
+        onAddDirectly={addMemberDirectly}
       />
     </div>
   );
