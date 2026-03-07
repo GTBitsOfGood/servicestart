@@ -94,7 +94,9 @@ export async function afterUserCreated(
     }
 
     await createJoinRequestIfNeeded(userId, organization.id);
-  } catch {}
+  } catch (err) {
+    console.error("Failed to handle organization membership:", err);
+  }
 }
 /**
  * Returns the current session or throws UnauthorizedError if not signed in.

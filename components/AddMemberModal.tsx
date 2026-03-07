@@ -71,6 +71,7 @@ export default function AddMemberModal({
 
       handleClose();
     } catch (err) {
+      console.error("Failed to send invite:", err);
       setError("Something went wrong.");
     } finally {
       setLoading(false);
@@ -100,6 +101,7 @@ export default function AddMemberModal({
       router.refresh();
       handleClose();
     } catch (err) {
+      console.error("Failed to send invite:", err);
       setError("Something went wrong.");
     } finally {
       setLoadingDirect(false);
