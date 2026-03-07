@@ -1,5 +1,12 @@
 import type { Page } from "@playwright/test";
-import { buildTestUser, signUpAndGetHeaders } from "../unit/testUtils";
+import {
+  addMember,
+  buildTestUser,
+  createOrganization,
+  setActiveOrganization,
+  signUpAndGetHeaders,
+  signUpAndGetSession,
+} from "../unit/testUtils";
 
 type SignInOptions = {
   baseUrl?: string;
@@ -45,4 +52,43 @@ export async function createTestUserAndSignIn(
   ]);
 
   return { user };
+}
+
+/**
+ * Creates a test user, an organization, makes the user an admin of that org,
+ * sets the active organization on the session, and signs them into the browser.
+ */
+export async function createTestAdminAndSignIn(
+  page: Page,
+  options: SignInOptions = {},
+) {
+  const user = buildTestUser();
+  const { session, headers } = await signUpAndGetSession(user);
+  const slug = `e2e-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  const org = await createOrganization(slug);
+  await addMember(session.userId, org.id, "admin");
+  await setActiveOrganization(session.id, org.id);
+
+  const cookieHeader = headers["Cookie"];
+  if (!cookieHeader) {
+    throw new Error("No auth cookie returned when signing up test user.");
+  }
+
+  const { name, value } = getCookieParts(cookieHeader);
+  const baseUrl =
+    options.baseUrl || process.env.BASE_URL || "http://localhost:3000";
+  const { hostname } = new URL(baseUrl);
+
+  await page.context().addCookies([
+    {
+      name,
+      value,
+      domain: hostname,
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax",
+    },
+  ]);
+
+  return { user, org };
 }

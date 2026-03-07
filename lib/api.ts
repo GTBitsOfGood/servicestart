@@ -1,15 +1,11 @@
 import type { AppType } from "@/lib/app";
 import { hc } from "hono/client";
+import { getBaseUrl } from "./clientUtils";
 
-const client = hc<AppType>(
-  (process.env.NEXT_PUBLIC_BASE_URL?.includes("main--")
-    ? process.env.NEXT_PUBLIC_PROD_URL
-    : process.env.NEXT_PUBLIC_BASE_URL) || "http://localhost:3000",
-  {
-    init: {
-      credentials: "include",
-    },
+const client = hc<AppType>(getBaseUrl(), {
+  init: {
+    credentials: "include",
   },
-);
+});
 
 export default client.api;

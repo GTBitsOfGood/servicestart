@@ -46,8 +46,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shardTotal: [4]
-        shard: [1, 2, 3, 4]
+        shardTotal: [8]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
 
     steps:
       - name: Checkout
@@ -74,6 +74,13 @@ jobs:
           name: playwright-report-shard-${{ matrix.shard }}-of-${{ matrix.shardTotal }}
           path: playwright-report/
           retention-days: 30
+
+  e2e-all:
+    needs: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log
+        run: echo "All E2E test shards completed successfully."
 
   lint:
     runs-on: ubuntu-latest

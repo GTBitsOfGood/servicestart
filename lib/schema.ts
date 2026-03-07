@@ -36,6 +36,7 @@ export enum OrganizationConfigKey {
   PrimaryColor = "primary_color",
   SecondaryColor = "secondary_color",
   Tagline = "tagline",
+  MembersPageEnabled = "members_page_enabled",
 }
 
 // Array of enum values for use with pgEnum and Zod
@@ -77,6 +78,10 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  phoneNumber: text("phone_number"),
+  displayName: text("display_name"),
+  pronouns: text("pronouns"),
+  location: text("location"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -152,6 +157,8 @@ export const organizations = pgTable("organizations", {
   slug: text("slug").notNull().unique(),
   logo: text("logo"),
   metadata: text("metadata"),
+  phoneNumber: text("phone_number"),
+  email: text("email"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

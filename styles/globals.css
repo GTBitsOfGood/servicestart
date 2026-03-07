@@ -35,6 +35,10 @@
   --color-status-red-fill: #c73a3a0d;
   --color-solid-bg-sunken: #f9f9f9;
   --color-solid-bg-base: #ffffff;
+  --color-grey-icon-weak: #22070b66;
+  --color-grey-icon-strong: #22070b99;
+  --color-dark-500: #3f3f3f;
+  --color-status-active: #63cc80;
 
   --text-desktop-display: 48px;
   --text-desktop-heading-1: 40px;
@@ -99,14 +103,6 @@
   }
 }
 
-/*
-  The default border color has changed to `currentColor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
 @layer base {
   *,
   ::after,
@@ -128,7 +124,7 @@
 
   body {
     padding: 0;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--font-paragraph);
   }
 
   h1 {
@@ -199,7 +195,7 @@
     font-weight: 300 800;
     font-stretch: 100%;
     font-display: swap;
-    src: url("/fonts/opensans-webfont.woff2") format("woff2");
+    src: url("/fonts/opensans-regular-webfont.woff2") format("woff2");
   }
 
   html {
@@ -333,4 +329,138 @@
       font-size: var(--text-desktop-paragraph-1);
     }
   }
+}
+
+/* Radix UI table overrides — moved from BogTable/styles.module.css */
+.radix-themes .radix-themes-table-root {
+  border-radius: 0.8rem;
+}
+
+.radix-themes[data-is-root-theme="true"] {
+  min-height: auto !important;
+}
+
+.radix-themes {
+  --gray-12: #1c2024;
+  --gray-a5: #0009321f;
+  --gray-a6: #0b193326;
+  --black-a6: rgba(0, 0, 0, 0.06);
+  --black-a8: rgba(0, 0, 0, 0.08);
+
+  --color-panel: white;
+  --backdrop-filter-panel: none;
+
+  --scaling: 1;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-8: 48px;
+  --font-size-2: 14px;
+  --font-size-3: 16px;
+  --line-height-2: 20px;
+  --line-height-3: 24px;
+
+  --radius-3: 6px;
+  --radius-4: 8px;
+}
+
+.radix-themes[data-panel-background="translucent"] {
+  --color-panel: rgba(255, 255, 255, 0.7);
+  --backdrop-filter-panel: blur(64px);
+}
+
+.rt-TableRootTable {
+  --table-row-background-color: transparent;
+  --table-row-box-shadow: inset 0 -1px var(--gray-a6);
+
+  width: 100%;
+  text-align: left;
+  vertical-align: top;
+  border-collapse: collapse;
+  border-radius: calc(var(--table-border-radius) - 1px);
+  border-spacing: 0;
+  box-sizing: border-box;
+  height: 0;
+}
+
+.rt-TableHeader {
+  vertical-align: inherit;
+}
+
+.rt-TableBody {
+  vertical-align: inherit;
+}
+
+.rt-TableRow {
+  vertical-align: inherit;
+  color: var(--gray-12);
+}
+
+.rt-TableCell {
+  background-color: var(--table-row-background-color);
+  box-shadow: var(--table-row-box-shadow);
+  box-sizing: border-box;
+  vertical-align: inherit;
+  padding: var(--table-cell-padding);
+  height: var(--table-cell-min-height);
+}
+
+.rt-TableColumnHeaderCell {
+  font-weight: bold;
+}
+
+.rt-TableRowHeaderCell {
+  font-weight: normal;
+}
+
+.rt-TableCell .rt-Inset:first-child {
+  padding-left: var(--inset-padding-left, var(--table-cell-padding));
+}
+
+.rt-TableCell .rt-Inset:last-child {
+  padding-right: var(--inset-padding-right, var(--table-cell-padding));
+}
+
+.rt-TableRoot.rt-r-size-1 {
+  --table-border-radius: var(--radius-3);
+  --table-cell-padding: var(--space-2);
+  --table-cell-min-height: calc(36px * var(--scaling));
+}
+
+.rt-TableRoot.rt-r-size-1 .rt-TableRootTable {
+  font-size: var(--font-size-2);
+  line-height: var(--line-height-2);
+}
+
+.rt-TableRoot.rt-r-size-2 {
+  --table-border-radius: var(--radius-4);
+  --table-cell-padding: var(--space-3);
+  --table-cell-min-height: calc(44px * var(--scaling));
+}
+
+.rt-TableRoot.rt-r-size-2 .rt-TableRootTable {
+  font-size: var(--font-size-2);
+  line-height: var(--line-height-2);
+}
+
+.rt-TableRoot.rt-r-size-3 {
+  --table-border-radius: var(--radius-4);
+  --table-cell-padding: var(--space-3) var(--space-4);
+  --table-cell-min-height: var(--space-8);
+}
+
+.rt-TableRoot.rt-r-size-3 .rt-TableRootTable {
+  font-size: var(--font-size-3);
+  line-height: var(--line-height-3);
+}
+
+.rt-TableRoot.rt-variant-surface {
+  box-sizing: border-box;
+  border: 1px solid var(--gray-a5);
+  border-radius: var(--table-border-radius);
+  background-color: var(--color-panel);
+  -webkit-backdrop-filter: var(--backdrop-filter-panel);
+  backdrop-filter: var(--backdrop-filter-panel);
+  background-clip: padding-box;
+  position: relative;
 }
