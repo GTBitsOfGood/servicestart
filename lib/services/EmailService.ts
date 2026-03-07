@@ -117,7 +117,7 @@ async function sendInvitationEmail({
   email: string;
   organization: { id: string; name: string; slug?: string };
   inviter: { user: { name: string; email: string } };
-  invitation: { expiresAt: Date; role: string };
+  invitation: { expiresAt: Date; role: string; name: string };
 }) {
   if (!organization.slug) {
     throw new Error(
@@ -151,6 +151,8 @@ async function sendInvitationEmail({
       {
         type: "text/plain",
         value: [
+          `Hi ${invitation.name},`,
+          ``,
           `${inviter.user.name} (${inviter.user.email}) has invited you to join ${organization.name} as a ${invitation.role}.`,
           ``,
           `Accept your invitation here: ${acceptUrl}`,

@@ -19,7 +19,7 @@ export const auth = betterAuth({
           email: data.email,
           organization: data.organization,
           inviter: data.inviter,
-          invitation: data.invitation,
+          invitation: data.invitation as any,
         });
       },
       organizationHooks: {
@@ -85,6 +85,15 @@ export const auth = betterAuth({
               type: "string",
               input: true,
               required: false,
+            },
+          },
+        },
+        invitation: {
+          additionalFields: {
+            name: {
+              type: "string",
+              input: true,
+              required: true,
             },
           },
         },
