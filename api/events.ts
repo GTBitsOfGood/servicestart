@@ -9,13 +9,14 @@ import { paginationQuerySchema } from "../lib/apiUtils";
 
 export const eventsQuerySchema = paginationQuerySchema.extend({
   published: z
-    .string()
+    .enum(["true", "false"])
     .optional()
     .transform((val) => {
       if (val === "true") return true;
       if (val === "false") return false;
       return undefined;
     }),
+});
 });
 
 const app = new Hono()
