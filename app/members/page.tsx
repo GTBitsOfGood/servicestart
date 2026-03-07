@@ -63,6 +63,27 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
   async function addMemberDirectly(orgId: string, email: string, name: string) {
     "use server";
     try {
+      const session = await auth.api.getSession({
+        headers: await headers(),
+      });
+
+      if (!session?.user) {
+        return { error: "Unauthorized" };
+      }
+
+      if (session.session.activeOrganizationId !== orgId) {
+        return { error: "Forbidden" };
+      }
+
+      const membership = await MembersService.findByUserAndOrganization(
+        session.user.id,
+        orgId,
+      );
+
+      if (!MembersService.isAdminOrOwner(membership?.role)) {
+        return { error: "Forbidden: insufficient permissions" };
+      }
+
       await MembersService.addMemberDirectly(email, name, orgId);
       return { success: true };
     } catch (error) {
