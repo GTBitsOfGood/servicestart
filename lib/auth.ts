@@ -19,7 +19,11 @@ export const auth = betterAuth({
           email: data.email,
           organization: data.organization,
           inviter: data.inviter,
-          invitation: data.invitation as any,
+          invitation: data.invitation as unknown as {
+            expiresAt: Date;
+            role: string;
+            name: string;
+          },
         });
       },
       organizationHooks: {

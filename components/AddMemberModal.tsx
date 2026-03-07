@@ -32,7 +32,10 @@ export default function AddMemberModal({
   const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isInvalid = !name.trim() || !email.trim();
+  const isInvalid =
+    !name.trim() ||
+    !email.trim() ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   const reset = () => {
     setName("");
@@ -68,7 +71,6 @@ export default function AddMemberModal({
 
       handleClose();
     } catch (err) {
-      console.error(err);
       setError("Something went wrong.");
     } finally {
       setLoading(false);
@@ -98,7 +100,6 @@ export default function AddMemberModal({
       router.refresh();
       handleClose();
     } catch (err) {
-      console.error(err);
       setError("Something went wrong.");
     } finally {
       setLoadingDirect(false);

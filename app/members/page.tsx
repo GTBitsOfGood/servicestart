@@ -66,7 +66,6 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
       await MembersService.addMemberDirectly(email, name, orgId);
       return { success: true };
     } catch (error) {
-      console.error("Error adding member directly:", error);
       if (error instanceof Error) return { error: error.message };
       return { error: "Failed to add member directly" };
     }

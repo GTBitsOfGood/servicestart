@@ -28,7 +28,7 @@ async function acceptInviteIfAvailable(
 
   const invitation = Array.isArray(invitations)
     ? invitations.find(
-        (inv: any) =>
+        (inv: { organizationId: string; status: string; id: string }) =>
           inv.organizationId === organizationId && inv.status === "pending",
       )
     : null;
@@ -40,7 +40,7 @@ async function acceptInviteIfAvailable(
       body: { invitationId: invitation.id },
       headers,
     });
-  } catch (err) {
+  } catch {
     return false;
   }
 
@@ -94,7 +94,7 @@ export async function afterUserCreated(
     }
 
     await createJoinRequestIfNeeded(userId, organization.id);
-  } catch (err) {}
+  } catch {}
 }
 /**
  * Returns the current session or throws UnauthorizedError if not signed in.
