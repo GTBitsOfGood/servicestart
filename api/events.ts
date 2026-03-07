@@ -398,16 +398,26 @@ const app = new Hono()
         return c.json({ error: "Event not found" }, { status: 404 });
       }
 
+      const membership = await MembersService.findByUserAndOrganization(
+        session.user.id,
+        activeOrganizationId,
+      );
+
+      if (
+        event.publishedAt == null &&
+        !MembersService.isAdminOrOwner(membership?.role)
+      ) {
+        return c.json(
+          { error: "Forbidden: Admin or owner role required" },
+          { status: 403 },
+        );
+      }
+
       const { userId } = c.req.valid("query");
       const targetUserId = userId ?? session.user.id;
 
       if (userId && userId !== session.user.id) {
-        const callerMembership = await MembersService.findByUserAndOrganization(
-          session.user.id,
-          activeOrganizationId,
-        );
-
-        if (!MembersService.isAdminOrOwner(callerMembership?.role)) {
+        if (!MembersService.isAdminOrOwner(membership?.role)) {
           return c.json(
             { error: "Forbidden: Admin or owner role required" },
             { status: 403 },
@@ -464,16 +474,26 @@ const app = new Hono()
         return c.json({ error: "Event not found" }, { status: 404 });
       }
 
+      const membership = await MembersService.findByUserAndOrganization(
+        session.user.id,
+        activeOrganizationId,
+      );
+
+      if (
+        event.publishedAt == null &&
+        !MembersService.isAdminOrOwner(membership?.role)
+      ) {
+        return c.json(
+          { error: "Forbidden: Admin or owner role required" },
+          { status: 403 },
+        );
+      }
+
       const { userId } = c.req.valid("query");
       const targetUserId = userId ?? session.user.id;
 
       if (userId && userId !== session.user.id) {
-        const callerMembership = await MembersService.findByUserAndOrganization(
-          session.user.id,
-          activeOrganizationId,
-        );
-
-        if (!MembersService.isAdminOrOwner(callerMembership?.role)) {
+        if (!MembersService.isAdminOrOwner(membership?.role)) {
           return c.json(
             { error: "Forbidden: Admin or owner role required" },
             { status: 403 },
