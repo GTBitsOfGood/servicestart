@@ -58,7 +58,7 @@ const app = new Hono()
 
       const data = c.req.valid("json");
       const publishedAt = data.published ? new Date() : null;
-      const publishedbyId = data.published ? session.user.id : null;
+      const publishedById = data.published ? session.user.id : null;
 
       const event = await EventService.create(
         activeOrganizationId,
@@ -69,7 +69,7 @@ const app = new Hono()
         data.description ?? null,
         data.coverImageUrl ?? null,
         publishedAt,
-        publishedbyId,
+        publishedById,
       );
 
       if (!event) {
