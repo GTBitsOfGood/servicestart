@@ -7,6 +7,12 @@ import { EmailService } from "@/lib/services/EmailService";
 import { MembersService } from "@/lib/services/MemberService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 
+const contentSchema = z.object({
+  content: z.array(
+    z.object({ type: z.enum(["text/plain", "text/html"]), value: z.string() }),
+  ),
+});
+
 const app = new Hono()
   .post(
     "/",
@@ -59,9 +65,14 @@ const app = new Hono()
       );
 
       if (createdAnnouncement.publishedAt) {
+        const { content } = contentSchema.parse(createdAnnouncement.content);
+        const text = content.find((c) => c.type === "text/plain")?.value ?? "";
+        const html = content.find((c) => c.type === "text/html")?.value ?? "";
+
         await EmailService.emailMembers(activeOrganizationId, {
           subject: `New announcement: ${createdAnnouncement.name}`,
-          textBody: createdAnnouncement.body,
+          textBody: text,
+          htmlBody: html,
         });
       }
 
@@ -162,11 +173,15 @@ const app = new Hono()
         name: z.string().optional(),
         body: z.string().optional(),
         draft: z.boolean().optional(),
+        content: contentSchema.optional(),
+        subject: z.string().optional(),
+        template: z.boolean().optional(),
       }),
     ),
     async (c) => {
       const { announcementId } = c.req.param();
-      const { name, body, draft } = c.req.valid("json");
+      const { name, body, content, subject, template, draft } =
+        c.req.valid("json");
 
       const session = await auth.api.getSession({
         headers: c.req.header(),
@@ -200,7 +215,9 @@ const app = new Hono()
           organizationId: activeOrganizationId,
           userId: session.user.id,
           name,
-          body,
+          content,
+          subject,
+          template,
           draft,
         },
       );
@@ -212,9 +229,14 @@ const app = new Hono()
         !existingAnnouncement?.publishedAt &&
         updatedAnnouncement.publishedAt
       ) {
+        const { content } = contentSchema.parse(updatedAnnouncement.content);
+        const text = content.find((c) => c.type === "text/plain")?.value ?? "";
+        const html = content.find((c) => c.type === "text/html")?.value ?? "";
+
         await EmailService.emailMembers(activeOrganizationId, {
           subject: `New announcement: ${updatedAnnouncement.name}`,
-          textBody: updatedAnnouncement.body,
+          textBody: text,
+          htmlBody: html,
         });
       }
 
