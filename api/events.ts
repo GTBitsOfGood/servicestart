@@ -6,6 +6,7 @@ import { EventService } from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
 import { paginationQuerySchema } from "../lib/apiUtils";
+import { ForbiddenError } from "@/lib/errors";
 
 export const eventsQuerySchema = paginationQuerySchema.extend({
   published: z
@@ -52,13 +53,13 @@ const app = new Hono()
       );
 
       if (!MembersService.isAdminOrOwner(membership?.role)) {
-        return c.json(
-          { error: "Forbidden: Admin or owner role required" },
-          { status: 403 },
-        );
+        throw new ForbiddenError();
       }
 
       const data = c.req.valid("json");
+      const publishedAt = data.published ? new Date() : null;
+      const publishedbyId = data.published ? session.user.id : null;
+
       const event = await EventService.create(
         activeOrganizationId,
         data.name,
@@ -67,8 +68,8 @@ const app = new Hono()
         data.duration ?? null,
         data.description ?? null,
         data.coverImageUrl ?? null,
-        data.published ? new Date() : null,
-        data.published ? session.user.id : null,
+        publishedAt,
+        publishedbyId,
       );
 
       if (!event) {
@@ -168,10 +169,7 @@ const app = new Hono()
       event.publishedAt == null &&
       !MembersService.isAdminOrOwner(membership?.role)
     ) {
-      return c.json(
-        { error: "Forbidden: Admin or owner role required" },
-        { status: 403 },
-      );
+      throw new ForbiddenError();
     }
 
     return c.json(event);
@@ -208,10 +206,7 @@ const app = new Hono()
         event.publishedAt == null &&
         !MembersService.isAdminOrOwner(membership?.role)
       ) {
-        return c.json(
-          { error: "Forbidden: Admin or owner role required" },
-          { status: 403 },
-        );
+        throw new ForbiddenError();
       }
 
       const { page, pageSize } = c.req.valid("query");
@@ -266,10 +261,7 @@ const app = new Hono()
       );
 
       if (!MembersService.isAdminOrOwner(membership?.role)) {
-        return c.json(
-          { error: "Forbidden: Admin or owner role required" },
-          { status: 403 },
-        );
+        throw new ForbiddenError();
       }
 
       const event = await EventService.findById(eventId);
@@ -353,10 +345,7 @@ const app = new Hono()
     );
 
     if (!MembersService.isAdminOrOwner(membership?.role)) {
-      return c.json(
-        { error: "Forbidden: Admin or owner role required" },
-        { status: 403 },
-      );
+      throw new ForbiddenError();
     }
 
     const deleted = await EventService.deleteById(
@@ -407,10 +396,7 @@ const app = new Hono()
         event.publishedAt == null &&
         !MembersService.isAdminOrOwner(membership?.role)
       ) {
-        return c.json(
-          { error: "Forbidden: Admin or owner role required" },
-          { status: 403 },
-        );
+        throw new ForbiddenError();
       }
 
       const { userId } = c.req.valid("query");
@@ -418,10 +404,7 @@ const app = new Hono()
 
       if (userId && userId !== session.user.id) {
         if (!MembersService.isAdminOrOwner(membership?.role)) {
-          return c.json(
-            { error: "Forbidden: Admin or owner role required" },
-            { status: 403 },
-          );
+          throw new ForbiddenError();
         }
       }
 
@@ -483,10 +466,7 @@ const app = new Hono()
         event.publishedAt == null &&
         !MembersService.isAdminOrOwner(membership?.role)
       ) {
-        return c.json(
-          { error: "Forbidden: Admin or owner role required" },
-          { status: 403 },
-        );
+        throw new ForbiddenError();
       }
 
       const { userId } = c.req.valid("query");
@@ -494,10 +474,7 @@ const app = new Hono()
 
       if (userId && userId !== session.user.id) {
         if (!MembersService.isAdminOrOwner(membership?.role)) {
-          return c.json(
-            { error: "Forbidden: Admin or owner role required" },
-            { status: 403 },
-          );
+          throw new ForbiddenError();
         }
       }
 
