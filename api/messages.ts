@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { and, desc, eq } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import db from "@/lib/db";
 import { messageRecipients, messages } from "@/lib/schema";
 import { paginationQuerySchema } from "@/lib/apiUtils";
@@ -116,6 +117,7 @@ const app = new Hono()
     const data = c.req.valid("json");
 
     const message = await MessageService.createAndSend({
+      id: randomUUID(),
       organizationId: activeOrganizationId,
       senderId: session.user.id,
       subject: data.subject,
