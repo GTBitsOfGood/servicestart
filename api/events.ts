@@ -81,6 +81,26 @@ const app = new Hono()
       return c.json({ error: "No active organization" }, { status: 403 });
     }
 
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      activeOrganizationId,
+    );
+
+    if (!MembersService.isAdminOrOwner(membership?.role)) {
+      const { page, pageSize } = c.req.valid("query");
+      const eventsList = await EventService.listByOrganization(
+        activeOrganizationId,
+        { limit: pageSize, offset: (page - 1) * pageSize },
+        true,
+      );
+
+      return c.json({
+        data: eventsList,
+        page,
+        pageSize,
+      });
+    }
+
     const { page, pageSize } = c.req.valid("query");
     const eventsList = await EventService.listByOrganization(
       activeOrganizationId,
@@ -114,6 +134,21 @@ const app = new Hono()
       return c.json({ error: "Event not found" }, { status: 404 });
     }
 
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      activeOrganizationId,
+    );
+
+    if (
+      event.publishedAt == null &&
+      !MembersService.isAdminOrOwner(membership?.role)
+    ) {
+      return c.json(
+        { error: "Forbidden: Admin or owner role required" },
+        { status: 403 },
+      );
+    }
+
     return c.json(event);
   })
   .get(
@@ -137,6 +172,21 @@ const app = new Hono()
       const event = await EventService.findById(eventId);
       if (!event || event.organizationId !== activeOrganizationId) {
         return c.json({ error: "Event not found" }, { status: 404 });
+      }
+
+      const membership = await MembersService.findByUserAndOrganization(
+        session.user.id,
+        activeOrganizationId,
+      );
+
+      if (
+        event.publishedAt == null &&
+        !MembersService.isAdminOrOwner(membership?.role)
+      ) {
+        return c.json(
+          { error: "Forbidden: Admin or owner role required" },
+          { status: 403 },
+        );
       }
 
       const { page, pageSize } = c.req.valid("query");
