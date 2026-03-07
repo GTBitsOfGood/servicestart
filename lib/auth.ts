@@ -124,10 +124,7 @@ export const auth = betterAuth({
       create: {
         after: async (session, context) => {
           const headers = context?.headers;
-          const host =
-            headers?.get?.("host") ??
-            (headers as Record<string, string> | undefined)?.host;
-          await afterUserCreated(session.userId, host);
+          await afterUserCreated(session.userId, headers);
         },
       },
     },
@@ -137,10 +134,7 @@ export const auth = betterAuth({
           const session = ctx.context.session;
           if (session?.user) {
             const headers = ctx?.headers;
-            const host =
-              headers?.get?.("host") ??
-              (headers as Record<string, string> | undefined)?.host;
-            await afterUserCreated(session.user.id, host);
+            await afterUserCreated(session.user.id, headers);
           }
         }
       }),
