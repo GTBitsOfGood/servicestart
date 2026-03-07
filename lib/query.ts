@@ -2,7 +2,7 @@ import {
   mutationOptions,
   queryOptions,
   type MutationOptions,
-  type UseQueryOptions,
+  type UnusedSkipTokenOptions,
 } from "@tanstack/react-query";
 import type { AppType } from "@/lib/app";
 import { getBaseUrl } from "@/lib/clientUtils";
@@ -58,7 +58,7 @@ type QueryFactoryOptions<
   TMethod extends AnyMethod,
   TPath extends readonly string[],
 > = Omit<
-  UseQueryOptions<
+  UnusedSkipTokenOptions<
     MethodSuccessData<TMethod>,
     QRequestError,
     MethodSuccessData<TMethod>,
@@ -106,14 +106,14 @@ type MutationFactoryOptions<
 type BuiltQueryOptions<
   TMethod extends AnyMethod,
   TPath extends readonly string[],
-> = ReturnType<
-  typeof queryOptions<
-    MethodSuccessData<TMethod>,
-    QRequestError,
-    MethodSuccessData<TMethod>,
-    QQueryKey<TPath, MethodInput<TMethod>>
-  >
->;
+> = UnusedSkipTokenOptions<
+  MethodSuccessData<TMethod>,
+  QRequestError,
+  MethodSuccessData<TMethod>,
+  QQueryKey<TPath, MethodInput<TMethod>>
+> & {
+  queryKey: QQueryKey<TPath, MethodInput<TMethod>>;
+};
 
 type BuiltMutationOptions<
   TMethod extends AnyMethod,
