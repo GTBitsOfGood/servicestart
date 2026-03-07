@@ -11,7 +11,9 @@ const insertSchema = createInsertSchema(announcements).omit({
 });
 
 const contentSchema = z.object({
-  content: z.array(z.object({ type: z.string(), value: z.string() })),
+  content: z.array(
+    z.object({ type: z.enum(["text/plain", "text/html"]), value: z.string() }),
+  ),
 });
 
 async function createAnnouncement(
@@ -128,7 +130,13 @@ async function updateAnnouncement({
     .update(announcements)
     .set({
       name,
-      content: content ? contentSchema.parse(content) : undefined,
+      content: content
+        ? (() => {
+            const result = contentSchema.safeParse(content);
+            if (!result.success) throw new Error("Invalid content format");
+            return result.data;
+          })()
+        : undefined,
       subject,
       template,
       // undefined is ignored (e.g. not updated). we set it to unpublished
