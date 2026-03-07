@@ -40,6 +40,7 @@ export type IconName =
   | "user"
   | "folder"
   | "bell"
+  | "house"
   | "plus"
   | "x"
   | "error"
@@ -88,6 +89,7 @@ const weightFillIcons = new Set([
   "user",
   "folder",
   "bell",
+  "house",
   "arrow-fat-up",
   "arrow-fat-down",
   "arrow-fat-left",
@@ -134,6 +136,7 @@ const BogIcon: React.FC<BogIconProps> = ({
     user: "UserCircle",
     folder: "FolderSimple",
     bell: "BellSimpleRinging",
+    house: "House",
     success: "CheckCircle",
     error: "WarningOctagon",
   };

@@ -26,6 +26,19 @@ const updateReadStatusSchema = z.object({
 });
 
 const app = new Hono()
+  .get("/unreadCount", async (c) => {
+    const session = await requireMembership(c);
+    const activeOrganizationId = session.session.activeOrganizationId!;
+
+    const count = await NotificationService.countByUserAndOrganization(
+      session.user.id,
+      activeOrganizationId,
+      false,
+      undefined,
+    );
+
+    return c.json({ count });
+  })
   .get("/", zValidator("query", notificationsQuerySchema), async (c) => {
     const session = await requireMembership(c);
 

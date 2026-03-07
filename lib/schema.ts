@@ -36,7 +36,10 @@ export enum OrganizationConfigKey {
   PrimaryColor = "primary_color",
   SecondaryColor = "secondary_color",
   Tagline = "tagline",
+  NavbarVariant = "navbar_variant",
+  NavbarColor = "navbar_color",
   MembersPageEnabled = "members_page_enabled",
+  LogoUrl = "logo_url",
 }
 
 // Array of enum values for use with pgEnum and Zod

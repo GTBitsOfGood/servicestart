@@ -2,6 +2,8 @@ import "dotenv/config"; //must be first to load environment variables
 import { schema } from "../lib/schema";
 import db from "../lib/db";
 import { auth } from "@/lib/auth";
+import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { DEFAULT_TEST_PASSWORD } from "@/tests/unit/testUtils";
 
 const isTest = require.main !== module; // Check if the script is being run directly or imported in tests
@@ -12,20 +14,69 @@ function log(...args: unknown[]) {
   }
 }
 
+type NavbarConfig = {
+  variant: string;
+  color: string;
+};
+
+const ORGS: Array<{
+  id: string;
+  name: string;
+  slug: string;
+  navbar: NavbarConfig;
+}> = [
+  {
+    id: "org_servicestart",
+    name: "ServiceStart",
+    slug: "servicestart",
+    navbar: { variant: "vertical-sidebar", color: "red" },
+  },
+  {
+    id: "org_vertical_icon",
+    name: "Vertical Icon Org",
+    slug: "vertical-icon",
+    navbar: { variant: "vertical-icon", color: "white" },
+  },
+  {
+    id: "org_horizontal_left",
+    name: "Horizontal Left Org",
+    slug: "horizontal-left",
+    navbar: { variant: "horizontal-left", color: "red" },
+  },
+  {
+    id: "org_horizontal_center",
+    name: "Horizontal Center Org",
+    slug: "horizontal-center",
+    navbar: { variant: "horizontal-center", color: "white" },
+  },
+];
+
 export async function main() {
   log("Seeding database...");
 
-  const orgId = "org_servicestart";
-  await db
-    .insert(schema.organizations)
-    .values({
-      id: orgId,
-      name: "ServiceStart",
-      slug: "servicestart",
-    })
-    .onConflictDoNothing();
+  for (const org of ORGS) {
+    await db
+      .insert(schema.organizations)
+      .values({
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+      })
+      .onConflictDoNothing();
 
-  log("Organization created or already exists.");
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.NavbarVariant,
+      org.navbar.variant,
+    );
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.NavbarColor,
+      org.navbar.color,
+    );
+  }
+
+  log("Organizations created with navbar configs.");
 
   const usersData = [
     {
@@ -81,19 +132,26 @@ export async function main() {
       );
 
     if (userData.role) {
-      await db
-        .insert(schema.members)
-        .values({
-          id: `member_${res.user.id}`,
-          userId: res.user.id,
-          organizationId: orgId,
-          role: userData.role,
-        })
-        .onConflictDoNothing();
+      for (const org of ORGS) {
+        await db
+          .insert(schema.members)
+          .values({
+            id: `member_${res.user.id}_${org.id}`,
+            userId: res.user.id,
+            organizationId: org.id,
+            role: userData.role,
+          })
+          .onConflictDoNothing();
+      }
     }
   }
 
   log("Users and members created.");
+  log(
+    "Navbar configs by org: servicestart (vertical sidebar, red), vertical-icon (vertical icon, white), horizontal-left (horizontal left, red), horizontal-center (horizontal center, white). Sign in and switch active org to test different navbar configs.",
+  );
+
+  const orgId = "org_servicestart";
 
   const eventsData = [
     {
