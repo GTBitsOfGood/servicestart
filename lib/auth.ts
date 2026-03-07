@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware, organization } from "better-auth/plugins";
 import db from "@/lib/db";
-import { createJoinRequestIfNeeded } from "@/lib/authUtils";
+import { afterUserCreated } from "@/lib/authUtils";
 import { headers } from "next/headers";
 import { getSlugFromHost } from "./clientAuthUtils";
 import { eventRsvps, events, sessions, shiftRSVPs, shifts } from "./schema";
@@ -120,17 +120,6 @@ export const auth = betterAuth({
     enabled: true,
   },
   databaseHooks: {
-    user: {
-      create: {
-        after: async (user, context) => {
-          const headers = context?.headers;
-          const host =
-            headers?.get?.("host") ??
-            (headers as Record<string, string> | undefined)?.host;
-          await createJoinRequestIfNeeded(user.id, host);
-        },
-      },
-    },
     session: {
       create: {
         after: async (session, context) => {
@@ -138,7 +127,7 @@ export const auth = betterAuth({
           const host =
             headers?.get?.("host") ??
             (headers as Record<string, string> | undefined)?.host;
-          await createJoinRequestIfNeeded(session.userId, host);
+          await afterUserCreated(session.userId, host);
         },
       },
     },
@@ -151,7 +140,7 @@ export const auth = betterAuth({
             const host =
               headers?.get?.("host") ??
               (headers as Record<string, string> | undefined)?.host;
-            await createJoinRequestIfNeeded(session.user.id, host);
+            await afterUserCreated(session.user.id, host);
           }
         }
       }),
