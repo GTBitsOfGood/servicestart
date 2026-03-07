@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 import { Suspense } from "react";
 import { ActiveOrganizationSync } from "../components/ActiveOrganizationSync";
 import Navbar from "@/components/Navbar";
+import Providers from "./providers";
 
 export default function RootLayout({
   children,
@@ -11,10 +12,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ActiveOrganizationSync />
-        <Suspense fallback={children}>
-          <Navbar>{children}</Navbar>
-        </Suspense>
+        <Providers>
+          <ActiveOrganizationSync />
+          <Suspense fallback={children}>
+            <Navbar>{children}</Navbar>
+          </Suspense>
+        </Providers>
       </body>
     </html>
   );
