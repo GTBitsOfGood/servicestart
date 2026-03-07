@@ -7,6 +7,17 @@ import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 
+export const eventsQuerySchema = paginationQuerySchema.extend({
+  published: z
+    .string()
+    .optional()
+    .transform((val) => {
+      if (val === "true") return true;
+      if (val === "false") return false;
+      return undefined;
+    }),
+});
+
 const app = new Hono()
   .post(
     "/",
@@ -67,7 +78,7 @@ const app = new Hono()
       return c.json(event);
     },
   )
-  .get("/", zValidator("query", paginationQuerySchema), async (c) => {
+  .get("/", zValidator("query", eventsQuerySchema), async (c) => {
     const session = await auth.api.getSession({
       headers: c.req.header(),
     });
@@ -101,7 +112,21 @@ const app = new Hono()
       });
     }
 
-    const { page, pageSize } = c.req.valid("query");
+    const { page, pageSize, published } = c.req.valid("query");
+    if (published !== undefined) {
+      const eventsList = await EventService.listByOrganization(
+        activeOrganizationId,
+        { limit: pageSize, offset: (page - 1) * pageSize },
+        published,
+      );
+
+      return c.json({
+        data: eventsList,
+        page,
+        pageSize,
+      });
+    }
+
     const eventsList = await EventService.listByOrganization(
       activeOrganizationId,
       { limit: pageSize, offset: (page - 1) * pageSize },
