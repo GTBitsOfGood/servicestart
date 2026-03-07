@@ -244,7 +244,7 @@ export const announcements = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     name: text("title").notNull(),
-    content: jsonb("content"),
+    content: jsonb("content").notNull(),
     subject: text("subject").notNull(),
     template: boolean("template").default(false),
     // when this is null, it means that the announcement is not published (e.g. its a draft)
