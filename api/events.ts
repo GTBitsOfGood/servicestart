@@ -19,6 +19,7 @@ const app = new Hono()
         duration: z.string().nullable().optional(),
         description: z.string().nullable().optional(),
         coverImageUrl: z.string().nullable().optional(),
+        published: z.boolean().default(false),
       }),
     ),
     async (c) => {
@@ -55,6 +56,8 @@ const app = new Hono()
         data.duration ?? null,
         data.description ?? null,
         data.coverImageUrl ?? null,
+        data.published ? new Date() : null,
+        data.published ? session.user.id : null,
       );
 
       if (!event) {
@@ -164,6 +167,7 @@ const app = new Hono()
         startTimestamp: z.string().nullable().optional(),
         duration: z.string().nullable().optional(),
         coverImageUrl: z.string().nullable().optional(),
+        published: z.boolean().optional(),
       }),
     ),
     async (c) => {
@@ -206,6 +210,8 @@ const app = new Hono()
         startTimestamp?: Date | null;
         duration?: string | null;
         coverImageUrl?: string | null;
+        publishedAt?: Date | null;
+        publishedById?: string | null;
       } = {};
 
       if (data.name !== undefined) updates.name = data.name;
@@ -223,6 +229,19 @@ const app = new Hono()
       }
       if (data.coverImageUrl !== undefined) {
         updates.coverImageUrl = data.coverImageUrl;
+      }
+      if (data.published !== undefined) {
+        if (event.publishedAt == null) {
+          if (data.published) {
+            updates.publishedAt = new Date();
+            updates.publishedById = session.user.id;
+          }
+        } else {
+          if (!data.published) {
+            updates.publishedAt = null;
+            updates.publishedById = null;
+          }
+        }
       }
 
       const updated = await EventService.updateEvent(
