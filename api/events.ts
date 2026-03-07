@@ -17,7 +17,6 @@ export const eventsQuerySchema = paginationQuerySchema.extend({
       return undefined;
     }),
 });
-});
 
 const app = new Hono()
   .post(
