@@ -39,7 +39,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
     OrganizationConfigKey.MembersPageEnabled,
   ]);
 
-  if (config[OrganizationConfigKey.MembersPageEnabled] === "false") {
+  if (!config[OrganizationConfigKey.MembersPageEnabled]) {
     redirect("/");
   }
 

@@ -58,8 +58,8 @@ test.describe("Members Page", () => {
     const { user } = await createTestAdminAndSignIn(page);
     await page.goto("/members");
 
-    await expect(page.getByText(user.name)).toBeVisible();
-    await expect(page.getByText(user.email)).toBeVisible();
+    await expect(page.locator("main").getByText(user.name)).toBeVisible();
+    await expect(page.locator("main").getByText(user.email)).toBeVisible();
   });
 
   test("shows Admin role for admin users", async ({ page }) => {

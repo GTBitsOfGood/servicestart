@@ -260,7 +260,7 @@ async function getMembersPageEnabled(organizationId: string) {
     )
     .limit(1);
 
-  return (row?.value ?? "true") == "true";
+  return (row?.value ?? "true") === "true";
 }
 
 async function setMembersPageEnabled(organizationId: string, value: string) {
