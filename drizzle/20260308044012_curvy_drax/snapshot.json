@@ -1,9 +1,9 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "3863e780-213f-4dcd-a298-e12dbb2b0992",
+  "id": "485bb5fb-eb7c-40df-8350-8450fa2a8271",
   "prevIds": [
-    "adfaf8a1-b67b-4ed2-a2d6-129d48df9810"
+    "b01c513c-be86-43be-8ba4-a1420b512d52"
   ],
   "ddl": [
     {
@@ -38,7 +38,8 @@
         "description",
         "primary_color",
         "secondary_color",
-        "tagline"
+        "tagline",
+        "members_page_enabled"
       ],
       "name": "organization_config_key",
       "entityType": "enums",
