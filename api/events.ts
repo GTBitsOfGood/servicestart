@@ -169,7 +169,7 @@ const app = new Hono()
       event.publishedAt == null &&
       !MembersService.isAdminOrOwner(membership?.role)
     ) {
-      throw new ForbiddenError();
+      return c.json({ error: "Event not found" }, { status: 404 });
     }
 
     return c.json(event);
@@ -206,7 +206,7 @@ const app = new Hono()
         event.publishedAt == null &&
         !MembersService.isAdminOrOwner(membership?.role)
       ) {
-        throw new ForbiddenError();
+        return c.json({ error: "Event not found" }, { status: 404 });
       }
 
       const { page, pageSize } = c.req.valid("query");
@@ -396,7 +396,7 @@ const app = new Hono()
         event.publishedAt == null &&
         !MembersService.isAdminOrOwner(membership?.role)
       ) {
-        throw new ForbiddenError();
+        return c.json({ error: "Event not found" }, { status: 404 });
       }
 
       const { userId } = c.req.valid("query");
@@ -466,7 +466,7 @@ const app = new Hono()
         event.publishedAt == null &&
         !MembersService.isAdminOrOwner(membership?.role)
       ) {
-        throw new ForbiddenError();
+        return c.json({ error: "Event not found" }, { status: 404 });
       }
 
       const { userId } = c.req.valid("query");
