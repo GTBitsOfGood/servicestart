@@ -75,15 +75,6 @@ export default function useNavbarItems(): NavbarItem[] {
       return { ...item, subpages: filteredSubpages };
     });
 
-    console.log(
-      "Filtered navbar items based on user role and org config:",
-      filteredItems,
-      "Admin:",
-      admin,
-      "Org Config:",
-      orgConfig,
-    );
-
     setNavbarItems(filteredItems);
   }, [session.data, organization.data, orgConfig]);
 
