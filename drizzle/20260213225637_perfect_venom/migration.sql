@@ -19,8 +19,10 @@ CREATE TABLE "accounts" (
 CREATE TABLE "announcements" (
 	"id" text PRIMARY KEY,
 	"organization_id" text NOT NULL,
-	"title" text NOT NULL,
-	"body" text NOT NULL,
+	"name" text NOT NULL,
+	"content" jsonb NOT NULL,
+	"subject" text NOT NULL,
+	"template" boolean DEFAULT false,
 	"published_at" timestamp,
 	"published_by_id" text,
 	"created_at" timestamp DEFAULT now() NOT NULL
