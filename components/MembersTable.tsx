@@ -494,6 +494,7 @@ export default function MembersTable({
       />
 
       <SendEmailModal
+        key={`${emailModalOpen}-${emailRecipientIds.join(",")}`}
         isOpen={emailModalOpen}
         onClose={() => setEmailModalOpen(false)}
         recipients={recipients}
