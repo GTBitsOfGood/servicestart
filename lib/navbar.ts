@@ -36,3 +36,5 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
     requireConfig: OrganizationConfigKey.MembersPageEnabled,
   },
 ];
+
+export const NO_NAVBAR_PAGES = ["/login", "/signup"];

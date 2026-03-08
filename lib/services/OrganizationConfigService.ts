@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
 import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
 
-const ALLOWED_NAVBAR_VARIANTS = [
+export const ALLOWED_NAVBAR_VARIANTS = [
   "vertical-sidebar",
   "vertical-icon",
   "horizontal-left",

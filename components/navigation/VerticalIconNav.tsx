@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
-import { NAVBAR_ITEMS, NavbarProps } from "@/lib/navbar";
+import { NavbarProps } from "@/lib/navbar";
 
 export function VerticalIconNav({ items }: NavbarProps) {
   const pathname = usePathname();

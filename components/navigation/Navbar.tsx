@@ -1,31 +1,37 @@
-"use client";
+"use server";
 
 import { ReactNode } from "react";
-import { usePathname } from "next/navigation";
 import { VerticalSidebarNav } from "@/components/navigation/VerticalSidebarNav";
 import { VerticalIconNav } from "@/components/navigation/VerticalIconNav";
 import { HorizontalNav } from "@/components/navigation/HorizontalNav";
-import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import { OrganizationConfigKey } from "@/lib/schema";
-import useNavbarItems from "@/lib/hooks/useNavbarItems";
+import OrganizationConfigService, {
+  ALLOWED_NAVBAR_VARIANTS,
+} from "@/lib/services/OrganizationConfigService";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import getNavbarItems from "@/lib/getNavbarItems";
 
 interface NavbarProps {
   children: ReactNode;
 }
 
-export default function Navbar({ children }: NavbarProps) {
-  const pathname = usePathname();
-  const config = useOrganizationConfig([OrganizationConfigKey.NavbarVariant]);
+export default async function Navbar({ children }: NavbarProps) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-  const navbarItems = useNavbarItems();
+  const variant: (typeof ALLOWED_NAVBAR_VARIANTS)[number] = session?.session
+    .activeOrganizationId
+    ? (
+        await OrganizationConfigService.getConfig(
+          session?.session.activeOrganizationId,
+          [OrganizationConfigKey.NavbarVariant],
+        )
+      )[OrganizationConfigKey.NavbarVariant]
+    : "vertical-sidebar";
 
-  const rawVariant = config[OrganizationConfigKey.NavbarVariant];
-  const variant = (rawVariant || "vertical-sidebar") as string;
-
-  // Do not render a navbar on auth-only routes
-  if (pathname === "/login" || pathname === "/signup") {
-    return <>{children}</>;
-  }
+  const navbarItems = await getNavbarItems(session);
 
   // Determine layout based on organization config
   if (variant === "vertical-icon") {
