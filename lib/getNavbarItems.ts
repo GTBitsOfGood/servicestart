@@ -1,7 +1,5 @@
 import { NAVBAR_ITEMS, NavbarItem } from "@/lib/navbar";
-import useOrganizationConfig from "./hooks/useOrganizationConfig";
 import { OrganizationConfigKey } from "./schema";
-import { isAdmin } from "./clientUtils";
 import { auth } from "./auth";
 import { MembersService } from "./services/MemberService";
 import OrganizationConfigService from "./services/OrganizationConfigService";

@@ -7,7 +7,7 @@ import { SunsetLogo } from "@/components/navigation/Logo";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { UserProfileMenu } from "@/components/navigation/UserProfileMenu";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
-import { NAVBAR_ITEMS, NavbarItem, NavbarProps } from "@/lib/navbar";
+import { NavbarItem, NavbarProps } from "@/lib/navbar";
 
 type HorizontalAlignment = "left" | "center" | "right";
 

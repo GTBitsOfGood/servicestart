@@ -1,5 +1,3 @@
-import { User } from "better-auth";
-import { Organization } from "better-auth/plugins";
 import authClient from "./authClient";
 
 export function formatDate(iso: string): string {
