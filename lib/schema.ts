@@ -243,7 +243,7 @@ export const announcements = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
-    name: text("title").notNull(),
+    name: text("name").notNull(),
     content: jsonb("content").notNull(),
     subject: text("subject").notNull(),
     template: boolean("template").default(false),
