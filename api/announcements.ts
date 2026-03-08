@@ -63,9 +63,13 @@ const app = new Hono()
       );
 
       if (createdAnnouncement.publishedAt) {
-        const content = contentSchema.parse(createdAnnouncement.content);
-        const text = content.find((c) => c.type === "text/plain")?.value ?? "";
-        const html = content.find((c) => c.type === "text/html")?.value ?? "";
+        const content = contentSchema.safeParse(createdAnnouncement.content);
+        if (!content.success) {
+          return c.json({ error: "Invalid content format" }, { status: 400 });
+        }
+        const data = content.data;
+        const text = data.find((c) => c.type === "text/plain")?.value ?? "";
+        const html = data.find((c) => c.type === "text/html")?.value ?? "";
 
         await EmailService.emailMembers(activeOrganizationId, {
           subject: `New announcement: ${createdAnnouncement.name}`,
@@ -225,9 +229,13 @@ const app = new Hono()
         !existingAnnouncement?.publishedAt &&
         updatedAnnouncement.publishedAt
       ) {
-        const content = contentSchema.parse(updatedAnnouncement.content);
-        const text = content.find((c) => c.type === "text/plain")?.value ?? "";
-        const html = content.find((c) => c.type === "text/html")?.value ?? "";
+        const content = contentSchema.safeParse(updatedAnnouncement.content);
+        if (!content.success) {
+          return c.json({ error: "Invalid content format" }, { status: 400 });
+        }
+        const data = content.data;
+        const text = data.find((c) => c.type === "text/plain")?.value ?? "";
+        const html = data.find((c) => c.type === "text/html")?.value ?? "";
 
         await EmailService.emailMembers(activeOrganizationId, {
           subject: `New announcement: ${updatedAnnouncement.name}`,
