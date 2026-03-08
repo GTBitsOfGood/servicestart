@@ -35,8 +35,6 @@ export default async function Navbar({ children }: NavbarProps) {
 
   const navbarItems = await getNavbarItems(session, orgId);
 
-  console.log("Navbar variant:", variant, "for organization:", orgId);
-
   // Determine layout based on organization config
   if (variant === "vertical-icon") {
     return (
