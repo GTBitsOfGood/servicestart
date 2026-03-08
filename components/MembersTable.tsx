@@ -15,6 +15,7 @@ import BogTable, {
 import BogModal from "@/components/bog/BogModal/BogModal";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
+import SendEmailModal from "@/components/SendEmailModal";
 
 interface MemberRow {
   userId: string;
@@ -86,6 +87,8 @@ export default function MembersTable({
   const [search, setSearch] = useState("");
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [confirmTarget, setConfirmTarget] = useState<MemberRow | null>(null);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailRecipientIds, setEmailRecipientIds] = useState<string[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -159,6 +162,16 @@ export default function MembersTable({
   }, []);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const recipients = useMemo(
+    () => members.map((member) => ({ id: member.userId, name: member.name })),
+    [members],
+  );
+
+  const openEmailModal = useCallback((recipientIds: string[]) => {
+    setEmailRecipientIds(recipientIds);
+    setEmailModalOpen(true);
+  }, []);
 
   useEffect(() => {
     if (members.length === 0) return;
@@ -329,6 +342,7 @@ export default function MembersTable({
                   </button>
                   <button
                     aria-label={`Email ${member.name}`}
+                    onClick={() => openEmailModal([member.userId])}
                     className="cursor-pointer focus:outline-none leading-none"
                   >
                     <BogIcon
@@ -477,6 +491,13 @@ export default function MembersTable({
         }}
         onSecondary={handleBatchRemove}
         primaryDisabled={batchRemoving}
+      />
+
+      <SendEmailModal
+        isOpen={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+        recipients={recipients}
+        initialRecipientIds={emailRecipientIds}
       />
 
       {/* Heading */}
@@ -669,6 +690,7 @@ export default function MembersTable({
             <button
               aria-label="Email selected"
               className="cursor-pointer leading-none"
+              onClick={() => openEmailModal(Array.from(selectedRows))}
             >
               <BogIcon
                 name="chats"

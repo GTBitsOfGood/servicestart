@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BogModal from "@/components/bog/BogModal/BogModal";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
@@ -34,6 +34,11 @@ export default function SendEmailModal({
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>(
     initialRecipientIds ?? [],
   );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setSelectedRecipientIds(initialRecipientIds ?? []);
+  }, [initialRecipientIds, isOpen]);
 
   const isInvalid = !subject.trim() || !body.trim();
 
