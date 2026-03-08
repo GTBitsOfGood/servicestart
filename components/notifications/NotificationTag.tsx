@@ -5,7 +5,7 @@ import type { IconName } from "@/components/bog/BogIcon/BogIcon";
 import { NotificationType } from "@/lib/schema";
 
 const TAG_CONFIG: Record<
-  string,
+  NotificationType,
   { label: string; icon: IconName; color: string; bg: string }
 > = {
   [NotificationType.ActionRequired]: {
@@ -57,16 +57,35 @@ interface NotificationTagProps {
   variant?: "light" | "text";
 }
 
+function getTagConfig(type: string) {
+  switch (type) {
+    case NotificationType.ActionRequired:
+      return TAG_CONFIG[NotificationType.ActionRequired];
+    case NotificationType.Announcement:
+      return TAG_CONFIG[NotificationType.Announcement];
+    case NotificationType.Reminder:
+      return TAG_CONFIG[NotificationType.Reminder];
+    case NotificationType.Members:
+      return TAG_CONFIG[NotificationType.Members];
+    case NotificationType.ScheduleUpdate:
+      return TAG_CONFIG[NotificationType.ScheduleUpdate];
+    case NotificationType.Confirmation:
+      return TAG_CONFIG[NotificationType.Confirmation];
+    default:
+      return TAG_CONFIG[NotificationType.General];
+  }
+}
+
 export default function NotificationTag({
   type,
   variant = "light",
 }: NotificationTagProps) {
-  const config = TAG_CONFIG[type] ?? TAG_CONFIG[NotificationType.General];
+  const config = getTagConfig(type);
 
   if (variant === "text") {
     return (
       <span
-        className="text-[14px] font-semibold leading-[28px] uppercase tracking-normal whitespace-nowrap"
+        className="whitespace-nowrap text-[14px] font-semibold uppercase leading-[28px]"
         style={{ color: config.color }}
       >
         {config.label}
@@ -76,17 +95,13 @@ export default function NotificationTag({
 
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 whitespace-nowrap"
+      className="inline-flex h-[32px] items-center gap-[8px] whitespace-nowrap rounded-[48px] px-[12px] text-[14px] leading-[28px]"
       style={{
         backgroundColor: config.bg,
         color: config.color,
-        height: "32px",
-        fontSize: "14px",
-        fontWeight: 600,
-        lineHeight: "28px",
       }}
     >
-      <BogIcon name={config.icon} size={16} color={config.color} />
+      <BogIcon name={config.icon} size={20} color={config.color} />
       {config.label}
     </span>
   );

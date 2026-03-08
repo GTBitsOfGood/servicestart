@@ -163,7 +163,7 @@ describe("GET /api/notifications", () => {
     await createNotification(user.id, organization.id, { read: true });
 
     const response = await testApi.notifications.$get(
-      { query: { read: "true" } },
+      { query: { read: "read" } },
       { headers },
     );
     const data = await response.json();

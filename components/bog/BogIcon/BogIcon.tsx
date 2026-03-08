@@ -46,7 +46,8 @@ export type IconName =
   | "error"
   | "warning"
   | "success"
-  | "funnel-simple";
+  | "funnel-simple"
+  | "envelope";
 
 // Include all props from Phosphor Icons
 interface BogIconProps extends React.ComponentProps<
@@ -96,6 +97,7 @@ const weightFillIcons = new Set([
   "arrow-fat-right",
   "hand-heart",
   "download",
+  "envelope",
 ]);
 
 const boldFillIcons = new Set([
@@ -139,6 +141,7 @@ const BogIcon: React.FC<BogIconProps> = ({
     house: "House",
     success: "CheckCircle",
     error: "WarningOctagon",
+    envelope: "EnvelopeSimple",
   };
 
   const isChevron = name.startsWith("chevron-");

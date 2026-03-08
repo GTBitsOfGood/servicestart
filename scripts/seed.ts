@@ -1,8 +1,9 @@
 import "dotenv/config"; //must be first to load environment variables
+import { randomUUID } from "node:crypto";
 import { schema } from "../lib/schema";
 import db from "../lib/db";
 import { auth } from "@/lib/auth";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey, NotificationType } from "@/lib/schema";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { DEFAULT_TEST_PASSWORD } from "@/tests/unit/testUtils";
 
@@ -227,6 +228,130 @@ export async function main() {
   }
 
   log("RSVPs created.");
+
+  const notificationTemplates: Array<{
+    type: NotificationType;
+    text: string;
+    read: boolean;
+    minutesAgo: number;
+  }> = [
+    {
+      type: NotificationType.ActionRequired,
+      text: "You have a pending RSVP for Event 1. Please confirm your attendance.",
+      read: false,
+      minutesAgo: 8,
+    },
+    {
+      type: NotificationType.Announcement,
+      text: "Welcome to the spring semester! Check out our new schedule and upcoming events.",
+      read: false,
+      minutesAgo: 120,
+    },
+    {
+      type: NotificationType.Confirmation,
+      text: "Your RSVP for Event 2 has been confirmed. See you there!",
+      read: true,
+      minutesAgo: 1380,
+    },
+    {
+      type: NotificationType.Confirmation,
+      text: "Your profile update has been saved successfully.",
+      read: true,
+      minutesAgo: 1440,
+    },
+    {
+      type: NotificationType.Reminder,
+      text: "Event 3 is tomorrow at Bits of Good. Don't forget to attend!",
+      read: false,
+      minutesAgo: 10080,
+    },
+    {
+      type: NotificationType.Members,
+      text: "A new member has joined the organization. Say hello!",
+      read: true,
+      minutesAgo: 20160,
+    },
+    {
+      type: NotificationType.ScheduleUpdate,
+      text: "Event 4 has been rescheduled to a new time. Please check the updated schedule.",
+      read: false,
+      minutesAgo: 43200,
+    },
+    {
+      type: NotificationType.General,
+      text: "Weekly digest: You have 3 upcoming events this month.",
+      read: true,
+      minutesAgo: 4320,
+    },
+    {
+      type: NotificationType.ActionRequired,
+      text: "Please complete your profile by adding a phone number.",
+      read: true,
+      minutesAgo: 60,
+    },
+    {
+      type: NotificationType.Announcement,
+      text: "Volunteer signups for the campus cleanup are now open. Sign up before spots fill!",
+      read: false,
+      minutesAgo: 360,
+    },
+    {
+      type: NotificationType.Reminder,
+      text: "Don't forget: team meeting this Friday at 3 PM.",
+      read: true,
+      minutesAgo: 2880,
+    },
+    {
+      type: NotificationType.ScheduleUpdate,
+      text: "The location for Event 5 has changed to the Student Center Room 201.",
+      read: false,
+      minutesAgo: 7200,
+    },
+    {
+      type: NotificationType.Members,
+      text: "Member Two updated their role preferences. Review the changes.",
+      read: true,
+      minutesAgo: 15000,
+    },
+    {
+      type: NotificationType.General,
+      text: "Reminder: organization dues are due by the end of the month.",
+      read: false,
+      minutesAgo: 30,
+    },
+  ];
+
+  const memberEmails = [
+    "owner@example.com",
+    "admin@example.com",
+    "member1@example.com",
+    "member2@example.com",
+  ];
+
+  for (const email of memberEmails) {
+    const res = await auth.api.signInEmail({
+      body: { email, password: DEFAULT_TEST_PASSWORD },
+    });
+
+    for (const org of ORGS) {
+      const notificationValues = notificationTemplates.map((tmpl) => ({
+        id: randomUUID(),
+        userId: res.user.id,
+        organizationId: org.id,
+        type: tmpl.type,
+        text: tmpl.text,
+        read: tmpl.read,
+        createdAt: new Date(Date.now() - tmpl.minutesAgo * 60 * 1000),
+      }));
+
+      await db
+        .insert(schema.notifications)
+        .values(notificationValues)
+        .onConflictDoNothing();
+    }
+  }
+
+  log("Notifications created.");
   log("Seeding completed successfully.");
 }
 

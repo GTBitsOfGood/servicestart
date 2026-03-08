@@ -4,7 +4,9 @@ import db from "@/lib/db";
 import { notifications, NotificationType, members } from "@/lib/schema";
 import { MembersService } from "@/lib/services/MemberService";
 
-const ADMIN_ROLES = ["admin", "owner"] as const;
+const ADMIN_ROLES = ["admin", "owner"];
+
+export type NotificationReadFilter = "all" | "read" | "unread";
 
 async function createForUserIds(
   userIds: string[],
@@ -67,7 +69,7 @@ async function notifyAllMembers(organizationId: string, text: string) {
 async function listByUserAndOrganization(
   userId: string,
   organizationId: string,
-  read: boolean | undefined,
+  read: NotificationReadFilter,
   type: NotificationType | undefined,
   options: { limit: number; offset: number },
 ) {
@@ -76,8 +78,12 @@ async function listByUserAndOrganization(
     eq(notifications.organizationId, organizationId),
   ];
 
-  if (read !== undefined) {
-    conditions.push(eq(notifications.read, read));
+  if (read === "read") {
+    conditions.push(eq(notifications.read, true));
+  }
+
+  if (read === "unread") {
+    conditions.push(eq(notifications.read, false));
   }
 
   if (type) {
@@ -123,10 +129,6 @@ async function countByUserAndOrganization(
     .where(and(...conditions));
 
   return Number(row?.count ?? 0);
-}
-
-async function countUnread(userId: string, organizationId: string) {
-  return countByUserAndOrganization(userId, organizationId, false, undefined);
 }
 
 async function findById(notificationId: string) {
@@ -193,7 +195,6 @@ export const NotificationService = {
   notifyAllMembers,
   listByUserAndOrganization,
   countByUserAndOrganization,
-  countUnread,
   findById,
   updateReadStatus,
   markAllRead,

@@ -64,8 +64,6 @@
   );
 
   --color-notif-unread-bg: rgba(252, 91, 67, 0.05);
-  --color-sidebar-overlay: rgba(0, 0, 0, 0.3);
-  --color-sidebar-width: 425px;
 
   --text-desktop-display: 48px;
   --text-desktop-heading-1: 40px;

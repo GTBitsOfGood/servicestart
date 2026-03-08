@@ -1,11 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import NotificationTag from "@/components/notifications/NotificationTag";
 import api from "@/lib/api";
-import { NotificationType } from "@/lib/schema";
 
 interface NotificationDetails {
   id: string;
@@ -13,11 +13,11 @@ interface NotificationDetails {
   organizationId: string;
   createdAt: string;
   read: boolean;
-  type: NotificationType;
+  type: string;
   text: string;
 }
 
-function formatDate(dateString: string): string {
+function formatDate(dateString: string) {
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", {
     weekday: "long",
@@ -31,94 +31,86 @@ function formatDate(dateString: string): string {
 
 export default function NotificationDetailPage() {
   const params = useParams<{ notificationId: string }>();
-  const router = useRouter();
   const notificationId = params.notificationId;
 
   const [notification, setNotification] = useState<NotificationDetails | null>(
     null,
   );
   const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!notificationId) {
-      router.replace("/inbox");
-      return;
-    }
+    let isActive = true;
 
-    const controller = new AbortController();
-
-    api.notifications[":id"]
-      .$get(
-        {
+    async function loadNotification() {
+      try {
+        const response = await api.notifications[":id"].$get({
           param: { id: notificationId },
-        },
-        { init: { signal: controller.signal } },
-      )
-      .then(async (response) => {
+        });
+
         if (!response.ok) {
           throw new Error("Could not load notification");
         }
-        const json = (await response.json()) as NotificationDetails;
-        setNotification(json);
-      })
-      .catch(() => {
-        if (controller.signal.aborted) {
+
+        const json = await response.json();
+
+        if (!isActive) {
           return;
         }
+
+        setNotification(json);
+        setErrorMessage(null);
+      } catch {
+        if (!isActive) {
+          return;
+        }
+
         setNotification(null);
-        setHasError(true);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
+        setErrorMessage("Could not load this notification.");
+      } finally {
+        if (isActive) {
           setIsLoading(false);
         }
-      });
-
-    return () => controller.abort();
-  }, [notificationId, router]);
-
-  useEffect(() => {
-    if (!notificationId || !notification || notification.read) {
-      return;
+      }
     }
 
-    api.notifications[":id"]
-      .$patch({
-        param: { id: notificationId },
-        json: { read: true },
-      })
-      .then(async (response) => {
-        if (!response.ok) {
-          return;
-        }
-        const updated = (await response.json()) as NotificationDetails;
-        setNotification(updated);
-      })
-      .catch(() => undefined);
-  }, [notificationId, notification]);
+    void loadNotification();
 
-  useEffect(() => {
-    if (hasError) {
-      router.replace("/inbox");
-    }
-  }, [hasError, router]);
+    return () => {
+      isActive = false;
+    };
+  }, [notificationId]);
 
   if (isLoading) {
     return (
-      <div className="w-full max-w-[1272px] mx-auto px-6 py-10 desktop:px-12 animate-pulse">
-        <div className="h-[22px] w-[180px] bg-grey-fill-weak rounded mb-[24px]" />
-        <div className="border border-grey-stroke-weak rounded-lg p-[36px]">
-          <div className="flex items-start justify-between mb-[24px]">
-            <div className="w-[141px] h-[32px] bg-grey-fill-weak rounded-full" />
-            <div className="w-[200px] h-[20px] bg-grey-fill-weak rounded" />
+      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 animate-pulse">
+        <div className="mb-6 h-5 w-44 rounded bg-grey-fill-weak" />
+        <div className="rounded-xl border border-grey-stroke-weak p-8">
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div className="h-8 w-36 rounded-full bg-grey-fill-weak" />
+            <div className="h-5 w-52 rounded bg-grey-fill-weak" />
           </div>
-          <div className="space-y-[12px]">
-            <div className="w-full h-[20px] bg-grey-fill-weak rounded" />
-            <div className="w-full h-[20px] bg-grey-fill-weak rounded" />
-            <div className="w-3/4 h-[20px] bg-grey-fill-weak rounded" />
+          <div className="space-y-3">
+            <div className="h-5 w-full rounded bg-grey-fill-weak" />
+            <div className="h-5 w-full rounded bg-grey-fill-weak" />
+            <div className="h-5 w-3/4 rounded bg-grey-fill-weak" />
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 sm:px-6 lg:px-8">
+        <p className="text-paragraph-2 text-grey-text-weak">{errorMessage}</p>
+        <Link
+          href="/inbox"
+          className="inline-flex items-center gap-2 text-paragraph-2 text-grey-text-strong hover:text-brand-text"
+        >
+          <BogIcon name="arrow-left" size={18} />
+          Back to Notifications
+        </Link>
       </div>
     );
   }
@@ -128,24 +120,24 @@ export default function NotificationDetailPage() {
   }
 
   return (
-    <div className="w-full max-w-[1272px] mx-auto px-6 py-10 desktop:px-12">
-      <button
-        onClick={() => router.push("/inbox")}
-        className="flex items-center gap-[6px] text-paragraph-2 text-grey-text-weak hover:text-grey-text-strong mb-[24px]"
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <Link
+        href="/inbox"
+        className="mb-6 inline-flex items-center gap-2 text-paragraph-2 text-grey-text-weak hover:text-grey-text-strong"
       >
         <BogIcon name="arrow-left" size={18} />
         Back to Notifications
-      </button>
+      </Link>
 
-      <div className="border border-grey-stroke-weak rounded-lg p-[36px]">
-        <div className="flex items-start justify-between mb-[24px]">
+      <div className="rounded-xl border border-grey-stroke-weak p-8">
+        <div className="mb-6 flex items-start justify-between gap-4">
           <NotificationTag type={notification.type} variant="light" />
           <span className="text-paragraph-2 text-grey-text-weak">
             {formatDate(notification.createdAt)}
           </span>
         </div>
 
-        <div className="text-paragraph-1 text-grey-text-strong whitespace-pre-wrap leading-[24px]">
+        <div className="whitespace-pre-wrap text-paragraph-1 leading-6 text-grey-text-strong">
           {notification.text}
         </div>
       </div>
