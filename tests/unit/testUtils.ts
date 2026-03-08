@@ -171,7 +171,12 @@ export async function createAnnouncement(
     id,
     organizationId,
     name: opts.name ?? "Test Announcement",
-    body: opts.body ?? "Test body",
+    content: [
+      { type: "text/plain", value: "Hi" },
+      { type: "text/html", value: "<p>Hi</p>" },
+    ],
+    subject: "test",
+    template: false,
     publishedAt: isDraft ? null : new Date(),
     publishedById: isDraft ? null : (opts.publishedById ?? null),
   });

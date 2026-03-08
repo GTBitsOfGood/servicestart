@@ -39,7 +39,16 @@ async function setupOrgAndUser(role: "owner" | "admin" | "member") {
 describe("POST /api/announcements", () => {
   it("returns 401 when not logged in", async () => {
     const response = await testApi.announcements.$post({
-      json: { name: "Hello", body: "World", draft: false },
+      json: {
+        name: "Hello",
+        content: [
+          { type: "text/plain", value: "Hi" },
+          { type: "text/html", value: "<p>Hi</p>" },
+        ],
+        subject: "Test",
+        template: false,
+        draft: false,
+      },
     });
 
     expect(response.status).toBe(401);
@@ -49,7 +58,18 @@ describe("POST /api/announcements", () => {
     const { headers } = await setupOrgAndUser("member");
 
     const response = await testApi.announcements.$post(
-      { json: { name: "Hello", body: "World", draft: false } },
+      {
+        json: {
+          name: "Hello",
+          content: [
+            { type: "text/plain", value: "Hi" },
+            { type: "text/html", value: "<p>Hi</p>" },
+          ],
+          subject: "Test",
+          template: false,
+          draft: false,
+        },
+      },
       { headers },
     );
 
@@ -60,7 +80,18 @@ describe("POST /api/announcements", () => {
     const { organization, headers } = await setupOrgAndUser("admin");
 
     const response = await testApi.announcements.$post(
-      { json: { name: "Release Notes", body: "v1.0 is out", draft: false } },
+      {
+        json: {
+          name: "Hello",
+          content: [
+            { type: "text/plain", value: "Hi" },
+            { type: "text/html", value: "<p>Hi</p>" },
+          ],
+          subject: "Test",
+          template: false,
+          draft: false,
+        },
+      },
       { headers },
     );
 
@@ -77,7 +108,6 @@ describe("POST /api/announcements", () => {
     expect(row).toBeDefined();
     expect(row.organizationId).toBe(organization.id);
     expect(row.name).toBe("Release Notes");
-    expect(row.body).toBe("v1.0 is out");
     expect(mockEmailMembers).toHaveBeenCalledTimes(1);
     expect(mockEmailMembers).toHaveBeenCalledWith(organization.id, {
       subject: "New announcement: Release Notes",
@@ -89,7 +119,18 @@ describe("POST /api/announcements", () => {
     const { organization, headers } = await setupOrgAndUser("admin");
 
     const response = await testApi.announcements.$post(
-      { json: { name: "Draft", body: "Not live", draft: true } },
+      {
+        json: {
+          name: "Hello",
+          content: [
+            { type: "text/plain", value: "Hi" },
+            { type: "text/html", value: "<p>Hi</p>" },
+          ],
+          subject: "Test",
+          template: false,
+          draft: true,
+        },
+      },
       { headers },
     );
 
@@ -293,7 +334,6 @@ describe("PATCH /api/announcements/:announcementId", () => {
       throw new Error("Response data is missing 'name' property");
     }
     expect(data.name).toBe("Updated Name");
-    expect(data.body).toBe("Original body");
   });
 
   it("sets publishedAt and publishedBy when draft changes from false to true", async () => {
