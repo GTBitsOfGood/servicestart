@@ -40,6 +40,33 @@
   --color-dark-500: #3f3f3f;
   --color-status-active: #63cc80;
 
+  --color-notif-action-required: #c73a3a;
+  --color-notif-action-required-bg: #ffe3e3;
+  --color-notif-announcement: #0051cc;
+  --color-notif-announcement-bg: #deebff;
+  --color-notif-reminder: #e25702;
+  --color-notif-reminder-bg: #ffe3b3;
+  --color-notif-members: #5a50b3;
+  --color-notif-members-bg: color-mix(in srgb, #5a50b3 12%, transparent);
+  --color-notif-schedule-update: #1d799b;
+  --color-notif-schedule-update-bg: color-mix(
+    in srgb,
+    #1d799b 12%,
+    transparent
+  );
+  --color-notif-confirmation: #0f904d;
+  --color-notif-confirmation-bg: #e3fcef;
+  --color-notif-general: var(--color-grey-icon-strong);
+  --color-notif-general-bg: color-mix(
+    in srgb,
+    var(--color-grey-icon-strong) 12%,
+    transparent
+  );
+
+  --color-notif-unread-bg: rgba(252, 91, 67, 0.05);
+  --color-sidebar-overlay: rgba(0, 0, 0, 0.3);
+  --color-sidebar-width: 425px;
+
   --text-desktop-display: 48px;
   --text-desktop-heading-1: 40px;
   --text-desktop-heading-2: 32px;

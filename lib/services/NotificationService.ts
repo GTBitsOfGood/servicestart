@@ -67,15 +67,18 @@ async function notifyAllMembers(organizationId: string, text: string) {
 async function listByUserAndOrganization(
   userId: string,
   organizationId: string,
-  read: boolean,
+  read: boolean | undefined,
   type: NotificationType | undefined,
   options: { limit: number; offset: number },
 ) {
   const conditions = [
     eq(notifications.userId, userId),
     eq(notifications.organizationId, organizationId),
-    eq(notifications.read, read),
   ];
+
+  if (read !== undefined) {
+    conditions.push(eq(notifications.read, read));
+  }
 
   if (type) {
     conditions.push(eq(notifications.type, type));
@@ -122,11 +125,20 @@ async function countByUserAndOrganization(
   return Number(row?.count ?? 0);
 }
 
+async function countUnread(userId: string, organizationId: string) {
+  return countByUserAndOrganization(userId, organizationId, false, undefined);
+}
+
 async function findById(notificationId: string) {
   const [notification] = await db
     .select({
       id: notifications.id,
       userId: notifications.userId,
+      organizationId: notifications.organizationId,
+      createdAt: notifications.createdAt,
+      read: notifications.read,
+      type: notifications.type,
+      text: notifications.text,
     })
     .from(notifications)
     .where(eq(notifications.id, notificationId))
@@ -153,14 +165,39 @@ async function updateReadStatus(notificationId: string, status: boolean) {
   return updated ?? null;
 }
 
+async function markAllRead(userId: string, organizationId: string) {
+  await db
+    .update(notifications)
+    .set({ read: true })
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        eq(notifications.organizationId, organizationId),
+        eq(notifications.read, false),
+      ),
+    );
+}
+
+async function deleteNotification(notificationId: string) {
+  const [deleted] = await db
+    .delete(notifications)
+    .where(eq(notifications.id, notificationId))
+    .returning({ id: notifications.id });
+
+  return deleted ?? null;
+}
+
 export const NotificationService = {
   notify,
   notifyAdmins,
   notifyAllMembers,
   listByUserAndOrganization,
   countByUserAndOrganization,
+  countUnread,
   findById,
   updateReadStatus,
+  markAllRead,
+  deleteNotification,
 };
 
 export default NotificationService;

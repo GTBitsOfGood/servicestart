@@ -14,6 +14,8 @@ const notificationsQuerySchema = paginationQuerySchema.and(
       .or(z.boolean())
       .optional()
       .transform((val) => {
+        if (val === "") return undefined;
+        if (val === undefined) return false;
         if (typeof val === "boolean") return val;
         return val === "true";
       }),
@@ -59,23 +61,45 @@ const app = new Hono()
       pageSize,
     });
   })
-  .patch("/:id", zValidator("json", updateReadStatusSchema), async (c) => {
-    // pulling session info and verifying user is a member of active organization
+  .get("/:id", async (c) => {
     const session = await requireMembership(c);
-
-    // getting notification id from request params
     const { id } = c.req.param();
-    const { read } = c.req.valid("json");
 
-    // checking if notification exists
     const notification = await NotificationService.findById(id);
 
-    // if notification not found, return not found
     if (!notification) {
       return c.notFound();
     }
 
-    // if notification does not belong to the user, return forbidden
+    if (notification.userId !== session.user.id) {
+      throw new ForbiddenError();
+    }
+
+    return c.json(notification);
+  })
+  .post("/mark-all-read", async (c) => {
+    const session = await requireMembership(c);
+    const activeOrganizationId = session.session.activeOrganizationId!;
+
+    await NotificationService.markAllRead(
+      session.user.id,
+      activeOrganizationId,
+    );
+
+    return c.json({ success: true });
+  })
+  .patch("/:id", zValidator("json", updateReadStatusSchema), async (c) => {
+    const session = await requireMembership(c);
+
+    const { id } = c.req.param();
+    const { read } = c.req.valid("json");
+
+    const notification = await NotificationService.findById(id);
+
+    if (!notification) {
+      return c.notFound();
+    }
+
     if (notification.userId !== session.user.id) {
       throw new ForbiddenError();
     }
@@ -83,6 +107,24 @@ const app = new Hono()
     const updated = await NotificationService.updateReadStatus(id, read);
 
     return c.json(updated);
+  })
+  .delete("/:id", async (c) => {
+    const session = await requireMembership(c);
+    const { id } = c.req.param();
+
+    const notification = await NotificationService.findById(id);
+
+    if (!notification) {
+      return c.notFound();
+    }
+
+    if (notification.userId !== session.user.id) {
+      throw new ForbiddenError();
+    }
+
+    await NotificationService.deleteNotification(id);
+
+    return c.json({ success: true });
   });
 
 export default app;
