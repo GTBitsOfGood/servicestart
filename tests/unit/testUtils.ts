@@ -161,6 +161,9 @@ export async function createAnnouncement(
   opts: {
     name?: string;
     body?: string;
+    content?: unknown;
+    subject?: string;
+    template?: boolean;
     draft?: boolean;
     publishedById?: string | null;
   } = {},
@@ -171,12 +174,12 @@ export async function createAnnouncement(
     id,
     organizationId,
     name: opts.name ?? "Test Announcement",
-    content: [
+    content: opts.content ?? [
       { type: "text/plain", value: "Hi" },
       { type: "text/html", value: "<p>Hi</p>" },
     ],
-    subject: "test",
-    template: false,
+    subject: opts.subject ?? "test",
+    template: opts.template ?? false,
     publishedAt: isDraft ? null : new Date(),
     publishedById: isDraft ? null : (opts.publishedById ?? null),
   });
