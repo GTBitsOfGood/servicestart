@@ -37,8 +37,16 @@ export enum OrganizationConfigKey {
   PrimaryColor = "primary_color",
   SecondaryColor = "secondary_color",
   Tagline = "tagline",
+  NavbarVariant = "navbar_variant",
+  NavbarColor = "navbar_color",
   MembersPageEnabled = "members_page_enabled",
+  LogoUrl = "logo_url",
 }
+
+export type ToggleableOrganizationFeature = Extract<
+  OrganizationConfigKey,
+  OrganizationConfigKey.MembersPageEnabled
+>;
 
 // Array of enum values for use with pgEnum and Zod
 export const ORGANIZATION_CONFIG_KEY_VALUES = Object.values(
@@ -63,6 +71,11 @@ export const mediaTypeEnum = pgEnum("media_type", MEDIA_TYPE_VALUES);
 export enum NotificationType {
   General = "general",
   Announcement = "announcement",
+  ActionRequired = "action_required",
+  Reminder = "reminder",
+  Members = "members",
+  ScheduleUpdate = "schedule_update",
+  Confirmation = "confirmation",
 }
 
 export const NOTIFICATION_TYPE_VALUES = Object.values(
@@ -187,6 +200,7 @@ export const invitations = pgTable(
   {
     id: text("id").primaryKey(),
     email: text("email").notNull(),
+    name: text("name").notNull(),
     inviterId: text("inviter_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),

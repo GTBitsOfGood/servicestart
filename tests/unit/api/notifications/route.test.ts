@@ -163,7 +163,7 @@ describe("GET /api/notifications", () => {
     await createNotification(user.id, organization.id, { read: true });
 
     const response = await testApi.notifications.$get(
-      { query: { read: "true" } },
+      { query: { read: "read" } },
       { headers },
     );
     const data = await response.json();
@@ -197,6 +197,43 @@ describe("GET /api/notifications", () => {
     }
     expect(data.data).toHaveLength(1);
     expect(data.data[0].type).toBe(NotificationType.Announcement);
+  });
+});
+
+describe("GET /api/notifications/unreadCount", () => {
+  it("returns 401 when not logged in", async () => {
+    const response = await testApi.notifications.unreadCount.$get();
+
+    expect(response.status).toBe(401);
+  });
+
+  it("returns unread count for active organization", async () => {
+    const { organization, user, headers } = await setupOrgAndUser("member");
+    const otherOrg = await createOrganization("other");
+    const otherUser = buildTestUser();
+    const { user: other } = await signUpAndGetSession(otherUser);
+
+    // Two unread notifications for current user in active org
+    await createNotification(user.id, organization.id, { read: false });
+    await createNotification(user.id, organization.id, { read: false });
+
+    // Read notification for current user in active org (should not be counted)
+    await createNotification(user.id, organization.id, { read: true });
+
+    // Unread notification for current user in a different org (should not be counted)
+    await createNotification(user.id, otherOrg.id, { read: false });
+
+    // Unread notification for a different user in active org (should not be counted)
+    await createNotification(other.id, organization.id, { read: false });
+
+    const response = await testApi.notifications.unreadCount.$get(
+      {},
+      { headers },
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toHaveProperty("count", 2);
   });
 });
 

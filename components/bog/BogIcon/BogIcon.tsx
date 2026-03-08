@@ -40,12 +40,14 @@ export type IconName =
   | "user"
   | "folder"
   | "bell"
+  | "house"
   | "plus"
   | "x"
   | "error"
   | "warning"
   | "success"
-  | "funnel-simple";
+  | "funnel-simple"
+  | "envelope";
 
 // Include all props from Phosphor Icons
 interface BogIconProps extends React.ComponentProps<
@@ -88,12 +90,14 @@ const weightFillIcons = new Set([
   "user",
   "folder",
   "bell",
+  "house",
   "arrow-fat-up",
   "arrow-fat-down",
   "arrow-fat-left",
   "arrow-fat-right",
   "hand-heart",
   "download",
+  "envelope",
 ]);
 
 const boldFillIcons = new Set([
@@ -134,8 +138,10 @@ const BogIcon: React.FC<BogIconProps> = ({
     user: "UserCircle",
     folder: "FolderSimple",
     bell: "BellSimpleRinging",
+    house: "House",
     success: "CheckCircle",
     error: "WarningOctagon",
+    envelope: "EnvelopeSimple",
   };
 
   const isChevron = name.startsWith("chevron-");

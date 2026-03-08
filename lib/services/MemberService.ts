@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { and, eq, inArray, isNotNull, lt, sql } from "drizzle-orm";
 import db from "@/lib/db";
 import {
@@ -39,6 +40,19 @@ async function getUserIdsByOrganization(organizationId: string) {
 function isAdminOrOwner(role: string | undefined): boolean {
   const ADMIN_ROLES = ["admin", "owner"];
   return role !== undefined && ADMIN_ROLES.includes(role);
+}
+
+async function isAdminOrderOwnerFromUserAndOrgId(
+  userId: string | undefined | null,
+  organizationId: string | undefined | null,
+) {
+  if (!userId || !organizationId) {
+    return false;
+  }
+
+  return findByUserAndOrganization(userId, organizationId).then((membership) =>
+    isAdminOrOwner(membership?.role),
+  );
 }
 
 async function listMemberContacts(organizationId: string) {
@@ -187,13 +201,58 @@ async function getMemberActivity(
 
   return result;
 }
+async function addMemberDirectly(
+  email: string,
+  name: string,
+  organizationId: string,
+  role: string = "member",
+) {
+  return await db.transaction(async (tx) => {
+    const normalizedEmail = email.trim().toLowerCase();
 
+    let [user] = await tx
+      .select()
+      .from(users)
+      .where(eq(users.email, normalizedEmail))
+      .limit(1);
+
+    if (!user) {
+      [user] = await tx
+        .insert(users)
+        .values({
+          id: randomUUID(),
+          name: name.trim() || "Unknown",
+          email: normalizedEmail,
+        })
+        .returning();
+    }
+
+    const existing = await findByUserAndOrganization(user.id, organizationId);
+    if (existing) {
+      throw new Error("User is already a member of this organization.");
+    }
+
+    const [newMember] = await tx
+      .insert(members)
+      .values({
+        id: randomUUID(),
+        userId: user.id,
+        organizationId,
+        role,
+      })
+      .returning();
+
+    return newMember;
+  });
+}
 export const MembersService = {
   findByUserAndOrganization,
   getMemberActivity,
   getUserIdsByOrganization,
   isAdminOrOwner,
+  isAdminOrderOwnerFromUserAndOrgId,
   listMemberContacts,
   listMembers,
   countByOrganization,
+  addMemberDirectly,
 };

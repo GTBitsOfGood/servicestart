@@ -1,24 +1,20 @@
-"use client";
+import NotificationsWidget from "@/components/notifications/NotificationsWidget";
 
-import { useState } from "react";
-import SendEmailModal from "@/components/SendEmailModal";
+export const metadata = {
+  title: "Dashboard",
+};
 
 export default function Page() {
-  const [open, setOpen] = useState(true);
-
   return (
-    <div className="p-8">
-      <h1 className="text-xl font-semibold">App Router</h1>
-      <SendEmailModal
-        isOpen={open}
-        onClose={() => setOpen(false)}
-        recipients={[
-          { id: "user-1", name: "Alex Johnson" },
-          { id: "user-2", name: "Sam Lee" },
-          { id: "user-3", name: "Priya Patel" },
-        ]}
-        initialRecipientIds={["user-1", "user-3"]}
-      />
+    <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-heading-1 font-bold text-grey-text-strong">
+          Dashboard
+        </h1>
+        <NotificationsWidget />
+      </div>
+
+      <div className="h-[644px] rounded-lg border-2 border-grey-stroke-weak bg-grey-fill-weaker" />
     </div>
   );
 }

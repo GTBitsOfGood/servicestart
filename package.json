@@ -41,7 +41,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^17.3.1",
     "drizzle-orm": "1.0.0-beta.15-859cf75",
-    "hono": "^4.11.10",
+    "hono": "^4.12.4",
     "juno-sdk": "^0.0.9",
     "next": "latest",
     "pg": "^8.19.0",

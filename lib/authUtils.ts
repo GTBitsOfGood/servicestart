@@ -8,29 +8,97 @@ import {
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
+import { UserService } from "@/lib/services/UserService";
 import { getSlugFromHost } from "./clientAuthUtils";
 
-export async function createJoinRequestIfNeeded(userId: string, host?: string) {
-  const slug = getSlugFromHost(host);
+/**
+ * Accepts invite if one exists and is pending
+ */
+async function acceptInviteIfAvailable(
+  userId: string,
+  organizationId: string,
+  headers: Headers,
+): Promise<boolean> {
+  const user = await UserService.findById(userId);
+  if (!user) return false;
 
-  const organization = await OrganizationsService.findBySlug(slug);
-  if (!organization) return;
+  const invitations = await auth.api.listUserInvitations({
+    query: { email: user.email },
+    headers,
+  });
 
-  const membership = await MembersService.findByUserAndOrganization(
-    userId,
-    organization.id,
-  );
-  if (membership) return;
+  const invitation = Array.isArray(invitations)
+    ? invitations.find(
+        (inv: { organizationId: string; status: string; id: string }) =>
+          inv.organizationId === organizationId && inv.status === "pending",
+      )
+    : null;
 
+  if (!invitation) return false;
+
+  try {
+    await auth.api.acceptInvitation({
+      body: { invitationId: invitation.id },
+      headers,
+    });
+  } catch {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Creates a join request for the user if there isn't already one
+ */
+export async function createJoinRequestIfNeeded(
+  userId: string,
+  organizationId: string,
+): Promise<void> {
   const existingRequest = await JoinRequestsService.findByUserAndOrganization(
     userId,
-    organization.id,
+    organizationId,
   );
   if (existingRequest) return;
 
-  await JoinRequestsService.create(userId, organization.id);
+  await JoinRequestsService.create(userId, organizationId);
 }
 
+/**
+ * Accepts pending invite if it exists and adds the user to the organization
+ */
+export async function afterUserCreated(
+  userId: string,
+  headers?: Headers,
+): Promise<void> {
+  try {
+    const host = headers?.get("host") || undefined;
+    const slug = getSlugFromHost(host);
+    if (!slug) return;
+
+    const organization = await OrganizationsService.findBySlug(slug);
+    if (!organization) return;
+
+    const membership = await MembersService.findByUserAndOrganization(
+      userId,
+      organization.id,
+    );
+    if (membership) return;
+
+    if (headers) {
+      const accepted = await acceptInviteIfAvailable(
+        userId,
+        organization.id,
+        headers,
+      );
+      if (accepted) return;
+    }
+
+    await createJoinRequestIfNeeded(userId, organization.id);
+  } catch (err) {
+    console.error("Failed to handle organization membership:", err);
+  }
+}
 /**
  * Returns the current session or throws UnauthorizedError if not signed in.
  * Use this to avoid duplicating auth checks in route handlers.
@@ -93,4 +161,32 @@ export async function requireAdmin(c: Context) {
   }
 
   return session;
+}
+
+/**
+ * Can get the org ID on the first render after logging in
+ * (when the active org ID isn't in the session yet)
+ */
+export async function getActiveOrganizationIdFromHeaders(
+  headers: Headers,
+): Promise<string | null> {
+  const session = await auth.api.getSession({
+    headers,
+  });
+
+  if (session?.session.activeOrganizationId) {
+    return session.session.activeOrganizationId;
+  }
+
+  const slug = getSlugFromHost(headers.get("host") ?? undefined);
+  if (!slug) {
+    return null;
+  }
+
+  const organization = await OrganizationsService.findBySlug(slug);
+  if (!organization) {
+    return null;
+  }
+
+  return organization.id;
 }

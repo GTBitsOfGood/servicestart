@@ -3,6 +3,16 @@ import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
 import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
 
+export const ALLOWED_NAVBAR_VARIANTS = [
+  "vertical-sidebar",
+  "vertical-icon",
+  "horizontal-left",
+  "horizontal-center",
+  "horizontal-right",
+] as const;
+
+type AllowedNavbarVariant = (typeof ALLOWED_NAVBAR_VARIANTS)[number];
+
 async function getDesc(organizationId: string) {
   const [row] = await db
     .select({
@@ -250,7 +260,7 @@ async function getMembersPageEnabled(organizationId: string) {
     )
     .limit(1);
 
-  return row?.value ?? "true";
+  return (row?.value ?? "true") === "true";
 }
 
 async function setMembersPageEnabled(organizationId: string, value: string) {
@@ -290,6 +300,180 @@ async function setMembersPageEnabled(organizationId: string, value: string) {
   }
 }
 
+async function getNavbarVariant(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.NavbarVariant),
+      ),
+    )
+    .limit(1);
+
+  const value = row?.value;
+  if (
+    value &&
+    ALLOWED_NAVBAR_VARIANTS.includes(value as AllowedNavbarVariant)
+  ) {
+    return value;
+  }
+  return "vertical-sidebar";
+}
+
+async function setNavbarVariant(organizationId: string, variant: string) {
+  if (!variant || typeof variant !== "string") {
+    throw new Error("Navbar variant must be a non-empty string");
+  }
+  if (!ALLOWED_NAVBAR_VARIANTS.includes(variant as AllowedNavbarVariant)) {
+    throw new Error(`Invalid navbar variant: ${variant}`);
+  }
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.NavbarVariant),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: variant })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.NavbarVariant),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.NavbarVariant,
+      value: variant,
+    });
+  }
+}
+
+async function getNavbarColor(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.NavbarColor),
+      ),
+    )
+    .limit(1);
+
+  const value = row?.value;
+  return value === "white" ? "white" : "red";
+}
+
+async function setNavbarColor(organizationId: string, color: string) {
+  if (color !== "red" && color !== "white") {
+    throw new Error("Navbar color must be either 'red' or 'white'");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.NavbarColor),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: color })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.NavbarColor),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.NavbarColor,
+      value: color,
+    });
+  }
+}
+
+async function getLogoUrl(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.LogoUrl),
+      ),
+    )
+    .limit(1);
+
+  // If no logo URL is configured, return null so callers can
+  // fall back to their own default logo rendering.
+  return row?.value ?? null;
+}
+
+async function setLogoUrl(organizationId: string, logoUrl: string) {
+  if (!logoUrl || typeof logoUrl !== "string") {
+    throw new Error("Logo URL must be a non-empty string");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.LogoUrl),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: logoUrl })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.LogoUrl),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.LogoUrl,
+      value: logoUrl,
+    });
+  }
+}
+
 const keyMap = {
   [OrganizationConfigKey.Description]: { get: getDesc, set: setDesc },
   [OrganizationConfigKey.PrimaryColor]: {
@@ -304,9 +488,21 @@ const keyMap = {
     get: getTagline,
     set: setTagline,
   },
+  [OrganizationConfigKey.NavbarVariant]: {
+    get: getNavbarVariant,
+    set: setNavbarVariant,
+  },
+  [OrganizationConfigKey.NavbarColor]: {
+    get: getNavbarColor,
+    set: setNavbarColor,
+  },
   [OrganizationConfigKey.MembersPageEnabled]: {
     get: getMembersPageEnabled,
     set: setMembersPageEnabled,
+  },
+  [OrganizationConfigKey.LogoUrl]: {
+    get: getLogoUrl,
+    set: setLogoUrl,
   },
 };
 
