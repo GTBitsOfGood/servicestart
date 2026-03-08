@@ -9,9 +9,9 @@ import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import authClient from "@/lib/authClient";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
-import { NAVBAR_ITEMS, NavbarItem } from "@/lib/navbar";
+import { NavbarProps } from "@/lib/navbar";
 
-export function VerticalSidebarNav() {
+export function VerticalSidebarNav({ items }: NavbarProps) {
   const pathname = usePathname();
   const [openItemLabel, setOpenItemLabel] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -43,7 +43,7 @@ export function VerticalSidebarNav() {
         </div>
 
         <nav className="flex w-full flex-col text-nav font-normal text-grey-text-strong">
-          {NAVBAR_ITEMS.map((item) => {
+          {items.map((item) => {
             const hasDropdown = !!item.subpages?.length;
             const isOpen = openItemLabel === item.label;
             const isNotifications = item.href === "/notifications";

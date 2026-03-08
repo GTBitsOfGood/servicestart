@@ -7,7 +7,7 @@ import { SunsetLogo } from "@/components/navigation/Logo";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { UserProfileMenu } from "@/components/navigation/UserProfileMenu";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
-import { NAVBAR_ITEMS, NavbarItem } from "@/lib/navbar";
+import { NAVBAR_ITEMS, NavbarItem, NavbarProps } from "@/lib/navbar";
 
 type HorizontalAlignment = "left" | "center" | "right";
 
@@ -133,12 +133,15 @@ function RightSide() {
   );
 }
 
-export function HorizontalNav({ alignment }: HorizontalNavProps) {
+export function HorizontalNav({
+  alignment,
+  items,
+}: HorizontalNavProps & NavbarProps) {
   const pathname = usePathname();
 
   const navBgClass = "bg-brand-fill";
 
-  const tabs = <NavTabs items={NAVBAR_ITEMS} pathname={pathname} />;
+  const tabs = <NavTabs items={items} pathname={pathname} />;
   const logo = <SunsetLogo size="sm" />;
   const right = <RightSide />;
 

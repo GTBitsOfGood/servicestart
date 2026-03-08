@@ -7,6 +7,7 @@ import { VerticalIconNav } from "@/components/navigation/VerticalIconNav";
 import { HorizontalNav } from "@/components/navigation/HorizontalNav";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import { OrganizationConfigKey } from "@/lib/schema";
+import useNavbarItems from "@/lib/hooks/useNavbarItems";
 
 interface NavbarProps {
   children: ReactNode;
@@ -15,6 +16,8 @@ interface NavbarProps {
 export default function Navbar({ children }: NavbarProps) {
   const pathname = usePathname();
   const config = useOrganizationConfig([OrganizationConfigKey.NavbarVariant]);
+
+  const navbarItems = useNavbarItems();
 
   const rawVariant = config[OrganizationConfigKey.NavbarVariant];
   const variant = (rawVariant || "vertical-sidebar") as string;
@@ -28,7 +31,7 @@ export default function Navbar({ children }: NavbarProps) {
   if (variant === "vertical-icon") {
     return (
       <div className="flex min-h-screen bg-brand-fill">
-        <VerticalIconNav />
+        <VerticalIconNav items={navbarItems} />
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
     );
@@ -48,7 +51,7 @@ export default function Navbar({ children }: NavbarProps) {
 
     return (
       <div className="flex min-h-screen flex-col bg-brand-fill">
-        <HorizontalNav alignment={alignment} />
+        <HorizontalNav items={navbarItems} alignment={alignment} />
         <main className="flex-1 overflow-auto px-6 py-4">{children}</main>
       </div>
     );
@@ -57,7 +60,7 @@ export default function Navbar({ children }: NavbarProps) {
   // Default: vertical sidebar with text labels
   return (
     <div className="flex min-h-screen bg-brand-fill">
-      <VerticalSidebarNav />
+      <VerticalSidebarNav items={navbarItems} />
       <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );

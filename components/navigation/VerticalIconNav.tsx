@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
-import { NAVBAR_ITEMS } from "@/lib/navbar";
+import { NAVBAR_ITEMS, NavbarProps } from "@/lib/navbar";
 
-export function VerticalIconNav() {
+export function VerticalIconNav({ items }: NavbarProps) {
   const pathname = usePathname();
   const { count: unreadCount } = useUnreadNotificationCount();
 
@@ -18,7 +18,7 @@ export function VerticalIconNav() {
       className={`flex h-screen w-24 flex-col items-center justify-between py-8 shadow-md ${navBgClass}`}
     >
       <nav className="flex w-full flex-col gap-0.5 text-nav font-normal text-grey-text-strong">
-        {NAVBAR_ITEMS.map((item) => {
+        {items.map((item) => {
           const href = item.href;
           const isActive =
             item.href === "/"
