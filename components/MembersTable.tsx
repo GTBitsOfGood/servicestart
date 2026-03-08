@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PencilSimple, UserPlus } from "@phosphor-icons/react";
+import { PencilSimple, UserPlusIcon } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import authClient from "@/lib/authClient";
 import { formatDate } from "@/lib/clientUtils";
@@ -15,6 +15,7 @@ import BogTable, {
 import BogModal from "@/components/bog/BogModal/BogModal";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
+import AddMemberModal from "@/components/AddMemberModal";
 
 interface MemberRow {
   userId: string;
@@ -37,6 +38,11 @@ interface MembersTableProps {
   pageSize: number;
   organizationId: string;
   currentUserId: string;
+  onAddDirectly?: (
+    organizationId: string,
+    email: string,
+    name: string,
+  ) => Promise<{ error?: string; success?: boolean }>;
 }
 
 interface ColumnConfig {
@@ -77,6 +83,7 @@ export default function MembersTable({
   pageSize,
   organizationId,
   currentUserId,
+  onAddDirectly,
 }: MembersTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -111,6 +118,7 @@ export default function MembersTable({
   const [confirmBatchDelete, setConfirmBatchDelete] = useState(false);
   const [batchRemoving, setBatchRemoving] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ done: 0, total: 0 });
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   const handleRemove = useCallback(
     async (memberEmail: string) => {
@@ -681,8 +689,9 @@ export default function MembersTable({
           <button
             aria-label="Add member"
             className="cursor-pointer leading-none"
+            onClick={() => setAddModalOpen(true)}
           >
-            <UserPlus
+            <UserPlusIcon
               size={24}
               weight="regular"
               color="var(--color-grey-text-weak)"
@@ -690,6 +699,13 @@ export default function MembersTable({
           </button>
         )}
       </div>
+
+      <AddMemberModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        organizationId={organizationId}
+        onAddDirectly={onAddDirectly}
+      />
 
       {/* Table */}
       <BogTable

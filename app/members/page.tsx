@@ -60,6 +60,38 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
     MembersService.countByOrganization(organizationId),
   ]);
 
+  async function addMemberDirectly(orgId: string, email: string, name: string) {
+    "use server";
+    try {
+      const session = await auth.api.getSession({
+        headers: await headers(),
+      });
+
+      if (!session?.user) {
+        return { error: "Unauthorized" };
+      }
+
+      if (session.session.activeOrganizationId !== orgId) {
+        return { error: "Forbidden" };
+      }
+
+      const membership = await MembersService.findByUserAndOrganization(
+        session.user.id,
+        orgId,
+      );
+
+      if (!MembersService.isAdminOrOwner(membership?.role)) {
+        return { error: "Forbidden: insufficient permissions" };
+      }
+
+      await MembersService.addMemberDirectly(email, name, orgId);
+      return { success: true };
+    } catch (error) {
+      if (error instanceof Error) return { error: error.message };
+      return { error: "Failed to add member directly" };
+    }
+  }
+
   return (
     <div className="max-w-[1300px] mx-auto px-12 py-[60px]">
       <MembersTable
@@ -69,6 +101,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
         pageSize={pageSize}
         organizationId={organizationId}
         currentUserId={session.user.id}
+        onAddDirectly={addMemberDirectly}
       />
     </div>
   );

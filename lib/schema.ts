@@ -194,6 +194,7 @@ export const invitations = pgTable(
   {
     id: text("id").primaryKey(),
     email: text("email").notNull(),
+    name: text("name").notNull(),
     inviterId: text("inviter_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),

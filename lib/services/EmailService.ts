@@ -106,7 +106,68 @@ async function registerOrganizationSender({
   });
 }
 
+async function sendInvitationEmail({
+  id,
+  email,
+  organization,
+  inviter,
+  invitation,
+}: {
+  id: string;
+  email: string;
+  organization: { id: string; name: string; slug?: string };
+  inviter: { user: { name: string; email: string } };
+  invitation: { expiresAt: Date; role: string; name: string };
+}) {
+  if (!organization.slug) {
+    throw new Error(
+      `Cannot derive sender email for organization ${organization.id}`,
+    );
+  }
+
+  const normalizedOrganization = organization.slug
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (!normalizedOrganization) {
+    throw new Error(
+      `Cannot derive sender email local-part for organization ${organization.id}`,
+    );
+  }
+
+  const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
+  const acceptUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/accept-invitation/${id}`;
+
+  await juno.email.sendEmail({
+    recipients: [{ email }],
+    sender: {
+      email: senderEmail,
+      name: organization.name,
+    },
+    subject: `You've been invited to join ${organization.name}`,
+    contents: [
+      {
+        type: "text/plain",
+        value: [
+          `Hi ${invitation.name},`,
+          ``,
+          `${inviter.user.name} (${inviter.user.email}) has invited you to join ${organization.name} as a ${invitation.role}.`,
+          ``,
+          `Accept your invitation here: ${acceptUrl}`,
+          ``,
+          `This invitation expires on ${invitation.expiresAt.toLocaleDateString()}.`,
+          ``,
+          `If you weren't expecting this, you can safely ignore this email.`,
+        ].join("\n"),
+      },
+    ],
+  });
+}
+
 export const EmailService = {
   emailMembers,
   registerOrganizationSender,
+  sendInvitationEmail,
 };
