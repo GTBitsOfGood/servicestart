@@ -21,17 +21,18 @@ function getRelevantOrgConfigKeys(): OrganizationConfigKey[] {
 
 export default async function getNavbarItems(
   session: Awaited<ReturnType<typeof auth.api.getSession>>,
+  orgId: string | undefined | null = session?.session.activeOrganizationId,
 ): Promise<NavbarItem[]> {
-  const orgConfig = session?.session.activeOrganizationId
+  const orgConfig = orgId
     ? await OrganizationConfigService.getConfig(
-        session?.session.activeOrganizationId,
+        orgId,
         getRelevantOrgConfigKeys(),
       )
     : {};
 
   const admin = await MembersService.isAdminOrderOwnerFromUserAndOrgId(
     session?.user.id,
-    session?.session.activeOrganizationId,
+    orgId,
   );
 
   const navbarItems = NAVBAR_ITEMS.filter((item) => {

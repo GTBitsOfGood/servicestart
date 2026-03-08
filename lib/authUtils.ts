@@ -94,3 +94,31 @@ export async function requireAdmin(c: Context) {
 
   return session;
 }
+
+/**
+ * Can get the org ID on the first render after logging in
+ * (when the active org ID isn't in the session yet)
+ */
+export async function getActiveOrganizationIdFromHeaders(
+  headers: Headers,
+): Promise<string | null> {
+  const session = await auth.api.getSession({
+    headers,
+  });
+
+  if (session?.session.activeOrganizationId) {
+    return session.session.activeOrganizationId;
+  }
+
+  const slug = getSlugFromHost(headers.get("host") ?? undefined);
+  if (!slug) {
+    return null;
+  }
+
+  const organization = await OrganizationsService.findBySlug(slug);
+  if (!organization) {
+    return null;
+  }
+
+  return organization.id;
+}

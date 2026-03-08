@@ -11,27 +11,31 @@ import OrganizationConfigService, {
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import getNavbarItems from "@/lib/getNavbarItems";
+import { getActiveOrganizationIdFromHeaders } from "@/lib/authUtils";
 
 interface NavbarProps {
   children: ReactNode;
 }
 
 export default async function Navbar({ children }: NavbarProps) {
+  const headerList = await headers();
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: headerList,
   });
 
-  const variant: (typeof ALLOWED_NAVBAR_VARIANTS)[number] = session?.session
-    .activeOrganizationId
+  const orgId = await getActiveOrganizationIdFromHeaders(headerList);
+
+  const variant: (typeof ALLOWED_NAVBAR_VARIANTS)[number] = orgId
     ? (
-        await OrganizationConfigService.getConfig(
-          session?.session.activeOrganizationId,
-          [OrganizationConfigKey.NavbarVariant],
-        )
+        await OrganizationConfigService.getConfig(orgId, [
+          OrganizationConfigKey.NavbarVariant,
+        ])
       )[OrganizationConfigKey.NavbarVariant]
     : "vertical-sidebar";
 
-  const navbarItems = await getNavbarItems(session);
+  const navbarItems = await getNavbarItems(session, orgId);
+
+  console.log("Navbar variant:", variant, "for organization:", orgId);
 
   // Determine layout based on organization config
   if (variant === "vertical-icon") {
