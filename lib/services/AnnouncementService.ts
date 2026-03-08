@@ -10,11 +10,9 @@ const insertSchema = createInsertSchema(announcements).omit({
   publishedAt: true,
 });
 
-const contentSchema = z.object({
-  content: z.array(
-    z.object({ type: z.enum(["text/plain", "text/html"]), value: z.string() }),
-  ),
-});
+const contentSchema = z.array(
+  z.object({ type: z.enum(["text/plain", "text/html"]), value: z.string() }),
+);
 
 async function createAnnouncement(
   input: z.infer<typeof insertSchema> & { draft: boolean },
