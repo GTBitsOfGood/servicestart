@@ -24,6 +24,7 @@ async function acceptInviteIfAvailable(
 
   const invitations = await auth.api.listUserInvitations({
     query: { email: user.email },
+    headers,
   });
 
   const invitation = Array.isArray(invitations)
