@@ -35,7 +35,7 @@ export function VerticalSidebarNav({ items }: NavbarProps) {
 
   return (
     <aside
-      className={`flex h-screen w-[200px] flex-col justify-between py-8 shadow-md ${navBgClass}`}
+      className={`sticky top-0 flex h-screen w-[200px] shrink-0 flex-col justify-between py-8 shadow-md ${navBgClass}`}
     >
       <div className="flex w-full flex-col">
         <div className="mb-10 px-6">

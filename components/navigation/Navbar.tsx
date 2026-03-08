@@ -38,7 +38,7 @@ export default async function Navbar({ children }: NavbarProps) {
   // Determine layout based on organization config
   if (variant === "vertical-icon") {
     return (
-      <div className="flex min-h-screen bg-brand-fill">
+      <div className="flex h-screen overflow-hidden bg-brand-fill">
         <VerticalIconNav items={navbarItems} />
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
@@ -67,7 +67,7 @@ export default async function Navbar({ children }: NavbarProps) {
 
   // Default: vertical sidebar with text labels
   return (
-    <div className="flex min-h-screen bg-brand-fill">
+    <div className="flex h-screen overflow-hidden bg-brand-fill">
       <VerticalSidebarNav items={navbarItems} />
       <main className="flex-1 overflow-auto">{children}</main>
     </div>
