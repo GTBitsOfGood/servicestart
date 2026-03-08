@@ -5,6 +5,8 @@
   --breakpoint-tablet: 768px;
   --breakpoint-desktop: 1024px;
 
+  --container-8xl: 1280px;
+
   --color-brand-text: #fc5b43;
   --color-brand-stroke-strong: #fc5b43cc;
   --color-brand-stroke-weak: #fc5b4333;

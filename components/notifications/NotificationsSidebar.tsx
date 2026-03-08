@@ -159,31 +159,29 @@ export default function NotificationsSidebar({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
 
-        <Dialog.Content className="fixed inset-y-0 right-0 z-50 flex w-[425px] flex-col bg-white shadow-[0px_8px_8px_-4px_rgba(0,0,0,0.04),0px_20px_24px_-4px_rgba(0,0,0,0.08)] outline-none data-[state=open]:animate-fade-in">
-          {/* Header */}
-          <div className="shrink-0 px-[31px] pt-[49px]">
-            <div className="mb-[32px] flex items-center justify-between">
-              <Dialog.Title className="text-[24px] font-bold leading-normal text-grey-text-strong">
+        <Dialog.Content className="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col bg-white shadow-xl outline-none data-[state=open]:animate-fade-in">
+          <div className="shrink-0 px-8 pt-12">
+            <div className="mb-8 flex items-center justify-between">
+              <Dialog.Title className="text-heading-3 text-grey-text-strong">
                 Notifications
               </Dialog.Title>
 
               <Dialog.Close asChild>
                 <button
                   type="button"
-                  className="rounded-[4px] p-[2px] text-grey-icon-weak hover:text-grey-text-strong"
+                  className="rounded p-1 text-grey-icon-weak hover:text-grey-text-strong"
                 >
                   <BogIcon name="x" size={28} />
                 </button>
               </Dialog.Close>
             </div>
 
-            {/* Pill tabs + Mark all read */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-[12px]">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   className={cn(
-                    "rounded-[48px] px-[16px] py-[4px] text-[16px]",
+                    "rounded-full px-4 py-1 text-paragraph-2",
                     tab === "all"
                       ? "bg-brand-text font-bold text-white"
                       : "border border-grey-stroke-strong text-grey-text-weak",
@@ -195,7 +193,7 @@ export default function NotificationsSidebar({
                 <button
                   type="button"
                   className={cn(
-                    "rounded-[48px] px-[16px] py-[4px] text-[16px]",
+                    "rounded-full px-4 py-1 text-paragraph-2",
                     tab === "unread"
                       ? "bg-brand-text font-bold text-white"
                       : "border border-grey-stroke-strong text-grey-text-weak",
@@ -208,7 +206,7 @@ export default function NotificationsSidebar({
 
               <button
                 type="button"
-                className="text-[16px] font-semibold text-brand-text hover:opacity-80 disabled:opacity-50"
+                className="text-paragraph-2 font-semibold text-brand-text hover:opacity-80 disabled:opacity-50"
                 onClick={() => void handleMarkAllRead()}
                 disabled={isMarkAllReadPending || unreadCount === 0}
               >
@@ -217,12 +215,11 @@ export default function NotificationsSidebar({
             </div>
           </div>
 
-          {/* Notification list */}
-          <div className="mt-[16px] flex-1 overflow-y-auto border-t border-grey-stroke-weak">
+          <div className="mt-4 flex-1 overflow-y-auto border-t border-grey-stroke-weak">
             {isLoading ? (
               <SidebarLoadingSkeleton />
             ) : errorMessage ? (
-              <div className="flex h-full flex-col items-center justify-center gap-0 px-[32px] text-center">
+              <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
                 <BogIcon
                   name="error"
                   size={84}
@@ -233,14 +230,14 @@ export default function NotificationsSidebar({
                 </p>
                 <button
                   type="button"
-                  className="mt-[12px] h-[40px] rounded-[4px] bg-brand-text px-[20px] text-[14px] font-semibold text-white hover:opacity-90"
+                  className="mt-3 rounded bg-brand-text px-5 py-2 text-paragraph-2 font-semibold text-white hover:opacity-90"
                   onClick={() => void refreshNotifications()}
                 >
                   Retry
                 </button>
               </div>
             ) : notifications.length === 0 ? (
-              <div className="flex h-full items-center justify-center px-[32px] text-center">
+              <div className="flex h-full items-center justify-center px-8 text-center">
                 <p className="text-heading-3 text-grey-text-weak">
                   No notifications yet.
                 </p>
@@ -269,16 +266,16 @@ function SidebarLoadingSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="border-t border-grey-stroke-weak px-[36px] py-[24px] first:border-t-0"
+          className="border-t border-grey-stroke-weak px-14 py-10 first:border-t-0"
         >
-          <div className="mb-[12px] flex items-center justify-between">
-            <div className="h-[20px] w-[128px] rounded-[4px] bg-grey-fill-weak" />
-            <div className="h-[20px] w-[92px] rounded-[4px] bg-grey-fill-weak" />
+          <div className="mb-3 flex items-center justify-between">
+            <div className="h-5 w-32 rounded bg-grey-fill-weak" />
+            <div className="h-5 w-24 rounded bg-grey-fill-weak" />
           </div>
-          <div className="mb-[12px] h-[22px] w-[197px] rounded-[4px] bg-grey-fill-weak" />
-          <div className="flex flex-col gap-[6px]">
-            <div className="h-[20px] w-full rounded-[4px] bg-grey-fill-weak" />
-            <div className="h-[20px] w-full rounded-[4px] bg-grey-fill-weak" />
+          <div className="mb-3 h-5 w-1/2 rounded bg-grey-fill-weak" />
+          <div className="flex flex-col gap-1.5">
+            <div className="h-5 w-full rounded bg-grey-fill-weak" />
+            <div className="h-5 w-full rounded bg-grey-fill-weak" />
           </div>
         </div>
       ))}

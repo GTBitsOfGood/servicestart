@@ -85,7 +85,7 @@ export default function NotificationTag({
   if (variant === "text") {
     return (
       <span
-        className="whitespace-nowrap text-[14px] font-semibold uppercase leading-[28px]"
+        className="whitespace-nowrap text-paragraph-2 font-semibold uppercase"
         style={{ color: config.color }}
       >
         {config.label}
@@ -95,7 +95,7 @@ export default function NotificationTag({
 
   return (
     <span
-      className="inline-flex h-[32px] items-center gap-[8px] whitespace-nowrap rounded-[48px] px-[12px] text-[14px] leading-[28px]"
+      className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-5 py-1 text-paragraph-2"
       style={{
         backgroundColor: config.bg,
         color: config.color,

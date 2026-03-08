@@ -54,40 +54,40 @@ async function fetchUnreadCount() {
 
 function LoadingSkeleton() {
   return (
-    <div className="mx-auto w-[90%] max-w-[1272px] animate-pulse">
+    <div className="mx-auto w-9/10 max-w-8xl animate-pulse">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-[8px]">
-          <div className="h-[48px] w-[48px] rounded-full bg-grey-fill-weak" />
-          <div className="h-[44px] w-[208px] rounded-[4px] bg-grey-fill-weak" />
+        <div className="flex items-center gap-3">
+          <div className="size-12 rounded-full bg-grey-fill-weak" />
+          <div className="h-10 w-52 rounded bg-grey-fill-weak" />
         </div>
-        <div className="h-[40px] w-[167px] rounded-[4px] bg-grey-fill-weak" />
+        <div className="h-10 w-40 rounded bg-grey-fill-weak" />
       </div>
 
-      <div className="mt-[12px] flex items-center justify-between h-[42px]">
-        <div className="flex gap-0">
-          <div className="h-[40px] w-[192px] rounded-[4px] bg-grey-fill-weak" />
-          <div className="ml-[8px] h-[40px] w-[192px] rounded-[4px] bg-grey-fill-weak" />
+      <div className="mt-5 flex items-center justify-between">
+        <div className="flex gap-2">
+          <div className="h-10 w-48 rounded bg-grey-fill-weak" />
+          <div className="h-10 w-48 rounded bg-grey-fill-weak" />
         </div>
-        <div className="flex items-center gap-[12px]">
-          <div className="h-[42px] w-[93px] rounded-[4px] bg-grey-fill-weak" />
-          <div className="h-[42px] w-[406px] rounded-[4px] bg-grey-fill-weak" />
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-24 rounded bg-grey-fill-weak" />
+          <div className="h-10 w-80 rounded bg-grey-fill-weak" />
         </div>
       </div>
 
-      <div className="mt-[16px] overflow-hidden rounded-[8px] border border-grey-stroke-weak">
+      <div className="mt-6 overflow-hidden rounded-lg border border-grey-stroke-weak">
         {Array.from({ length: 5 }).map((_, index) => (
           <div
             key={index}
-            className="border-t border-grey-stroke-weak px-[36px] py-[24px] first:border-t-0"
+            className="border-t border-grey-stroke-weak px-14 py-10 first:border-t-0"
           >
-            <div className="flex items-center justify-between mb-[12px]">
-              <div className="h-[32px] w-[141px] rounded-full bg-grey-fill-weak" />
-              <div className="h-[22px] w-[92px] rounded-[4px] bg-grey-fill-weak" />
+            <div className="mb-5 flex items-center justify-between">
+              <div className="h-8 w-36 rounded-full bg-grey-fill-weak" />
+              <div className="h-5 w-24 rounded bg-grey-fill-weak" />
             </div>
-            <div className="h-[25px] w-[561px] rounded-[4px] bg-grey-fill-weak mb-[12px]" />
-            <div className="flex flex-col gap-[12px]">
-              <div className="h-[22px] w-full rounded-[4px] bg-grey-fill-weak" />
-              <div className="h-[22px] w-full rounded-[4px] bg-grey-fill-weak" />
+            <div className="mb-5 h-6 w-3/5 rounded bg-grey-fill-weak" />
+            <div className="flex flex-col gap-3">
+              <div className="h-5 w-full rounded bg-grey-fill-weak" />
+              <div className="h-5 w-full rounded bg-grey-fill-weak" />
             </div>
           </div>
         ))}
@@ -227,33 +227,32 @@ export default function InboxPage() {
 
   if (isLoading) {
     return (
-      <div className="px-[24px] py-[40px] desktop:px-[48px]">
+      <div className="px-10 py-16 desktop:px-20">
         <LoadingSkeleton />
       </div>
     );
   }
 
   return (
-    <div className="px-[24px] py-[40px] desktop:px-[48px]">
-      <div className="mx-auto flex w-[90%] max-w-[1272px] flex-col gap-[16px]">
-        {/* Header row: bell + title + mark all read */}
+    <div className="px-10 py-16 desktop:px-20">
+      <div className="mx-auto flex w-9/10 max-w-8xl flex-col gap-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-[8px]">
-            <div className="relative flex h-[48px] w-[51px] items-start">
+          <div className="flex items-center gap-3">
+            <div className="relative">
               <BogIcon
                 name="bell"
                 size={48}
                 color="var(--color-grey-text-strong)"
               />
               {unreadCount > 0 && (
-                <span className="absolute right-0 top-0 inline-flex min-w-[28px] h-[28px] items-center justify-center rounded-full border-[2px] border-white bg-brand-text text-[14px] font-bold text-white">
+                <span className="absolute -right-1 -top-1 inline-flex min-w-6 items-center justify-center rounded-full border-2 border-white bg-brand-text px-1 text-small font-bold leading-5 text-white">
                   {unreadCount}
                 </span>
               )}
             </div>
-            <span className="text-[32px] font-bold leading-normal text-grey-text-strong">
+            <h1 className="text-heading-2 text-grey-text-strong">
               Notifications
-            </span>
+            </h1>
           </div>
 
           <BogButton
@@ -270,14 +269,12 @@ export default function InboxPage() {
           </BogButton>
         </div>
 
-        {/* Tabs + filter + search row */}
-        <div className="flex items-center justify-between h-[42px]">
-          {/* Underline tabs */}
-          <div className="flex h-full">
+        <div className="flex items-center justify-between">
+          <div className="flex">
             <button
               type="button"
               className={cn(
-                "flex items-center justify-center w-[192px] border-b-[2px] text-paragraph-2 font-semibold",
+                "flex items-center justify-center px-8 py-2 border-b-2 text-paragraph-2 font-semibold",
                 tab === "all"
                   ? "border-grey-text-strong text-grey-text-strong"
                   : "border-transparent text-grey-text-weak hover:text-grey-text-strong",
@@ -289,7 +286,7 @@ export default function InboxPage() {
             <button
               type="button"
               className={cn(
-                "flex items-center justify-center gap-[4px] w-[192px] border-b-[2px] text-paragraph-2",
+                "flex items-center justify-center gap-1 px-8 py-2 border-b-2 text-paragraph-2",
                 tab === "unread"
                   ? "border-grey-text-strong text-grey-text-strong font-semibold"
                   : "border-transparent text-grey-text-weak hover:text-grey-text-strong",
@@ -298,20 +295,19 @@ export default function InboxPage() {
             >
               Unread
               {unreadCount > 0 && (
-                <span className="inline-flex min-w-[24px] h-[24px] items-center justify-center rounded-full bg-grey-fill-weak px-[6px] text-[12px] font-medium text-grey-text-weak">
+                <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-grey-fill-weak px-1.5 text-small font-medium text-grey-text-weak">
                   {unreadCount}
                 </span>
               )}
             </button>
           </div>
 
-          {/* Filter + search */}
-          <div className="flex items-center gap-[12px]">
+          <div className="flex items-center gap-3">
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-[42px] items-center gap-[8px] rounded-[4px] border border-grey-stroke-weak px-[12px] text-paragraph-2 text-grey-text-strong hover:bg-grey-fill-weaker"
+                  className="inline-flex items-center gap-2 rounded border border-grey-stroke-weak px-3 py-2 text-paragraph-2 text-grey-text-strong hover:bg-grey-fill-weaker"
                 >
                   <span>
                     {filterType === "all"
@@ -326,17 +322,17 @@ export default function InboxPage() {
                 <DropdownMenu.Content
                   sideOffset={8}
                   align="end"
-                  className="z-50 w-[214px] rounded-[8px] border border-grey-stroke-weak bg-white py-[4px] shadow-lg"
+                  className="z-50 w-56 rounded-lg border border-grey-stroke-weak bg-white py-1 shadow-lg"
                 >
                   {FILTER_OPTIONS.map((option) => (
                     <DropdownMenu.Item
                       key={option.value}
-                      className="flex cursor-pointer items-center gap-[12px] px-[16px] py-[10px] text-paragraph-2 text-grey-text-strong outline-none data-[highlighted]:bg-grey-fill-weaker"
+                      className="flex cursor-pointer items-center gap-3 px-4 py-2 text-paragraph-2 text-grey-text-strong outline-none data-[highlighted]:bg-grey-fill-weaker"
                       onSelect={() => setFilterType(option.value)}
                     >
                       <span
                         className={cn(
-                          "inline-flex h-[18px] w-[18px] items-center justify-center rounded-[2px] border",
+                          "inline-flex size-5 items-center justify-center rounded-sm border",
                           filterType === option.value
                             ? "border-brand-text bg-brand-text"
                             : "border-grey-stroke-strong",
@@ -353,7 +349,7 @@ export default function InboxPage() {
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
 
-            <div className="w-[406px]">
+            <div className="w-full max-w-sm">
               <BogTextInput
                 name="search"
                 type="search"
@@ -369,10 +365,9 @@ export default function InboxPage() {
           </div>
         </div>
 
-        {/* Notification list */}
-        <div className="overflow-hidden rounded-[8px] border border-grey-stroke-weak">
+        <div className="overflow-hidden rounded-lg border border-grey-stroke-weak">
           {errorMessage ? (
-            <div className="flex flex-col items-center justify-center gap-[16px] px-[24px] py-[64px] text-center">
+            <div className="flex flex-col items-center justify-center gap-4 px-10 py-24 text-center">
               <p className="text-paragraph-2 text-grey-text-weak">
                 {errorMessage}
               </p>
@@ -386,7 +381,7 @@ export default function InboxPage() {
               </BogButton>
             </div>
           ) : filteredNotifications.length === 0 ? (
-            <div className="flex items-center justify-center px-[24px] py-[96px] text-center">
+            <div className="flex items-center justify-center px-10 py-40 text-center">
               <p className="text-heading-3 text-grey-text-weak">
                 {search
                   ? "No notifications match your search."
