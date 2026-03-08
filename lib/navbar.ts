@@ -35,6 +35,7 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
     requireAdmin: true,
     requireConfig: OrganizationConfigKey.MembersPageEnabled,
   },
+  { label: "Inbox", href: "/inbox", icon: "bell" },
 ];
 
 export const NO_NAVBAR_PAGES = ["/login", "/signup"];

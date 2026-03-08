@@ -65,7 +65,11 @@
     transparent
   );
 
-  --color-notif-unread-bg: rgba(252, 91, 67, 0.05);
+  --color-notif-unread-bg: color-mix(
+    in srgb,
+    var(--color-brand-text) 5%,
+    transparent
+  );
 
   --text-desktop-display: 48px;
   --text-desktop-heading-1: 40px;

@@ -29,7 +29,7 @@ export default function NotificationItem({
   compact = false,
 }: NotificationItemProps) {
   const title = notification.text.split("\n")[0];
-  const body = notification.text;
+  const body = notification.text.slice(notification.text.indexOf("\n") + 1);
 
   const showActions = !!onDelete || !!onToggleRead;
 

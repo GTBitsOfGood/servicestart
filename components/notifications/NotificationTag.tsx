@@ -1,5 +1,3 @@
-"use client";
-
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import type { IconName } from "@/components/bog/BogIcon/BogIcon";
 import { NotificationType } from "@/lib/schema";

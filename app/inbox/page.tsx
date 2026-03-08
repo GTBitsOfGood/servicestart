@@ -1,14 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DropdownMenu } from "radix-ui";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
-import NotificationItem, {
-  type NotificationListItem,
-} from "@/components/notifications/NotificationItem";
-import api from "@/lib/api";
+import NotificationItem from "@/components/notifications/NotificationItem";
+import { useNotifications } from "@/lib/hooks/useNotifications";
 import { NotificationType } from "@/lib/schema";
 import { cn } from "@/lib/utils";
 
@@ -26,31 +24,6 @@ const FILTER_OPTIONS = [
 ] satisfies { label: string; value: FilterValue }[];
 
 type InboxTab = "all" | "unread";
-type ReadFilter = "all" | "read" | "unread";
-
-async function fetchNotifications(read: ReadFilter) {
-  const response = await api.notifications.$get({
-    query: { read, pageSize: "50" },
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch notifications");
-  }
-
-  const json = await response.json();
-  return json.data ?? [];
-}
-
-async function fetchUnreadCount() {
-  const response = await api.notifications.unreadCount.$get({});
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch unread count");
-  }
-
-  const json = await response.json();
-  return Number(json.count ?? 0);
-}
 
 function LoadingSkeleton() {
   return (
@@ -101,119 +74,24 @@ export default function InboxPage() {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<FilterValue>("all");
 
-  const [allNotifications, setAllNotifications] = useState<
-    NotificationListItem[]
-  >([]);
-  const [unreadNotifications, setUnreadNotifications] = useState<
-    NotificationListItem[]
-  >([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isMarkAllReadPending, setIsMarkAllReadPending] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const loadNotifications = useCallback(async () => {
-    const all = await fetchNotifications("all");
-    const unread = await fetchNotifications("unread");
-    const count = await fetchUnreadCount();
-
-    setAllNotifications(all);
-    setUnreadNotifications(unread);
-    setUnreadCount(count);
-  }, []);
-
-  const refreshNotifications = useCallback(async () => {
-    setIsRefreshing(true);
-
-    try {
-      await loadNotifications();
-      setErrorMessage(null);
-    } catch {
-      setErrorMessage("Unable to refresh notifications.");
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [loadNotifications]);
-
-  useEffect(() => {
-    setIsLoading(true);
-    setErrorMessage(null);
-
-    loadNotifications()
-      .catch(() => {
-        setAllNotifications([]);
-        setUnreadNotifications([]);
-        setUnreadCount(0);
-        setErrorMessage("Unable to load notifications.");
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [loadNotifications]);
-
-  const runMutation = useCallback(
-    async (mutation: () => Promise<Response>, failureMessage: string) => {
-      try {
-        const response = await mutation();
-
-        if (!response.ok) {
-          throw new Error("Mutation failed");
-        }
-
-        await refreshNotifications();
-      } catch {
-        setErrorMessage(failureMessage);
-      }
-    },
-    [refreshNotifications],
-  );
-
-  const handleMarkAllRead = useCallback(async () => {
-    setIsMarkAllReadPending(true);
-    setErrorMessage(null);
-
-    await runMutation(
-      () => api.notifications["mark-all-read"].$post({}),
-      "Could not mark all notifications as read.",
-    );
-
-    setIsMarkAllReadPending(false);
-  }, [runMutation]);
-
-  const handleDelete = useCallback(
-    (id: string) => {
-      setErrorMessage(null);
-      void runMutation(
-        () => api.notifications[":id"].$delete({ param: { id } }),
-        "Could not delete this notification.",
-      );
-    },
-    [runMutation],
-  );
-
-  const handleToggleRead = useCallback(
-    (id: string, read: boolean) => {
-      setErrorMessage(null);
-      void runMutation(
-        () =>
-          api.notifications[":id"].$patch({ param: { id }, json: { read } }),
-        "Could not update this notification.",
-      );
-    },
-    [runMutation],
-  );
+  const {
+    allNotifications,
+    unreadNotifications,
+    unreadCount,
+    isLoading,
+    isRefreshing,
+    isMarkAllReadPending,
+    errorMessage,
+    refreshNotifications,
+    handleMarkAllRead,
+    handleDelete,
+    handleToggleRead,
+  } = useNotifications(filterType === "all" ? undefined : filterType);
 
   const notifications = tab === "all" ? allNotifications : unreadNotifications;
 
   const filteredNotifications = useMemo(() => {
     let result = notifications;
-
-    if (filterType !== "all") {
-      result = result.filter(
-        (notification) => notification.type === filterType,
-      );
-    }
 
     if (search.trim()) {
       const term = search.trim().toLowerCase();
@@ -223,7 +101,7 @@ export default function InboxPage() {
     }
 
     return result;
-  }, [notifications, search, filterType]);
+  }, [notifications, search]);
 
   if (isLoading) {
     return (

@@ -1,43 +1,15 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState } from "react";
 import { Dialog } from "radix-ui";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import api from "@/lib/api";
 import { cn } from "@/lib/utils";
-import NotificationItem, {
-  type NotificationListItem,
-} from "./NotificationItem";
-
-type ReadFilter = "all" | "read" | "unread";
+import NotificationItem from "./NotificationItem";
+import { useNotifications } from "@/lib/hooks/useNotifications";
 
 interface NotificationsSidebarProps {
   open: boolean;
   onClose: () => void;
-}
-
-async function fetchNotifications(read: ReadFilter) {
-  const response = await api.notifications.$get({
-    query: { read, pageSize: "50" },
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch notifications");
-  }
-
-  const json = await response.json();
-  return json.data ?? [];
-}
-
-async function fetchUnreadCount() {
-  const response = await api.notifications.unreadCount.$get({});
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch unread count");
-  }
-
-  const json = await response.json();
-  return Number(json.count ?? 0);
 }
 
 export default function NotificationsSidebar({
@@ -45,105 +17,19 @@ export default function NotificationsSidebar({
   onClose,
 }: NotificationsSidebarProps) {
   const [tab, setTab] = useState<"all" | "unread">("all");
-  const [allNotifications, setAllNotifications] = useState<
-    NotificationListItem[]
-  >([]);
-  const [unreadNotifications, setUnreadNotifications] = useState<
-    NotificationListItem[]
-  >([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isMarkAllReadPending, setIsMarkAllReadPending] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const loadNotifications = useCallback(async () => {
-    const all = await fetchNotifications("all");
-    const unread = await fetchNotifications("unread");
-    const count = await fetchUnreadCount();
-
-    setAllNotifications(all);
-    setUnreadNotifications(unread);
-    setUnreadCount(count);
-  }, []);
-
-  const refreshNotifications = useCallback(async () => {
-    try {
-      await loadNotifications();
-      setErrorMessage(null);
-    } catch {
-      setErrorMessage("Failed to load");
-    }
-  }, [loadNotifications]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    setIsLoading(true);
-    setErrorMessage(null);
-
-    loadNotifications()
-      .catch(() => {
-        setAllNotifications([]);
-        setUnreadNotifications([]);
-        setUnreadCount(0);
-        setErrorMessage("Failed to load");
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [open, loadNotifications]);
-
-  const handleMarkAllRead = useCallback(async () => {
-    setIsMarkAllReadPending(true);
-    setErrorMessage(null);
-
-    try {
-      const response = await api.notifications["mark-all-read"].$post({});
-      if (!response.ok) {
-        throw new Error("Could not mark all as read");
-      }
-      await refreshNotifications();
-    } catch {
-      setErrorMessage("Failed to load");
-    } finally {
-      setIsMarkAllReadPending(false);
-    }
-  }, [refreshNotifications]);
-
-  const runMutation = useCallback(
-    async (mutation: () => Promise<Response>) => {
-      try {
-        const response = await mutation();
-        if (!response.ok) {
-          throw new Error("Mutation failed");
-        }
-        await refreshNotifications();
-      } catch {
-        /* silently fail for individual item actions */
-      }
-    },
-    [refreshNotifications],
-  );
-
-  const handleDelete = useCallback(
-    (id: string) => {
-      void runMutation(() =>
-        api.notifications[":id"].$delete({ param: { id } }),
-      );
-    },
-    [runMutation],
-  );
-
-  const handleToggleRead = useCallback(
-    (id: string, read: boolean) => {
-      void runMutation(() =>
-        api.notifications[":id"].$patch({ param: { id }, json: { read } }),
-      );
-    },
-    [runMutation],
-  );
+  const {
+    allNotifications,
+    unreadNotifications,
+    unreadCount,
+    isLoading,
+    isMarkAllReadPending,
+    errorMessage,
+    refreshNotifications,
+    handleMarkAllRead,
+    handleDelete,
+    handleToggleRead,
+  } = useNotifications();
 
   const notifications = tab === "all" ? allNotifications : unreadNotifications;
 

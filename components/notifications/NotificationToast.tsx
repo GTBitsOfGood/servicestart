@@ -44,7 +44,7 @@ export default function NotificationToast({
   onDismiss,
 }: NotificationToastProps) {
   const title = notification.text.split("\n")[0];
-  const body = notification.text;
+  const body = notification.text.slice(notification.text.indexOf("\n") + 1);
   const isActionType = ACTION_TYPES.has(notification.type);
   const ctaLabel = getCtaLabel(notification.type);
 

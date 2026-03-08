@@ -61,11 +61,11 @@ export function useNotificationPolling() {
     isFirstPoll.current = true;
     seenIds.current.clear();
 
-    const kickoff = setTimeout(() => void poll(), 0);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void poll();
     const handle = setInterval(() => void poll(), POLL_INTERVAL_MS);
 
     return () => {
-      clearTimeout(kickoff);
       clearInterval(handle);
     };
   }, [canPoll, poll]);

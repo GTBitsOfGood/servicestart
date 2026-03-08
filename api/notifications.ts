@@ -73,7 +73,7 @@ const app = new Hono()
 
     return c.json(notification);
   })
-  .post("/mark-all-read", async (c) => {
+  .post("/markAllRead", async (c) => {
     const session = await requireMembership(c);
     const activeOrganizationId = session.session.activeOrganizationId!;
 
