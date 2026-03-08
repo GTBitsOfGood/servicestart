@@ -7,24 +7,9 @@ import { SunsetLogo } from "@/components/navigation/Logo";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { UserProfileMenu } from "@/components/navigation/UserProfileMenu";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
+import { NAVBAR_ITEMS, NavbarItem } from "@/lib/navbar";
 
 type HorizontalAlignment = "left" | "center" | "right";
-
-type HorizontalNavItem = {
-  label: string;
-  href: string;
-  subpages?: string[];
-};
-
-const NAV_ITEMS: HorizontalNavItem[] = [
-  { label: "Menu Item", href: "/" },
-  {
-    label: "Menu Item",
-    href: "/menu-parent",
-    subpages: ["/subpage-1", "/subpage-2", "/subpage-3", "/subpage-4"],
-  },
-  { label: "Menu Item", href: "/menu-2" },
-];
 
 interface HorizontalNavProps {
   alignment: HorizontalAlignment;
@@ -34,7 +19,7 @@ function NavTabs({
   items,
   pathname,
 }: {
-  items: HorizontalNavItem[];
+  items: NavbarItem[];
   pathname: string;
 }) {
   const [openDropdownLabel, setOpenDropdownLabel] = useState<string | null>(
@@ -103,9 +88,9 @@ function NavTabs({
             {isOpen && (
               <div className="absolute left-0 top-full mt-3 w-56 rounded-xl bg-solid-bg-base p-2 text-small shadow-lg">
                 {item.subpages?.map((sub, index) => {
-                  const isSubActive = pathname === sub;
+                  const isSubActive = pathname === sub.href;
                   return (
-                    <Link key={sub} href={sub}>
+                    <Link key={sub.href} href={sub.href}>
                       <div
                         className={`rounded-lg px-4 py-2 text-small transition-colors ${
                           isSubActive
@@ -113,7 +98,7 @@ function NavTabs({
                             : "hover:bg-brand-text/10"
                         } ${index === 0 ? "mb-1" : ""}`}
                       >
-                        Subpage
+                        {sub.label}
                       </div>
                     </Link>
                   );
@@ -153,7 +138,7 @@ export function HorizontalNav({ alignment }: HorizontalNavProps) {
 
   const navBgClass = "bg-brand-fill";
 
-  const tabs = <NavTabs items={NAV_ITEMS} pathname={pathname} />;
+  const tabs = <NavTabs items={NAVBAR_ITEMS} pathname={pathname} />;
   const logo = <SunsetLogo size="sm" />;
   const right = <RightSide />;
 
