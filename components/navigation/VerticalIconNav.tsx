@@ -5,15 +5,9 @@ import { usePathname } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
+import { NavbarProps } from "@/lib/navbar";
 
-const MENU_ITEMS = [
-  { label: "Home", href: "/", icon: "house" as const },
-  { label: "Events", href: "/events", icon: "calendar" as const },
-  { label: "Messages", href: "/messages", icon: "chats" as const },
-  { label: "Notifications", href: "/notifications", icon: "bell" as const },
-];
-
-export function VerticalIconNav() {
+export function VerticalIconNav({ items }: NavbarProps) {
   const pathname = usePathname();
   const { count: unreadCount } = useUnreadNotificationCount();
 
@@ -24,7 +18,7 @@ export function VerticalIconNav() {
       className={`flex h-screen w-24 flex-col items-center justify-between py-8 shadow-md ${navBgClass}`}
     >
       <nav className="flex w-full flex-col gap-0.5 text-nav font-normal text-grey-text-strong">
-        {MENU_ITEMS.map((item) => {
+        {items.map((item) => {
           const href = item.href;
           const isActive =
             item.href === "/"

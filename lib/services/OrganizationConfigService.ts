@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
 import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
 
-const ALLOWED_NAVBAR_VARIANTS = [
+export const ALLOWED_NAVBAR_VARIANTS = [
   "vertical-sidebar",
   "vertical-icon",
   "horizontal-left",
@@ -260,7 +260,7 @@ async function getMembersPageEnabled(organizationId: string) {
     )
     .limit(1);
 
-  return row?.value ?? "true";
+  return (row?.value ?? "true") === "true";
 }
 
 async function setMembersPageEnabled(organizationId: string, value: string) {

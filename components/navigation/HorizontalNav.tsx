@@ -7,24 +7,9 @@ import { SunsetLogo } from "@/components/navigation/Logo";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { UserProfileMenu } from "@/components/navigation/UserProfileMenu";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
+import { NavbarItem, NavbarProps } from "@/lib/navbar";
 
 type HorizontalAlignment = "left" | "center" | "right";
-
-type HorizontalNavItem = {
-  label: string;
-  href: string;
-  subpages?: string[];
-};
-
-const NAV_ITEMS: HorizontalNavItem[] = [
-  { label: "Menu Item", href: "/" },
-  {
-    label: "Menu Item",
-    href: "/menu-parent",
-    subpages: ["/subpage-1", "/subpage-2", "/subpage-3", "/subpage-4"],
-  },
-  { label: "Menu Item", href: "/menu-2" },
-];
 
 interface HorizontalNavProps {
   alignment: HorizontalAlignment;
@@ -34,7 +19,7 @@ function NavTabs({
   items,
   pathname,
 }: {
-  items: HorizontalNavItem[];
+  items: NavbarItem[];
   pathname: string;
 }) {
   const [openDropdownLabel, setOpenDropdownLabel] = useState<string | null>(
@@ -53,19 +38,21 @@ function NavTabs({
 
         if (!hasDropdown) {
           return (
-            <Link key={item.href} href={item.href}>
-              <button className="relative flex h-full items-center gap-1 px-4">
-                <span
-                  className={`font-normal ${isActive ? "font-semibold" : ""}`}
-                >
-                  {item.label}
-                </span>
-                <div
-                  className={`absolute bottom-0 left-0 right-0 h-1 transition-colors ${
-                    isActive ? "bg-brand-text" : "bg-transparent"
-                  }`}
-                />
-              </button>
+            <Link
+              key={item.href}
+              href={item.href}
+              className="relative flex h-full items-center gap-1 px-4"
+            >
+              <span
+                className={`font-normal ${isActive ? "font-semibold" : ""}`}
+              >
+                {item.label}
+              </span>
+              <div
+                className={`absolute bottom-0 left-0 right-0 h-1 transition-colors ${
+                  isActive ? "bg-brand-text" : "bg-transparent"
+                }`}
+              />
             </Link>
           );
         }
@@ -75,8 +62,7 @@ function NavTabs({
         return (
           <div key={item.href} className="relative">
             <button
-              type="button"
-              className="relative flex h-full items-center gap-1 px-4"
+              className="relative flex h-full items-center gap-1 px-4 cursor-pointer"
               onClick={() =>
                 setOpenDropdownLabel((prev) =>
                   prev === item.label ? null : item.label,
@@ -103,9 +89,9 @@ function NavTabs({
             {isOpen && (
               <div className="absolute left-0 top-full mt-3 w-56 rounded-xl bg-solid-bg-base p-2 text-small shadow-lg">
                 {item.subpages?.map((sub, index) => {
-                  const isSubActive = pathname === sub;
+                  const isSubActive = pathname === sub.href;
                   return (
-                    <Link key={sub} href={sub}>
+                    <Link key={sub.href} href={sub.href}>
                       <div
                         className={`rounded-lg px-4 py-2 text-small transition-colors ${
                           isSubActive
@@ -113,7 +99,7 @@ function NavTabs({
                             : "hover:bg-brand-text/10"
                         } ${index === 0 ? "mb-1" : ""}`}
                       >
-                        Subpage
+                        {sub.label}
                       </div>
                     </Link>
                   );
@@ -148,12 +134,15 @@ function RightSide() {
   );
 }
 
-export function HorizontalNav({ alignment }: HorizontalNavProps) {
+export function HorizontalNav({
+  alignment,
+  items,
+}: HorizontalNavProps & NavbarProps) {
   const pathname = usePathname();
 
   const navBgClass = "bg-brand-fill";
 
-  const tabs = <NavTabs items={NAV_ITEMS} pathname={pathname} />;
+  const tabs = <NavTabs items={items} pathname={pathname} />;
   const logo = <SunsetLogo size="sm" />;
   const right = <RightSide />;
 

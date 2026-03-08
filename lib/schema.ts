@@ -42,6 +42,11 @@ export enum OrganizationConfigKey {
   LogoUrl = "logo_url",
 }
 
+export type ToggleableOrganizationFeature = Extract<
+  OrganizationConfigKey,
+  OrganizationConfigKey.MembersPageEnabled
+>;
+
 // Array of enum values for use with pgEnum and Zod
 export const ORGANIZATION_CONFIG_KEY_VALUES = Object.values(
   OrganizationConfigKey,

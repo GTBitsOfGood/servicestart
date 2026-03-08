@@ -4,40 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import type { IconName } from "@/components/bog/BogIcon/BogIcon";
 import { SunsetLogo } from "@/components/navigation/Logo";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import authClient from "@/lib/authClient";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
+import { NavbarProps } from "@/lib/navbar";
 
-type SidebarSubpage = {
-  label: string;
-  href: string;
-};
-
-type SidebarItem = {
-  label: string;
-  href: string;
-  icon: IconName;
-  subpages?: SidebarSubpage[];
-};
-
-const MENU_ITEMS: SidebarItem[] = [
-  { label: "Home", href: "/", icon: "house" as const },
-  {
-    label: "Menu Item",
-    href: "/menu-parent",
-    icon: "chats" as const,
-    subpages: [
-      { label: "Subpage", href: "/subpage-1" },
-      { label: "Subpage", href: "/subpage-2" },
-    ],
-  },
-  { label: "Menu Item", href: "/menu-2", icon: "calendar" as const },
-];
-
-export function VerticalSidebarNav() {
+export function VerticalSidebarNav({ items }: NavbarProps) {
   const pathname = usePathname();
   const [openItemLabel, setOpenItemLabel] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -69,7 +43,7 @@ export function VerticalSidebarNav() {
         </div>
 
         <nav className="flex w-full flex-col text-nav font-normal text-grey-text-strong">
-          {MENU_ITEMS.map((item) => {
+          {items.map((item) => {
             const hasDropdown = !!item.subpages?.length;
             const isOpen = openItemLabel === item.label;
             const isNotifications = item.href === "/notifications";
