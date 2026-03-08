@@ -68,13 +68,10 @@ const app = new Hono()
           return c.json({ error: "Invalid content format" }, { status: 400 });
         }
         const data = content.data;
-        const text = data.find((c) => c.type === "text/plain")?.value ?? "";
-        const html = data.find((c) => c.type === "text/html")?.value ?? "";
 
         await EmailService.emailMembers(activeOrganizationId, {
           subject: `New announcement: ${createdAnnouncement.name}`,
-          textBody: text,
-          htmlBody: html,
+          content: data,
         });
       }
 
@@ -234,13 +231,10 @@ const app = new Hono()
           return c.json({ error: "Invalid content format" }, { status: 400 });
         }
         const data = content.data;
-        const text = data.find((c) => c.type === "text/plain")?.value ?? "";
-        const html = data.find((c) => c.type === "text/html")?.value ?? "";
 
         await EmailService.emailMembers(activeOrganizationId, {
           subject: `New announcement: ${updatedAnnouncement.name}`,
-          textBody: text,
-          htmlBody: html,
+          content: data,
         });
       }
 

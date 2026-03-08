@@ -111,8 +111,10 @@ describe("POST /api/announcements", () => {
     expect(mockEmailMembers).toHaveBeenCalledTimes(1);
     expect(mockEmailMembers).toHaveBeenCalledWith(organization.id, {
       subject: "New announcement: Hello",
-      textBody: "Hi",
-      htmlBody: "<p>Hi</p>",
+      content: [
+        { type: "text/plain", value: "Hi" },
+        { type: "text/html", value: "<p>Hi</p>" },
+      ],
     });
   });
 
@@ -444,8 +446,10 @@ describe("PATCH /api/announcements/:announcementId", () => {
     expect(mockEmailMembers).toHaveBeenCalledTimes(1);
     expect(mockEmailMembers).toHaveBeenCalledWith(organization.id, {
       subject: "New announcement: Draft Announcement",
-      textBody: "Publish",
-      htmlBody: "<p>Publish</p>",
+      content: [
+        { type: "text/plain", value: "Publish" },
+        { type: "text/html", value: "<p>Publish</p>" },
+      ],
     });
   });
 });
