@@ -244,6 +244,12 @@
     font-family: var(--font-paragraph);
   }
 
+  .text-nav {
+    line-height: var(--text-mobile-small--line-height);
+    font-size: var(--text-mobile-small);
+    font-family: var(--font-paragraph);
+  }
+
   .text-small {
     line-height: var(--text-mobile-small--line-height);
     font-size: var(--text-mobile-small);
@@ -284,6 +290,11 @@
     .text-paragraph-2 {
       line-height: var(--text-desktop-paragraph-2--line-height);
       font-size: var(--text-desktop-paragraph-2);
+    }
+
+    .text-nav {
+      line-height: var(--text-desktop-small--line-height);
+      font-size: var(--text-desktop-small);
     }
 
     .text-small {

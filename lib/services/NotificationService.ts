@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 import db from "@/lib/db";
 import { notifications, NotificationType, members } from "@/lib/schema";
 import { MembersService } from "@/lib/services/MemberService";
@@ -98,6 +98,30 @@ async function listByUserAndOrganization(
     .offset(options.offset);
 }
 
+async function countByUserAndOrganization(
+  userId: string,
+  organizationId: string,
+  read: boolean,
+  type: NotificationType | undefined,
+) {
+  const conditions = [
+    eq(notifications.userId, userId),
+    eq(notifications.organizationId, organizationId),
+    eq(notifications.read, read),
+  ];
+
+  if (type) {
+    conditions.push(eq(notifications.type, type));
+  }
+
+  const [row] = await db
+    .select({ count: count() })
+    .from(notifications)
+    .where(and(...conditions));
+
+  return Number(row?.count ?? 0);
+}
+
 async function findById(notificationId: string) {
   const [notification] = await db
     .select({
@@ -134,6 +158,7 @@ export const NotificationService = {
   notifyAdmins,
   notifyAllMembers,
   listByUserAndOrganization,
+  countByUserAndOrganization,
   findById,
   updateReadStatus,
 };
