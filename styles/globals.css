@@ -5,6 +5,8 @@
   --breakpoint-tablet: 768px;
   --breakpoint-desktop: 1024px;
 
+  --container-8xl: 1280px;
+
   --color-brand-text: #fc5b43;
   --color-brand-stroke-strong: #fc5b43cc;
   --color-brand-stroke-weak: #fc5b4333;
@@ -39,6 +41,35 @@
   --color-grey-icon-strong: #22070b99;
   --color-dark-500: #3f3f3f;
   --color-status-active: #63cc80;
+
+  --color-notif-action-required: #c73a3a;
+  --color-notif-action-required-bg: #ffe3e3;
+  --color-notif-announcement: #0051cc;
+  --color-notif-announcement-bg: #deebff;
+  --color-notif-reminder: #e25702;
+  --color-notif-reminder-bg: #ffe3b3;
+  --color-notif-members: #5a50b3;
+  --color-notif-members-bg: color-mix(in srgb, #5a50b3 12%, transparent);
+  --color-notif-schedule-update: #1d799b;
+  --color-notif-schedule-update-bg: color-mix(
+    in srgb,
+    #1d799b 12%,
+    transparent
+  );
+  --color-notif-confirmation: #0f904d;
+  --color-notif-confirmation-bg: #e3fcef;
+  --color-notif-general: var(--color-grey-icon-strong);
+  --color-notif-general-bg: color-mix(
+    in srgb,
+    var(--color-grey-icon-strong) 12%,
+    transparent
+  );
+
+  --color-notif-unread-bg: color-mix(
+    in srgb,
+    var(--color-brand-text) 5%,
+    transparent
+  );
 
   --text-desktop-display: 48px;
   --text-desktop-heading-1: 40px;
@@ -83,6 +114,8 @@
 
   --animate-fade-in: fade-in 0.25s ease-out;
   --animate-fade-out: fade-out 0.25s ease-out;
+  --animate-slide-in-right: slide-in-right 0.3s ease-out;
+  --animate-slide-out-right: slide-out-right 0.2s ease-in forwards;
 }
 
 @keyframes fade-in {
@@ -100,6 +133,28 @@
   }
   100% {
     opacity: 0;
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-right {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
   }
 }
 

@@ -70,6 +70,11 @@ export const mediaTypeEnum = pgEnum("media_type", MEDIA_TYPE_VALUES);
 export enum NotificationType {
   General = "general",
   Announcement = "announcement",
+  ActionRequired = "action_required",
+  Reminder = "reminder",
+  Members = "members",
+  ScheduleUpdate = "schedule_update",
+  Confirmation = "confirmation",
 }
 
 export const NOTIFICATION_TYPE_VALUES = Object.values(
