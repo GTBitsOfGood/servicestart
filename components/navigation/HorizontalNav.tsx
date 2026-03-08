@@ -38,19 +38,21 @@ function NavTabs({
 
         if (!hasDropdown) {
           return (
-            <Link key={item.href} href={item.href}>
-              <button className="relative flex h-full items-center gap-1 px-4">
-                <span
-                  className={`font-normal ${isActive ? "font-semibold" : ""}`}
-                >
-                  {item.label}
-                </span>
-                <div
-                  className={`absolute bottom-0 left-0 right-0 h-1 transition-colors ${
-                    isActive ? "bg-brand-text" : "bg-transparent"
-                  }`}
-                />
-              </button>
+            <Link
+              key={item.href}
+              href={item.href}
+              className="relative flex h-full items-center gap-1 px-4"
+            >
+              <span
+                className={`font-normal ${isActive ? "font-semibold" : ""}`}
+              >
+                {item.label}
+              </span>
+              <div
+                className={`absolute bottom-0 left-0 right-0 h-1 transition-colors ${
+                  isActive ? "bg-brand-text" : "bg-transparent"
+                }`}
+              />
             </Link>
           );
         }
@@ -60,8 +62,7 @@ function NavTabs({
         return (
           <div key={item.href} className="relative">
             <button
-              type="button"
-              className="relative flex h-full items-center gap-1 px-4"
+              className="relative flex h-full items-center gap-1 px-4 cursor-pointer"
               onClick={() =>
                 setOpenDropdownLabel((prev) =>
                   prev === item.label ? null : item.label,
