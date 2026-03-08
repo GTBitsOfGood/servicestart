@@ -30,6 +30,7 @@ async function createAnnouncement(
       id,
       content: parseContent.data,
       publishedAt: input.draft ? null : new Date(),
+      publishedById: input.draft ? null : input.publishedById,
     })
     .returning({
       id: announcements.id,
@@ -139,8 +140,8 @@ async function updateAnnouncement({
       template,
       // undefined is ignored (e.g. not updated). we set it to unpublished
       // when draft is false, and publish it when draft is true.
-      publishedAt: draft === undefined ? undefined : draft ? new Date() : null,
-      publishedById: draft === undefined ? undefined : draft ? userId : null,
+      publishedAt: draft === undefined ? null : draft ? new Date() : null,
+      publishedById: draft === undefined ? null : draft ? userId : null,
     })
     .where(
       and(
