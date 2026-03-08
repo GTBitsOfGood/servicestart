@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Select, { type MultiValue } from "react-select";
 import BogModal from "@/components/bog/BogModal/BogModal";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
-import BogCheckbox from "@/components/bog/BogCheckbox/BogCheckbox";
 
 interface SendEmailModalProps {
   isOpen: boolean;
@@ -30,16 +30,28 @@ export default function SendEmailModal({
   const [body, setBody] = useState("");
   const [footer, setFooter] = useState("");
   const [hasAttemptedSend, setHasAttemptedSend] = useState(false);
-  const [recipientMenuOpen, setRecipientMenuOpen] = useState(false);
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>(
     initialRecipientIds ?? [],
   );
+  const [recipientMenuOpen, setRecipientMenuOpen] = useState(false);
 
   const isInvalid = !subject.trim() || !body.trim();
 
-  const selectedRecipients = useMemo(
-    () => recipients.filter((r) => selectedRecipientIds.includes(r.id)),
-    [recipients, selectedRecipientIds],
+  const recipientOptions = useMemo(
+    () =>
+      recipients.map((recipient) => ({
+        value: recipient.id,
+        label: recipient.name,
+      })),
+    [recipients],
+  );
+
+  const selectedOptions = useMemo(
+    () =>
+      recipientOptions.filter((option) =>
+        selectedRecipientIds.includes(option.value),
+      ),
+    [recipientOptions, selectedRecipientIds],
   );
 
   const resetForm = () => {
@@ -48,7 +60,6 @@ export default function SendEmailModal({
     setBody("");
     setFooter("");
     setHasAttemptedSend(false);
-    setRecipientMenuOpen(false);
     setSelectedRecipientIds(initialRecipientIds ?? []);
   };
 
@@ -66,15 +77,6 @@ export default function SendEmailModal({
       recipientIds: selectedRecipientIds,
     });
     handleClose();
-  };
-
-  const toggleRecipient = (recipientId: string, checked: boolean) => {
-    setSelectedRecipientIds((prev) => {
-      if (checked) {
-        return prev.includes(recipientId) ? prev : [...prev, recipientId];
-      }
-      return prev.filter((id) => id !== recipientId);
-    });
   };
 
   return (
@@ -95,63 +97,104 @@ export default function SendEmailModal({
             </BogButton>
           </div>
           <div className="flex flex-col gap-2">
-            <span className="text-paragraph-2">Recipient</span>
-            <div className="flex items-center gap-2 justify-between flex-wrap">
-              {selectedRecipients.length === 0 ? (
-                <span className="text-paragraph-2 text-black/50">
-                  No recipients selected
-                </span>
-              ) : (
-                selectedRecipients.map((recipient) => (
-                  <span
-                    key={recipient.id}
-                    className="px-5 py-1 rounded-2xl border text-paragraph-2 flex items-center gap-2"
-                  >
-                    {recipient.name}
-                    <button
-                      type="button"
-                      className="text-black/60"
-                      aria-label={`Remove ${recipient.name}`}
-                      onClick={() => toggleRecipient(recipient.id, false)}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))
-              )}
+            <div className="flex items-center justify-between">
+              <span className="text-paragraph-2">Recipient</span>
               <button
                 type="button"
-                className="h-10 w-10 rounded-full flex items-center justify-center"
+                className="h-5 w-5 flex items-center justify-center text-black cursor-pointer"
                 aria-label="Add recipient"
                 onClick={() => setRecipientMenuOpen((open) => !open)}
               >
                 +
               </button>
             </div>
-            {recipientMenuOpen && (
-              <div className="relative h-0">
-                <div className="absolute z-10 mt-2 w-full max-w-sm rounded-lg border bg-white p-3 shadow-md">
-                  <div className="flex flex-col gap-2 max-h-52 overflow-y-auto">
-                    {recipients.map((recipient) => (
-                      <BogCheckbox
-                        key={recipient.id}
-                        name={`recipient-${recipient.id}`}
-                        label={recipient.name}
-                        checked={selectedRecipientIds.includes(recipient.id)}
-                        onCheckedChange={(checked) =>
-                          toggleRecipient(recipient.id, checked === true)
-                        }
-                      />
-                    ))}
-                    {recipients.length === 0 && (
-                      <span className="text-paragraph-2 text-black/50">
-                        No recipients available
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            <Select
+              isMulti
+              options={recipientOptions}
+              value={selectedOptions}
+              placeholder="Select recipients"
+              classNamePrefix="bog-select"
+              menuIsOpen={recipientMenuOpen}
+              onMenuOpen={() => setRecipientMenuOpen(true)}
+              onMenuClose={() => setRecipientMenuOpen(false)}
+              onChange={(value: MultiValue<{ value: string; label: string }>) =>
+                setSelectedRecipientIds(value.map((option) => option.value))
+              }
+              components={{
+                DropdownIndicator: () => null,
+                IndicatorSeparator: () => null,
+                ClearIndicator: () => null,
+              }}
+              styles={{
+                control: (base, state) => ({
+                  ...base,
+                  minHeight: 44,
+                  borderRadius: 8,
+                  paddingTop: 4,
+                  paddingBottom: 4,
+                  backgroundColor: recipientMenuOpen
+                    ? "var(--color-solid-bg-sunken)"
+                    : "transparent",
+                  borderColor: recipientMenuOpen
+                    ? state.isFocused
+                      ? "var(--color-brand-stroke-strong)"
+                      : "var(--color-grey-stroke-weak)"
+                    : "transparent",
+                  boxShadow: "none",
+                  paddingLeft: recipientMenuOpen ? 4 : 0,
+                  cursor: "text",
+                  "&:hover": {
+                    borderColor: recipientMenuOpen
+                      ? state.isFocused
+                        ? "var(--color-brand-stroke-strong)"
+                        : "var(--color-grey-stroke-strong)"
+                      : "transparent",
+                  },
+                }),
+                valueContainer: (base) => ({
+                  ...base,
+                  backgroundColor: "transparent",
+                  paddingLeft: recipientMenuOpen ? base.paddingLeft : 0,
+                }),
+                input: (base) => ({
+                  ...base,
+                  backgroundColor: "transparent",
+                }),
+                placeholder: (base) => ({
+                  ...base,
+                  color: "var(--color-grey-text-weak)",
+                }),
+                multiValue: (base) => ({
+                  ...base,
+                  borderRadius: 12,
+                  paddingLeft: 6,
+                  paddingRight: 2,
+                  backgroundColor: "#fff",
+                  border: "1px solid #666",
+                }),
+                multiValueLabel: (base) => ({
+                  ...base,
+                  color: "var(--color-dark-500)",
+                }),
+                multiValueRemove: (base) => ({
+                  ...base,
+                  borderRadius: 999,
+                  cursor: "pointer",
+                }),
+                option: (base) => ({
+                  ...base,
+                  cursor: "pointer",
+                }),
+                clearIndicator: (base) => ({
+                  ...base,
+                  cursor: "pointer",
+                }),
+                menu: (base) => ({
+                  ...base,
+                  zIndex: 30,
+                }),
+              }}
+            />
           </div>
           <BogTextInput
             name="subject"
