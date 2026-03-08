@@ -15,7 +15,7 @@ importers:
     dependencies:
       '@hono/zod-validator':
         specifier: ^0.7.6
-        version: 0.7.6(hono@4.11.10)(zod@4.3.6)
+        version: 0.7.6(hono@4.12.4)(zod@4.3.6)
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -47,8 +47,8 @@ importers:
         specifier: 1.0.0-beta.15-859cf75
         version: 1.0.0-beta.15-859cf75(@types/mssql@9.1.9(@azure/core-client@1.10.1))(@types/pg@8.16.0)(mssql@11.0.1(@azure/core-client@1.10.1))(pg@8.19.0)(zod@4.3.6)
       hono:
-        specifier: ^4.11.10
-        version: 4.11.10
+        specifier: ^4.12.4
+        version: 4.12.4
       juno-sdk:
         specifier: ^0.0.9
         version: 0.0.9(patch_hash=ec8eddc2fec47ecd1dadaa9191b4254f19373b4e1af37e7e80f93755018654b6)
@@ -2993,8 +2993,8 @@ packages:
   hermes-parser@0.25.1:
     resolution: {integrity: sha512-6pEjquH3rqaI6cYAXYPcz9MS4rY6R4ngRgrgfDshRptUZIc3lw0MCIJIGDj9++mfySOuPTHB4nrSW99BCvOPIA==}
 
-  hono@4.11.10:
-    resolution: {integrity: sha512-kyWP5PAiMooEvGrA9jcD3IXF7ATu8+o7B3KCbPXid5se52NPqnOpM/r9qeW2heMnOekF4kqR1fXJqCYeCLKrZg==}
+  hono@4.12.4:
+    resolution: {integrity: sha512-ooiZW1Xy8rQ4oELQ++otI2T9DsKpV0M6c6cO6JGx4RTfav9poFFLlet9UMXHZnoM1yG0HWGlQLswBGX3RZmHtg==}
     engines: {node: '>=16.9.0'}
 
   html-encoding-sniffer@6.0.0:
@@ -4795,9 +4795,9 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
-  '@hono/zod-validator@0.7.6(hono@4.11.10)(zod@4.3.6)':
+  '@hono/zod-validator@0.7.6(hono@4.12.4)(zod@4.3.6)':
     dependencies:
-      hono: 4.11.10
+      hono: 4.12.4
       zod: 4.3.6
 
   '@humanfs/core@0.19.1': {}
@@ -6806,7 +6806,7 @@ snapshots:
     dependencies:
       hermes-estree: 0.25.1
 
-  hono@4.11.10: {}
+  hono@4.12.4: {}
 
   html-encoding-sniffer@6.0.0(@noble/hashes@2.0.1):
     dependencies:
