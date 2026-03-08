@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import authClient from "@/lib/authClient";
 
@@ -9,20 +9,19 @@ type UseUnreadNotificationCountResult = {
   isLoading: boolean;
 };
 
+function parseCount(value: unknown): number {
+  if (!value || typeof value !== "object" || !("count" in value)) return 0;
+  return Number((value as Record<string, unknown>).count ?? 0);
+}
+
 export function useUnreadNotificationCount(): UseUnreadNotificationCountResult {
   const session = authClient.useSession();
-
-  const activeOrganizationId = useMemo(() => {
-    const data = session.data as
-      | { session?: { activeOrganizationId?: string | null } }
-      | undefined;
-    return data?.session?.activeOrganizationId ?? null;
-  }, [session.data]);
+  const organization = authClient.useActiveOrganization();
 
   const [count, setCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
-  const canFetch = !!session.data && !!activeOrganizationId;
+  const canFetch = !!session.data && !!organization.data?.id;
 
   useEffect(() => {
     if (!canFetch) return;
@@ -37,8 +36,8 @@ export function useUnreadNotificationCount(): UseUnreadNotificationCountResult {
           setCount(0);
           return;
         }
-        const json = (await res.json()) as { count?: number };
-        setCount(Number(json.count ?? 0));
+        const json = await res.json();
+        setCount(parseCount(json));
       })
       .catch(() => {
         setCount(0);
