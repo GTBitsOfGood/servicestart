@@ -246,6 +246,10 @@ export const events = pgTable(
     startTimestamp: timestamp("start_timestamp"),
     duration: interval("duration"),
     coverImageUrl: text("cover_image_url"),
+    publishedAt: timestamp("published_at"),
+    publishedById: text("published_by_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
   },
   (table) => [index("events_organizationId_idx").on(table.organizationId)],
 );
@@ -257,8 +261,10 @@ export const announcements = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
-    name: text("title").notNull(),
-    body: text("body").notNull(),
+    name: text("name").notNull(),
+    content: jsonb("content").notNull(),
+    subject: text("subject").notNull(),
+    template: boolean("template").default(false),
     // when this is null, it means that the announcement is not published (e.g. its a draft)
     publishedAt: timestamp("published_at"),
     publishedById: text("published_by_id").references(() => users.id, {
