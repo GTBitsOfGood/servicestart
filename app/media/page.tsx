@@ -61,7 +61,7 @@ function UploadCard() {
   return (
     <button
       type="button"
-      className="flex min-h-[18.1rem] w-full flex-col items-center justify-center rounded-2xl border border-[var(--color-media-upload-border)] bg-[var(--color-media-upload-bg)] px-8 text-center text-[var(--color-media-inverse)] hover:border-[var(--color-media-upload-hover-border)] hover:bg-[var(--color-media-upload-hover-bg)]"
+      className="flex min-h-[18.1rem] w-full flex-col items-center justify-center rounded-2xl border border-[var(--color-media-upload-border)] bg-[var(--color-media-upload-bg)] px-8 py-6 text-center text-[var(--color-media-inverse)] hover:border-[var(--color-media-upload-hover-border)] hover:bg-[var(--color-media-upload-hover-bg)]"
     >
       <div className="mb-4 flex items-center justify-center">
         <svg
@@ -176,7 +176,7 @@ export default async function MediaPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-[144rem] px-8 py-10 md:px-12 lg:px-16 lg:py-14">
+      <section className="mx-auto max-w-[152rem] px-8 py-10 md:px-10 lg:px-12 lg:py-14">
         <div className="flex flex-col gap-8">
           <div className="mb-4 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
             <h1 className="text-heading-1 text-[4.8rem] leading-[1] text-[var(--color-grey-text-strong)]">
@@ -203,13 +203,15 @@ export default async function MediaPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-6">
-            <div className="sm:col-span-2 lg:col-span-2">
-              <UploadCard />
+          <div className="lg:px-4">
+            <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-6">
+              <div className="sm:col-span-2 lg:col-span-2">
+                <UploadCard />
+              </div>
+              {mediaItems.map((item) => (
+                <MediaCard key={item.id} name={item.name} />
+              ))}
             </div>
-            {mediaItems.map((item) => (
-              <MediaCard key={item.id} name={item.name} />
-            ))}
           </div>
         </div>
       </section>
