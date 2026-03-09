@@ -51,6 +51,11 @@
   --color-media-upload-border: #000000;
   --color-media-upload-hover-bg: #325ce880;
   --color-media-upload-hover-border: #325ce8;
+  --color-media-empty-upload-bg: #2b262926;
+  --color-media-empty-upload-border: #00000026;
+  --color-media-empty-upload-text: #5a5557;
+  --color-media-empty-upload-hover-bg: #98adf3;
+  --color-media-empty-upload-hover-text: #ffffff;
   --color-media-notification-bg: #fc5b43;
   --color-media-notification-border: #feded9;
 
