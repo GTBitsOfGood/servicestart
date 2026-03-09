@@ -9,7 +9,7 @@ const mediaItems = Array.from({ length: 10 }, (_, index) => ({
   name: "filename.jpg",
 }));
 
-const filterItems = ["Type", "Tags", "Date"] as const;
+const filterItems = ["Type", "Date"] as const;
 const navItems = ["Menu Item", "Menu Item", "Menu Item"] as const;
 const unreadNotifications = 5;
 
@@ -171,29 +171,35 @@ export default async function MediaPage() {
           </nav>
 
           <div className="flex items-center gap-6">
-            <div className="hidden items-center gap-3 md:flex">
-              <div className="h-12 w-12 rounded-full bg-[var(--color-media-avatar)]" />
-              <div className="leading-tight">
-                <p className="text-paragraph-2 font-semibold">Firstname Last</p>
-                <p className="text-small text-[var(--color-grey-text-weak)]">
-                  Admin
-                </p>
+            <div className="hidden items-center gap-16 md:flex">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-[var(--color-media-avatar)]" />
+                <div className="leading-tight">
+                  <p className="text-paragraph-2 font-semibold">
+                    Firstname Last
+                  </p>
+                  <p className="text-small text-[var(--color-grey-text-weak)]">
+                    Admin
+                  </p>
+                </div>
               </div>
-              <CaretDown size={16} weight="bold" />
-            </div>
 
-            <button
-              type="button"
-              className="relative flex h-12 w-12 items-center justify-center rounded-full"
-              aria-label={`${unreadNotifications} unread notifications`}
-            >
-              <NotificationBell />
-              {unreadNotifications > 0 ? (
-                <span className="absolute right-[-0.1rem] top-[0.1rem] flex h-7 min-w-7 items-center justify-center rounded-full border border-[var(--color-media-notification-border)] bg-[var(--color-media-notification-bg)] px-1.5 text-[1.1rem] font-semibold leading-none text-[var(--color-media-inverse)]">
-                  {unreadNotifications}
-                </span>
-              ) : null}
-            </button>
+              <div className="flex items-center gap-6">
+                <CaretDown size={16} weight="bold" />
+                <button
+                  type="button"
+                  className="relative flex h-12 w-12 items-center justify-center rounded-full"
+                  aria-label={`${unreadNotifications} unread notifications`}
+                >
+                  <NotificationBell />
+                  {unreadNotifications > 0 ? (
+                    <span className="absolute right-[-0.1rem] top-[0.1rem] flex h-7 min-w-7 items-center justify-center rounded-full border border-[var(--color-media-notification-border)] bg-[var(--color-media-notification-bg)] px-1.5 text-[1.1rem] font-semibold leading-none text-[var(--color-media-inverse)]">
+                      {unreadNotifications}
+                    </span>
+                  ) : null}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -205,15 +211,17 @@ export default async function MediaPage() {
               Media Gallery
             </h1>
 
-            <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-6">
+            <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-10">
               <div className="flex flex-wrap gap-10">
                 {filterItems.map((item) => (
                   <FilterChip key={item} label={item} />
                 ))}
               </div>
 
-              <div className="flex items-center gap-4">
-                <span className="text-heading-4 font-normal">Sort by</span>
+              <div className="flex items-center gap-3">
+                <span className="text-paragraph-1 font-normal text-[var(--color-grey-text-strong)]">
+                  Sort by
+                </span>
                 <button
                   type="button"
                   className="inline-flex h-11 items-center gap-8 rounded-xl border border-[var(--color-grey-stroke-strong)] bg-[var(--color-media-surface-soft)] px-5 text-paragraph-2"
