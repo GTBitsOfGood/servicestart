@@ -178,13 +178,13 @@ export default async function MediaPage() {
 
       <section className="mx-auto max-w-[144rem] px-8 py-10 md:px-12 lg:px-16 lg:py-14">
         <div className="flex flex-col gap-8">
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+          <div className="mb-4 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
             <h1 className="text-heading-1 text-[4.8rem] leading-[1] text-[var(--color-grey-text-strong)]">
               Media Gallery
             </h1>
 
-            <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:justify-end">
-              <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-6">
+              <div className="flex flex-wrap gap-10">
                 {filterItems.map((item) => (
                   <FilterChip key={item} label={item} />
                 ))}
@@ -203,17 +203,11 @@ export default async function MediaPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-[minmax(0,2.1fr)_repeat(4,minmax(0,1fr))]">
-            <div className="lg:col-span-1">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-6">
+            <div className="sm:col-span-2 lg:col-span-2">
               <UploadCard />
             </div>
-            {mediaItems.slice(0, 4).map((item) => (
-              <MediaCard key={item.id} name={item.name} />
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
-            {mediaItems.slice(4).map((item) => (
+            {mediaItems.map((item) => (
               <MediaCard key={item.id} name={item.name} />
             ))}
           </div>
