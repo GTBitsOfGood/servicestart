@@ -7,6 +7,10 @@ import { EmailService } from "@/lib/services/EmailService";
 import { MembersService } from "@/lib/services/MemberService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 
+const contentSchema = z.array(
+  z.object({ type: z.enum(["text/plain", "text/html"]), value: z.string() }),
+);
+
 const app = new Hono()
   .post(
     "/",
@@ -59,9 +63,15 @@ const app = new Hono()
       );
 
       if (createdAnnouncement.publishedAt) {
+        const content = contentSchema.safeParse(createdAnnouncement.content);
+        if (!content.success) {
+          return c.json({ error: "Invalid content format" }, { status: 400 });
+        }
+        const data = content.data;
+
         await EmailService.emailMembers(activeOrganizationId, {
           subject: `New announcement: ${createdAnnouncement.name}`,
-          textBody: createdAnnouncement.body,
+          content: data,
         });
       }
 
@@ -160,13 +170,15 @@ const app = new Hono()
       "json",
       z.object({
         name: z.string().optional(),
-        body: z.string().optional(),
         draft: z.boolean().optional(),
+        content: contentSchema.optional(),
+        subject: z.string().optional(),
+        template: z.boolean().optional(),
       }),
     ),
     async (c) => {
       const { announcementId } = c.req.param();
-      const { name, body, draft } = c.req.valid("json");
+      const { name, content, subject, template, draft } = c.req.valid("json");
 
       const session = await auth.api.getSession({
         headers: c.req.header(),
@@ -200,7 +212,9 @@ const app = new Hono()
           organizationId: activeOrganizationId,
           userId: session.user.id,
           name,
-          body,
+          content,
+          subject,
+          template,
           draft,
         },
       );
@@ -212,9 +226,15 @@ const app = new Hono()
         !existingAnnouncement?.publishedAt &&
         updatedAnnouncement.publishedAt
       ) {
+        const content = contentSchema.safeParse(updatedAnnouncement.content);
+        if (!content.success) {
+          return c.json({ error: "Invalid content format" }, { status: 400 });
+        }
+        const data = content.data;
+
         await EmailService.emailMembers(activeOrganizationId, {
           subject: `New announcement: ${updatedAnnouncement.name}`,
-          textBody: updatedAnnouncement.body,
+          content: data,
         });
       }
 

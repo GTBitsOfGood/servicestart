@@ -15,7 +15,10 @@ function senderDomain() {
 
 async function emailMembers(
   organizationId: string,
-  email: { subject: string; textBody: string; htmlBody?: string },
+  email: {
+    subject: string;
+    content: { type: "text/plain" | "text/html"; value: string }[];
+  },
 ) {
   const [organization, recipients] = await Promise.all([
     OrganizationsService.findById(organizationId),
@@ -54,12 +57,7 @@ async function emailMembers(
       name: organization.name,
     },
     subject: email.subject,
-    contents: email.htmlBody
-      ? [
-          { type: "text/plain", value: email.textBody },
-          { type: "text/html", value: email.htmlBody },
-        ]
-      : [{ type: "text/plain", value: email.textBody }],
+    contents: email.content,
   });
 }
 

@@ -78,7 +78,7 @@ describe("EmailService", () => {
 
     await EmailService.emailMembers(org.id, {
       subject: "Release Notes",
-      textBody: "v1.0 shipped",
+      content: [{ type: "text/plain", value: "hi" }],
     });
 
     expect(mockSendEmail).toHaveBeenCalledTimes(1);
@@ -90,9 +90,7 @@ describe("EmailService", () => {
       name: "Organization alpha-team",
     });
     expect(payload?.subject).toBe("Release Notes");
-    expect(payload?.contents).toEqual([
-      { type: "text/plain", value: "v1.0 shipped" },
-    ]);
+    expect(payload?.contents).toEqual([{ type: "text/plain", value: "hi" }]);
 
     expect(payload?.recipients).toHaveLength(2);
     expect(payload?.recipients).toEqual(
@@ -111,7 +109,7 @@ describe("EmailService", () => {
 
     await EmailService.emailMembers(org.id, {
       subject: "Hello",
-      textBody: "No recipients",
+      content: [{ type: "text/plain", value: "No" }],
     });
 
     expect(mockSendEmail).not.toHaveBeenCalled();

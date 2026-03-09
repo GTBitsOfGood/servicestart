@@ -39,7 +39,16 @@ async function setupOrgAndUser(role: "owner" | "admin" | "member") {
 describe("POST /api/announcements", () => {
   it("returns 401 when not logged in", async () => {
     const response = await testApi.announcements.$post({
-      json: { name: "Hello", body: "World", draft: false },
+      json: {
+        name: "Hello",
+        content: [
+          { type: "text/plain", value: "Hi" },
+          { type: "text/html", value: "<p>Hi</p>" },
+        ],
+        subject: "Test",
+        template: false,
+        draft: false,
+      },
     });
 
     expect(response.status).toBe(401);
@@ -49,7 +58,18 @@ describe("POST /api/announcements", () => {
     const { headers } = await setupOrgAndUser("member");
 
     const response = await testApi.announcements.$post(
-      { json: { name: "Hello", body: "World", draft: false } },
+      {
+        json: {
+          name: "Hello",
+          content: [
+            { type: "text/plain", value: "Hi" },
+            { type: "text/html", value: "<p>Hi</p>" },
+          ],
+          subject: "Test",
+          template: false,
+          draft: false,
+        },
+      },
       { headers },
     );
 
@@ -60,7 +80,18 @@ describe("POST /api/announcements", () => {
     const { organization, headers } = await setupOrgAndUser("admin");
 
     const response = await testApi.announcements.$post(
-      { json: { name: "Release Notes", body: "v1.0 is out", draft: false } },
+      {
+        json: {
+          name: "Hello",
+          content: [
+            { type: "text/plain", value: "Hi" },
+            { type: "text/html", value: "<p>Hi</p>" },
+          ],
+          subject: "Test",
+          template: false,
+          draft: false,
+        },
+      },
       { headers },
     );
 
@@ -76,12 +107,14 @@ describe("POST /api/announcements", () => {
       .where(eq(announcements.id, data.id));
     expect(row).toBeDefined();
     expect(row.organizationId).toBe(organization.id);
-    expect(row.name).toBe("Release Notes");
-    expect(row.body).toBe("v1.0 is out");
+    expect(row.name).toBe("Hello");
     expect(mockEmailMembers).toHaveBeenCalledTimes(1);
     expect(mockEmailMembers).toHaveBeenCalledWith(organization.id, {
-      subject: "New announcement: Release Notes",
-      textBody: "v1.0 is out",
+      subject: "New announcement: Hello",
+      content: [
+        { type: "text/plain", value: "Hi" },
+        { type: "text/html", value: "<p>Hi</p>" },
+      ],
     });
   });
 
@@ -89,7 +122,18 @@ describe("POST /api/announcements", () => {
     const { organization, headers } = await setupOrgAndUser("admin");
 
     const response = await testApi.announcements.$post(
-      { json: { name: "Draft", body: "Not live", draft: true } },
+      {
+        json: {
+          name: "Hello",
+          content: [
+            { type: "text/plain", value: "Hi" },
+            { type: "text/html", value: "<p>Hi</p>" },
+          ],
+          subject: "Test",
+          template: false,
+          draft: true,
+        },
+      },
       { headers },
     );
 
@@ -102,6 +146,25 @@ describe("POST /api/announcements", () => {
       .where(eq(announcements.organizationId, organization.id));
     expect(rows).toHaveLength(1);
     expect(rows[0].publishedAt).toBeNull();
+  });
+
+  it("returns error when invalid content format", async () => {
+    const { headers } = await setupOrgAndUser("admin");
+
+    const response = await testApi.announcements.$post(
+      {
+        json: {
+          name: "Hello",
+          content: [{ type: "text/plain" }],
+          subject: "Test",
+          template: false,
+          draft: false,
+        },
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(500);
   });
 });
 
@@ -274,11 +337,14 @@ describe("PATCH /api/announcements/:announcementId", () => {
     expect(response.status).toBe(403);
   });
 
-  it("updates name and body without requiring all fields", async () => {
+  it("updates name without requiring all fields", async () => {
     const { organization, headers } = await setupOrgAndUser("admin");
     const announcementId = await createAnnouncement(organization.id, {
       name: "Original",
-      body: "Original body",
+      content: [
+        { type: "text/plain", value: "Hi" },
+        { type: "text/html", value: "<p>Hi</p>" },
+      ],
       draft: false,
     });
 
@@ -293,7 +359,6 @@ describe("PATCH /api/announcements/:announcementId", () => {
       throw new Error("Response data is missing 'name' property");
     }
     expect(data.name).toBe("Updated Name");
-    expect(data.body).toBe("Original body");
   });
 
   it("sets publishedAt and publishedBy when draft changes from false to true", async () => {
@@ -365,7 +430,10 @@ describe("PATCH /api/announcements/:announcementId", () => {
     const { organization, headers } = await setupOrgAndUser("admin");
     const announcementId = await createAnnouncement(organization.id, {
       name: "Draft Announcement",
-      body: "Publish me",
+      content: [
+        { type: "text/plain", value: "Publish" },
+        { type: "text/html", value: "<p>Publish</p>" },
+      ],
       draft: true,
     });
 
@@ -378,7 +446,10 @@ describe("PATCH /api/announcements/:announcementId", () => {
     expect(mockEmailMembers).toHaveBeenCalledTimes(1);
     expect(mockEmailMembers).toHaveBeenCalledWith(organization.id, {
       subject: "New announcement: Draft Announcement",
-      textBody: "Publish me",
+      content: [
+        { type: "text/plain", value: "Publish" },
+        { type: "text/html", value: "<p>Publish</p>" },
+      ],
     });
   });
 });

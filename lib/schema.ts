@@ -9,6 +9,7 @@ import {
   interval,
   primaryKey,
   integer,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 // TypeScript enum for join request status values
@@ -256,8 +257,10 @@ export const announcements = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
-    name: text("title").notNull(),
-    body: text("body").notNull(),
+    name: text("name").notNull(),
+    content: jsonb("content").notNull(),
+    subject: text("subject").notNull(),
+    template: boolean("template").default(false),
     // when this is null, it means that the announcement is not published (e.g. its a draft)
     publishedAt: timestamp("published_at"),
     publishedById: text("published_by_id").references(() => users.id, {
