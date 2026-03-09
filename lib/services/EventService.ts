@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, isNotNull } from "drizzle-orm";
 import db from "@/lib/db";
 import { events, eventRsvps } from "@/lib/schema";
 import { randomUUID } from "node:crypto";
@@ -11,6 +11,8 @@ async function create(
   duration: string | null,
   description: string | null,
   coverImageUrl: string | null,
+  publishedAt?: Date | null,
+  publishedById?: string | null,
 ) {
   const id = randomUUID();
 
@@ -25,6 +27,8 @@ async function create(
       startTimestamp,
       duration,
       coverImageUrl,
+      publishedAt,
+      publishedById,
     })
     .returning({
       id: events.id,
@@ -35,6 +39,8 @@ async function create(
       startTimestamp: events.startTimestamp,
       duration: events.duration,
       coverImageUrl: events.coverImageUrl,
+      publishedAt: events.publishedAt,
+      publishedById: events.publishedById,
     });
 
   return event ?? null;
@@ -64,7 +70,17 @@ async function findById(eventId: string) {
 async function listByOrganization(
   organizationId: string,
   options: { limit: number; offset: number },
+  published?: boolean,
 ) {
+  const conditions = [eq(events.organizationId, organizationId)];
+  if (published !== undefined) {
+    conditions.push(
+      published ? isNotNull(events.publishedAt) : isNull(events.publishedAt),
+    );
+  }
+
+  const checks = and(...conditions);
+
   return await db
     .select({
       id: events.id,
@@ -75,9 +91,11 @@ async function listByOrganization(
       startTimestamp: events.startTimestamp,
       duration: events.duration,
       coverImageUrl: events.coverImageUrl,
+      publishedAt: events.publishedAt,
+      publishedById: events.publishedById,
     })
     .from(events)
-    .where(eq(events.organizationId, organizationId))
+    .where(checks)
     .limit(options.limit)
     .offset(options.offset);
 }
@@ -92,6 +110,8 @@ async function updateEvent(
     startTimestamp?: Date | null;
     duration?: string | null;
     coverImageUrl?: string | null;
+    publishedAt?: Date | null;
+    publishedById?: string | null;
   },
 ) {
   const updated = await db
@@ -109,6 +129,8 @@ async function updateEvent(
       startTimestamp: events.startTimestamp,
       duration: events.duration,
       coverImageUrl: events.coverImageUrl,
+      publishedAt: events.publishedAt,
+      publishedById: events.publishedById,
     });
 
   return updated.length > 0 ? updated[0] : null;

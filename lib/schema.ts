@@ -246,6 +246,10 @@ export const events = pgTable(
     startTimestamp: timestamp("start_timestamp"),
     duration: interval("duration"),
     coverImageUrl: text("cover_image_url"),
+    publishedAt: timestamp("published_at"),
+    publishedById: text("published_by_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
   },
   (table) => [index("events_organizationId_idx").on(table.organizationId)],
 );
