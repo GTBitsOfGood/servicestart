@@ -12,6 +12,28 @@ const mediaItems = Array.from({ length: 10 }, (_, index) => ({
 const filterItems = ["Type", "Tags", "Date"] as const;
 const navItems = ["Menu Item", "Menu Item", "Menu Item"] as const;
 
+function DropdownArrow({
+  color,
+  className,
+}: {
+  color: "white" | "black";
+  className?: string;
+}) {
+  return (
+    <svg
+      width="12"
+      height="6"
+      viewBox="0 0 12 6"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M6 6L12 0H0L6 6Z" fill={color} />
+    </svg>
+  );
+}
+
 function FilterChip({ label }: { label: string }) {
   return (
     <button
@@ -19,7 +41,7 @@ function FilterChip({ label }: { label: string }) {
       className="inline-flex h-11 items-center gap-3 rounded-xl bg-[var(--color-grey-text-strong)] px-6 text-paragraph-2 text-[var(--color-media-inverse)]"
     >
       <span>{label}</span>
-      <CaretDown size={14} weight="bold" />
+      <DropdownArrow color="white" />
     </button>
   );
 }
@@ -175,7 +197,7 @@ export default async function MediaPage() {
                   className="inline-flex h-11 items-center gap-8 rounded-xl border border-[var(--color-grey-stroke-strong)] bg-[var(--color-media-surface-soft)] px-5 text-paragraph-2"
                 >
                   <span>Date</span>
-                  <CaretDown size={14} weight="bold" />
+                  <DropdownArrow color="black" />
                 </button>
               </div>
             </div>
