@@ -35,6 +35,21 @@
   --color-status-red-fill: #c73a3a0d;
   --color-solid-bg-sunken: #f9f9f9;
   --color-solid-bg-base: #ffffff;
+  --color-media-page-bg: #f7f7f7;
+  --color-media-divider: #d8d8d8;
+  --color-media-surface: #ececec;
+  --color-media-surface-soft: #f5f5f5;
+  --color-media-border: #cfcdcd;
+  --color-media-inverse: #ffffff;
+  --color-media-inverse-strong: #ffffffe0;
+  --color-media-inverse-weak: #ffffff99;
+  --color-media-avatar: #d1d1d1;
+  --color-media-shadow: #f59a8e;
+  --color-media-muted: #726f6f;
+  --color-media-upload-bg: #2b2629bf;
+  --color-media-upload-border: #000000;
+  --color-media-upload-hover-bg: #325ce880;
+  --color-media-upload-hover-border: #325ce8;
 
   --text-desktop-display: 48px;
   --text-desktop-heading-1: 40px;
