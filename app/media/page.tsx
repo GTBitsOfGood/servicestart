@@ -68,7 +68,7 @@ function FilterChip({ label }: { label: string }) {
 
 function MediaCard({ name }: { name: string }) {
   return (
-    <article className="flex min-h-[18.1rem] flex-col rounded-2xl border border-[var(--color-media-border)] bg-[var(--color-media-surface)] p-3 shadow-[0_1px_0_0_var(--color-media-border)]">
+    <article className="flex h-full flex-col rounded-2xl border border-[var(--color-media-border)] bg-[var(--color-media-surface)] p-3 shadow-[0_1px_0_0_var(--color-media-border)]">
       <div className="min-h-[13.3rem] rounded-xl bg-[var(--color-media-surface-soft)]" />
       <p className="mt-2 text-paragraph-2 font-semibold text-[var(--color-grey-text-strong)]">
         {name}
@@ -81,7 +81,7 @@ function UploadCard() {
   return (
     <button
       type="button"
-      className="flex min-h-[18.1rem] w-full flex-col items-center justify-center rounded-2xl border border-[var(--color-media-upload-border)] bg-[var(--color-media-upload-bg)] px-8 py-6 text-center text-[var(--color-media-inverse)] hover:border-[var(--color-media-upload-hover-border)] hover:bg-[var(--color-media-upload-hover-bg)]"
+      className="flex h-full w-full flex-col items-center justify-center rounded-2xl border border-[var(--color-media-upload-border)] bg-[var(--color-media-upload-bg)] px-8 py-6 text-center text-[var(--color-media-inverse)] hover:border-[var(--color-media-upload-hover-border)] hover:bg-[var(--color-media-upload-hover-bg)]"
     >
       <div className="mb-4 flex items-center justify-center">
         <svg
@@ -91,6 +91,7 @@ function UploadCard() {
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           className="h-[10.4rem] w-[8.4rem]"
+          aria-hidden="true"
         >
           <path
             d="M59.0571 111.201V26.0332M81.6611 47.132L59.0571 24.606L36.4531 47.132M35.6602 123.393H82.454"
@@ -234,7 +235,7 @@ export default async function MediaPage() {
           </div>
 
           <div className="lg:px-4">
-            <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-6">
+            <div className="grid auto-rows-[19rem] grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-6">
               <div className="sm:col-span-2 lg:col-span-2">
                 <UploadCard />
               </div>

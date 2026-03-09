@@ -37,9 +37,10 @@
   --color-solid-bg-base: #ffffff;
   --color-media-page-bg: #f7f7f7;
   --color-media-divider: #d8d8d8;
-  --color-media-surface: #e9e8e8;
+  --color-media-surface: #ececec;
+  --color-media-surface-strong: #6b6767;
   --color-media-surface-soft: #f5f5f5;
-  --color-media-border: #70636559;
+  --color-media-border: #cfcdcd;
   --color-media-inverse: #ffffff;
   --color-media-inverse-strong: #ffffffe0;
   --color-media-inverse-weak: #ffffff99;
