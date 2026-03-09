@@ -23,3 +23,4 @@ ALTER TABLE "message_recipients" ADD CONSTRAINT "message_recipients_message_id_m
 ALTER TABLE "message_recipients" ADD CONSTRAINT "message_recipients_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "messages" ADD CONSTRAINT "messages_organization_id_organizations_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "organizations"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "messages" ADD CONSTRAINT "messages_sender_id_users_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "users"("id") ON DELETE CASCADE;
+ALTER TABLE "messages" ALTER COLUMN "id" SET DEFAULT md5(random()::text || clock_timestamp()::text);

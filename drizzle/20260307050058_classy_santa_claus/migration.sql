@@ -1,1 +1,1 @@
-ALTER TABLE "messages" ALTER COLUMN "id" SET DEFAULT md5(random()::text || clock_timestamp()::text);
+-- ALTER TABLE "messages" ALTER COLUMN "id" SET DEFAULT md5(random()::text || clock_timestamp()::text);
