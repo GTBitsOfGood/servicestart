@@ -1,8 +1,8 @@
-ALTER TYPE "notification_type" ADD VALUE 'action_required';--> statement-breakpoint
-ALTER TYPE "notification_type" ADD VALUE 'reminder';--> statement-breakpoint
-ALTER TYPE "notification_type" ADD VALUE 'members';--> statement-breakpoint
-ALTER TYPE "notification_type" ADD VALUE 'schedule_update';--> statement-breakpoint
-ALTER TYPE "notification_type" ADD VALUE 'confirmation';--> statement-breakpoint
+ALTER TYPE "notification_type" ADD VALUE IF NOT EXISTS 'action_required';--> statement-breakpoint
+ALTER TYPE "notification_type" ADD VALUE IF NOT EXISTS 'reminder';--> statement-breakpoint
+ALTER TYPE "notification_type" ADD VALUE IF NOT EXISTS 'members';--> statement-breakpoint
+ALTER TYPE "notification_type" ADD VALUE IF NOT EXISTS 'schedule_update';--> statement-breakpoint
+ALTER TYPE "notification_type" ADD VALUE IF NOT EXISTS 'confirmation';--> statement-breakpoint
 CREATE TABLE "message_recipients" (
 	"message_id" text NOT NULL,
 	"user_id" text NOT NULL
