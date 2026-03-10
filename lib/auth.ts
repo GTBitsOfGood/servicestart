@@ -2,17 +2,30 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware, organization } from "better-auth/plugins";
 import db from "@/lib/db";
-import { createJoinRequestIfNeeded } from "@/lib/authUtils";
+import { afterUserCreated } from "@/lib/authUtils";
 import { headers } from "next/headers";
 import { getSlugFromHost } from "./clientAuthUtils";
-import { sessions } from "./schema";
-import { eq } from "drizzle-orm";
+import { eventRsvps, events, sessions, shiftRSVPs, shifts } from "./schema";
+import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
 import { EmailService } from "@/lib/services/EmailService";
 import { getBaseUrl } from "./clientUtils";
 
 export const auth = betterAuth({
   plugins: [
     organization({
+      async sendInvitationEmail(data) {
+        await EmailService.sendInvitationEmail({
+          id: data.id,
+          email: data.email,
+          organization: data.organization,
+          inviter: data.inviter,
+          invitation: data.invitation as unknown as {
+            expiresAt: Date;
+            role: string;
+            name: string;
+          },
+        });
+      },
       organizationHooks: {
         afterCreateOrganization: async ({ organization }) => {
           await EmailService.registerOrganizationSender({
@@ -20,6 +33,48 @@ export const auth = betterAuth({
             organizationName: organization.name,
             organizationSlug: organization.slug,
           });
+        },
+        beforeRemoveMember: async ({ member }) => {
+          const now = new Date();
+
+          await Promise.all([
+            db.delete(eventRsvps).where(
+              and(
+                eq(eventRsvps.userId, member.userId),
+                inArray(
+                  eventRsvps.eventId,
+                  db
+                    .select({ id: events.id })
+                    .from(events)
+                    .where(
+                      and(
+                        eq(events.organizationId, member.organizationId),
+                        gt(events.startTimestamp, now),
+                        isNotNull(events.startTimestamp),
+                      ),
+                    ),
+                ),
+              ),
+            ),
+
+            db.delete(shiftRSVPs).where(
+              and(
+                eq(shiftRSVPs.userId, member.userId),
+                inArray(
+                  shiftRSVPs.shiftId,
+                  db
+                    .select({ id: shifts.id })
+                    .from(shifts)
+                    .where(
+                      and(
+                        eq(shifts.organizationId, member.organizationId),
+                        gt(shifts.startTimestamp, now),
+                      ),
+                    ),
+                ),
+              ),
+            ),
+          ]);
         },
       },
       schema: {
@@ -34,6 +89,15 @@ export const auth = betterAuth({
               type: "string",
               input: true,
               required: false,
+            },
+          },
+        },
+        invitation: {
+          additionalFields: {
+            name: {
+              type: "string",
+              input: true,
+              required: true,
             },
           },
         },
@@ -69,25 +133,11 @@ export const auth = betterAuth({
     enabled: true,
   },
   databaseHooks: {
-    user: {
-      create: {
-        after: async (user, context) => {
-          const headers = context?.headers;
-          const host =
-            headers?.get?.("host") ??
-            (headers as Record<string, string> | undefined)?.host;
-          await createJoinRequestIfNeeded(user.id, host);
-        },
-      },
-    },
     session: {
       create: {
         after: async (session, context) => {
           const headers = context?.headers;
-          const host =
-            headers?.get?.("host") ??
-            (headers as Record<string, string> | undefined)?.host;
-          await createJoinRequestIfNeeded(session.userId, host);
+          await afterUserCreated(session.userId, headers);
         },
       },
     },
@@ -97,10 +147,7 @@ export const auth = betterAuth({
           const session = ctx.context.session;
           if (session?.user) {
             const headers = ctx?.headers;
-            const host =
-              headers?.get?.("host") ??
-              (headers as Record<string, string> | undefined)?.host;
-            await createJoinRequestIfNeeded(session.user.id, host);
+            await afterUserCreated(session.user.id, headers);
           }
         }
       }),

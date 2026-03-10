@@ -6,6 +6,18 @@ import { EventService } from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
 import { paginationQuerySchema } from "../lib/apiUtils";
+import { ForbiddenError } from "@/lib/errors";
+
+export const eventsQuerySchema = paginationQuerySchema.extend({
+  published: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((val) => {
+      if (val === "true") return true;
+      if (val === "false") return false;
+      return undefined;
+    }),
+});
 
 const app = new Hono()
   .post(
@@ -19,6 +31,7 @@ const app = new Hono()
         duration: z.string().nullable().optional(),
         description: z.string().nullable().optional(),
         coverImageUrl: z.string().nullable().optional(),
+        published: z.boolean().default(false),
       }),
     ),
     async (c) => {
@@ -40,13 +53,13 @@ const app = new Hono()
       );
 
       if (!MembersService.isAdminOrOwner(membership?.role)) {
-        return c.json(
-          { error: "Forbidden: Admin or owner role required" },
-          { status: 403 },
-        );
+        throw new ForbiddenError();
       }
 
       const data = c.req.valid("json");
+      const publishedAt = data.published ? new Date() : null;
+      const publishedById = data.published ? session.user.id : null;
+
       const event = await EventService.create(
         activeOrganizationId,
         data.name,
@@ -55,6 +68,8 @@ const app = new Hono()
         data.duration ?? null,
         data.description ?? null,
         data.coverImageUrl ?? null,
+        publishedAt,
+        publishedById,
       );
 
       if (!event) {
@@ -64,7 +79,7 @@ const app = new Hono()
       return c.json(event);
     },
   )
-  .get("/", zValidator("query", paginationQuerySchema), async (c) => {
+  .get("/", zValidator("query", eventsQuerySchema), async (c) => {
     const session = await auth.api.getSession({
       headers: c.req.header(),
     });
@@ -78,7 +93,41 @@ const app = new Hono()
       return c.json({ error: "No active organization" }, { status: 403 });
     }
 
-    const { page, pageSize } = c.req.valid("query");
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      activeOrganizationId,
+    );
+
+    if (!MembersService.isAdminOrOwner(membership?.role)) {
+      const { page, pageSize } = c.req.valid("query");
+      const eventsList = await EventService.listByOrganization(
+        activeOrganizationId,
+        { limit: pageSize, offset: (page - 1) * pageSize },
+        true,
+      );
+
+      return c.json({
+        data: eventsList,
+        page,
+        pageSize,
+      });
+    }
+
+    const { page, pageSize, published } = c.req.valid("query");
+    if (published !== undefined) {
+      const eventsList = await EventService.listByOrganization(
+        activeOrganizationId,
+        { limit: pageSize, offset: (page - 1) * pageSize },
+        published,
+      );
+
+      return c.json({
+        data: eventsList,
+        page,
+        pageSize,
+      });
+    }
+
     const eventsList = await EventService.listByOrganization(
       activeOrganizationId,
       { limit: pageSize, offset: (page - 1) * pageSize },
@@ -111,6 +160,18 @@ const app = new Hono()
       return c.json({ error: "Event not found" }, { status: 404 });
     }
 
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      activeOrganizationId,
+    );
+
+    if (
+      event.publishedAt == null &&
+      !MembersService.isAdminOrOwner(membership?.role)
+    ) {
+      return c.json({ error: "Event not found" }, { status: 404 });
+    }
+
     return c.json(event);
   })
   .get(
@@ -133,6 +194,18 @@ const app = new Hono()
 
       const event = await EventService.findById(eventId);
       if (!event || event.organizationId !== activeOrganizationId) {
+        return c.json({ error: "Event not found" }, { status: 404 });
+      }
+
+      const membership = await MembersService.findByUserAndOrganization(
+        session.user.id,
+        activeOrganizationId,
+      );
+
+      if (
+        event.publishedAt == null &&
+        !MembersService.isAdminOrOwner(membership?.role)
+      ) {
         return c.json({ error: "Event not found" }, { status: 404 });
       }
 
@@ -164,6 +237,7 @@ const app = new Hono()
         startTimestamp: z.string().nullable().optional(),
         duration: z.string().nullable().optional(),
         coverImageUrl: z.string().nullable().optional(),
+        published: z.boolean().optional(),
       }),
     ),
     async (c) => {
@@ -187,10 +261,7 @@ const app = new Hono()
       );
 
       if (!MembersService.isAdminOrOwner(membership?.role)) {
-        return c.json(
-          { error: "Forbidden: Admin or owner role required" },
-          { status: 403 },
-        );
+        throw new ForbiddenError();
       }
 
       const event = await EventService.findById(eventId);
@@ -206,6 +277,8 @@ const app = new Hono()
         startTimestamp?: Date | null;
         duration?: string | null;
         coverImageUrl?: string | null;
+        publishedAt?: Date | null;
+        publishedById?: string | null;
       } = {};
 
       if (data.name !== undefined) updates.name = data.name;
@@ -223,6 +296,19 @@ const app = new Hono()
       }
       if (data.coverImageUrl !== undefined) {
         updates.coverImageUrl = data.coverImageUrl;
+      }
+      if (data.published !== undefined) {
+        if (event.publishedAt == null) {
+          if (data.published) {
+            updates.publishedAt = new Date();
+            updates.publishedById = session.user.id;
+          }
+        } else {
+          if (!data.published) {
+            updates.publishedAt = null;
+            updates.publishedById = null;
+          }
+        }
       }
 
       const updated = await EventService.updateEvent(
@@ -259,10 +345,7 @@ const app = new Hono()
     );
 
     if (!MembersService.isAdminOrOwner(membership?.role)) {
-      return c.json(
-        { error: "Forbidden: Admin or owner role required" },
-        { status: 403 },
-      );
+      throw new ForbiddenError();
     }
 
     const deleted = await EventService.deleteById(
@@ -304,20 +387,24 @@ const app = new Hono()
         return c.json({ error: "Event not found" }, { status: 404 });
       }
 
+      const membership = await MembersService.findByUserAndOrganization(
+        session.user.id,
+        activeOrganizationId,
+      );
+
+      if (
+        event.publishedAt == null &&
+        !MembersService.isAdminOrOwner(membership?.role)
+      ) {
+        return c.json({ error: "Event not found" }, { status: 404 });
+      }
+
       const { userId } = c.req.valid("query");
       const targetUserId = userId ?? session.user.id;
 
       if (userId && userId !== session.user.id) {
-        const callerMembership = await MembersService.findByUserAndOrganization(
-          session.user.id,
-          activeOrganizationId,
-        );
-
-        if (!MembersService.isAdminOrOwner(callerMembership?.role)) {
-          return c.json(
-            { error: "Forbidden: Admin or owner role required" },
-            { status: 403 },
-          );
+        if (!MembersService.isAdminOrOwner(membership?.role)) {
+          throw new ForbiddenError();
         }
       }
 
@@ -370,20 +457,24 @@ const app = new Hono()
         return c.json({ error: "Event not found" }, { status: 404 });
       }
 
+      const membership = await MembersService.findByUserAndOrganization(
+        session.user.id,
+        activeOrganizationId,
+      );
+
+      if (
+        event.publishedAt == null &&
+        !MembersService.isAdminOrOwner(membership?.role)
+      ) {
+        return c.json({ error: "Event not found" }, { status: 404 });
+      }
+
       const { userId } = c.req.valid("query");
       const targetUserId = userId ?? session.user.id;
 
       if (userId && userId !== session.user.id) {
-        const callerMembership = await MembersService.findByUserAndOrganization(
-          session.user.id,
-          activeOrganizationId,
-        );
-
-        if (!MembersService.isAdminOrOwner(callerMembership?.role)) {
-          return c.json(
-            { error: "Forbidden: Admin or owner role required" },
-            { status: 403 },
-          );
+        if (!MembersService.isAdminOrOwner(membership?.role)) {
+          throw new ForbiddenError();
         }
       }
 

@@ -1,10 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 import db from "@/lib/db";
 import { notifications, NotificationType, members } from "@/lib/schema";
 import { MembersService } from "@/lib/services/MemberService";
 
-const ADMIN_ROLES = ["admin", "owner"] as const;
+const ADMIN_ROLES = ["admin", "owner"];
+
+export type NotificationReadFilter = "all" | "read" | "unread";
 
 async function createForUserIds(
   userIds: string[],
@@ -67,15 +69,22 @@ async function notifyAllMembers(organizationId: string, text: string) {
 async function listByUserAndOrganization(
   userId: string,
   organizationId: string,
-  read: boolean,
+  read: NotificationReadFilter,
   type: NotificationType | undefined,
   options: { limit: number; offset: number },
 ) {
   const conditions = [
     eq(notifications.userId, userId),
     eq(notifications.organizationId, organizationId),
-    eq(notifications.read, read),
   ];
+
+  if (read === "read") {
+    conditions.push(eq(notifications.read, true));
+  }
+
+  if (read === "unread") {
+    conditions.push(eq(notifications.read, false));
+  }
 
   if (type) {
     conditions.push(eq(notifications.type, type));
@@ -98,11 +107,40 @@ async function listByUserAndOrganization(
     .offset(options.offset);
 }
 
+async function countByUserAndOrganization(
+  userId: string,
+  organizationId: string,
+  read: boolean,
+  type: NotificationType | undefined,
+) {
+  const conditions = [
+    eq(notifications.userId, userId),
+    eq(notifications.organizationId, organizationId),
+    eq(notifications.read, read),
+  ];
+
+  if (type) {
+    conditions.push(eq(notifications.type, type));
+  }
+
+  const [row] = await db
+    .select({ count: count() })
+    .from(notifications)
+    .where(and(...conditions));
+
+  return Number(row?.count ?? 0);
+}
+
 async function findById(notificationId: string) {
   const [notification] = await db
     .select({
       id: notifications.id,
       userId: notifications.userId,
+      organizationId: notifications.organizationId,
+      createdAt: notifications.createdAt,
+      read: notifications.read,
+      type: notifications.type,
+      text: notifications.text,
     })
     .from(notifications)
     .where(eq(notifications.id, notificationId))
@@ -129,13 +167,38 @@ async function updateReadStatus(notificationId: string, status: boolean) {
   return updated ?? null;
 }
 
+async function markAllRead(userId: string, organizationId: string) {
+  await db
+    .update(notifications)
+    .set({ read: true })
+    .where(
+      and(
+        eq(notifications.userId, userId),
+        eq(notifications.organizationId, organizationId),
+        eq(notifications.read, false),
+      ),
+    );
+}
+
+async function deleteNotification(notificationId: string) {
+  const [deleted] = await db
+    .delete(notifications)
+    .where(eq(notifications.id, notificationId))
+    .returning({ id: notifications.id });
+
+  return deleted ?? null;
+}
+
 export const NotificationService = {
   notify,
   notifyAdmins,
   notifyAllMembers,
   listByUserAndOrganization,
+  countByUserAndOrganization,
   findById,
   updateReadStatus,
+  markAllRead,
+  deleteNotification,
 };
 
 export default NotificationService;

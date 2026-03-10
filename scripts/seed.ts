@@ -1,7 +1,10 @@
 import "dotenv/config"; //must be first to load environment variables
+import { randomUUID } from "node:crypto";
 import { schema } from "../lib/schema";
 import db from "../lib/db";
 import { auth } from "@/lib/auth";
+import { OrganizationConfigKey, NotificationType } from "@/lib/schema";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { DEFAULT_TEST_PASSWORD } from "@/tests/unit/testUtils";
 
 const isTest = require.main !== module; // Check if the script is being run directly or imported in tests
@@ -12,20 +15,69 @@ function log(...args: unknown[]) {
   }
 }
 
+type NavbarConfig = {
+  variant: string;
+  color: string;
+};
+
+const ORGS: Array<{
+  id: string;
+  name: string;
+  slug: string;
+  navbar: NavbarConfig;
+}> = [
+  {
+    id: "org_servicestart",
+    name: "ServiceStart",
+    slug: "servicestart",
+    navbar: { variant: "vertical-sidebar", color: "red" },
+  },
+  {
+    id: "org_vertical_icon",
+    name: "Vertical Icon Org",
+    slug: "vertical-icon",
+    navbar: { variant: "vertical-icon", color: "white" },
+  },
+  {
+    id: "org_horizontal_left",
+    name: "Horizontal Left Org",
+    slug: "horizontal-left",
+    navbar: { variant: "horizontal-left", color: "red" },
+  },
+  {
+    id: "org_horizontal_center",
+    name: "Horizontal Center Org",
+    slug: "horizontal-center",
+    navbar: { variant: "horizontal-center", color: "white" },
+  },
+];
+
 export async function main() {
   log("Seeding database...");
 
-  const orgId = "org_servicestart";
-  await db
-    .insert(schema.organizations)
-    .values({
-      id: orgId,
-      name: "ServiceStart",
-      slug: "servicestart",
-    })
-    .onConflictDoNothing();
+  for (const org of ORGS) {
+    await db
+      .insert(schema.organizations)
+      .values({
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+      })
+      .onConflictDoNothing();
 
-  log("Organization created or already exists.");
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.NavbarVariant,
+      org.navbar.variant,
+    );
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.NavbarColor,
+      org.navbar.color,
+    );
+  }
+
+  log("Organizations created with navbar configs.");
 
   const usersData = [
     {
@@ -81,19 +133,26 @@ export async function main() {
       );
 
     if (userData.role) {
-      await db
-        .insert(schema.members)
-        .values({
-          id: `member_${res.user.id}`,
-          userId: res.user.id,
-          organizationId: orgId,
-          role: userData.role,
-        })
-        .onConflictDoNothing();
+      for (const org of ORGS) {
+        await db
+          .insert(schema.members)
+          .values({
+            id: `member_${res.user.id}_${org.id}`,
+            userId: res.user.id,
+            organizationId: org.id,
+            role: userData.role,
+          })
+          .onConflictDoNothing();
+      }
     }
   }
 
   log("Users and members created.");
+  log(
+    "Navbar configs by org: servicestart (vertical sidebar, red), vertical-icon (vertical icon, white), horizontal-left (horizontal left, red), horizontal-center (horizontal center, white). Sign in and switch active org to test different navbar configs.",
+  );
+
+  const orgId = "org_servicestart";
 
   const eventsData = [
     {
@@ -169,6 +228,130 @@ export async function main() {
   }
 
   log("RSVPs created.");
+
+  const notificationTemplates: Array<{
+    type: NotificationType;
+    text: string;
+    read: boolean;
+    minutesAgo: number;
+  }> = [
+    {
+      type: NotificationType.ActionRequired,
+      text: "You have a pending RSVP for Event 1. Please confirm your attendance.",
+      read: false,
+      minutesAgo: 8,
+    },
+    {
+      type: NotificationType.Announcement,
+      text: "Welcome to the spring semester! Check out our new schedule and upcoming events.",
+      read: false,
+      minutesAgo: 120,
+    },
+    {
+      type: NotificationType.Confirmation,
+      text: "Your RSVP for Event 2 has been confirmed. See you there!",
+      read: true,
+      minutesAgo: 1380,
+    },
+    {
+      type: NotificationType.Confirmation,
+      text: "Your profile update has been saved successfully.",
+      read: true,
+      minutesAgo: 1440,
+    },
+    {
+      type: NotificationType.Reminder,
+      text: "Event 3 is tomorrow at Bits of Good. Don't forget to attend!",
+      read: false,
+      minutesAgo: 10080,
+    },
+    {
+      type: NotificationType.Members,
+      text: "A new member has joined the organization. Say hello!",
+      read: true,
+      minutesAgo: 20160,
+    },
+    {
+      type: NotificationType.ScheduleUpdate,
+      text: "Event 4 has been rescheduled to a new time. Please check the updated schedule.",
+      read: false,
+      minutesAgo: 43200,
+    },
+    {
+      type: NotificationType.General,
+      text: "Weekly digest: You have 3 upcoming events this month.",
+      read: true,
+      minutesAgo: 4320,
+    },
+    {
+      type: NotificationType.ActionRequired,
+      text: "Please complete your profile by adding a phone number.",
+      read: true,
+      minutesAgo: 60,
+    },
+    {
+      type: NotificationType.Announcement,
+      text: "Volunteer signups for the campus cleanup are now open. Sign up before spots fill!",
+      read: false,
+      minutesAgo: 360,
+    },
+    {
+      type: NotificationType.Reminder,
+      text: "Don't forget: team meeting this Friday at 3 PM.",
+      read: true,
+      minutesAgo: 2880,
+    },
+    {
+      type: NotificationType.ScheduleUpdate,
+      text: "The location for Event 5 has changed to the Student Center Room 201.",
+      read: false,
+      minutesAgo: 7200,
+    },
+    {
+      type: NotificationType.Members,
+      text: "Member Two updated their role preferences. Review the changes.",
+      read: true,
+      minutesAgo: 15000,
+    },
+    {
+      type: NotificationType.General,
+      text: "Reminder: organization dues are due by the end of the month.",
+      read: false,
+      minutesAgo: 30,
+    },
+  ];
+
+  const memberEmails = [
+    "owner@example.com",
+    "admin@example.com",
+    "member1@example.com",
+    "member2@example.com",
+  ];
+
+  for (const email of memberEmails) {
+    const res = await auth.api.signInEmail({
+      body: { email, password: DEFAULT_TEST_PASSWORD },
+    });
+
+    for (const org of ORGS) {
+      const notificationValues = notificationTemplates.map((tmpl) => ({
+        id: randomUUID(),
+        userId: res.user.id,
+        organizationId: org.id,
+        type: tmpl.type,
+        text: tmpl.text,
+        read: tmpl.read,
+        createdAt: new Date(Date.now() - tmpl.minutesAgo * 60 * 1000),
+      }));
+
+      await db
+        .insert(schema.notifications)
+        .values(notificationValues)
+        .onConflictDoNothing();
+    }
+  }
+
+  log("Notifications created.");
   log("Seeding completed successfully.");
 }
 
