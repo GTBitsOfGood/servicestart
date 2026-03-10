@@ -1,1 +1,0 @@
-ALTER TYPE "organization_config_key" ADD VALUE 'members_page_enabled';
