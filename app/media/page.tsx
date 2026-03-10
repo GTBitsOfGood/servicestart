@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
+import MediaCard from "@/components/MediaCard";
 import MediaUploadCard from "@/components/MediaUploadCard";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
@@ -11,9 +12,6 @@ const unreadNotifications = 5;
 const typeOptions = ["Videos", "Images", "Documents", "All"] as const;
 const dateOptions = ["Today", "Last Week", "Last Month", "All Time"] as const;
 const sortOptions = ["Oldest to Newest", "Newest to Oldest", "A-Z"] as const;
-type MediaItem = Awaited<
-  ReturnType<typeof MediaService.listByOrganization>
->[number];
 
 function FilterSelect({
   label,
@@ -54,27 +52,6 @@ function FilterSelect({
         />
       </span>
     </div>
-  );
-}
-
-function MediaCard({ item }: { item: MediaItem }) {
-  const previewUrl = item.type === "image" ? `/images/${item.id}` : null;
-
-  return (
-    <article className="flex h-full flex-col rounded-2xl border border-media-border bg-media-surface p-3 shadow-sm">
-      <div className="min-h-[13.3rem] overflow-hidden rounded-xl bg-media-surface-soft">
-        {previewUrl ? (
-          <img
-            src={previewUrl}
-            alt={item.altText}
-            className="h-full w-full object-cover"
-          />
-        ) : null}
-      </div>
-      <p className="mt-2 text-paragraph-2 font-semibold text-grey-text-strong">
-        {item.title}
-      </p>
-    </article>
   );
 }
 
@@ -163,7 +140,7 @@ export default async function MediaPage() {
                   <BogIcon
                     name="bell"
                     size={23}
-                    className="h-[2.4rem] w-[2.3rem] text-grey-text-strong"
+                    className="text-grey-text-strong"
                   />
                   {unreadNotifications > 0 ? (
                     <span className="absolute right-[-0.1rem] top-[0.1rem] flex h-7 min-w-7 items-center justify-center rounded-full border border-media-notification-border bg-media-notification-bg px-1.5 text-[1.1rem] font-semibold leading-none text-media-inverse">
