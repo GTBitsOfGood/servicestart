@@ -3,14 +3,16 @@ import { redirect } from "next/navigation";
 import { CaretDown } from "@phosphor-icons/react/dist/ssr";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
-
-const mediaItems = [];
+import { MediaService } from "@/lib/services/MediaService";
 
 const navItems = ["Menu Item", "Menu Item", "Menu Item"] as const;
 const unreadNotifications = 5;
 const typeOptions = ["Videos", "Images", "Documents", "All"] as const;
 const dateOptions = ["Today", "Last Week", "Last Month", "All Time"] as const;
 const sortOptions = ["Oldest to Newest", "Newest to Oldest", "A-Z"] as const;
+type MediaItem = Awaited<
+  ReturnType<typeof MediaService.listByOrganization>
+>[number];
 
 function DropdownArrow({
   color,
@@ -69,7 +71,7 @@ function FilterSelect({
       <select
         aria-label={label}
         defaultValue=""
-        className={`h-11 appearance-none rounded-xl border px-5 pr-12 text-paragraph-2 ${
+        className={`h-11 min-w-[12.6rem] appearance-none rounded-xl border px-4 pr-10 text-paragraph-2 ${
           isDark
             ? "border-[var(--color-grey-text-strong)] bg-[var(--color-grey-text-strong)] text-[var(--color-media-inverse)]"
             : "border-[var(--color-grey-stroke-strong)] bg-[var(--color-media-surface-soft)] text-[var(--color-grey-text-strong)]"
@@ -84,19 +86,29 @@ function FilterSelect({
           </option>
         ))}
       </select>
-      <span className="pointer-events-none absolute inset-y-0 right-5 flex items-center">
+      <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center">
         <DropdownArrow color={isDark ? "white" : "black"} />
       </span>
     </div>
   );
 }
 
-function MediaCard({ name }: { name: string }) {
+function MediaCard({ item }: { item: MediaItem }) {
+  const previewUrl = item.type === "image" ? `/images/${item.id}` : null;
+
   return (
     <article className="flex h-full flex-col rounded-2xl border border-[var(--color-media-border)] bg-[var(--color-media-surface)] p-3 shadow-[0_1px_0_0_var(--color-media-border)]">
-      <div className="min-h-[13.3rem] rounded-xl bg-[var(--color-media-surface-soft)]" />
+      <div className="min-h-[13.3rem] overflow-hidden rounded-xl bg-[var(--color-media-surface-soft)]">
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt={item.altText}
+            className="h-full w-full object-cover"
+          />
+        ) : null}
+      </div>
       <p className="mt-2 text-paragraph-2 font-semibold text-[var(--color-grey-text-strong)]">
-        {name}
+        {item.title}
       </p>
     </article>
   );
@@ -206,6 +218,14 @@ export default async function MediaPage() {
     redirect("/");
   }
 
+  const mediaItems = await MediaService.listByOrganization(
+    activeOrganizationId,
+    {
+      limit: 24,
+      offset: 0,
+    },
+  );
+
   const hasMedia = mediaItems.length > 0;
 
   return (
@@ -307,7 +327,7 @@ export default async function MediaPage() {
                   <UploadCard />
                 </div>
                 {mediaItems.map((item) => (
-                  <MediaCard key={item.id} name={item.name} />
+                  <MediaCard key={item.id} item={item} />
                 ))}
               </div>
             </div>
