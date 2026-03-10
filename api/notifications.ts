@@ -9,14 +9,7 @@ import { NotificationType } from "@/lib/schema";
 
 const notificationsQuerySchema = paginationQuerySchema.and(
   z.object({
-    read: z
-      .string()
-      .or(z.boolean())
-      .optional()
-      .transform((val) => {
-        if (typeof val === "boolean") return val;
-        return val === "true";
-      }),
+    read: z.enum(["all", "read", "unread"]).default("unread"),
     type: z.enum(NotificationType).optional(),
   }),
 );
@@ -26,17 +19,31 @@ const updateReadStatusSchema = z.object({
 });
 
 const app = new Hono()
+  .get("/unreadCount", async (c) => {
+    const session = await requireMembership(c);
+    const activeOrganizationId = session.session.activeOrganizationId!;
+
+    const count = await NotificationService.countByUserAndOrganization(
+      session.user.id,
+      activeOrganizationId,
+      false,
+      undefined,
+    );
+
+    return c.json({ count });
+  })
   .get("/", zValidator("query", notificationsQuerySchema), async (c) => {
     const session = await requireMembership(c);
 
     const activeOrganizationId = session.session.activeOrganizationId!;
 
     const { page, pageSize, read, type } = c.req.valid("query");
+
     const data = await NotificationService.listByUserAndOrganization(
       session.user.id,
       activeOrganizationId,
       read,
-      type as NotificationType | undefined,
+      type,
       { limit: pageSize, offset: (page - 1) * pageSize },
     );
 
@@ -46,30 +53,82 @@ const app = new Hono()
       pageSize,
     });
   })
-  .patch("/:id", zValidator("json", updateReadStatusSchema), async (c) => {
-    // pulling session info and verifying user is a member of active organization
+  .get("/:id", async (c) => {
     const session = await requireMembership(c);
+    const activeOrganizationId = session.session.activeOrganizationId!;
+    const { id } = c.req.param();
 
-    // getting notification id from request params
+    const notification = await NotificationService.findById(id);
+
+    if (!notification) {
+      return c.json({ error: "Notification not found" }, 404);
+    }
+
+    if (
+      notification.userId !== session.user.id ||
+      notification.organizationId !== activeOrganizationId
+    ) {
+      throw new ForbiddenError();
+    }
+
+    return c.json(notification);
+  })
+  .post("/markAllRead", async (c) => {
+    const session = await requireMembership(c);
+    const activeOrganizationId = session.session.activeOrganizationId!;
+
+    await NotificationService.markAllRead(
+      session.user.id,
+      activeOrganizationId,
+    );
+
+    return c.json({ success: true });
+  })
+  .patch("/:id", zValidator("json", updateReadStatusSchema), async (c) => {
+    const session = await requireMembership(c);
+    const activeOrganizationId = session.session.activeOrganizationId!;
+
     const { id } = c.req.param();
     const { read } = c.req.valid("json");
 
-    // checking if notification exists
     const notification = await NotificationService.findById(id);
 
-    // if notification not found, return not found
     if (!notification) {
-      return c.notFound();
+      return c.json({ error: "Notification not found" }, 404);
     }
 
-    // if notification does not belong to the user, return forbidden
-    if (notification.userId !== session.user.id) {
+    if (
+      notification.userId !== session.user.id ||
+      notification.organizationId !== activeOrganizationId
+    ) {
       throw new ForbiddenError();
     }
 
     const updated = await NotificationService.updateReadStatus(id, read);
 
     return c.json(updated);
+  })
+  .delete("/:id", async (c) => {
+    const session = await requireMembership(c);
+    const activeOrganizationId = session.session.activeOrganizationId!;
+    const { id } = c.req.param();
+
+    const notification = await NotificationService.findById(id);
+
+    if (!notification) {
+      return c.json({ error: "Notification not found" }, 404);
+    }
+
+    if (
+      notification.userId !== session.user.id ||
+      notification.organizationId !== activeOrganizationId
+    ) {
+      throw new ForbiddenError();
+    }
+
+    await NotificationService.deleteNotification(id);
+
+    return c.json({ success: true });
   });
 
 export default app;
