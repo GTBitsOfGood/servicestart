@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { CaretDown } from "@phosphor-icons/react/dist/ssr";
+import MediaUploadCard from "@/components/MediaUploadCard";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
 import { MediaService } from "@/lib/services/MediaService";
@@ -111,87 +112,6 @@ function MediaCard({ item }: { item: MediaItem }) {
         {item.title}
       </p>
     </article>
-  );
-}
-
-function UploadCard() {
-  return (
-    <button
-      type="button"
-      className="flex h-full w-full flex-col items-center justify-center rounded-2xl border border-[var(--color-media-upload-border)] bg-[var(--color-media-upload-bg)] px-8 py-6 text-center text-[var(--color-media-inverse)] hover:border-[var(--color-media-upload-hover-border)] hover:bg-[var(--color-media-upload-hover-bg)]"
-    >
-      <div className="mb-4 flex items-center justify-center">
-        <svg
-          width="119"
-          height="148"
-          viewBox="0 0 119 148"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-[10.4rem] w-[8.4rem]"
-          aria-hidden="true"
-        >
-          <path
-            d="M59.0571 111.201V26.0332M81.6611 47.132L59.0571 24.606L36.4531 47.132M35.6602 123.393H82.454"
-            stroke="white"
-            strokeWidth="5.19932"
-            strokeMiterlimit="10"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-      <p className="text-paragraph-1 font-semibold text-[var(--color-media-inverse)]">
-        Choose a file to upload
-      </p>
-      <p className="text-paragraph-2 text-[var(--color-media-inverse-strong)]">
-        or drag a file here
-      </p>
-      <p className="text-small text-[var(--color-media-inverse-weak)]">
-        .png, .jpg, .pdf, .jpeg
-      </p>
-    </button>
-  );
-}
-
-function EmptyUploadCard() {
-  return (
-    <button
-      type="button"
-      className="group mx-auto flex min-h-[63rem] w-full max-w-[80rem] flex-col items-center justify-center rounded-[3rem] border-2 border-[var(--color-media-empty-upload-border)] bg-[var(--color-media-empty-upload-bg)] px-10 py-12 text-center text-[var(--color-media-empty-upload-text)] hover:bg-[var(--color-media-empty-upload-hover-bg)] hover:text-[var(--color-media-empty-upload-hover-text)]"
-    >
-      <p className="mb-12 text-heading-1 text-[6.4rem] leading-[1] text-[var(--color-media-empty-upload-text)] group-hover:text-[var(--color-media-empty-upload-hover-text)]">
-        Let&apos;s get started!
-      </p>
-      <div className="mb-10 flex items-center justify-center">
-        <svg
-          width="119"
-          height="148"
-          viewBox="0 0 119 148"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-[15rem] w-[12rem]"
-          aria-hidden="true"
-        >
-          <path
-            d="M59.0571 111.201V26.0332M81.6611 47.132L59.0571 24.606L36.4531 47.132M35.6602 123.393H82.454"
-            className="stroke-[var(--color-media-empty-upload-text)] group-hover:stroke-[var(--color-media-empty-upload-hover-text)]"
-            strokeWidth="5.19932"
-            strokeMiterlimit="10"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-      <p className="text-heading-3 font-semibold text-[var(--color-media-empty-upload-text)] group-hover:text-[var(--color-media-empty-upload-hover-text)]">
-        Choose a file to upload
-      </p>
-      <p className="text-heading-4 font-normal text-[var(--color-media-empty-upload-text)] group-hover:text-[var(--color-media-empty-upload-hover-text)]">
-        or drag a file here
-      </p>
-      <p className="mt-4 text-paragraph-2 text-[var(--color-media-empty-upload-text)] group-hover:text-[var(--color-media-empty-upload-hover-text)]">
-        .png, .jpg, .pdf, .jpeg
-      </p>
-    </button>
   );
 }
 
@@ -324,7 +244,7 @@ export default async function MediaPage() {
             <div className="lg:px-4">
               <div className="grid auto-rows-[19rem] grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-6">
                 <div className="sm:col-span-2 lg:col-span-2">
-                  <UploadCard />
+                  <MediaUploadCard variant="grid" />
                 </div>
                 {mediaItems.map((item) => (
                   <MediaCard key={item.id} item={item} />
@@ -333,7 +253,7 @@ export default async function MediaPage() {
             </div>
           ) : (
             <div className="pt-12 lg:pt-16">
-              <EmptyUploadCard />
+              <MediaUploadCard variant="empty" />
             </div>
           )}
         </div>
