@@ -35,12 +35,6 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
     requireAdmin: true,
     requireConfig: OrganizationConfigKey.MembersPageEnabled,
   },
-  {
-    label: "Media Library",
-    href: "/media",
-    icon: "folder",
-    requireAdmin: true,
-  },
   { label: "Inbox", href: "/inbox", icon: "bell" },
 ];
 
