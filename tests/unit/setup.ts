@@ -13,6 +13,8 @@ import {
   events,
   eventRsvps,
   media,
+  messages,
+  messageRecipients,
 } from "@/lib/schema";
 import { beforeAll, beforeEach, afterAll } from "vitest";
 import { execSync } from "child_process";
@@ -59,6 +61,8 @@ beforeEach(async () => {
   // Child tables first, then parent tables
   // Add line here when you create a new table
   await db.delete(media);
+  await db.delete(messageRecipients);
+  await db.delete(messages);
   await db.delete(eventRsvps);
   await db.delete(events);
   await db.delete(shiftRSVPs);

@@ -1,4 +1,4 @@
-import { defineRelations } from "drizzle-orm";
+import { defineRelations, sql } from "drizzle-orm";
 import {
   pgEnum,
   pgTable,
@@ -359,6 +359,43 @@ export const media = pgTable(
   (table) => [index("media_fileName_idx").on(table.fileName)],
 );
 
+export const messages = pgTable(
+  "messages",
+  {
+    id: text("id")
+      .primaryKey()
+      .default(sql`md5(random()::text || clock_timestamp()::text)`),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    senderId: text("sender_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    subject: text("subject").notNull(),
+    body: jsonb("body").notNull(),
+    sentAt: timestamp("sent_at").defaultNow().notNull(),
+  },
+  (table) => [index("messages_organizationId_idx").on(table.organizationId)],
+);
+
+export const messageRecipients = pgTable(
+  "message_recipients",
+  {
+    messageId: text("message_id")
+      .notNull()
+      .references(() => messages.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    {
+      pk: primaryKey({ columns: [table.messageId, table.userId] }),
+    },
+    index("message_recipients_userId_idx").on(table.userId),
+  ],
+);
+
 export const notifications = pgTable(
   "notifications",
   {
@@ -400,6 +437,8 @@ export const relations = defineRelations(
     shiftRSVPs,
     organizationConfig,
     media,
+    messages,
+    messageRecipients,
     notifications,
   },
   (r) => ({
@@ -415,6 +454,14 @@ export const relations = defineRelations(
       rsvps: r.many.shiftRSVPs({
         from: r.users.id,
         to: r.shiftRSVPs.userId,
+      }),
+      sentMessages: r.many.messages({
+        from: r.users.id,
+        to: r.messages.senderId,
+      }),
+      messageRecipients: r.many.messageRecipients({
+        from: r.users.id,
+        to: r.messageRecipients.userId,
       }),
       notifications: r.many.notifications({
         from: r.users.id,
@@ -435,6 +482,10 @@ export const relations = defineRelations(
       media: r.many.media({
         from: r.organizations.id,
         to: r.media.organizationId,
+      }),
+      messages: r.many.messages({
+        from: r.organizations.id,
+        to: r.messages.organizationId,
       }),
       notifications: r.many.notifications({
         from: r.organizations.id,
@@ -542,6 +593,30 @@ export const relations = defineRelations(
         to: r.organizations.id,
       }),
     },
+    messages: {
+      organizations: r.one.organizations({
+        from: r.messages.organizationId,
+        to: r.organizations.id,
+      }),
+      sender: r.one.users({
+        from: r.messages.senderId,
+        to: r.users.id,
+      }),
+      recipients: r.many.messageRecipients({
+        from: r.messages.id,
+        to: r.messageRecipients.messageId,
+      }),
+    },
+    messageRecipients: {
+      message: r.one.messages({
+        from: r.messageRecipients.messageId,
+        to: r.messages.id,
+      }),
+      user: r.one.users({
+        from: r.messageRecipients.userId,
+        to: r.users.id,
+      }),
+    },
     notifications: {
       users: r.one.users({
         from: r.notifications.userId,
@@ -571,5 +646,7 @@ export const schema = {
   shiftRSVPs,
   organizationConfig,
   media,
+  messages,
+  messageRecipients,
   notifications,
 };
