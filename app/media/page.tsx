@@ -31,10 +31,10 @@ function FilterSelect({
       <select
         aria-label={label}
         defaultValue=""
-        className={`h-11 min-w-[12.6rem] appearance-none rounded-xl border px-4 pr-10 text-paragraph-2 ${
+        className={`h-11 min-w-52 appearance-none rounded-xl border px-4 pr-10 text-paragraph-2 ${
           isDark
-            ? "border-[var(--color-grey-text-strong)] bg-[var(--color-grey-text-strong)] text-[var(--color-media-inverse)]"
-            : "border-[var(--color-grey-stroke-strong)] bg-[var(--color-media-surface-soft)] text-[var(--color-grey-text-strong)]"
+            ? "border-grey-text-strong bg-grey-text-strong text-media-inverse"
+            : "border-grey-stroke-strong bg-media-surface-soft text-grey-text-strong"
         }`}
       >
         <option value="" disabled>
@@ -61,8 +61,8 @@ function MediaCard({ item }: { item: MediaItem }) {
   const previewUrl = item.type === "image" ? `/images/${item.id}` : null;
 
   return (
-    <article className="flex h-full flex-col rounded-2xl border border-[var(--color-media-border)] bg-[var(--color-media-surface)] p-3 shadow-[0_1px_0_0_var(--color-media-border)]">
-      <div className="min-h-[13.3rem] overflow-hidden rounded-xl bg-[var(--color-media-surface-soft)]">
+    <article className="flex h-full flex-col rounded-2xl border border-media-border bg-media-surface p-3 shadow-sm">
+      <div className="min-h-[13.3rem] overflow-hidden rounded-xl bg-media-surface-soft">
         {previewUrl ? (
           <img
             src={previewUrl}
@@ -71,7 +71,7 @@ function MediaCard({ item }: { item: MediaItem }) {
           />
         ) : null}
       </div>
-      <p className="mt-2 text-paragraph-2 font-semibold text-[var(--color-grey-text-strong)]">
+      <p className="mt-2 text-paragraph-2 font-semibold text-grey-text-strong">
         {item.title}
       </p>
     </article>
@@ -112,15 +112,13 @@ export default async function MediaPage() {
   const hasMedia = mediaItems.length > 0;
 
   return (
-    <main className="min-h-screen bg-[var(--color-media-page-bg)] text-[var(--color-grey-text-strong)]">
-      <header className="border-b border-[var(--color-media-divider)] bg-[var(--color-media-page-bg)]">
+    <main className="min-h-screen bg-media-page-bg text-grey-text-strong">
+      <header className="border-b border-media-divider bg-media-page-bg">
         <div className="mx-auto flex max-w-[144rem] items-center justify-between gap-8 px-8 py-6 md:px-12 lg:px-16">
           <div className="flex items-center gap-4">
             <div className="h-15 w-15 rounded-full bg-[var(--color-brand-text)] shadow-[0_4px_14px_0_var(--color-media-shadow)]" />
             <div className="leading-none">
-              <p className="text-small text-[var(--color-grey-text-weak)]">
-                bits of good
-              </p>
+              <p className="text-small text-grey-text-weak">bits of good</p>
               <p className="text-heading-4 text-[var(--color-brand-text)]">
                 sunset
               </p>
@@ -134,8 +132,8 @@ export default async function MediaPage() {
                 href="#"
                 className={`text-paragraph-1 ${
                   index === 0
-                    ? "font-semibold text-[var(--color-grey-text-strong)]"
-                    : "text-[var(--color-grey-text-weak)]"
+                    ? "font-semibold text-grey-text-strong"
+                    : "text-grey-text-weak"
                 }`}
               >
                 {item}
@@ -146,14 +144,12 @@ export default async function MediaPage() {
           <div className="flex items-center gap-6">
             <div className="hidden items-center gap-16 md:flex">
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-[var(--color-media-avatar)]" />
+                <div className="h-12 w-12 rounded-full bg-media-avatar" />
                 <div className="leading-tight">
                   <p className="text-paragraph-2 font-semibold">
                     Firstname Last
                   </p>
-                  <p className="text-small text-[var(--color-grey-text-weak)]">
-                    Admin
-                  </p>
+                  <p className="text-small text-grey-text-weak">Admin</p>
                 </div>
               </div>
 
@@ -167,10 +163,10 @@ export default async function MediaPage() {
                   <BogIcon
                     name="bell"
                     size={23}
-                    className="h-[2.4rem] w-[2.3rem] text-[var(--color-grey-text-strong)]"
+                    className="h-[2.4rem] w-[2.3rem] text-grey-text-strong"
                   />
                   {unreadNotifications > 0 ? (
-                    <span className="absolute right-[-0.1rem] top-[0.1rem] flex h-7 min-w-7 items-center justify-center rounded-full border border-[var(--color-media-notification-border)] bg-[var(--color-media-notification-bg)] px-1.5 text-[1.1rem] font-semibold leading-none text-[var(--color-media-inverse)]">
+                    <span className="absolute right-[-0.1rem] top-[0.1rem] flex h-7 min-w-7 items-center justify-center rounded-full border border-media-notification-border bg-media-notification-bg px-1.5 text-[1.1rem] font-semibold leading-none text-media-inverse">
                       {unreadNotifications}
                     </span>
                   ) : null}
@@ -184,7 +180,7 @@ export default async function MediaPage() {
       <section className="mx-auto max-w-[152rem] px-8 py-10 md:px-10 lg:px-12 lg:py-14">
         <div className="flex flex-col gap-8">
           <div className="mb-4 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-            <h1 className="text-heading-1 text-[4.8rem] leading-[1] text-[var(--color-grey-text-strong)]">
+            <h1 className="text-heading-1 text-[4.8rem] leading-[1] text-grey-text-strong">
               Media Gallery
             </h1>
 
@@ -195,7 +191,7 @@ export default async function MediaPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-paragraph-1 font-normal text-[var(--color-grey-text-strong)]">
+                <span className="text-paragraph-1 font-normal text-grey-text-strong">
                   Sort by
                 </span>
                 <FilterSelect
