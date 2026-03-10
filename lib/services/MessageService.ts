@@ -58,10 +58,16 @@ async function createAndSend(input: MessageCreateInput) {
   );
 
   if (textBody && recipientUserIds.length > 0) {
+    const content: Array<{ type: "text/plain" | "text/html"; value: string }> =
+      [{ type: "text/plain", value: textBody }];
+
+    if (htmlBody) {
+      content.push({ type: "text/html", value: htmlBody });
+    }
+
     await EmailService.emailMembers(input.organizationId, {
       subject: input.subject,
-      textBody,
-      htmlBody,
+      content,
     });
   }
 
