@@ -6,9 +6,11 @@ import { MembersService } from "@/lib/services/MemberService";
 
 const mediaItems = [];
 
-const filterItems = ["Type", "Date"] as const;
 const navItems = ["Menu Item", "Menu Item", "Menu Item"] as const;
 const unreadNotifications = 5;
+const typeOptions = ["Videos", "Images", "Documents", "All"] as const;
+const dateOptions = ["Today", "Last Week", "Last Month", "All Time"] as const;
+const sortOptions = ["Oldest to Newest", "Newest to Oldest", "A-Z"] as const;
 
 function DropdownArrow({
   color,
@@ -51,15 +53,41 @@ function NotificationBell() {
   );
 }
 
-function FilterChip({ label }: { label: string }) {
+function FilterSelect({
+  label,
+  options,
+  variant = "dark",
+}: {
+  label: string;
+  options: readonly string[];
+  variant?: "dark" | "light";
+}) {
+  const isDark = variant === "dark";
+
   return (
-    <button
-      type="button"
-      className="inline-flex h-11 items-center gap-3 rounded-xl bg-[var(--color-grey-text-strong)] px-6 text-paragraph-2 text-[var(--color-media-inverse)]"
-    >
-      <span>{label}</span>
-      <DropdownArrow color="white" />
-    </button>
+    <div className="relative inline-flex">
+      <select
+        aria-label={label}
+        defaultValue=""
+        className={`h-11 appearance-none rounded-xl border px-5 pr-12 text-paragraph-2 ${
+          isDark
+            ? "border-[var(--color-grey-text-strong)] bg-[var(--color-grey-text-strong)] text-[var(--color-media-inverse)]"
+            : "border-[var(--color-grey-stroke-strong)] bg-[var(--color-media-surface-soft)] text-[var(--color-grey-text-strong)]"
+        }`}
+      >
+        <option value="" disabled>
+          {label}
+        </option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+      <span className="pointer-events-none absolute inset-y-0 right-5 flex items-center">
+        <DropdownArrow color={isDark ? "white" : "black"} />
+      </span>
+    </div>
   );
 }
 
@@ -255,22 +283,19 @@ export default async function MediaPage() {
 
             <div className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-10">
               <div className="flex flex-wrap gap-10">
-                {filterItems.map((item) => (
-                  <FilterChip key={item} label={item} />
-                ))}
+                <FilterSelect label="Type" options={typeOptions} />
+                <FilterSelect label="Date" options={dateOptions} />
               </div>
 
               <div className="flex items-center gap-3">
                 <span className="text-paragraph-1 font-normal text-[var(--color-grey-text-strong)]">
                   Sort by
                 </span>
-                <button
-                  type="button"
-                  className="inline-flex h-11 items-center gap-8 rounded-xl border border-[var(--color-grey-stroke-strong)] bg-[var(--color-media-surface-soft)] px-5 text-paragraph-2"
-                >
-                  <span>Date</span>
-                  <DropdownArrow color="black" />
-                </button>
+                <FilterSelect
+                  label="Date"
+                  options={sortOptions}
+                  variant="light"
+                />
               </div>
             </div>
           </div>
