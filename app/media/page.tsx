@@ -7,8 +7,6 @@ import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
 import { MediaService } from "@/lib/services/MediaService";
 
-const navItems = ["Menu Item", "Menu Item", "Menu Item"] as const;
-const unreadNotifications = 5;
 const typeOptions = ["Videos", "Images", "Documents", "All"] as const;
 const dateOptions = ["Today", "Last Week", "Last Month", "All Time"] as const;
 const sortOptions = ["Oldest to Newest", "Newest to Oldest", "A-Z"] as const;
@@ -89,71 +87,7 @@ export default async function MediaPage() {
   const hasMedia = mediaItems.length > 0;
 
   return (
-    <main className="min-h-screen bg-media-page-bg text-grey-text-strong">
-      <header className="border-b border-media-divider bg-media-page-bg">
-        <div className="mx-auto flex max-w-[144rem] items-center justify-between gap-8 px-8 py-6 md:px-12 lg:px-16">
-          <div className="flex items-center gap-4">
-            <div className="h-15 w-15 rounded-full bg-[var(--color-brand-text)] shadow-[0_4px_14px_0_var(--color-media-shadow)]" />
-            <div className="leading-none">
-              <p className="text-small text-grey-text-weak">bits of good</p>
-              <p className="text-heading-4 text-[var(--color-brand-text)]">
-                sunset
-              </p>
-            </div>
-          </div>
-
-          <nav className="hidden items-center gap-12 lg:flex">
-            {navItems.map((item, index) => (
-              <a
-                key={`${item}-${index}`}
-                href="#"
-                className={`text-paragraph-1 ${
-                  index === 0
-                    ? "font-semibold text-grey-text-strong"
-                    : "text-grey-text-weak"
-                }`}
-              >
-                {item}
-              </a>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-6">
-            <div className="hidden items-center gap-16 md:flex">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-media-avatar" />
-                <div className="leading-tight">
-                  <p className="text-paragraph-2 font-semibold">
-                    Firstname Last
-                  </p>
-                  <p className="text-small text-grey-text-weak">Admin</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-6">
-                <BogIcon name="caret-down" size={16} weight="bold" />
-                <button
-                  type="button"
-                  className="relative flex h-12 w-12 items-center justify-center rounded-full"
-                  aria-label={`${unreadNotifications} unread notifications`}
-                >
-                  <BogIcon
-                    name="bell"
-                    size={23}
-                    className="text-grey-text-strong"
-                  />
-                  {unreadNotifications > 0 ? (
-                    <span className="absolute right-[-0.1rem] top-[0.1rem] flex h-7 min-w-7 items-center justify-center rounded-full border border-media-notification-border bg-media-notification-bg px-1.5 text-[1.1rem] font-semibold leading-none text-media-inverse">
-                      {unreadNotifications}
-                    </span>
-                  ) : null}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-full bg-media-page-bg text-grey-text-strong">
       <section className="mx-auto max-w-[152rem] px-8 py-10 md:px-10 lg:px-12 lg:py-14">
         <div className="flex flex-col gap-8">
           <div className="mb-4 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
@@ -198,6 +132,6 @@ export default async function MediaPage() {
           )}
         </div>
       </section>
-    </main>
+    </div>
   );
 }

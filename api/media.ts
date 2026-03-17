@@ -21,6 +21,7 @@ const postMediaBodySchema = z.object({
 });
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const BLOCKED_IMAGE_TYPES = new Set(["image/svg+xml"]);
 
 function buildStoredFileName(originalName: string) {
   const extension = path.extname(originalName).toLowerCase();
@@ -71,9 +72,9 @@ const app = new Hono()
       );
     }
 
-    if (!file.type.startsWith("image/")) {
+    if (!file.type.startsWith("image/") || BLOCKED_IMAGE_TYPES.has(file.type)) {
       return c.json(
-        { error: "Only image uploads are supported right now" },
+        { error: "Only raster image uploads are supported right now" },
         { status: 400 },
       );
     }

@@ -8,7 +8,8 @@ type MediaUploadCardProps = {
 };
 
 const ACCEPTED_IMAGE_TYPES =
-  "image/png,image/jpeg,image/jpg,image/gif,image/webp,image/svg+xml";
+  "image/png,image/jpeg,image/jpg,image/gif,image/webp";
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 
 function GridUploadArrow() {
   return (
@@ -63,6 +64,11 @@ export default function MediaUploadCard({ variant }: MediaUploadCardProps) {
   const [error, setError] = useState<string | null>(null);
 
   async function uploadFile(file: File) {
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setError("Image must be 10 MB or smaller");
+      return;
+    }
+
     setIsUploading(true);
     setError(null);
 
