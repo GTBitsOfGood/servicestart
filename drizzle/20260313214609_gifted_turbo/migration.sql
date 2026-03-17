@@ -5,4 +5,15 @@
 ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "published_at" timestamp;--> statement-breakpoint
 ALTER TABLE "events" ADD COLUMN IF NOT EXISTS "published_by_id" text;--> statement-breakpoint
 -- ALTER TABLE "announcements" ALTER COLUMN "content" SET DATA TYPE jsonb USING "content"::jsonb;--> statement-breakpoint
+DO $$
+BEGIN
+
+  BEGIN
 ALTER TABLE "events" ADD CONSTRAINT "events_published_by_id_users_id_fkey" FOREIGN KEY ("published_by_id") REFERENCES "users"("id") ON DELETE CASCADE;
+  EXCEPTION
+    WHEN duplicate_table THEN  -- postgres raises duplicate_table at surprising times. Ex.: for UNIQUE constraints.
+    WHEN duplicate_object THEN  -- postgres raises duplicate_object when the constraint already exists.
+    THEN RAISE NOTICE 'Constraint "events_published_by_id_users_id_fkey" already exists, skipping.';
+  END;
+
+END $$;
