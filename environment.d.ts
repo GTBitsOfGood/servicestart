@@ -8,6 +8,9 @@ export declare global {
       NEXT_PUBLIC_BASE_URL: string | undefined;
       NEXT_PUBLIC_PROD_URL: string | undefined;
       FILE_STORAGE_DIR: string;
+      JUNO_API_KEY: string;
+      JUNO_BASE_URL: string;
+      SENDGRID_KEY: string;
     }
   }
 }
