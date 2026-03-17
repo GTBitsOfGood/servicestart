@@ -27,6 +27,8 @@ jobs:
 
       - name: Create database
         run: |
+          psql "${{ secrets.DB_URL }}/postgres" -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'pr${{ github.event.number }}' AND pid <> pg_backend_pid();"
+          psql "${{ secrets.DB_URL }}/postgres" -c 'drop database if exists "pr${{ github.event.number }}";'
           psql "${{ secrets.DB_URL }}/postgres" -c 'create database "pr${{ github.event.number }}";'
       - name: Migrate database
         run: pnpm run db:migrate
