@@ -18,7 +18,7 @@ function GridUploadArrow() {
       viewBox="0 0 119 148"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="h-[10.4rem] w-[8.4rem]"
+      className="h-28 w-20"
       aria-hidden="true"
     >
       <path
@@ -41,12 +41,12 @@ function EmptyUploadArrow() {
       viewBox="0 0 119 148"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="h-[15rem] w-[12rem]"
+      className="h-40 w-32"
       aria-hidden="true"
     >
       <path
         d="M59.0571 111.201V26.0332M81.6611 47.132L59.0571 24.606L36.4531 47.132M35.6602 123.393H82.454"
-        className="stroke-[var(--color-media-empty-upload-text)] group-hover:stroke-[var(--color-media-empty-upload-hover-text)]"
+        className="stroke-media-empty-upload-text group-hover:stroke-media-empty-upload-hover-text"
         strokeWidth="5.19932"
         strokeMiterlimit="10"
         strokeLinecap="round"
@@ -116,7 +116,7 @@ export default function MediaUploadCard({ variant }: MediaUploadCardProps) {
 
   if (variant === "empty") {
     return (
-      <div className="mx-auto w-full max-w-[80rem]">
+      <div className="mx-auto w-full max-w-5xl">
         <input
           ref={inputRef}
           type="file"
@@ -130,26 +130,26 @@ export default function MediaUploadCard({ variant }: MediaUploadCardProps) {
           onDragOver={(event) => event.preventDefault()}
           onDrop={handleDrop}
           disabled={isUploading}
-          className="group flex min-h-[63rem] w-full flex-col items-center justify-center rounded-[3rem] border-2 border-[var(--color-media-empty-upload-border)] bg-[var(--color-media-empty-upload-bg)] px-10 py-12 text-center text-[var(--color-media-empty-upload-text)] hover:bg-[var(--color-media-empty-upload-hover-bg)] hover:text-[var(--color-media-empty-upload-hover-text)] disabled:cursor-wait"
+          className="group flex w-full flex-col items-center justify-center rounded-[3rem] border-2 border-media-empty-upload-border bg-media-empty-upload-bg px-10 py-20 text-center text-media-empty-upload-text hover:bg-media-empty-upload-hover-bg hover:text-media-empty-upload-hover-text disabled:cursor-wait"
         >
-          <p className="mb-12 text-heading-1 text-[6.4rem] leading-[1] text-[var(--color-media-empty-upload-text)] group-hover:text-[var(--color-media-empty-upload-hover-text)]">
+          <p className="mb-12 text-heading-1 text-[6.4rem] leading-[1] text-media-empty-upload-text group-hover:text-media-empty-upload-hover-text">
             Let&apos;s get started!
           </p>
           <div className="mb-10 flex items-center justify-center">
             <EmptyUploadArrow />
           </div>
-          <p className="text-heading-3 font-semibold text-[var(--color-media-empty-upload-text)] group-hover:text-[var(--color-media-empty-upload-hover-text)]">
+          <p className="text-heading-3 font-semibold text-media-empty-upload-text group-hover:text-media-empty-upload-hover-text">
             {isUploading ? "Uploading image..." : "Choose a file to upload"}
           </p>
-          <p className="text-heading-4 font-normal text-[var(--color-media-empty-upload-text)] group-hover:text-[var(--color-media-empty-upload-hover-text)]">
+          <p className="text-heading-4 font-normal text-media-empty-upload-text group-hover:text-media-empty-upload-hover-text">
             or drag a file here
           </p>
-          <p className="mt-4 text-paragraph-2 text-[var(--color-media-empty-upload-text)] group-hover:text-[var(--color-media-empty-upload-hover-text)]">
+          <p className="mt-4 text-paragraph-2 text-media-empty-upload-text group-hover:text-media-empty-upload-hover-text">
             .png, .jpg, .pdf, .jpeg
           </p>
         </button>
         {error ? (
-          <p className="mt-4 text-center text-paragraph-2 text-[var(--color-status-red-text)]">
+          <p className="mt-4 text-center text-paragraph-2 text-status-red-text">
             {error}
           </p>
         ) : null}
@@ -172,23 +172,23 @@ export default function MediaUploadCard({ variant }: MediaUploadCardProps) {
         onDragOver={(event) => event.preventDefault()}
         onDrop={handleDrop}
         disabled={isUploading}
-        className="flex h-full w-full flex-col items-center justify-center rounded-2xl border border-[var(--color-media-upload-border)] bg-[var(--color-media-upload-bg)] px-8 py-6 text-center text-[var(--color-media-inverse)] hover:border-[var(--color-media-upload-hover-border)] hover:bg-[var(--color-media-upload-hover-bg)] disabled:cursor-wait"
+        className="flex h-full w-full flex-col items-center justify-center rounded-2xl border border-media-upload-border bg-media-upload-bg px-8 py-6 text-center text-media-inverse hover:border-media-upload-hover-border hover:bg-media-upload-hover-bg disabled:cursor-wait"
       >
         <div className="mb-4 flex items-center justify-center">
           <GridUploadArrow />
         </div>
-        <p className="text-paragraph-1 font-semibold text-[var(--color-media-inverse)]">
+        <p className="text-paragraph-1 font-semibold text-media-inverse">
           {isUploading ? "Uploading image..." : "Choose a file to upload"}
         </p>
-        <p className="text-paragraph-2 text-[var(--color-media-inverse-strong)]">
+        <p className="text-paragraph-2 text-media-inverse-strong">
           or drag a file here
         </p>
-        <p className="text-small text-[var(--color-media-inverse-weak)]">
+        <p className="text-small text-media-inverse-weak">
           .png, .jpg, .pdf, .jpeg
         </p>
       </button>
       {error ? (
-        <p className="mt-3 text-center text-small text-[var(--color-status-red-text)]">
+        <p className="mt-3 text-center text-small text-status-red-text">
           {error}
         </p>
       ) : null}
