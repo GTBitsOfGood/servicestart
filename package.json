@@ -6,7 +6,7 @@
     "build": "next build",
     "build:netlify": "NEXT_PUBLIC_BRANCH_NAME=$BRANCH NEXT_PUBLIC_BASE_URL=$DEPLOY_PRIME_URL NEXT_PUBLIC_PROD_URL=$URL pnpm run build",
     "start": "next start",
-    "test": "pnpm run db:test:start && vitest run; pnpm run db:test:stop",
+    "test": "pnpm run db:test:start && vitest run && pnpm run db:test:stop",
     "test:e2e": "pnpm exec playwright install --with-deps && DB_URL=postgres://test:root@localhost:5433/postgres pnpm exec playwright test --pass-with-no-tests",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings=0",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",

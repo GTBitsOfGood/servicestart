@@ -111,7 +111,7 @@ describe("POST /api/media", () => {
       headers: new Headers(headers),
     });
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(201);
     const data = (await response.json()) as Record<string, unknown>;
     expect(data.id).toBeDefined();
     expect(data.title).toBe("My Photo");

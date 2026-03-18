@@ -230,6 +230,7 @@ export async function createEvent(
     startTimestamp?: Date | null;
     duration?: string | null;
     coverImageUrl?: string | null;
+    publishedAt?: Date | null;
   } = {},
 ) {
   const id = randomUUID();
@@ -242,6 +243,7 @@ export async function createEvent(
     startTimestamp: opts.startTimestamp ?? null,
     duration: opts.duration ?? null,
     coverImageUrl: opts.coverImageUrl ?? null,
+    publishedAt: opts.publishedAt ?? new Date(),
   });
   return id;
 }

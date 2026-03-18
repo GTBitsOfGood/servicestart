@@ -13,7 +13,7 @@ describe("OrganizationConfigService - members_page_enabled", () => {
         OrganizationConfigKey.MembersPageEnabled,
       ]);
 
-      expect(config[OrganizationConfigKey.MembersPageEnabled]).toBe("true");
+      expect(config[OrganizationConfigKey.MembersPageEnabled]).toBe(true);
     });
 
     it("returns stored value after setConfig", async () => {
@@ -29,7 +29,7 @@ describe("OrganizationConfigService - members_page_enabled", () => {
         OrganizationConfigKey.MembersPageEnabled,
       ]);
 
-      expect(config[OrganizationConfigKey.MembersPageEnabled]).toBe("false");
+      expect(config[OrganizationConfigKey.MembersPageEnabled]).toBe(false);
     });
   });
 
@@ -46,7 +46,7 @@ describe("OrganizationConfigService - members_page_enabled", () => {
       const config = await OrganizationConfigService.getConfig(org.id, [
         OrganizationConfigKey.MembersPageEnabled,
       ]);
-      expect(config[OrganizationConfigKey.MembersPageEnabled]).toBe("true");
+      expect(config[OrganizationConfigKey.MembersPageEnabled]).toBe(true);
     });
 
     it("sets value to 'false'", async () => {
@@ -61,7 +61,7 @@ describe("OrganizationConfigService - members_page_enabled", () => {
       const config = await OrganizationConfigService.getConfig(org.id, [
         OrganizationConfigKey.MembersPageEnabled,
       ]);
-      expect(config[OrganizationConfigKey.MembersPageEnabled]).toBe("false");
+      expect(config[OrganizationConfigKey.MembersPageEnabled]).toBe(false);
     });
 
     it("updates existing value (upsert)", async () => {
@@ -81,7 +81,7 @@ describe("OrganizationConfigService - members_page_enabled", () => {
       const config = await OrganizationConfigService.getConfig(org.id, [
         OrganizationConfigKey.MembersPageEnabled,
       ]);
-      expect(config[OrganizationConfigKey.MembersPageEnabled]).toBe("true");
+      expect(config[OrganizationConfigKey.MembersPageEnabled]).toBe(true);
     });
 
     it("throws for invalid value", async () => {
@@ -113,8 +113,8 @@ describe("OrganizationConfigService - members_page_enabled", () => {
         OrganizationConfigKey.MembersPageEnabled,
       ]);
 
-      expect(config1[OrganizationConfigKey.MembersPageEnabled]).toBe("false");
-      expect(config2[OrganizationConfigKey.MembersPageEnabled]).toBe("true");
+      expect(config1[OrganizationConfigKey.MembersPageEnabled]).toBe(false);
+      expect(config2[OrganizationConfigKey.MembersPageEnabled]).toBe(true);
     });
   });
 });
