@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { zValidator } from "@hono/zod-validator";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
@@ -17,6 +19,18 @@ const postMediaBodySchema = z.object({
   title: z.string().optional(),
   altText: z.string().default(""),
 });
+
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const BLOCKED_IMAGE_TYPES = new Set(["image/svg+xml"]);
+
+function buildStoredFileName(originalName: string) {
+  const extension = path.extname(originalName).toLowerCase();
+  return `${randomUUID()}${extension}`;
+}
+
+function buildTitle(originalName: string) {
+  return path.basename(originalName, path.extname(originalName));
+}
 
 const app = new Hono()
   .post("/", async (c) => {
@@ -58,6 +72,20 @@ const app = new Hono()
       );
     }
 
+    if (!file.type.startsWith("image/") || BLOCKED_IMAGE_TYPES.has(file.type)) {
+      return c.json(
+        { error: "Only raster image uploads are supported right now" },
+        { status: 400 },
+      );
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      return c.json(
+        { error: "Image must be 10 MB or smaller" },
+        { status: 400 },
+      );
+    }
+
     const parsed = postMediaBodySchema.safeParse({
       title: body["title"],
       altText: body["altText"],
@@ -66,9 +94,10 @@ const app = new Hono()
       return c.json({ error: parsed.error.message }, { status: 400 });
     }
 
-    const title = parsed.data.title ?? file.name ?? "Untitled";
+    const title =
+      parsed.data.title ?? buildTitle(file.name) ?? "Untitled image";
     const altText = parsed.data.altText;
-    const fileName = file.name ?? `upload-${Date.now()}`;
+    const fileName = buildStoredFileName(file.name ?? `upload-${Date.now()}`);
 
     const mediaInput = {
       organizationId: activeOrganizationId,
@@ -81,7 +110,7 @@ const app = new Hono()
     try {
       await FileService.upload(mediaInput, file);
       const media = await MediaService.create(mediaInput);
-      return c.json(media);
+      return c.json(media, { status: 201 });
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to upload file";
