@@ -1,0 +1,1 @@
+ALTER TABLE "join_requests" ADD COLUMN "denial_reason" text;

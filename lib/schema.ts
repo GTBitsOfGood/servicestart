@@ -227,6 +227,7 @@ export const joinRequests = pgTable(
       .references(() => organizations.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     status: joinRequestStatusEnum("status").notNull(),
+    denialReason: text("denial_reason"),
   },
   (table) => [
     index("join_request_organizationId_idx").on(table.organizationId),
