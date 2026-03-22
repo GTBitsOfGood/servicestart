@@ -6,6 +6,9 @@ import { requireMembership } from "@/lib/authUtils";
 import { ForbiddenError } from "@/lib/errors";
 import { NotificationService } from "@/lib/services/NotificationService";
 import { NotificationType } from "@/lib/schema";
+import { JoinRequestsService } from "@/lib/services/JoinRequestService";
+import { JoinRequestStatus } from "@/lib/schema";
+import { auth } from "@/lib/auth";
 
 const notificationsQuerySchema = paginationQuerySchema.and(
   z.object({
@@ -127,6 +130,73 @@ const app = new Hono()
     }
 
     await NotificationService.deleteNotification(id);
+    return c.json({ success: true });
+  })
+  .post("/:id/approve", async (c) => {
+    const session = await requireMembership(c);
+    const activeOrganizationId = session.session.activeOrganizationId!;
+    const { id: notificationId } = c.req.param();
+
+    const notification = await NotificationService.findById(notificationId);
+    if (!notification) return c.json({ error: "Notification not found" }, 404);
+
+    if (
+      notification.userId !== session.user.id ||
+      notification.organizationId !== activeOrganizationId
+    ) {
+      throw new ForbiddenError();
+    }
+
+    const joinRequest = await JoinRequestsService.findByUserAndOrganization(
+      notification.userId,
+      activeOrganizationId,
+    );
+    if (!joinRequest) return c.json({ error: "Join request not found" }, 404);
+
+    await JoinRequestsService.updateStatus(
+      joinRequest.id,
+      JoinRequestStatus.Approved,
+    );
+
+    await auth.api.addMember({
+      body: {
+        organizationId: activeOrganizationId,
+        userId: notification.userId,
+        role: "member",
+      },
+    });
+
+    await NotificationService.updateReadStatus(notificationId, true);
+
+    return c.json({ success: true });
+  })
+  .post("/:id/deny", async (c) => {
+    const session = await requireMembership(c);
+    const activeOrganizationId = session.session.activeOrganizationId!;
+    const { id: notificationId } = c.req.param();
+
+    const notification = await NotificationService.findById(notificationId);
+    if (!notification) return c.json({ error: "Notification not found" }, 404);
+
+    if (
+      notification.userId !== session.user.id ||
+      notification.organizationId !== activeOrganizationId
+    ) {
+      throw new ForbiddenError();
+    }
+
+    const joinRequest = await JoinRequestsService.findByUserAndOrganization(
+      notification.userId,
+      activeOrganizationId,
+    );
+    if (!joinRequest) return c.json({ error: "Join request not found" }, 404);
+
+    await JoinRequestsService.updateStatus(
+      joinRequest.id,
+      JoinRequestStatus.Denied,
+    );
+
+    await NotificationService.updateReadStatus(notificationId, true);
 
     return c.json({ success: true });
   });

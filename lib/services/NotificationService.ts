@@ -46,7 +46,11 @@ async function notify(userId: string, orgId: string, text: string) {
   return notification ?? null;
 }
 
-async function notifyAdmins(organizationId: string, text: string) {
+async function notifyAdmins(
+  organizationId: string,
+  text: string,
+  type: NotificationType = NotificationType.General,
+) {
   const adminMembers = await db
     .select({ userId: members.userId })
     .from(members)
@@ -58,7 +62,7 @@ async function notifyAdmins(organizationId: string, text: string) {
     );
 
   const userIds = adminMembers.map((member) => member.userId);
-  return createForUserIds(userIds, organizationId, text);
+  return createForUserIds(userIds, organizationId, text, type);
 }
 
 async function notifyAllMembers(organizationId: string, text: string) {
