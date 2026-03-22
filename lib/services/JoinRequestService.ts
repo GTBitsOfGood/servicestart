@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import db from "@/lib/db";
-import { joinRequests, JoinRequestStatus } from "@/lib/schema";
+import { joinRequests, JoinRequestStatus, users } from "@/lib/schema";
 
 async function findByUserAndOrganization(
   userId: string,
@@ -62,27 +62,40 @@ async function findById(joinRequestId: string) {
   return joinRequest ?? null;
 }
 
-async function listByOrganization(
-  organizationId: string,
-  options: { limit: number; offset: number },
-) {
+async function listByOrganization(organizationId: string) {
   return db
     .select({
       id: joinRequests.id,
-      userId: joinRequests.userId,
       status: joinRequests.status,
+      denialReason: joinRequests.denialReason,
       createdAt: joinRequests.createdAt,
+      user: {
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        displayName: users.displayName,
+        pronouns: users.pronouns,
+        location: users.location,
+      },
     })
     .from(joinRequests)
+    .innerJoin(users, eq(joinRequests.userId, users.id))
     .where(eq(joinRequests.organizationId, organizationId))
-    .limit(options.limit)
-    .offset(options.offset);
+    .orderBy(desc(joinRequests.createdAt));
 }
 
-async function updateStatus(joinRequestId: string, status: JoinRequestStatus) {
+export type JoinRequestWithUser = Awaited<
+  ReturnType<typeof listByOrganization>
+>[number];
+
+async function updateStatus(
+  joinRequestId: string,
+  status: JoinRequestStatus,
+  denialReason?: string,
+) {
   await db
     .update(joinRequests)
-    .set({ status })
+    .set({ status, denialReason: denialReason ?? null })
     .where(eq(joinRequests.id, joinRequestId));
 
   const [updated] = await db
@@ -90,6 +103,7 @@ async function updateStatus(joinRequestId: string, status: JoinRequestStatus) {
       id: joinRequests.id,
       userId: joinRequests.userId,
       status: joinRequests.status,
+      denialReason: joinRequests.denialReason,
       createdAt: joinRequests.createdAt,
     })
     .from(joinRequests)
