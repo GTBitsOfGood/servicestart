@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { getWidgetOptions } from "@/lib/dashboard/widgets";
 import DashboardLayoutBuilder from "@/components/dashboard/DashboardLayoutBuilder";
@@ -33,6 +34,13 @@ export default async function AdminDashboardSettingsPage() {
 
     const orgId = sess.session.activeOrganizationId;
     if (!orgId) throw new Error("No active organization");
+
+    const membership = await MembersService.findByUserAndOrganization(
+      sess.user.id,
+      orgId,
+    );
+    if (!MembersService.isAdminOrOwner(membership?.role))
+      throw new Error("Forbidden");
 
     await OrganizationConfigService.setAdminDashboardLayout(
       orgId,

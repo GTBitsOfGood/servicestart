@@ -82,6 +82,7 @@ export default function DashboardLayoutBuilder({
     splitInitialLayout(initialLayout.widgets),
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(() => {
     const reconstructed = columnsToWidgets(
       splitInitialLayout(initialLayout.widgets),
@@ -189,12 +190,17 @@ export default function DashboardLayoutBuilder({
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
+    setSaveError(null);
     try {
       await onSave({
         layout: "horizontal",
         widgets: columnsToWidgets(columns),
       });
       setHasChanges(false);
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : "Failed to save layout",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -237,19 +243,26 @@ export default function DashboardLayoutBuilder({
         </div>
 
         {hasChanges && (
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="mt-8 rounded-lg bg-brand-text px-6 py-3 text-paragraph-1 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-            type="button"
-          >
-            {isSaving ? "Saving..." : "Save Layout"}
-          </button>
+          <div className="mt-8">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="w-full rounded-lg bg-brand-text px-6 py-3 text-paragraph-1 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              type="button"
+            >
+              {isSaving ? "Saving..." : "Save Layout"}
+            </button>
+            {saveError && (
+              <p className="mt-2 text-paragraph-2 text-status-red-text">
+                {saveError}
+              </p>
+            )}
+          </div>
         )}
       </div>
 
       {/* ── Right panel: preview ─────────────────────────────────── */}
-      <div className="flex flex-1 flex-col bg-[#F2F2F2] px-12 py-[100px]">
+      <div className="flex flex-1 flex-col bg-media-page-bg px-12 py-[100px]">
         <p className="font-normal text-heading-2 text-black/40">
           Dashboard preview
         </p>
@@ -306,12 +319,12 @@ function WidgetCard({
       type="button"
       className={`flex w-[198px] cursor-pointer flex-col items-start rounded-xl p-2 transition-all ${
         isSelected
-          ? "border-2 border-[rgba(252,91,67,0.8)]"
-          : "border-2 border-transparent hover:border-[rgba(252,91,67,0.2)]"
+          ? "border-2 border-brand-stroke-strong"
+          : "border-2 border-transparent hover:border-brand-stroke-weak"
       } ${isDisabled ? "cursor-not-allowed opacity-50" : ""}`}
     >
       <div className="flex w-full flex-col gap-1">
-        <div className="h-[116px] w-[182px] rounded-xl bg-[#D9D9D9]" />
+        <div className="h-[116px] w-[182px] rounded-xl bg-media-divider" />
         <p className="text-left text-paragraph-2 text-black">{widget.label}</p>
       </div>
     </button>
@@ -398,7 +411,7 @@ function PreviewWidget({
         isTall ? "flex-1" : "h-1/2"
       } ${
         isDragSource
-          ? "border-dashed border-[rgba(252,91,67,0.4)] bg-[#FCE4E1]"
+          ? "border-dashed border-brand-hover bg-brand-surface"
           : "border-transparent bg-white"
       }`}
     >
@@ -416,7 +429,7 @@ function PreviewWidget({
 function OverlayCard({ label, isTall }: { label: string; isTall: boolean }) {
   return (
     <div
-      className={`flex items-start rounded-xl border border-[rgba(252,91,67,0.6)] bg-white p-6 shadow-lg ${
+      className={`flex items-start rounded-xl border border-brand-hover bg-white p-6 shadow-lg ${
         isTall ? "h-[474px]" : "h-[221px]"
       }`}
       style={{ width: "100%" }}
