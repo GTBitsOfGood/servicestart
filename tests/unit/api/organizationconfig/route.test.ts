@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
@@ -257,5 +258,132 @@ describe("PUT /api/organizationConfig", () => {
       .where(eq(organizationConfig.organizationId, org.id));
     expect(rows.length).toBe(1);
     expect(rows[0].value).toBe("Updated description");
+  });
+
+  it("stores admin dashboard layout via PUT", async () => {
+    const org = await createOrganization("cfg-put-adl");
+    const adminUser = buildTestUser();
+    const {
+      user: admin,
+      session,
+      headers,
+    } = await signUpAndGetSession(adminUser);
+    await setActiveOrganization(session.id, org.id);
+    await addMember(admin.id, org.id, "admin");
+
+    const layout = {
+      layout: "horizontal",
+      widgets: [
+        { id: "events", size: "tall" },
+        { id: "notifications", size: "small" },
+        { id: "member_requests", size: "small" },
+      ],
+    };
+
+    const response = await testApi.organizationConfig.$put(
+      {
+        json: {
+          key: OrganizationConfigKey.AdminDashboardLayout,
+          value: JSON.stringify(layout),
+        },
+      },
+      { headers },
+    );
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data).toHaveProperty("ok", true);
+
+    const rows = await db
+      .select()
+      .from(organizationConfig)
+      .where(eq(organizationConfig.organizationId, org.id));
+    const adlRow = rows.find(
+      (r) => r.key === OrganizationConfigKey.AdminDashboardLayout,
+    );
+    expect(adlRow).toBeDefined();
+    expect(JSON.parse(adlRow!.value)).toEqual(layout);
+  });
+
+  it("stores member dashboard layout via PUT", async () => {
+    const org = await createOrganization("cfg-put-dl");
+    const adminUser = buildTestUser();
+    const {
+      user: admin,
+      session,
+      headers,
+    } = await signUpAndGetSession(adminUser);
+    await setActiveOrganization(session.id, org.id);
+    await addMember(admin.id, org.id, "admin");
+
+    const layout = {
+      layout: "horizontal",
+      widgets: [
+        { id: "events", size: "tall" },
+        { id: "newsletter", size: "tall" },
+      ],
+    };
+
+    const response = await testApi.organizationConfig.$put(
+      {
+        json: {
+          key: OrganizationConfigKey.DashboardLayout,
+          value: JSON.stringify(layout),
+        },
+      },
+      { headers },
+    );
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data).toHaveProperty("ok", true);
+  });
+
+  it("rejects invalid dashboard layout via PUT", async () => {
+    const org = await createOrganization("cfg-put-dl-invalid");
+    const adminUser = buildTestUser();
+    const {
+      user: admin,
+      session,
+      headers,
+    } = await signUpAndGetSession(adminUser);
+    await setActiveOrganization(session.id, org.id);
+    await addMember(admin.id, org.id, "admin");
+
+    const response = await testApi.organizationConfig.$put(
+      {
+        json: {
+          key: OrganizationConfigKey.AdminDashboardLayout,
+          value: "not-valid-json",
+        },
+      },
+      { headers },
+    );
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data).toHaveProperty("error");
+  });
+
+  it("retrieves dashboard layout via GET", async () => {
+    const org = await createOrganization("cfg-get-dl");
+    const layout = {
+      layout: "horizontal",
+      widgets: [{ id: "events", size: "tall" }],
+    };
+
+    await db.insert(organizationConfig).values({
+      id: randomUUID(),
+      organizationId: org.id,
+      key: OrganizationConfigKey.DashboardLayout,
+      value: JSON.stringify(layout),
+    });
+
+    const response = await testApi.organizationConfig.$get({
+      query: {
+        keys: [OrganizationConfigKey.DashboardLayout],
+        organizationSlug: "cfg-get-dl",
+      },
+    });
+    expect(response.status).toBe(200);
+    const data = (await response.json()) as Record<string, unknown>;
+    expect(data[OrganizationConfigKey.DashboardLayout]).toEqual(layout);
   });
 });

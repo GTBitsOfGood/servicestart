@@ -41,6 +41,8 @@ export enum OrganizationConfigKey {
   NavbarColor = "navbar_color",
   MembersPageEnabled = "members_page_enabled",
   LogoUrl = "logo_url",
+  AdminDashboardLayout = "admin_dashboard_layout",
+  DashboardLayout = "dashboard_layout",
 }
 
 export type ToggleableOrganizationFeature = Extract<
