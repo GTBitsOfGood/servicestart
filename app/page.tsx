@@ -2,10 +2,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import {
-  DEFAULT_ADMIN_LAYOUT,
-  DEFAULT_MEMBER_LAYOUT,
-} from "@/lib/dashboard/constants";
+import { DEFAULT_MEMBER_LAYOUT } from "@/lib/dashboard/constants";
 import DashboardGrid from "@/components/dashboard/DashboardGrid";
 
 export const metadata = {
