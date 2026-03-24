@@ -6,6 +6,11 @@ import { OrganizationConfigService } from "@/lib/services/OrganizationConfigServ
 import { getWidgetOptions } from "@/lib/dashboard/widgets";
 import DashboardLayoutBuilder from "@/components/dashboard/DashboardLayoutBuilder";
 import type { DashboardLayout } from "@/lib/dashboard/schema";
+import {
+  ForbiddenError,
+  NoActiveOrganizationError,
+  UnauthorizedError,
+} from "@/lib/errors";
 
 export const metadata = {
   title: "Customize Member Dashboard",
@@ -21,6 +26,12 @@ export default async function DashboardSettingsPage() {
   const organizationId = session.session.activeOrganizationId;
   if (!organizationId) redirect("/");
 
+  const membership = await MembersService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+  if (!MembersService.isAdminOrOwner(membership?.role)) redirect("/");
+
   const layout =
     await OrganizationConfigService.getDashboardLayout(organizationId);
   const widgetOptions = getWidgetOptions();
@@ -30,17 +41,17 @@ export default async function DashboardSettingsPage() {
     const sess = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!sess?.user) throw new Error("Unauthorized");
+    if (!sess?.user) throw new UnauthorizedError();
 
     const orgId = sess.session.activeOrganizationId;
-    if (!orgId) throw new Error("No active organization");
+    if (!orgId) throw new NoActiveOrganizationError();
 
     const membership = await MembersService.findByUserAndOrganization(
       sess.user.id,
       orgId,
     );
     if (!MembersService.isAdminOrOwner(membership?.role))
-      throw new Error("Forbidden");
+      throw new ForbiddenError();
 
     await OrganizationConfigService.setDashboardLayout(
       orgId,

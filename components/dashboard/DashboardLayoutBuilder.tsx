@@ -105,8 +105,6 @@ export default function DashboardLayoutBuilder({
     [col1, col2],
   );
 
-  const previewKey = [...col1, "|", ...col2].join(",");
-
   const toggleWidget = useCallback((widgetId: WidgetId) => {
     setColumns((prev) => {
       const { col1, col2 } = prev;
@@ -268,7 +266,6 @@ export default function DashboardLayoutBuilder({
         </p>
         <div className="mt-9">
           <DragDropProvider
-            key={previewKey}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
@@ -398,7 +395,7 @@ function PreviewWidget({
   isDragSource,
 }: PreviewWidgetProps) {
   const { ref: dragRef } = useDraggable({ id });
-  const { ref: dropRef } = useDroppable({ id });
+  const { ref: dropRef, isDropTarget } = useDroppable({ id });
 
   return (
     <div
@@ -412,7 +409,9 @@ function PreviewWidget({
       } ${
         isDragSource
           ? "border-dashed border-brand-hover bg-brand-surface"
-          : "border-transparent bg-white"
+          : isDropTarget
+            ? "border-brand-stroke-strong bg-brand-fill"
+            : "border-transparent bg-white"
       }`}
     >
       {isDragSource ? null : (
