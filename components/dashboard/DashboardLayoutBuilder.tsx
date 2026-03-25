@@ -145,7 +145,8 @@ export default function DashboardLayoutBuilder({
     if (!operation?.source || !operation?.target) return;
 
     const sourceId = String(operation.source.id) as WidgetId;
-    const targetId = String(operation.target.id) as WidgetId;
+    const rawTargetId = String(operation.target.id);
+    const targetId = rawTargetId.replace(/__(?:top|bottom)$/, "") as WidgetId;
     if (sourceId === targetId) return;
 
     setColumns((prev) => {
@@ -170,7 +171,10 @@ export default function DashboardLayoutBuilder({
 
       if (srcCol.length === 2 && tgtCol.length === 1) {
         const newSrc = srcCol.filter((id) => id !== sourceId);
-        const newTgt = [...tgtCol, sourceId];
+        const droppedOnTop = rawTargetId.endsWith("__top");
+        const newTgt = droppedOnTop
+          ? [sourceId, ...tgtCol]
+          : [...tgtCol, sourceId];
         return srcInCol1
           ? { col1: newSrc, col2: newTgt }
           : { col1: newTgt, col2: newSrc };
@@ -212,7 +216,7 @@ export default function DashboardLayoutBuilder({
   return (
     <div className="-mx-6 -my-4 flex min-h-[calc(100vh-48px)]">
       {/* ── Left panel ───────────────────────────────────────────── */}
-      <div className="flex w-[500px] shrink-0 flex-col px-20 py-[100px]">
+      <div className="flex w-200 shrink-0 flex-col px-20 py-40">
         <div className="flex items-center gap-1.5">
           <BogIcon
             name="gear"
@@ -223,7 +227,7 @@ export default function DashboardLayoutBuilder({
             Customize Dashboard
           </h1>
         </div>
-        <p className="mt-2.5 max-w-[380px] text-paragraph-2 text-grey-text-weak">
+        <p className="mt-2.5 max-w-152 text-paragraph-2 text-grey-text-weak">
           Select up to {MAX_WIDGETS} widgets for your dashboard and drag them to
           reorder.
         </p>
@@ -260,7 +264,7 @@ export default function DashboardLayoutBuilder({
       </div>
 
       {/* ── Right panel: preview ─────────────────────────────────── */}
-      <div className="flex flex-1 flex-col bg-media-page-bg px-12 py-[100px]">
+      <div className="flex flex-1 flex-col bg-media-page-bg px-12 py-40">
         <p className="font-normal text-heading-2 text-black/40">
           Dashboard preview
         </p>
@@ -314,14 +318,14 @@ function WidgetCard({
       onClick={() => onToggle(widget.id)}
       disabled={isDisabled}
       type="button"
-      className={`flex w-[198px] cursor-pointer flex-col items-start rounded-xl p-2 transition-all ${
+      className={`flex w-full cursor-pointer flex-col items-start rounded-xl p-2 transition-all ${
         isSelected
           ? "border-2 border-brand-stroke-strong"
           : "border-2 border-transparent hover:border-brand-stroke-weak"
       } ${isDisabled ? "cursor-not-allowed opacity-50" : ""}`}
     >
       <div className="flex w-full flex-col gap-1">
-        <div className="h-[116px] w-[182px] rounded-xl bg-media-divider" />
+        <div className="aspect-[8/5] w-full rounded-xl bg-media-divider" />
         <p className="text-left text-paragraph-2 text-black">{widget.label}</p>
       </div>
     </button>
@@ -349,31 +353,123 @@ function PreviewGrid({ col1, col2, widgetLabels, activeId }: PreviewGridProps) {
   const s1 = colSize(col1.length);
   const s2 = colSize(col2.length);
 
+  const srcInCol1 = activeId !== null && col1.includes(activeId);
+  const srcCol = srcInCol1 ? col1 : col2;
+  const tgtCol = srcInCol1 ? col2 : col1;
+  const isMoveCase =
+    activeId !== null && srcCol.length === 2 && tgtCol.length === 1;
+  const tgtIsCol1 = isMoveCase && !srcInCol1;
+  const tgtIsCol2 = isMoveCase && srcInCol1;
+
   return (
     <div className="grid h-[474px] grid-cols-2 gap-8">
-      <div className="flex flex-col gap-8">
-        {col1.map((id) => (
-          <PreviewWidget
-            key={id}
-            id={id}
-            label={widgetLabels[id] ?? id}
-            isTall={s1 === "tall"}
-            isDragSource={activeId === id}
-          />
-        ))}
-      </div>
-      {col2.length > 0 && (
+      {tgtIsCol1 ? (
+        <MoveTargetColumn
+          widgetId={col1[0]}
+          label={widgetLabels[col1[0]] ?? col1[0]}
+        />
+      ) : (
         <div className="flex flex-col gap-8">
-          {col2.map((id) => (
+          {col1.map((id) => (
             <PreviewWidget
               key={id}
               id={id}
               label={widgetLabels[id] ?? id}
-              isTall={s2 === "tall"}
+              isTall={s1 === "tall"}
               isDragSource={activeId === id}
             />
           ))}
         </div>
+      )}
+      {col2.length > 0 &&
+        (tgtIsCol2 ? (
+          <MoveTargetColumn
+            widgetId={col2[0]}
+            label={widgetLabels[col2[0]] ?? col2[0]}
+          />
+        ) : (
+          <div className="flex flex-col gap-8">
+            {col2.map((id) => (
+              <PreviewWidget
+                key={id}
+                id={id}
+                label={widgetLabels[id] ?? id}
+                isTall={s2 === "tall"}
+                isDragSource={activeId === id}
+              />
+            ))}
+          </div>
+        ))}
+    </div>
+  );
+}
+
+// ── MoveTargetColumn ─────────────────────────────────────────────────────────
+// Uses two separate droppable zones (top half / bottom half) so dnd-kit's own
+// collision detection tells us which side the cursor is on. This avoids any
+// pointer/mouse event tracking, which dnd-kit's setPointerCapture blocks.
+
+function MoveTargetColumn({
+  widgetId,
+  label,
+}: {
+  widgetId: WidgetId;
+  label: string;
+}) {
+  const topZoneId = `${widgetId}__top`;
+  const bottomZoneId = `${widgetId}__bottom`;
+
+  const { ref: topRef, isDropTarget: isTopTarget } = useDroppable({
+    id: topZoneId,
+  });
+  const { ref: bottomRef, isDropTarget: isBottomTarget } = useDroppable({
+    id: bottomZoneId,
+  });
+
+  const isHovering = isTopTarget || isBottomTarget;
+
+  const widgetBox = (shrunk: boolean) => (
+    <div
+      className={`flex items-start rounded-xl border p-6 transition-colors ${
+        shrunk ? "h-1/2" : "flex-1"
+      } ${
+        isHovering
+          ? "border-brand-stroke-strong bg-brand-fill"
+          : "border-transparent bg-white"
+      }`}
+    >
+      <p className="text-paragraph-1 font-semibold text-black/40">
+        [{label.toLowerCase()} widget here]
+      </p>
+    </div>
+  );
+
+  const divider = (
+    <div className="mx-4 border-t-2 border-brand-stroke-strong" />
+  );
+
+  return (
+    <div className="relative flex flex-col">
+      {/* Invisible drop zones covering each half */}
+      <div ref={topRef} className="absolute inset-x-0 top-0 z-10 h-1/2" />
+      <div ref={bottomRef} className="absolute inset-x-0 bottom-0 z-10 h-1/2" />
+
+      {isTopTarget ? (
+        <>
+          <div className="flex-1" />
+          {divider}
+          <div className="h-2" />
+          {widgetBox(true)}
+        </>
+      ) : isBottomTarget ? (
+        <>
+          {widgetBox(true)}
+          <div className="h-2" />
+          {divider}
+          <div className="flex-1" />
+        </>
+      ) : (
+        widgetBox(false)
       )}
     </div>
   );

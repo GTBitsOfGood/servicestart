@@ -30,7 +30,10 @@ export default function DashboardGrid({ layout }: DashboardGridProps) {
 
   if (widgets.length === 0) {
     return (
-      <div className="flex h-[644px] items-center justify-center rounded-lg border-2 border-grey-stroke-weak bg-grey-fill-weaker text-grey-text-weak">
+      <div
+        className="flex items-center justify-center rounded-lg border-2 border-grey-stroke-weak bg-grey-fill-weaker text-grey-text-weak"
+        style={{ height: "min(696px, calc(100dvh - 200px))" }}
+      >
         No widgets configured
       </div>
     );
