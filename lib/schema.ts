@@ -228,15 +228,24 @@ export const joinRequests = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     status: joinRequestStatusEnum("status").notNull(),
     denialReason: text("denial_reason"),
-    resolvedByUserId: text("resolved_by_user_id").references(() => users.id, {
-      onDelete: "set null",
-    }),
-    resolvedAt: timestamp("resolved_at"),
   },
   (table) => [
     index("join_request_organizationId_idx").on(table.organizationId),
   ],
 );
+
+export const joinRequestHistory = pgTable("join_request_history", {
+  id: text("id").primaryKey(),
+  joinRequestId: text("join_request_id")
+    .notNull()
+    .references(() => joinRequests.id, { onDelete: "cascade" }),
+  action: text("action").notNull(), // "approved" | "denied" | "removed"
+  resolvedByUserId: text("resolved_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  resolvedAt: timestamp("resolved_at").defaultNow().notNull(),
+  denialReason: text("denial_reason"),
+});
 
 export const events = pgTable(
   "events",

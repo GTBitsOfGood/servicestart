@@ -1,9 +1,9 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "708204c6-bcab-4c7f-bde8-279751d89ab2",
+  "id": "2a647d26-8ce2-4f15-bd2a-26a2ce5453a2",
   "prevIds": [
-    "cfa63a6b-7e44-4d78-9e49-c3093efdbb49"
+    "708204c6-bcab-4c7f-bde8-279751d89ab2"
   ],
   "ddl": [
     {
@@ -80,6 +80,12 @@
     {
       "isRlsEnabled": false,
       "name": "invitations",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "join_request_history",
       "entityType": "tables",
       "schema": "public"
     },
@@ -719,6 +725,84 @@
       "entityType": "columns",
       "schema": "public",
       "table": "invitations"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "join_request_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "action",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "resolved_by_user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "resolved_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "denial_reason",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
     },
     {
       "type": "text",
@@ -2305,6 +2389,40 @@
     {
       "nameExplicit": false,
       "columns": [
+        "join_request_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "join_requests",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "join_request_history_join_request_id_join_requests_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "resolved_by_user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "name": "join_request_history_resolved_by_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
         "user_id"
       ],
       "schemaTo": "public",
@@ -2663,6 +2781,16 @@
       "name": "invitations_pkey",
       "schema": "public",
       "table": "invitations",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "join_request_history_pkey",
+      "schema": "public",
+      "table": "join_request_history",
       "entityType": "pks"
     },
     {
