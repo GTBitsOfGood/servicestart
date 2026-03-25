@@ -12,6 +12,7 @@ const patchParamsSchema = z.object({
   status: z.enum(JOIN_REQUEST_STATUS_VALUES, {
     error: "Invalid status. Must be pending, approved, or denied",
   }),
+  denialReason: z.string().optional(),
 });
 
 const app = new Hono()
@@ -84,7 +85,11 @@ const app = new Hono()
       );
     }
 
-    const { id: joinRequestId, status: newStatus } = c.req.valid("query");
+    const {
+      id: joinRequestId,
+      status: newStatus,
+      denialReason,
+    } = c.req.valid("query");
 
     const joinRequest = await JoinRequestsService.findByIdAndOrganization(
       joinRequestId,
@@ -105,6 +110,8 @@ const app = new Hono()
     const updatedRequest = await JoinRequestsService.updateStatus(
       joinRequestId,
       newStatus as JoinRequestStatus,
+      session.user.id,
+      denialReason,
     );
 
     if (newStatus === JoinRequestStatus.Approved) {

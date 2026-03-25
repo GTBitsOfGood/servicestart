@@ -1,7 +1,15 @@
 import { randomUUID } from "node:crypto";
+import { alias } from "drizzle-orm/pg-core";
 import { and, desc, eq } from "drizzle-orm";
 import db from "@/lib/db";
-import { joinRequests, JoinRequestStatus, users } from "@/lib/schema";
+import {
+  joinRequests,
+  JoinRequestStatus,
+  organizations,
+  users,
+} from "@/lib/schema";
+
+const resolvers = alias(users, "resolver");
 
 async function findByUserAndOrganization(
   userId: string,
@@ -62,8 +70,11 @@ async function findById(joinRequestId: string) {
   return joinRequest ?? null;
 }
 
-async function listByOrganization(organizationId: string) {
-  return db
+async function listByOrganization(
+  organizationId: string,
+  options?: { limit?: number; offset?: number },
+) {
+  let query = db
     .select({
       id: joinRequests.id,
       status: joinRequests.status,
@@ -77,11 +88,25 @@ async function listByOrganization(organizationId: string) {
         pronouns: users.pronouns,
         location: users.location,
       },
+      team: organizations.name,
+      resolvedByName: resolvers.name,
+      resolvedAt: joinRequests.resolvedAt,
     })
     .from(joinRequests)
     .innerJoin(users, eq(joinRequests.userId, users.id))
+    .innerJoin(organizations, eq(joinRequests.organizationId, organizations.id))
+    .leftJoin(resolvers, eq(joinRequests.resolvedByUserId, resolvers.id))
     .where(eq(joinRequests.organizationId, organizationId))
     .orderBy(desc(joinRequests.createdAt));
+
+  if (options?.limit !== undefined) {
+    query = query.limit(options.limit) as any;
+  }
+  if (options?.offset !== undefined) {
+    query = query.offset(options.offset) as any;
+  }
+
+  return query;
 }
 
 export type JoinRequestWithUser = Awaited<
@@ -91,11 +116,17 @@ export type JoinRequestWithUser = Awaited<
 async function updateStatus(
   joinRequestId: string,
   status: JoinRequestStatus,
+  resolvedByUserId: string,
   denialReason?: string,
 ) {
   await db
     .update(joinRequests)
-    .set({ status, denialReason: denialReason ?? null })
+    .set({
+      status,
+      denialReason: denialReason ?? null,
+      resolvedByUserId,
+      resolvedAt: new Date(),
+    })
     .where(eq(joinRequests.id, joinRequestId));
 
   const [updated] = await db
