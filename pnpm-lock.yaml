@@ -18,7 +18,7 @@ importers:
     dependencies:
       '@hono/zod-validator':
         specifier: ^0.7.6
-        version: 0.7.6(hono@4.12.7)(zod@4.3.6)
+        version: 0.7.6(hono@4.12.9)(zod@4.3.6)
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -50,8 +50,8 @@ importers:
         specifier: 1.0.0-beta.15-859cf75
         version: 1.0.0-beta.15-859cf75(@types/mssql@9.1.9(@azure/core-client@1.10.1))(@types/pg@8.16.0)(mssql@11.0.1(@azure/core-client@1.10.1))(pg@8.19.0)(zod@4.3.6)
       hono:
-        specifier: ^4.12.7
-        version: 4.12.7
+        specifier: ^4.12.9
+        version: 4.12.9
       juno-sdk:
         specifier: ^0.0.10
         version: 0.0.10
@@ -3044,8 +3044,8 @@ packages:
   hoist-non-react-statics@3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
 
-  hono@4.12.7:
-    resolution: {integrity: sha512-jq9l1DM0zVIvsm3lv9Nw9nlJnMNPOcAtsbsgiUhWcFzPE99Gvo6yRTlszSLLYacMeQ6quHD6hMfId8crVHvexw==}
+  hono@4.12.9:
+    resolution: {integrity: sha512-wy3T8Zm2bsEvxKZM5w21VdHDDcwVS1yUFFY6i8UobSsKfFceT7TOwhbhfKsDyx7tYQlmRM5FLpIuYvNFyjctiA==}
     engines: {node: '>=16.9.0'}
 
   html-encoding-sniffer@6.0.0:
@@ -4900,9 +4900,9 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
-  '@hono/zod-validator@0.7.6(hono@4.12.7)(zod@4.3.6)':
+  '@hono/zod-validator@0.7.6(hono@4.12.9)(zod@4.3.6)':
     dependencies:
-      hono: 4.12.7
+      hono: 4.12.9
       zod: 4.3.6
 
   '@humanfs/core@0.19.1': {}
@@ -6933,7 +6933,7 @@ snapshots:
     dependencies:
       react-is: 16.13.1
 
-  hono@4.12.7: {}
+  hono@4.12.9: {}
 
   html-encoding-sniffer@6.0.0(@noble/hashes@2.0.1):
     dependencies:
