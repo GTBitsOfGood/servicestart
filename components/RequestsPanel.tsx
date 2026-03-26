@@ -202,7 +202,7 @@ export default function RequestsPanel() {
                 size="small"
                 showValueInTrigger={false}
                 showClearIcon={false}
-                className="w-[110px]"
+                className="w-[110px] !px-2 !py-1 !font-medium !text-[13px] !justify-center !gap-2"
               />
               <BogDropdown
                 type="radio"
@@ -225,7 +225,7 @@ export default function RequestsPanel() {
                 size="small"
                 showValueInTrigger={false}
                 showClearIcon={false}
-                className="w-[110px]"
+                className="w-[130px] !px-2 !py-1 !font-medium !text-[13px] !justify-center !gap-2"
               />
             </div>
             <div className="flex-1 min-w-0">
@@ -370,11 +370,11 @@ function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-grey-stroke-weak last:border-0 bg-gray">
+    <div className="border-b border-grey-stroke-weak last:border-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-6 py-4 text-left"
+        className="flex w-full items-center justify-between px-6 py-4 text-left bg-grey-fill-weaker"
       >
         <span className="text-[13px] font-semibold text-grey-text-strong">
           {count} {label}
