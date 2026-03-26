@@ -48,7 +48,7 @@ async function main() {
     );
   }
 
-  const { apiKey: string } = await res.json().catch((error) => {
+  const { apiKey }: { apiKey: string } = await res.json().catch((error) => {
     console.error("Error parsing API key response:", error);
     console.log("Juno response:", res);
     throw error;
@@ -60,7 +60,7 @@ async function main() {
   const envFile = await fs.readFile(".env", "utf-8");
   const newEnvFile = envFile.replace(
     /^JUNO_API_KEY=.*$/m,
-    `JUNO_API_KEY=${string}`,
+    `JUNO_API_KEY=${apiKey}`,
   );
   await fs.writeFile(".env", newEnvFile);
 
