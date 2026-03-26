@@ -58,11 +58,19 @@ async function main() {
 
   // Read .env, find line beginning with JUNO_API_KEY= and replace it with JUNO_API_KEY=${string}
   const envFile = await fs.readFile(".env", "utf-8");
-  const newEnvFile = envFile.replace(
-    /^JUNO_API_KEY=.*$/m,
-    `JUNO_API_KEY=${apiKey}`,
-  );
-  await fs.writeFile(".env", newEnvFile);
+
+  // Check that JUNO_API_KEY is in the .env file
+  if (!/^JUNO_API_KEY=.*$/m.test(envFile)) {
+    // If not, add it to the end of the file
+    await fs.appendFile(".env", `\nJUNO_API_KEY=${apiKey}\n`);
+  } else {
+    // If it is, replace the existing line
+    const newEnvFile = envFile.replace(
+      /^JUNO_API_KEY=.*$/m,
+      `JUNO_API_KEY=${apiKey}`,
+    );
+    await fs.writeFile(".env", newEnvFile);
+  }
 
   console.log("API key stored in .env. Juno setup complete.");
 
