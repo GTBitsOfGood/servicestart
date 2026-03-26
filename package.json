@@ -2,7 +2,7 @@
   "private": true,
   "packageManager": "pnpm@10.17.1",
   "scripts": {
-    "dev": "next dev",
+    "dev": "pnpm run juno:start > /dev/null & pnpm run db:start & next dev",
     "build": "next build",
     "build:netlify": "NEXT_PUBLIC_BRANCH_NAME=$BRANCH NEXT_PUBLIC_BASE_URL=$DEPLOY_PRIME_URL NEXT_PUBLIC_PROD_URL=$URL pnpm run build",
     "start": "next start",
@@ -27,7 +27,8 @@
     "db:check": "drizzle-kit check",
     "db:view": "drizzle-kit studio",
     "juno:setup": "tsx scripts/setupJuno.ts",
-    "juno:start": "cd juno && pnpm start:dev:live-all-reseed; cd .."
+    "juno:start": "cd juno && pnpm start:dev:live-all",
+    "juno:stop": "docker compose -f juno/docker-compose-dev.yml stop"
   },
   "pnpm": {
     "overrides": {
