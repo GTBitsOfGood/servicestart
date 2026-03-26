@@ -25,7 +25,9 @@
     "db:seed": "tsx scripts/seed.ts",
     "email:setup": "tsx scripts/setupJunoEmail.ts",
     "db:check": "drizzle-kit check",
-    "db:view": "drizzle-kit studio"
+    "db:view": "drizzle-kit studio",
+    "juno:setup": "tsx scripts/setupJuno.ts",
+    "juno:start": "cd juno && pnpm start:dev:live-all-reseed; cd .."
   },
   "pnpm": {
     "overrides": {
