@@ -100,7 +100,10 @@ const app = new Hono()
       return c.json({ error: "Join request not found" }, { status: 404 });
     }
 
-    if (joinRequest.status === JoinRequestStatus.Approved) {
+    if (
+      joinRequest.status === JoinRequestStatus.Approved &&
+      newStatus !== JoinRequestStatus.Pending
+    ) {
       return c.json({
         message: "Join request is already approved",
         joinRequest,
@@ -112,19 +115,11 @@ const app = new Hono()
       newStatus as JoinRequestStatus,
       session.user.id,
       denialReason,
+      joinRequest.status as JoinRequestStatus,
+      c.req.raw.headers,
     );
 
-    if (newStatus === JoinRequestStatus.Approved) {
-      await auth.api.addMember({
-        body: {
-          organizationId: activeOrganizationId,
-          userId: joinRequest.userId,
-          role: "member",
-        },
-      });
-    }
-
-    return c.json(updatedRequest);
+    return c.json({ success: true, joinRequest: updatedRequest });
   })
   .get("/:organizationId", async (c) => {
     const session = await auth.api.getSession({

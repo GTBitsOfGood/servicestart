@@ -2,14 +2,15 @@ import { randomUUID } from "node:crypto";
 import { alias } from "drizzle-orm/pg-core";
 import { and, desc, eq } from "drizzle-orm";
 import db from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { OrganizationsService } from "./OrganizationService";
+import { MembersService } from "./MemberService";
 import {
   joinRequests,
+  joinRequestHistory,
   JoinRequestStatus,
-  organizations,
   users,
 } from "@/lib/schema";
-
-const resolvers = alias(users, "resolver");
 
 async function findByUserAndOrganization(
   userId: string,
@@ -88,60 +89,145 @@ async function listByOrganization(
         pronouns: users.pronouns,
         location: users.location,
       },
-      team: organizations.name,
-      resolvedByName: resolvers.name,
-      resolvedAt: joinRequests.resolvedAt,
+      organizationId: joinRequests.organizationId,
     })
     .from(joinRequests)
     .innerJoin(users, eq(joinRequests.userId, users.id))
-    .innerJoin(organizations, eq(joinRequests.organizationId, organizations.id))
-    .leftJoin(resolvers, eq(joinRequests.resolvedByUserId, resolvers.id))
     .where(eq(joinRequests.organizationId, organizationId))
     .orderBy(desc(joinRequests.createdAt));
 
   if (options?.limit !== undefined) {
     query = query.limit(options.limit) as any;
   }
-  if (options?.offset !== undefined) {
-    query = query.offset(options.offset) as any;
-  }
+  const results = await query;
 
-  return query;
+  const requestsWithHistory = await Promise.all(
+    results.map(async (jr) => {
+      const history = await listHistory(jr.id);
+      const organization = await OrganizationsService.findById(
+        jr.organizationId,
+      );
+      return {
+        ...jr,
+        history,
+        organization: organization?.name ?? "Unknown Organization",
+      };
+    }),
+  );
+
+  return requestsWithHistory;
+}
+
+async function listHistory(joinRequestId: string) {
+  const historyResolvers = alias(users, "history_resolver");
+  return db
+    .select({
+      id: joinRequestHistory.id,
+      action: joinRequestHistory.action,
+      resolvedByName: historyResolvers.name,
+      resolvedAt: joinRequestHistory.resolvedAt,
+      denialReason: joinRequestHistory.denialReason,
+    })
+    .from(joinRequestHistory)
+    .leftJoin(
+      historyResolvers,
+      eq(joinRequestHistory.resolvedByUserId, historyResolvers.id),
+    )
+    .where(eq(joinRequestHistory.joinRequestId, joinRequestId))
+    .orderBy(desc(joinRequestHistory.resolvedAt));
 }
 
 export type JoinRequestWithUser = Awaited<
   ReturnType<typeof listByOrganization>
 >[number];
 
-async function updateStatus(
+export type JoinRequestHistoryEntry = Awaited<
+  ReturnType<typeof listHistory>
+>[number];
+
+async function addHistoryEntry(
   joinRequestId: string,
-  status: JoinRequestStatus,
+  action: "approved" | "denied" | "removed",
   resolvedByUserId: string,
   denialReason?: string,
 ) {
+  await db.insert(joinRequestHistory).values({
+    id: randomUUID(),
+    joinRequestId,
+    action,
+    resolvedByUserId,
+    denialReason: denialReason ?? null,
+  });
+}
+
+async function updateStatus(
+  joinRequestId: string,
+  newStatus: JoinRequestStatus,
+  resolvedByUserId: string,
+  denialReason?: string,
+  currentStatus?: JoinRequestStatus,
+  headers?: any,
+) {
+  let action: "approved" | "denied" | "removed" = "denied";
+  if (newStatus === JoinRequestStatus.Approved) {
+    action = "approved";
+  } else if (
+    newStatus === JoinRequestStatus.Pending &&
+    currentStatus === JoinRequestStatus.Approved
+  ) {
+    action = "removed";
+  }
+
   await db
     .update(joinRequests)
     .set({
-      status,
+      status: newStatus,
       denialReason: denialReason ?? null,
-      resolvedByUserId,
-      resolvedAt: new Date(),
     })
     .where(eq(joinRequests.id, joinRequestId));
 
-  const [updated] = await db
-    .select({
-      id: joinRequests.id,
-      userId: joinRequests.userId,
-      status: joinRequests.status,
-      denialReason: joinRequests.denialReason,
-      createdAt: joinRequests.createdAt,
-    })
+  const [jr] = await db
+    .select()
     .from(joinRequests)
     .where(eq(joinRequests.id, joinRequestId))
     .limit(1);
 
-  return updated ?? null;
+  if (jr) {
+    if (
+      newStatus === JoinRequestStatus.Approved &&
+      currentStatus !== JoinRequestStatus.Approved
+    ) {
+      await auth.api.addMember({
+        body: {
+          organizationId: jr.organizationId,
+          userId: jr.userId,
+          role: "member",
+        },
+        headers,
+      });
+    } else if (
+      newStatus !== JoinRequestStatus.Approved &&
+      currentStatus === JoinRequestStatus.Approved
+    ) {
+      const membership = await MembersService.findByUserAndOrganization(
+        jr.userId,
+        jr.organizationId,
+      );
+      if (membership) {
+        await auth.api.removeMember({
+          body: {
+            organizationId: jr.organizationId,
+            memberIdOrEmail: membership.id,
+          },
+          headers,
+        });
+      }
+    }
+  }
+
+  await addHistoryEntry(joinRequestId, action, resolvedByUserId, denialReason);
+
+  return jr;
 }
 
 async function deleteById(joinRequestId: string) {
@@ -164,6 +250,8 @@ export const JoinRequestsService = {
   findByIdAndOrganization,
   findById,
   listByOrganization,
+  listHistory,
+  addHistoryEntry,
   updateStatus,
   deleteById,
   create,

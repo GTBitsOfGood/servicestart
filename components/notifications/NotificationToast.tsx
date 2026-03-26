@@ -3,11 +3,15 @@
 import Link from "next/link";
 import { Toast } from "radix-ui";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import { NotificationType } from "@/lib/schema";
+import { NotificationType, JoinRequestStatus } from "@/lib/schema";
 import { formatTime } from "@/lib/utils";
 import api from "@/lib/api";
-import type { NotificationListItem } from "./NotificationItem";
+import type {
+  NotificationListItem,
+  JoinRequestExtras,
+} from "./NotificationItem";
 import NotificationTag from "./NotificationTag";
+import BogButton from "@/components/bog/BogButton/BogButton";
 
 const ACTION_TYPES = new Set<string>([
   NotificationType.ActionRequired,
@@ -16,7 +20,10 @@ const ACTION_TYPES = new Set<string>([
 
 interface NotificationToastProps {
   notification: NotificationListItem;
+  joinRequest?: JoinRequestExtras;
   onDismiss: (id: string) => void;
+  onApprove?: (id: string) => void;
+  onDeny?: (id: string, reason: string) => void;
 }
 
 function getCtaLabel(type: string) {
@@ -41,12 +48,17 @@ function markAsRead(id: string) {
 
 export default function NotificationToast({
   notification,
+  joinRequest,
   onDismiss,
+  onApprove,
+  onDeny,
 }: NotificationToastProps) {
   const title = notification.text.split("\n")[0];
   const body = notification.text.slice(notification.text.indexOf("\n") + 1);
   const isActionType = ACTION_TYPES.has(notification.type);
   const ctaLabel = getCtaLabel(notification.type);
+
+  const isPending = joinRequest?.status === JoinRequestStatus.Pending;
 
   return (
     <Toast.Root
@@ -87,7 +99,32 @@ export default function NotificationToast({
       </div>
 
       <div className="col-span-2 mt-2">
-        {isActionType ? (
+        {joinRequest && isPending ? (
+          <div className="flex items-center gap-3">
+            <BogButton
+              variant="secondary"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onDeny) onDeny(notification.id, "Denied via Toast");
+              }}
+              className="w-[90px] justify-center !rounded-md !px-0 !py-1 !text-[12px]"
+            >
+              Deny
+            </BogButton>
+            <BogButton
+              variant="primary"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onApprove) onApprove(notification.id);
+              }}
+              className="w-[90px] justify-center !rounded-md !px-0 !py-1 !text-[12px]"
+            >
+              Approve
+            </BogButton>
+          </div>
+        ) : isActionType ? (
           <Toast.Action altText={ctaLabel} asChild>
             <Link
               href={`/inbox/${notification.id}`}

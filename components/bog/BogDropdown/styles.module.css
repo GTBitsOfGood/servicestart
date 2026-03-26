@@ -34,6 +34,21 @@
         padding: 0 0.5rem;
       }
 
+      &.primary {
+        background-color: var(--color-brand-text);
+        color: white;
+        border-color: var(--color-brand-stroke-strong);
+
+        .icon {
+          color: white;
+        }
+
+        &:hover,
+        &[data-state="open"] {
+          background-color: var(--color-brand-hover);
+        }
+      }
+
       &:hover {
         border: solid 1px var(--color-brand-stroke-strong);
         cursor: pointer;
@@ -103,4 +118,37 @@
       }
     }
   }
+}
+
+.radius-none {
+  border-radius: 0 !important;
+}
+
+.radius-small {
+  border-radius: 0.125rem !important;
+}
+
+.radius-medium {
+  border-radius: 0.25rem !important;
+}
+
+.radius-large {
+  border-radius: 0.5rem !important;
+}
+
+.radius-full {
+  border-radius: 100px !important;
+}
+
+.small {
+  padding: 0.4rem 1.2rem !important;
+  font-size: 11px !important;
+}
+
+.medium {
+  padding: 0.75rem 0.5rem;
+}
+
+.large {
+  padding: 1rem 1rem !important;
 }
