@@ -22,7 +22,6 @@ const SORT_LABELS: Record<SortByOption, string> = {
   alpha_desc: "Z-A",
 };
 
-//testing here
 const SORT_OPTIONS = Object.values(SORT_LABELS);
 
 function sortRequests(requests: JoinRequestWithUser[], sortBy: SortByOption) {
