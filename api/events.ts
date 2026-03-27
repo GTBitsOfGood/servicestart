@@ -30,8 +30,12 @@ const app = new Hono()
         startTimestamp: z.string().nullable().optional(),
         duration: z.string().nullable().optional(),
         description: z.string().nullable().optional(),
+        rsvpLimit: z.number().optional(),
+        rsvpDeadline: z.string().nullable().optional(),
+        visibility: z.enum(["public", "member-only"]).optional(),
         coverImageUrl: z.string().nullable().optional(),
         published: z.boolean().default(false),
+        hosts: z.array(z.string()).optional(),
       }),
     ),
     async (c) => {
@@ -60,21 +64,46 @@ const app = new Hono()
       const publishedAt = data.published ? new Date() : null;
       const publishedById = data.published ? session.user.id : null;
 
-      const event = await EventService.create(
-        activeOrganizationId,
-        data.name,
-        data.location,
-        data.startTimestamp ? new Date(data.startTimestamp) : null,
-        data.duration ?? null,
-        data.description ?? null,
-        data.coverImageUrl ?? null,
+      const hosts = data.hosts ?? [];
+      const memberships = await Promise.all(
+        hosts.map((userId) =>
+          MembersService.findByUserAndOrganization(
+            userId,
+            activeOrganizationId,
+          ),
+        ),
+      );
+
+      const invalidIndex = memberships.findIndex((m) => !m);
+      if (invalidIndex !== -1) {
+        return c.json(
+          { error: "At least one host not in organization" },
+          { status: 404 },
+        );
+      }
+
+      const event = await EventService.create({
+        organizationId: activeOrganizationId,
+        name: data.name,
+        location: data.location,
+        startTimestamp: data.startTimestamp
+          ? new Date(data.startTimestamp)
+          : null,
+        duration: data.duration ?? null,
+        description: data.description ?? null,
+        coverImageUrl: data.coverImageUrl ?? null,
+        rsvpLimit: data.rsvpLimit ?? null,
+        rsvpDeadline: data.rsvpDeadline ? new Date(data.rsvpDeadline) : null,
+        visibility: data.visibility ?? "member-only",
         publishedAt,
         publishedById,
-      );
+      });
 
       if (!event) {
         return c.json({ error: "Failed to create event" }, { status: 500 });
       }
+
+      await EventService.addEventHosts(event.id, hosts);
 
       return c.json(event);
     },
@@ -90,7 +119,17 @@ const app = new Hono()
 
     const activeOrganizationId = session.session.activeOrganizationId;
     if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
+      const { page, pageSize } = c.req.valid("query");
+      const eventsList = await EventService.listByPublic({
+        limit: pageSize,
+        offset: (page - 1) * pageSize,
+      });
+
+      return c.json({
+        data: eventsList,
+        page,
+        pageSize,
+      });
     }
 
     const membership = await MembersService.findByUserAndOrganization(
@@ -149,14 +188,22 @@ const app = new Hono()
       return c.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const activeOrganizationId = session.session.activeOrganizationId;
-    if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
+    const event = await EventService.findById(eventId);
+    if (!event) {
+      return c.json({ error: "Event not found" }, { status: 404 });
     }
 
-    const event = await EventService.findById(eventId);
+    const activeOrganizationId = session.session.activeOrganizationId;
 
-    if (!event || event.organizationId !== activeOrganizationId) {
+    if (!activeOrganizationId) {
+      if (event.publishedAt && event.visibility === "public") {
+        return c.json(event);
+      } else {
+        return c.json({ error: "No active organization" }, { status: 403 });
+      }
+    }
+
+    if (event.organizationId !== activeOrganizationId) {
       return c.json({ error: "Event not found" }, { status: 404 });
     }
 
@@ -418,6 +465,25 @@ const app = new Hono()
           { error: "User is not a member of this organization" },
           { status: 404 },
         );
+      }
+
+      if (event.rsvpLimit) {
+        const rsvpCount = await EventService.countRSVPs(eventId);
+
+        if (rsvpCount >= event.rsvpLimit) {
+          return c.json(
+            { error: "RSVP limit has been reached" },
+            { status: 400 },
+          );
+        }
+      }
+
+      if (event.rsvpDeadline) {
+        const deadline = new Date(event.rsvpDeadline).getTime();
+
+        if (deadline <= Date.now()) {
+          return c.json({ error: "RSVP deadline has passed" }, { status: 400 });
+        }
       }
 
       await EventService.addRSVP(eventId, targetUserId);
