@@ -156,6 +156,9 @@ const app = new Hono()
     await JoinRequestsService.updateStatus(
       joinRequest.id,
       JoinRequestStatus.Approved,
+      session.user.id,
+      undefined,
+      joinRequest.status,
     );
 
     await auth.api.addMember({
@@ -194,6 +197,9 @@ const app = new Hono()
     await JoinRequestsService.updateStatus(
       joinRequest.id,
       JoinRequestStatus.Denied,
+      session.user.id,
+      undefined,
+      joinRequest.status,
     );
 
     await NotificationService.updateReadStatus(notificationId, true);

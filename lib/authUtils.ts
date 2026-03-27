@@ -74,7 +74,6 @@ export async function createJoinRequestIfNeeded(
     organizationId,
     `Join Request\n${userName} has requested to join the organization.`,
     NotificationType.ActionRequired,
-    joinRequestId,
   );
 }
 

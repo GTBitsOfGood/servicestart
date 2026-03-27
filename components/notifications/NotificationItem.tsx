@@ -147,17 +147,17 @@ export default function NotificationItem({
       return (
         <div
           className={cn(
-            "flex gap-2",
+            "flex flex-nowrap gap-2",
             stacked ? "flex-col items-end" : "items-center gap-3",
           )}
         >
-          <span className="inline-flex w-[90px] items-center justify-center gap-1 rounded-md border border-grey-stroke-weak bg-white py-1 px-1 text-[12px] font-semibold text-grey-text-weak whitespace-nowrap">
+          <span className="inline-flex w-[110px] flex-shrink-0 items-center justify-center gap-1 rounded-md border border-transparent bg-grey-icon-weak py-1 px-1 text-[12px] font-semibold text-white whitespace-nowrap">
             Approved ✓
           </span>
           {onRemoveAccess && (
             <BogButton
               variant="primary"
-              className="w-[110px] justify-center !rounded-md !px-1 !py-1 !text-[12px]"
+              className="w-[110px] flex-shrink-0 whitespace-nowrap justify-center !rounded-md !px-1 !py-1 !text-[12px]"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -174,21 +174,21 @@ export default function NotificationItem({
       return (
         <div
           className={cn(
-            "flex gap-2",
+            "flex flex-nowrap gap-2",
             stacked ? "flex-col items-end" : "items-center gap-3",
           )}
         >
-          <span className="inline-flex w-[90px] items-center justify-center gap-1 rounded-md border border-grey-stroke-weak bg-white py-1 text-[12px] font-semibold text-grey-text-weak">
+          <span className="inline-flex w-[110px] flex-shrink-0 items-center justify-center gap-1 rounded-md border border-transparent bg-grey-icon-weak py-1 text-[12px] font-semibold text-white whitespace-nowrap">
             Denied ✕
           </span>
           <BogButton
             variant="primary"
+            className="w-[110px] flex-shrink-0 whitespace-nowrap justify-center !rounded-md !px-0 !py-1 !text-[12px]"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setApproveOpen(true);
             }}
-            className="w-[90px] justify-center !rounded-md !px-0 !py-1 !text-[12px]"
           >
             Approve
           </BogButton>
@@ -405,14 +405,18 @@ export default function NotificationItem({
             )}
           </div>
 
-          <div className="flex shrink-0 items-start justify-end">
-            {!expanded && renderJoinRequestButtons(true)}
+          <div className="flex w-[120px] shrink-0 items-start justify-end">
+            {expanded ? (
+              <div className="invisible">{renderJoinRequestButtons(true)}</div>
+            ) : (
+              renderJoinRequestButtons(true)
+            )}
           </div>
         </div>
 
         {joinRequest && expanded && (
-          <div className="mb-0 mt-4 flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-8">
+          <div className="mb-0 mt-1 flex flex-col gap-2">
+            <div className="grid grid-cols-2 gap-6">
               <div className="flex flex-col gap-1">
                 <p className="text-small leading-tight font-semibold text-grey-text-strong uppercase tracking-wide">
                   Requester Info
@@ -498,7 +502,7 @@ export default function NotificationItem({
             >
               View Details
               <BogIcon
-                name="chevron-down"
+                name="chevron-up"
                 size={12}
                 color="var(--color-brand-text)"
               />

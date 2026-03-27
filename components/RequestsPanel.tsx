@@ -40,7 +40,11 @@ function sortRequests(requests: JoinRequestWithUser[], sortBy: SortByOption) {
 
 type Status = "loading" | "error" | "forbidden" | "ok";
 
-export default function RequestsPanel() {
+interface RequestsPanelProps {
+  side?: "left" | "right";
+}
+
+export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
   const { data: session, isPending: isSessionLoading } =
     authClient.useSession();
   const { organization } = useActiveOrganization();
@@ -170,8 +174,15 @@ export default function RequestsPanel() {
     onRemoveAccess: handleRemoveAccess,
   });
 
+  const borderClass =
+    side === "left"
+      ? "border-r border-grey-stroke-weak"
+      : "border-l border-grey-stroke-weak";
+
   return (
-    <aside className="flex h-screen w-[580px] shrink-0 flex-col border-l border-grey-stroke-weak bg-white pt-10">
+    <aside
+      className={`flex h-screen w-[580px] shrink-0 flex-col ${borderClass} bg-white pt-10`}
+    >
       <div className="border-b border-grey-stroke-weak px-6 py-5">
         <h2 className="text-right text-heading-2 text-grey-text-strong">
           Requests
@@ -202,7 +213,7 @@ export default function RequestsPanel() {
                 size="small"
                 showValueInTrigger={false}
                 showClearIcon={false}
-                className="w-[110px] !px-2 !py-1 !font-medium !text-[13px] !justify-center !gap-2"
+                className="w-[130px] !px-2 !py-1 !font-medium !text-[13px] !justify-center !gap-2"
               />
               <BogDropdown
                 type="radio"
@@ -374,12 +385,12 @@ function Section({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-6 py-4 text-left bg-grey-fill-weaker"
+        className="flex w-full items-center justify-between px-10 py-6 text-left bg-grey-fill-weak"
       >
-        <span className="text-[13px] font-semibold text-grey-text-strong">
+        <span className="text-[18px] font-bold text-grey-text-strong">
           {count} {label}
         </span>
-        <BogIcon name={open ? "chevron-up" : "chevron-down"} size={16} />
+        <BogIcon name={open ? "chevron-up" : "chevron-down"} size={18} />
       </button>
       {open && <div>{children}</div>}
     </div>

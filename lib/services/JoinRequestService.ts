@@ -5,6 +5,7 @@ import db from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { OrganizationsService } from "./OrganizationService";
 import { MembersService } from "./MemberService";
+import NotificationService from "./NotificationService";
 import {
   joinRequests,
   joinRequestHistory,
@@ -222,6 +223,37 @@ async function updateStatus(
           headers,
         });
       }
+    }
+  }
+
+  if (jr && currentStatus !== newStatus) {
+    const organization = await OrganizationsService.findById(jr.organizationId);
+    const organizationName = organization?.name ?? "the organization";
+
+    if (newStatus === JoinRequestStatus.Approved) {
+      await NotificationService.notify(
+        jr.userId,
+        jr.organizationId,
+        `Join Request Approved\nYour request to join ${organizationName} has been approved.`,
+      );
+    } else if (newStatus === JoinRequestStatus.Denied) {
+      const reasonLine = denialReason?.trim()
+        ? `\nReason: ${denialReason.trim()}`
+        : "";
+      await NotificationService.notify(
+        jr.userId,
+        jr.organizationId,
+        `Join Request Denied\nYour request to join ${organizationName} was denied.${reasonLine}`,
+      );
+    } else if (
+      newStatus === JoinRequestStatus.Pending &&
+      currentStatus === JoinRequestStatus.Approved
+    ) {
+      await NotificationService.notify(
+        jr.userId,
+        jr.organizationId,
+        `Access Removed\nYour access to ${organizationName} has been removed.`,
+      );
     }
   }
 
