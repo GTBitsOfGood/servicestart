@@ -4,6 +4,12 @@ import "dotenv/config";
 
 let junoProcess: ReturnType<typeof exec>;
 
+const JUNO_HEADERS = {
+  "Content-Type": "application/json",
+  "X-User-Email": "test-superadmin@test.com",
+  "X-User-Password": "test-password",
+};
+
 async function main() {
   console.log("Setting up Juno...");
 
@@ -23,14 +29,34 @@ async function main() {
     console.log(`[Juno stdout]: ${stdout}`);
   });
 
+  // Poll until Juno is ready
+  while (true) {
+    try {
+      const pollRes = await fetch(`${process.env.JUNO_BASE_URL}/project`, {
+        method: "GET",
+        headers: JUNO_HEADERS,
+      });
+
+      if (pollRes.ok) {
+        console.log("Juno is ready.");
+        break;
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Error polling Juno:", error.message);
+      } else {
+        console.error("Unknown error polling Juno:", error);
+      }
+    }
+
+    console.log("Waiting for Juno to be ready...");
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+
   console.log("Creating API key...");
   const res = await fetch(`${process.env.JUNO_BASE_URL}/auth/key`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-User-Email": "test-superadmin@test.com",
-      "X-User-Password": "test-password",
-    },
+    headers: JUNO_HEADERS,
     body: JSON.stringify({
       environment: "prod",
       project: {
