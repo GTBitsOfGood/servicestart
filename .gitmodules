@@ -1,0 +1,3 @@
+[submodule "juno"]
+	path = juno
+	url = https://github.com/GTBitsOfGood/juno.git

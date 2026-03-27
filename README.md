@@ -53,6 +53,10 @@ ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/
      openssl rand -base64 32
      ```
 
+1. Set up Juno:
+   - Run `git submodule update --init --recursive` to initialize the Juno submodule.
+   - Run `pnpm run juno:setup` to seed Juno and add an API key to your `.env` file.
+
 1. Start the server:
 
    ```bash
