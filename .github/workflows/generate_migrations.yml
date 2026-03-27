@@ -14,7 +14,7 @@ jobs:
       - name: Pull changes
         run: git pull origin ${{ github.ref }}
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4.2.0
+        uses: pnpm/action-setup@v5.0.0
       - name: Install dependencies
         run: pnpm install
       - name: Generate migrations
