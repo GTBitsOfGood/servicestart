@@ -164,6 +164,7 @@ export async function main() {
       startTimestamp: new Date("2026-03-15T09:00:00"),
       duration: "2 hours",
       coverImageUrl: null,
+      visibility: "public" as const,
     },
     {
       id: "event_002",
@@ -174,6 +175,7 @@ export async function main() {
       startTimestamp: new Date("2026-03-22T10:00:00"),
       duration: "3 hours",
       coverImageUrl: null,
+      visibility: "public" as const,
     },
     {
       id: "event_003",
@@ -184,6 +186,7 @@ export async function main() {
       startTimestamp: new Date("2026-04-05T13:00:00"),
       duration: "4 hours",
       coverImageUrl: null,
+      visibility: "public" as const,
     },
     {
       id: "event_004",
@@ -194,6 +197,7 @@ export async function main() {
       startTimestamp: new Date("2026-01-10T11:00:00"),
       duration: "3 hours",
       coverImageUrl: null,
+      visibility: "public" as const,
     },
     {
       id: "event_005",
@@ -204,6 +208,7 @@ export async function main() {
       startTimestamp: new Date("2025-12-18T14:00:00"),
       duration: "2 hours",
       coverImageUrl: null,
+      visibility: "public" as const,
     },
   ];
 

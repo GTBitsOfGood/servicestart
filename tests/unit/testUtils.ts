@@ -231,6 +231,11 @@ export async function createEvent(
     duration?: string | null;
     coverImageUrl?: string | null;
     publishedAt?: Date | null;
+    visibility?: "public" | "member-only";
+    rsvpLimit?: number | null;
+    rsvpDeadline?: Date | null;
+    accessibilityNotes?: string | null;
+    links?: string[] | null;
   } = {},
 ) {
   const id = randomUUID();
@@ -244,6 +249,11 @@ export async function createEvent(
     duration: opts.duration ?? null,
     coverImageUrl: opts.coverImageUrl ?? null,
     publishedAt: opts.publishedAt ?? new Date(),
+    visibility: opts.visibility ?? "public",
+    rsvpLimit: opts.rsvpLimit ?? null,
+    rsvpDeadline: opts.rsvpDeadline ?? null,
+    accessibilityNotes: opts.accessibilityNotes ?? null,
+    links: opts.links ?? null,
   });
   return id;
 }
