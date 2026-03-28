@@ -1,22 +1,44 @@
-import { createInsertSchema } from "drizzle-orm/zod";
-import { and, eq, isNull, isNotNull, count } from "drizzle-orm";
+import { and, eq, isNull, isNotNull } from "drizzle-orm";
 import db from "@/lib/db";
-import { z } from "zod";
 import { events, eventRsvps, eventHosts } from "@/lib/schema";
 import { randomUUID } from "node:crypto";
 
-const insertSchema = createInsertSchema(events).omit({
-  id: true,
-});
-
-async function create(input: z.infer<typeof insertSchema>) {
+async function create(
+  organizationId: string,
+  name: string,
+  location: string,
+  startTimestamp: Date | null,
+  duration: string | null,
+  description: string | null,
+  coverImageUrl: string | null,
+  rsvpLimit: number | null,
+  rsvpDeadline: Date | null,
+  visibility: "public" | "member-only",
+  accessibilityNotes: string | null,
+  links: string[] | null,
+  publishedAt?: Date | null,
+  publishedById?: string | null,
+) {
   const id = randomUUID();
 
   const [event] = await db
     .insert(events)
     .values({
-      ...input,
       id,
+      organizationId,
+      name,
+      location,
+      description,
+      startTimestamp,
+      duration,
+      rsvpLimit,
+      rsvpDeadline,
+      visibility,
+      accessibilityNotes,
+      links,
+      coverImageUrl,
+      publishedAt,
+      publishedById,
     })
     .returning({
       id: events.id,
@@ -135,6 +157,11 @@ async function updateEvent(
     coverImageUrl?: string | null;
     publishedAt?: Date | null;
     publishedById?: string | null;
+    rsvpLimit?: number | null;
+    rsvpDeadline?: Date | null;
+    visibility?: "public" | "member-only";
+    accessibilityNotes?: string | null;
+    links?: string[] | null;
   },
 ) {
   const updated = await db
@@ -196,19 +223,27 @@ async function findByUser(userId: string) {
       startTimestamp: events.startTimestamp,
       duration: events.duration,
       coverImageUrl: events.coverImageUrl,
+      rsvpLimit: events.rsvpLimit,
+      rsvpDeadline: events.rsvpDeadline,
+      visibility: events.visibility,
+      accessibilityNotes: events.accessibilityNotes,
+      links: events.links,
+      publishedAt: events.publishedAt,
+      publishedById: events.publishedById,
     })
     .from(events)
     .innerJoin(eventRsvps, eq(eventRsvps.eventId, events.id))
     .where(eq(eventRsvps.userId, userId));
 }
 
-async function countRSVPs(eventId: string) {
-  const result = await db
-    .select({ count: count() })
+async function listRSVPsByEvent(eventId: string) {
+  return await db
+    .select({
+      eventId: eventRsvps.eventId,
+      userId: eventRsvps.userId,
+    })
     .from(eventRsvps)
     .where(eq(eventRsvps.eventId, eventId));
-
-  return result[0]?.count ?? 0;
 }
 
 async function addEventHosts(eventId: string, userIds: string[]) {
@@ -218,6 +253,15 @@ async function addEventHosts(eventId: string, userIds: string[]) {
   }));
 
   await db.insert(eventHosts).values(additions);
+}
+
+async function getEventHosts(eventId: string) {
+  const [hosts] = await db
+    .select()
+    .from(eventHosts)
+    .where(eq(events.id, eventId));
+
+  return hosts ?? null;
 }
 
 export const EventService = {
@@ -230,9 +274,9 @@ export const EventService = {
   addRSVP,
   deleteRSVP,
   findByUser,
-  countRSVPs,
+  listRSVPsByEvent,
   addEventHosts,
-  insertSchema,
+  getEventHosts,
 };
 
 export default EventService;
