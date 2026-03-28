@@ -85,8 +85,6 @@ const app = new Hono()
       }
 
       const event = await EventService.create(
-
-      const event = await EventService.create(
         activeOrganizationId,
         data.name,
         data.location,
@@ -96,7 +94,7 @@ const app = new Hono()
         data.coverImageUrl ?? null,
         data.rsvpLimit ?? null,
         data.rsvpDeadline ? new Date(data.rsvpDeadline) : null,
-        visibility,
+        data.visibility,
         data.accessibilityNotes ?? null,
         data.links ?? null,
         publishedAt,

@@ -157,10 +157,13 @@ describe("POST /api/events", () => {
     expect(hosts[1].eventId).toBe(data.id);
   });
 
-  it("returns 403 when host not in org", async () => {
-    const { headers, user, session } = await setupOrgAndUser("owner");
+  it("returns 404 when host not in org", async () => {
+    const { headers } = await setupOrgAndUser("owner");
+
     const organization = await createOrganization("acme2");
-    await setActiveOrganization(session.id, organization.id);
+    const testUser = buildTestUser();
+    const { user } = await signUpAndGetSession(testUser);
+    await addMember(user.id, organization.id, "member");
 
     const response = await testApi.events.$post(
       {
@@ -173,7 +176,7 @@ describe("POST /api/events", () => {
       { headers },
     );
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(404);
   });
 });
 

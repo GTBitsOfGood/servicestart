@@ -256,14 +256,12 @@ async function addEventHosts(eventId: string, userIds: string[]) {
 }
 
 async function getEventHosts(eventId: string) {
-async function getEventHosts(eventId: string) {
   const [hosts] = await db
     .select()
     .from(eventHosts)
     .where(eq(eventHosts.eventId, eventId));
 
   return hosts ?? null;
-}
 }
 
 export const EventService = {
