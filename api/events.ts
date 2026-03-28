@@ -32,7 +32,9 @@ const app = new Hono()
         description: z.string().nullable().optional(),
         rsvpLimit: z.number().optional(),
         rsvpDeadline: z.string().nullable().optional(),
-        visibility: z.enum(["public", "member-only"]).optional(),
+        visibility: z.enum(["public", "member-only"]).default("public"),
+        accessibilityNotes: z.string().optional(),
+        links: z.array(z.string()).optional(),
         coverImageUrl: z.string().nullable().optional(),
         published: z.boolean().default(false),
         hosts: z.array(z.string()).optional(),
@@ -82,28 +84,38 @@ const app = new Hono()
         );
       }
 
-      const event = await EventService.create({
-        organizationId: activeOrganizationId,
-        name: data.name,
-        location: data.location,
-        startTimestamp: data.startTimestamp
-          ? new Date(data.startTimestamp)
-          : null,
-        duration: data.duration ?? null,
-        description: data.description ?? null,
-        coverImageUrl: data.coverImageUrl ?? null,
-        rsvpLimit: data.rsvpLimit ?? null,
-        rsvpDeadline: data.rsvpDeadline ? new Date(data.rsvpDeadline) : null,
-        visibility: data.visibility ?? "member-only",
+      let visibility = data.visibility;
+      if (
+        !data.visibility ||
+        (data.visibility !== "public" && data.visibility !== "member-only")
+      ) {
+        visibility = "public";
+      }
+
+      const event = await EventService.create(
+        activeOrganizationId,
+        data.name,
+        data.location,
+        data.startTimestamp ? new Date(data.startTimestamp) : null,
+        data.duration ?? null,
+        data.description ?? null,
+        data.coverImageUrl ?? null,
+        data.rsvpLimit ?? null,
+        data.rsvpDeadline ? new Date(data.rsvpDeadline) : null,
+        visibility,
+        data.accessibilityNotes ?? null,
+        data.links ?? null,
         publishedAt,
         publishedById,
-      });
+      );
 
       if (!event) {
         return c.json({ error: "Failed to create event" }, { status: 500 });
       }
 
-      await EventService.addEventHosts(event.id, hosts);
+      if (hosts.length > 0) {
+        await EventService.addEventHosts(event.id, hosts);
+      }
 
       return c.json(event);
     },
@@ -467,10 +479,10 @@ const app = new Hono()
         );
       }
 
-      if (event.rsvpLimit) {
-        const rsvpCount = await EventService.countRSVPs(eventId);
+      if (event.rsvpLimit !== null) {
+        const rsvps = await EventService.listRSVPsByEvent(eventId);
 
-        if (rsvpCount >= event.rsvpLimit) {
+        if (!rsvps || rsvps.length >= event.rsvpLimit) {
           return c.json(
             { error: "RSVP limit has been reached" },
             { status: 400 },
@@ -556,20 +568,40 @@ const app = new Hono()
         );
       }
 
-      const numRSVPs = await EventService.countRSVPs(eventId);
-      const deadline = event.rsvpDeadline
-        ? new Date(event.rsvpDeadline)
-        : new Date();
-      const curr = new Date();
-      if (!numRSVPs || numRSVPs === event.rsvpLimit || curr >= deadline) {
-        await EventService.deleteRSVP(eventId, targetUserId);
-
-        return c.json({
-          eventId,
-          userId: targetUserId,
-          status: "removed",
-        });
+      let canUnRSVP = false;
+      if (event.rsvpLimit !== null) {
+        const rsvps = await EventService.listRSVPsByEvent(eventId);
+        if (!rsvps || rsvps.length >= event.rsvpLimit) {
+          canUnRSVP = true;
+        }
       }
+
+      if (event.rsvpDeadline) {
+        const deadline = event.rsvpDeadline
+          ? new Date(event.rsvpDeadline)
+          : new Date();
+        const curr = new Date();
+
+        if (curr >= deadline) {
+          canUnRSVP = true;
+        }
+      }
+
+      if (!event.rsvpDeadline && event.rsvpLimit === null) {
+        canUnRSVP = true;
+      }
+
+      if (!canUnRSVP) {
+        return c.json({ error: "Cannot un-RSVP" }, { status: 400 });
+      }
+
+      await EventService.deleteRSVP(eventId, targetUserId);
+
+      return c.json({
+        eventId,
+        userId: targetUserId,
+        status: "removed",
+      });
     },
   );
 
