@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/lib/db";
-import { events, eventRsvps, shifts } from "@/lib/schema";
+import { events, eventRsvps, shifts, eventHosts } from "@/lib/schema";
 import {
   addMember,
   buildTestUser,
@@ -118,6 +118,62 @@ describe("POST /api/events", () => {
     expect(row.startTimestamp).toBeNull();
     expect(row.duration).toBeNull();
     expect(row.coverImageUrl).toBeNull();
+  });
+
+  it("creates an event with hosts", async () => {
+    const { organization, headers, user } = await setupOrgAndUser("owner");
+
+    const testUser = buildTestUser();
+    const { user: user2, session: session2 } =
+      await signUpAndGetSession(testUser);
+    await setActiveOrganization(session2.id, organization.id);
+    await addMember(user2.id, organization.id, "member");
+
+    const response = await testApi.events.$post(
+      {
+        json: {
+          name: "Temp Event 2",
+          location: "Georgia Tech",
+          hosts: [user.id, user2.id],
+        },
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    if (!("id" in data)) {
+      throw new Error("Response data is missing 'id' property");
+    }
+
+    const hosts = await db
+      .select()
+      .from(eventHosts)
+      .where(eq(eventHosts.eventId, data.id));
+    expect(hosts.length).toBeGreaterThan(0);
+    expect(hosts[0].userId).toBe(user.id);
+    expect(hosts[0].eventId).toBe(data.id);
+    expect(hosts[1].userId).toBe(user2.id);
+    expect(hosts[1].eventId).toBe(data.id);
+  });
+
+  it("returns 403 when host not in org", async () => {
+    const { headers, user, session } = await setupOrgAndUser("owner");
+    const organization = await createOrganization("acme2");
+    await setActiveOrganization(session.id, organization.id);
+
+    const response = await testApi.events.$post(
+      {
+        json: {
+          name: "Temp Event 2",
+          location: "Georgia Tech",
+          hosts: [user.id],
+        },
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(403);
   });
 });
 
@@ -542,6 +598,26 @@ describe("DELETE /api/events/:eventId", () => {
       .where(eq(eventRsvps.eventId, eventId));
     expect(rsvps).toHaveLength(0);
   });
+
+  it("cascades delete to hosts", async () => {
+    const { organization, user, headers } = await setupOrgAndUser("owner");
+    const eventId = await createEvent(organization.id, { name: "Event" });
+
+    await db.insert(eventHosts).values({ eventId, userId: user.id });
+
+    const response = await testApi.events[":eventId"].$delete(
+      { param: { eventId } },
+      { headers },
+    );
+
+    expect(response.status).toBe(200);
+
+    const hosts = await db
+      .select()
+      .from(eventHosts)
+      .where(eq(eventHosts.eventId, eventId));
+    expect(hosts).toHaveLength(0);
+  });
 });
 
 describe("POST /api/events/:eventId/rsvps", () => {
@@ -679,6 +755,44 @@ describe("POST /api/events/:eventId/rsvps", () => {
     );
 
     expect(response.status).toBe(404);
+  });
+
+  it("fails when RSVP limit has been reached", async () => {
+    const { organization, headers } = await setupOrgAndUser("member");
+    const eventId = await createEvent(organization.id, {
+      name: "Event",
+      rsvpLimit: 0,
+    });
+
+    const response = await testApi.events[":eventId"].rsvps.$post(
+      { param: { eventId }, query: {} },
+      { headers },
+    );
+
+    const rsvps = await db
+      .select({
+        eventId: eventRsvps.eventId,
+        userId: eventRsvps.userId,
+      })
+      .from(eventRsvps)
+      .where(eq(eventRsvps.eventId, eventId));
+    expect(rsvps.length).toBe(0);
+    expect(response.status).toBe(400);
+  });
+
+  it("fails when RSVP deadline has been passed", async () => {
+    const { organization, headers } = await setupOrgAndUser("member");
+    const eventId = await createEvent(organization.id, {
+      name: "Event",
+      rsvpDeadline: new Date("2000-06-15T14:00:00Z"),
+    });
+
+    const response = await testApi.events[":eventId"].rsvps.$post(
+      { param: { eventId }, query: {} },
+      { headers },
+    );
+
+    expect(response.status).toBe(400);
   });
 });
 
