@@ -556,13 +556,20 @@ const app = new Hono()
         );
       }
 
-      await EventService.deleteRSVP(eventId, targetUserId);
+      const numRSVPs = await EventService.countRSVPs(eventId);
+      const deadline = event.rsvpDeadline
+        ? new Date(event.rsvpDeadline)
+        : new Date();
+      const curr = new Date();
+      if (!numRSVPs || numRSVPs === event.rsvpLimit || curr >= deadline) {
+        await EventService.deleteRSVP(eventId, targetUserId);
 
-      return c.json({
-        eventId,
-        userId: targetUserId,
-        status: "removed",
-      });
+        return c.json({
+          eventId,
+          userId: targetUserId,
+          status: "removed",
+        });
+      }
     },
   );
 
