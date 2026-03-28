@@ -84,13 +84,7 @@ const app = new Hono()
         );
       }
 
-      let visibility = data.visibility;
-      if (
-        !data.visibility ||
-        (data.visibility !== "public" && data.visibility !== "member-only")
-      ) {
-        visibility = "public";
-      }
+      const event = await EventService.create(
 
       const event = await EventService.create(
         activeOrganizationId,
