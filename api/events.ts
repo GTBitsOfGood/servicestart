@@ -7,6 +7,7 @@ import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 import { ForbiddenError } from "@/lib/errors";
+import { EventVisibility } from "@/lib/schema";
 
 export const eventsQuerySchema = paginationQuerySchema.extend({
   published: z
@@ -32,7 +33,7 @@ const app = new Hono()
         description: z.string().nullable().optional(),
         rsvpLimit: z.number().optional(),
         rsvpDeadline: z.string().nullable().optional(),
-        visibility: z.enum(["public", "member-only"]).default("public"),
+        visibility: z.enum(EventVisibility),
         accessibilityNotes: z.string().optional(),
         links: z.array(z.string()).optional(),
         coverImageUrl: z.string().nullable().optional(),
@@ -197,12 +198,13 @@ const app = new Hono()
       return c.json({ error: "Event not found" }, { status: 404 });
     }
 
-    const activeOrganizationId = session.session.activeOrganizationId;
+    if (event.publishedAt && event.visibility === EventVisibility.Public) {
+      return c.json(event);
+    }
 
+    const activeOrganizationId = session.session.activeOrganizationId;
     if (!activeOrganizationId) {
-      if (event.publishedAt && event.visibility === "public") {
-        return c.json(event);
-      }
+      return c.json({ error: "No active organization" }, { status: 403 });
     }
 
     if (event.organizationId !== activeOrganizationId) {

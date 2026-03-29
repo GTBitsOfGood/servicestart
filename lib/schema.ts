@@ -43,7 +43,15 @@ export enum OrganizationConfigKey {
   LogoUrl = "logo_url",
 }
 
-export const EventVisibility = pgEnum("visibility", ["public", "member-only"]);
+export enum EventVisibility {
+  Public = "public",
+  Member = "member-only",
+}
+
+export const eventVisibilityEnum = pgEnum(
+  "visibility",
+  Object.values(EventVisibility) as [string, ...string[]],
+);
 
 export type ToggleableOrganizationFeature = Extract<
   OrganizationConfigKey,
@@ -249,7 +257,7 @@ export const events = pgTable(
     duration: interval("duration"),
     rsvpLimit: integer("rsvp_limit"),
     rsvpDeadline: timestamp("rsvp_deadline"),
-    visibility: EventVisibility("visibility").notNull(),
+    visibility: eventVisibilityEnum("visibility").notNull(),
     accessibilityNotes: text("accessibility_notes"),
     links: text("links").array(),
     coverImageUrl: text("cover_image_url"),

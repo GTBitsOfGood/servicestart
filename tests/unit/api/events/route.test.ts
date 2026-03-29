@@ -1,7 +1,13 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/lib/db";
-import { events, eventRsvps, shifts, eventHosts } from "@/lib/schema";
+import {
+  events,
+  eventRsvps,
+  shifts,
+  eventHosts,
+  EventVisibility,
+} from "@/lib/schema";
 import {
   addMember,
   buildTestUser,
@@ -30,6 +36,7 @@ describe("POST /api/events", () => {
         location: "Event Space 1",
         startTimestamp: null,
         duration: null,
+        visibility: EventVisibility.Public,
       },
     });
 
@@ -46,6 +53,7 @@ describe("POST /api/events", () => {
           location: "Event Space 1",
           startTimestamp: null,
           duration: null,
+          visibility: EventVisibility.Public,
         },
       },
       { headers },
@@ -66,6 +74,7 @@ describe("POST /api/events", () => {
           duration: "03:00:00",
           description: "Annual event",
           coverImageUrl: "https://example.com/picnic.jpg",
+          visibility: EventVisibility.Public,
         },
       },
       { headers },
@@ -101,6 +110,7 @@ describe("POST /api/events", () => {
         json: {
           name: "Temp Event 2",
           location: "Georgia Tech",
+          visibility: EventVisibility.Public,
         },
       },
       { headers },
@@ -135,6 +145,7 @@ describe("POST /api/events", () => {
           name: "Temp Event 2",
           location: "Georgia Tech",
           hosts: [user.id, user2.id],
+          visibility: EventVisibility.Public,
         },
       },
       { headers },
@@ -171,6 +182,7 @@ describe("POST /api/events", () => {
           name: "Temp Event 2",
           location: "Georgia Tech",
           hosts: [user.id],
+          visibility: EventVisibility.Public,
         },
       },
       { headers },
@@ -353,7 +365,10 @@ describe("GET /api/events/:eventId", () => {
   it("returns 404 when event belongs to different organization", async () => {
     const { headers } = await setupOrgAndUser("member");
     const otherOrg = await createOrganization("other");
-    const eventId = await createEvent(otherOrg.id, { name: "Other Event" });
+    const eventId = await createEvent(otherOrg.id, {
+      name: "Other Event",
+      visibility: EventVisibility.Member,
+    });
 
     const response = await testApi.events[":eventId"].$get(
       { param: { eventId } },
@@ -384,6 +399,27 @@ describe("GET /api/events/:eventId", () => {
     expect(data.name).toBe("Temp Event 3");
     expect(data.location).toBe("Scheller");
     expect(data.description).toBe("Annual event");
+  });
+
+  it("returns event details when public and different org", async () => {
+    const { headers } = await setupOrgAndUser("member");
+    const otherOrg = await createOrganization("other");
+    const eventId = await createEvent(otherOrg.id, {
+      name: "Other Event",
+      publishedAt: new Date(),
+    });
+
+    const response = await testApi.events[":eventId"].$get(
+      { param: { eventId } },
+      { headers },
+    );
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    if (!("name" in data)) {
+      throw new Error("Response data is missing 'name' property");
+    }
+    expect(data.name).toBe("Other Event");
   });
 });
 

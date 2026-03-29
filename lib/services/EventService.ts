@@ -1,6 +1,6 @@
 import { and, eq, isNull, isNotNull } from "drizzle-orm";
 import db from "@/lib/db";
-import { events, eventRsvps, eventHosts } from "@/lib/schema";
+import { events, eventRsvps, eventHosts, EventVisibility } from "@/lib/schema";
 import { randomUUID } from "node:crypto";
 
 async function create(
@@ -13,7 +13,7 @@ async function create(
   coverImageUrl: string | null,
   rsvpLimit: number | null,
   rsvpDeadline: Date | null,
-  visibility: "public" | "member-only",
+  visibility: EventVisibility,
   accessibilityNotes: string | null,
   links: string[] | null,
   publishedAt?: Date | null,
@@ -140,7 +140,12 @@ async function listByPublic(options: { limit: number; offset: number }) {
       publishedById: events.publishedById,
     })
     .from(events)
-    .where(and(eq(events.visibility, "public"), isNotNull(events.publishedAt)))
+    .where(
+      and(
+        eq(events.visibility, EventVisibility.Public),
+        isNotNull(events.publishedAt),
+      ),
+    )
     .limit(options.limit)
     .offset(options.offset);
 }
@@ -159,7 +164,7 @@ async function updateEvent(
     publishedById?: string | null;
     rsvpLimit?: number | null;
     rsvpDeadline?: Date | null;
-    visibility?: "public" | "member-only";
+    visibility?: EventVisibility;
     accessibilityNotes?: string | null;
     links?: string[] | null;
   },
