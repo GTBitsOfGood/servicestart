@@ -49,7 +49,7 @@ async function notify(userId: string, orgId: string, text: string) {
 async function notifyAdmins(
   organizationId: string,
   text: string,
-  type: NotificationType = NotificationType.General,
+  type: NotificationType = NotificationType.ActionRequired,
 ) {
   const adminMembers = await db
     .select({ userId: members.userId })

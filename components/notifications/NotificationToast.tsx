@@ -108,7 +108,7 @@ export default function NotificationToast({
                 e.stopPropagation();
                 if (onDeny) onDeny(notification.id, "Denied via Toast");
               }}
-              className="w-[90px] justify-center !rounded-md !px-0 !py-1 !text-[12px]"
+              className="w-[90px] justify-center rounded-md px-0 py-1 text-[12px]"
             >
               Deny
             </BogButton>
@@ -119,7 +119,7 @@ export default function NotificationToast({
                 e.stopPropagation();
                 if (onApprove) onApprove(notification.id);
               }}
-              className="w-[90px] justify-center !rounded-md !px-0 !py-1 !text-[12px]"
+              className="w-[90px] justify-center rounded-md px-0 py-1 text-[12px]"
             >
               Approve
             </BogButton>

@@ -387,10 +387,10 @@ function Section({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between px-10 py-6 text-left bg-grey-fill-weak"
       >
-        <span className="text-[18px] font-bold text-grey-text-strong">
+        <div className="text-[16px] font-extrabold text-grey-text-weak ">
           {count} {label}
-        </span>
-        <BogIcon name={open ? "chevron-up" : "chevron-down"} size={18} />
+        </div>
+        <BogIcon name={open ? "chevron-up" : "chevron-right"} size={18} />
       </button>
       {open && <div>{children}</div>}
     </div>

@@ -125,7 +125,7 @@ export default function NotificationItem({
               e.stopPropagation();
               setDenyOpen(true);
             }}
-            className="w-[90px] justify-center !rounded-md !px-0 !py-1 !text-[12px]"
+            className="w-[90px] justify-center rounded-md px-0 py-1 text-[12px]"
           >
             Deny
           </BogButton>
@@ -136,7 +136,7 @@ export default function NotificationItem({
               e.stopPropagation();
               setApproveOpen(true);
             }}
-            className="w-[90px] justify-center !rounded-md !px-0 !py-1 !text-[12px]"
+            className="w-[90px] justify-center rounded-md px-0 py-1 text-[12px]"
           >
             Approve
           </BogButton>
@@ -151,13 +151,13 @@ export default function NotificationItem({
             stacked ? "flex-col items-end" : "items-center gap-3",
           )}
         >
-          <span className="inline-flex w-[110px] flex-shrink-0 items-center justify-center gap-1 rounded-md border border-transparent bg-grey-icon-weak py-1 px-1 text-[12px] font-semibold text-white whitespace-nowrap">
+          <span className="inline-flex w-[110px] flex-shrink-0 items-center justify-center gap-1 rounded-md border border-transparent bg-grey-off-state py-1 px-1 text-[12px] font-semibold text-white whitespace-nowrap">
             Approved ✓
           </span>
           {onRemoveAccess && (
             <BogButton
               variant="primary"
-              className="w-[110px] flex-shrink-0 whitespace-nowrap justify-center !rounded-md !px-1 !py-1 !text-[12px]"
+              className="w-[110px] flex-shrink-0 whitespace-nowrap justify-center rounded-md px-1 py-1 text-[12px]"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -178,12 +178,12 @@ export default function NotificationItem({
             stacked ? "flex-col items-end" : "items-center gap-3",
           )}
         >
-          <span className="inline-flex w-[110px] flex-shrink-0 items-center justify-center gap-1 rounded-md border border-transparent bg-grey-icon-weak py-1 text-[12px] font-semibold text-white whitespace-nowrap">
+          <span className="inline-flex w-[100px] flex-shrink-0 items-center justify-center gap-1 rounded-md border border-transparent bg-grey-off-state  py-1 text-[12px] font-semibold text-white whitespace-nowrap">
             Denied ✕
           </span>
           <BogButton
             variant="primary"
-            className="w-[110px] flex-shrink-0 whitespace-nowrap justify-center !rounded-md !px-0 !py-1 !text-[12px]"
+            className="w-[100px] flex-shrink-0 whitespace-nowrap justify-center rounded-md px-0 py-1 text-[12px]"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
