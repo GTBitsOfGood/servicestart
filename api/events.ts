@@ -202,8 +202,6 @@ const app = new Hono()
     if (!activeOrganizationId) {
       if (event.publishedAt && event.visibility === "public") {
         return c.json(event);
-      } else {
-        return c.json({ error: "No active organization" }, { status: 403 });
       }
     }
 
@@ -560,27 +558,13 @@ const app = new Hono()
         );
       }
 
-      let canUnRSVP = false;
-      if (event.rsvpLimit !== null) {
-        const rsvps = await EventService.listRSVPsByEvent(eventId);
-        if (!rsvps || rsvps.length >= event.rsvpLimit) {
-          canUnRSVP = true;
-        }
-      }
-
+      let canUnRSVP = true;
       if (event.rsvpDeadline) {
-        const deadline = event.rsvpDeadline
-          ? new Date(event.rsvpDeadline)
-          : new Date();
-        const curr = new Date();
+        const deadline = new Date(event.rsvpDeadline);
 
-        if (curr >= deadline) {
-          canUnRSVP = true;
+        if (new Date() >= deadline) {
+          canUnRSVP = false;
         }
-      }
-
-      if (!event.rsvpDeadline && event.rsvpLimit === null) {
-        canUnRSVP = true;
       }
 
       if (!canUnRSVP) {
