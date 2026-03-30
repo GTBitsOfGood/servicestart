@@ -8,7 +8,6 @@ import { NotificationService } from "@/lib/services/NotificationService";
 import { NotificationType } from "@/lib/schema";
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { JoinRequestStatus } from "@/lib/schema";
-import { auth } from "@/lib/auth";
 
 const notificationsQuerySchema = paginationQuerySchema.and(
   z.object({
@@ -157,17 +156,10 @@ const app = new Hono()
       joinRequest.id,
       JoinRequestStatus.Approved,
       session.user.id,
+      c.req.raw.headers,
       undefined,
       joinRequest.status,
     );
-
-    await auth.api.addMember({
-      body: {
-        organizationId: activeOrganizationId,
-        userId: notification.userId,
-        role: "member",
-      },
-    });
 
     await NotificationService.updateReadStatus(notificationId, true);
 
@@ -198,6 +190,7 @@ const app = new Hono()
       joinRequest.id,
       JoinRequestStatus.Denied,
       session.user.id,
+      c.req.raw.headers,
       undefined,
       joinRequest.status,
     );

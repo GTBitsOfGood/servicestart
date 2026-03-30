@@ -7,8 +7,11 @@ import BogDropdown from "@/components/bog/BogDropdown/BogDropdown";
 import BogChip from "@/components/bog/BogChip/BogChip";
 import NotificationItem from "@/components/notifications/NotificationItem";
 import { JoinRequestStatus, NotificationType } from "@/lib/schema";
+import type {
+  JoinRequestWithUser,
+  JoinRequestHistoryEntry,
+} from "@/lib/services/JoinRequestService";
 import api from "@/lib/api";
-import type { JoinRequestWithUser } from "@/lib/services/JoinRequestService";
 import authClient from "@/lib/authClient";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import { isAdmin } from "@/lib/clientUtils";
@@ -58,7 +61,6 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
   const [joinRequests, setJoinRequests] = useState<JoinRequestWithUser[]>([]);
   const [status, setStatus] = useState<Status>("loading");
   const [isRefreshing, setIsRefreshing] = useState(false);
-
   const fetchJoinRequests = useCallback(async () => {
     if (!isAuthorized) return;
     const res = await api.joinRequests.$get({
@@ -70,9 +72,9 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
     }
     if (!res.ok) throw new Error("Failed to fetch join requests");
     const json = await res.json();
-    setJoinRequests(json.data as any);
+    setJoinRequests(json.data as JoinRequestWithUser[]);
     setStatus("ok");
-  }, []);
+  }, [isAuthorized]);
 
   useEffect(() => {
     fetchJoinRequests().catch(() => setStatus("error"));
@@ -92,33 +94,45 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
   const toggleTypeFilter = (s: JoinRequestStatus) =>
     setTypeFilters((prev) => {
       const next = new Set(prev);
-      next.has(s) ? next.delete(s) : next.add(s);
+      if (next.has(s)) {
+        next.delete(s);
+      } else {
+        next.add(s);
+      }
       return next;
     });
 
   const handleApprove = useCallback(
-    (id: string) =>
-      void api.joinRequests
+    (id: string) => {
+      api.joinRequests
         .$patch({ query: { id, status: JoinRequestStatus.Approved } })
-        .then(refresh),
+        .then(refresh)
+        .catch(() => setStatus("error"));
+    },
     [refresh],
   );
 
   const handleDeny = useCallback(
-    (id: string, denialReason: string) =>
-      void api.joinRequests
+    (id: string, denialReason: string) => {
+      api.joinRequests
         .$patch({
-          query: { id, status: JoinRequestStatus.Denied, denialReason } as any,
+          query: { id, status: JoinRequestStatus.Denied, denialReason },
         })
-        .then(refresh),
+        .then(refresh)
+        .catch(() => setStatus("error"));
+    },
     [refresh],
   );
 
   const handleRemoveAccess = useCallback(
-    (id: string) =>
-      void api.joinRequests
-        .$patch({ query: { id, status: JoinRequestStatus.Pending } })
-        .then(refresh),
+    (id: string) => {
+      api.joinRequests
+        .$patch({
+          query: { id, status: JoinRequestStatus.Pending },
+        })
+        .then(refresh)
+        .catch(() => setStatus("error"));
+    },
     [refresh],
   );
 
@@ -166,7 +180,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
       status: jr.status,
       user: jr.user,
       denialReason: jr.denialReason,
-      history: jr.history as any,
+      history: jr.history as JoinRequestHistoryEntry[],
       organization: jr.organization,
     },
     onApprove: handleApprove,

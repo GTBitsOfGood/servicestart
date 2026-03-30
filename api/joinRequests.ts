@@ -114,9 +114,9 @@ const app = new Hono()
       joinRequestId,
       newStatus as JoinRequestStatus,
       session.user.id,
+      c.req.raw.headers,
       denialReason,
       joinRequest.status as JoinRequestStatus,
-      c.req.raw.headers,
     );
 
     return c.json({ success: true, joinRequest: updatedRequest });

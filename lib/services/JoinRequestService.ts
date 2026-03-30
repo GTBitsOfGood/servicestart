@@ -76,7 +76,7 @@ async function listByOrganization(
   organizationId: string,
   options?: { limit?: number; offset?: number },
 ) {
-  let query = db
+  const baseQuery = db
     .select({
       id: joinRequests.id,
       status: joinRequests.status,
@@ -97,10 +97,10 @@ async function listByOrganization(
     .where(eq(joinRequests.organizationId, organizationId))
     .orderBy(desc(joinRequests.createdAt));
 
-  if (options?.limit !== undefined) {
-    query = query.limit(options.limit) as any;
-  }
-  const results = await query;
+  const results =
+    options?.limit !== undefined
+      ? await baseQuery.limit(options.limit)
+      : await baseQuery;
 
   const requestsWithHistory = await Promise.all(
     results.map(async (jr) => {
@@ -165,9 +165,9 @@ async function updateStatus(
   joinRequestId: string,
   newStatus: JoinRequestStatus,
   resolvedByUserId: string,
+  headers: Headers,
   denialReason?: string,
   currentStatus?: JoinRequestStatus,
-  headers?: any,
 ) {
   let action: "approved" | "denied" | "removed" = "denied";
   if (newStatus === JoinRequestStatus.Approved) {
