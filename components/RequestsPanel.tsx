@@ -213,7 +213,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
                 size="small"
                 showValueInTrigger={false}
                 showClearIcon={false}
-                className="w-[130px] !px-2 !py-1 !font-medium !text-[13px] !justify-center !gap-2"
+                className="w-[130px] px-2 py-1 font-medium text-[13px] justify-center gap-2"
               />
               <BogDropdown
                 type="radio"
@@ -236,7 +236,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
                 size="small"
                 showValueInTrigger={false}
                 showClearIcon={false}
-                className="w-[130px] !px-2 !py-1 !font-medium !text-[13px] !justify-center !gap-2"
+                className="w-[130px] px-2 py-1 font-medium text-[13px] justify-center gap-2"
               />
             </div>
             <div className="flex-1 min-w-0">
@@ -260,7 +260,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
                 <BogChip
                   variant="soft"
                   color="gray"
-                  className="cursor-pointer gap-2 !px-2 !py-1"
+                  className="cursor-pointer gap-2 px-2 py-1"
                   onClick={() => setSortBy("time_desc")}
                 >
                   <span className="text-[11px] font-medium text-grey-text-strong">
@@ -278,7 +278,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
                   key={s}
                   variant="soft"
                   color="gray"
-                  className="cursor-pointer gap-2 !px-2 !py-1"
+                  className="cursor-pointer gap-2 px-2 py-1"
                   onClick={() => toggleTypeFilter(s)}
                 >
                   <span className="text-[11px] font-medium text-grey-text-strong">
