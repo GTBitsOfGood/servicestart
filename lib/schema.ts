@@ -45,6 +45,16 @@ export enum OrganizationConfigKey {
   DashboardLayout = "dashboard_layout",
 }
 
+export enum EventVisibility {
+  Public = "public",
+  Member = "member-only",
+}
+
+export const eventVisibilityEnum = pgEnum(
+  "visibility",
+  Object.values(EventVisibility) as [string, ...string[]],
+);
+
 export type ToggleableOrganizationFeature = Extract<
   OrganizationConfigKey,
   OrganizationConfigKey.MembersPageEnabled
@@ -247,6 +257,11 @@ export const events = pgTable(
     description: text("description"),
     startTimestamp: timestamp("start_timestamp"),
     duration: interval("duration"),
+    rsvpLimit: integer("rsvp_limit"),
+    rsvpDeadline: timestamp("rsvp_deadline"),
+    visibility: eventVisibilityEnum("visibility").notNull(),
+    accessibilityNotes: text("accessibility_notes"),
+    links: text("links").array(),
     coverImageUrl: text("cover_image_url"),
     publishedAt: timestamp("published_at"),
     publishedById: text("published_by_id").references(() => users.id, {
@@ -254,6 +269,23 @@ export const events = pgTable(
     }),
   },
   (table) => [index("events_organizationId_idx").on(table.organizationId)],
+);
+
+export const eventHosts = pgTable(
+  "event_hosts",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    {
+      pk: primaryKey({ columns: [table.userId, table.eventId] }),
+    },
+  ],
 );
 
 export const announcements = pgTable(
@@ -433,6 +465,7 @@ export const relations = defineRelations(
     invitations,
     joinRequests,
     events,
+    eventHosts,
     eventRsvps,
     announcements,
     shifts,
@@ -456,6 +489,10 @@ export const relations = defineRelations(
       rsvps: r.many.shiftRSVPs({
         from: r.users.id,
         to: r.shiftRSVPs.userId,
+      }),
+      hosts: r.many.eventHosts({
+        from: r.users.id,
+        to: r.eventHosts.userId,
       }),
       sentMessages: r.many.messages({
         from: r.users.id,
@@ -536,6 +573,10 @@ export const relations = defineRelations(
       shifts: r.many.shifts({
         from: r.events.id,
         to: r.shifts.eventId,
+      }),
+      hosts: r.many.eventHosts({
+        from: r.events.id,
+        to: r.eventHosts.eventId,
       }),
     },
     eventRsvps: {
@@ -643,6 +684,7 @@ export const schema = {
   joinRequests,
   events,
   eventRsvps,
+  eventHosts,
   announcements,
   shifts,
   shiftRSVPs,

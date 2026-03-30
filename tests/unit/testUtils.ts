@@ -12,6 +12,7 @@ import {
   shifts,
   shiftRSVPs,
   events,
+  EventVisibility,
   eventRsvps,
   media,
   MediaType,
@@ -231,6 +232,11 @@ export async function createEvent(
     duration?: string | null;
     coverImageUrl?: string | null;
     publishedAt?: Date | null;
+    visibility?: EventVisibility;
+    rsvpLimit?: number | null;
+    rsvpDeadline?: Date | null;
+    accessibilityNotes?: string | null;
+    links?: string[] | null;
   } = {},
 ) {
   const id = randomUUID();
@@ -244,6 +250,11 @@ export async function createEvent(
     duration: opts.duration ?? null,
     coverImageUrl: opts.coverImageUrl ?? null,
     publishedAt: opts.publishedAt ?? new Date(),
+    visibility: opts.visibility ?? EventVisibility.Public,
+    rsvpLimit: opts.rsvpLimit ?? null,
+    rsvpDeadline: opts.rsvpDeadline ?? null,
+    accessibilityNotes: opts.accessibilityNotes ?? null,
+    links: opts.links ?? null,
   });
   return id;
 }

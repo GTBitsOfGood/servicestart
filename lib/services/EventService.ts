@@ -1,6 +1,6 @@
 import { and, eq, isNull, isNotNull } from "drizzle-orm";
 import db from "@/lib/db";
-import { events, eventRsvps } from "@/lib/schema";
+import { events, eventRsvps, eventHosts, EventVisibility } from "@/lib/schema";
 import { randomUUID } from "node:crypto";
 
 async function create(
@@ -11,6 +11,11 @@ async function create(
   duration: string | null,
   description: string | null,
   coverImageUrl: string | null,
+  rsvpLimit: number | null,
+  rsvpDeadline: Date | null,
+  visibility: EventVisibility,
+  accessibilityNotes: string | null,
+  links: string[] | null,
   publishedAt?: Date | null,
   publishedById?: string | null,
 ) {
@@ -26,6 +31,11 @@ async function create(
       description,
       startTimestamp,
       duration,
+      rsvpLimit,
+      rsvpDeadline,
+      visibility,
+      accessibilityNotes,
+      links,
       coverImageUrl,
       publishedAt,
       publishedById,
@@ -38,6 +48,11 @@ async function create(
       description: events.description,
       startTimestamp: events.startTimestamp,
       duration: events.duration,
+      rsvpLimit: events.rsvpLimit,
+      rsvpDeadline: events.rsvpDeadline,
+      visibility: events.visibility,
+      accessibilityNotes: events.accessibilityNotes,
+      links: events.links,
       coverImageUrl: events.coverImageUrl,
       publishedAt: events.publishedAt,
       publishedById: events.publishedById,
@@ -90,12 +105,47 @@ async function listByOrganization(
       description: events.description,
       startTimestamp: events.startTimestamp,
       duration: events.duration,
+      rsvpLimit: events.rsvpLimit,
+      rsvpDeadline: events.rsvpDeadline,
+      visibility: events.visibility,
+      accessibilityNotes: events.accessibilityNotes,
+      links: events.links,
       coverImageUrl: events.coverImageUrl,
       publishedAt: events.publishedAt,
       publishedById: events.publishedById,
     })
     .from(events)
     .where(checks)
+    .limit(options.limit)
+    .offset(options.offset);
+}
+
+async function listByPublic(options: { limit: number; offset: number }) {
+  return await db
+    .select({
+      id: events.id,
+      organizationId: events.organizationId,
+      name: events.name,
+      location: events.location,
+      description: events.description,
+      startTimestamp: events.startTimestamp,
+      duration: events.duration,
+      rsvpLimit: events.rsvpLimit,
+      rsvpDeadline: events.rsvpDeadline,
+      visibility: events.visibility,
+      accessibilityNotes: events.accessibilityNotes,
+      links: events.links,
+      coverImageUrl: events.coverImageUrl,
+      publishedAt: events.publishedAt,
+      publishedById: events.publishedById,
+    })
+    .from(events)
+    .where(
+      and(
+        eq(events.visibility, EventVisibility.Public),
+        isNotNull(events.publishedAt),
+      ),
+    )
     .limit(options.limit)
     .offset(options.offset);
 }
@@ -112,6 +162,11 @@ async function updateEvent(
     coverImageUrl?: string | null;
     publishedAt?: Date | null;
     publishedById?: string | null;
+    rsvpLimit?: number | null;
+    rsvpDeadline?: Date | null;
+    visibility?: EventVisibility;
+    accessibilityNotes?: string | null;
+    links?: string[] | null;
   },
 ) {
   const updated = await db
@@ -128,6 +183,11 @@ async function updateEvent(
       description: events.description,
       startTimestamp: events.startTimestamp,
       duration: events.duration,
+      rsvpLimit: events.rsvpLimit,
+      rsvpDeadline: events.rsvpDeadline,
+      visibility: events.visibility,
+      accessibilityNotes: events.accessibilityNotes,
+      links: events.links,
       coverImageUrl: events.coverImageUrl,
       publishedAt: events.publishedAt,
       publishedById: events.publishedById,
@@ -168,10 +228,45 @@ async function findByUser(userId: string) {
       startTimestamp: events.startTimestamp,
       duration: events.duration,
       coverImageUrl: events.coverImageUrl,
+      rsvpLimit: events.rsvpLimit,
+      rsvpDeadline: events.rsvpDeadline,
+      visibility: events.visibility,
+      accessibilityNotes: events.accessibilityNotes,
+      links: events.links,
+      publishedAt: events.publishedAt,
+      publishedById: events.publishedById,
     })
     .from(events)
     .innerJoin(eventRsvps, eq(eventRsvps.eventId, events.id))
     .where(eq(eventRsvps.userId, userId));
+}
+
+async function listRSVPsByEvent(eventId: string) {
+  return await db
+    .select({
+      eventId: eventRsvps.eventId,
+      userId: eventRsvps.userId,
+    })
+    .from(eventRsvps)
+    .where(eq(eventRsvps.eventId, eventId));
+}
+
+async function addEventHosts(eventId: string, userIds: string[]) {
+  const additions = userIds.map((userId) => ({
+    eventId,
+    userId,
+  }));
+
+  await db.insert(eventHosts).values(additions);
+}
+
+async function getEventHosts(eventId: string) {
+  const [hosts] = await db
+    .select()
+    .from(eventHosts)
+    .where(eq(eventHosts.eventId, eventId));
+
+  return hosts ?? null;
 }
 
 export const EventService = {
@@ -179,10 +274,14 @@ export const EventService = {
   deleteById,
   findById,
   listByOrganization,
+  listByPublic,
   updateEvent,
   addRSVP,
   deleteRSVP,
   findByUser,
+  listRSVPsByEvent,
+  addEventHosts,
+  getEventHosts,
 };
 
 export default EventService;
