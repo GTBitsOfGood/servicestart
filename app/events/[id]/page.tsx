@@ -28,25 +28,33 @@ export default async function EventDetailPage({
   }
 
   const { id } = await params;
-  const activeOrganizationId = session.session.activeOrganizationId;
-
-  if (!activeOrganizationId) {
-    redirect("/");
-  }
-
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    activeOrganizationId,
-  );
-
-  if (!membership) {
-    redirect("/");
-  }
-
   const event = await EventService.findById(id);
 
-  if (!event || event.organizationId !== activeOrganizationId) {
+  if (!event) {
     redirect("/");
+  }
+
+  const activeOrganizationId = session.session.activeOrganizationId;
+  const eventVisibility = (event as { visibility?: string | null }).visibility;
+  const isPublicEvent = eventVisibility === "public";
+
+  if (!isPublicEvent) {
+    if (!activeOrganizationId) {
+      redirect("/");
+    }
+
+    if (event.organizationId !== activeOrganizationId) {
+      redirect("/");
+    }
+
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      activeOrganizationId,
+    );
+
+    if (!membership) {
+      redirect("/");
+    }
   }
 
   const { date, time, endTime } = formatDateTime(
@@ -80,14 +88,8 @@ export default async function EventDetailPage({
   const organizers = organizerProfiles.length
     ? organizerProfiles
     : organization?.name
-      ? [
-          { name: organization.name, image: null },
-          { name: organization.name, image: null },
-        ]
-      : [
-          { name: "Organizer Name", image: null },
-          { name: "Organizer Name", image: null },
-        ];
+      ? [{ name: organization.name, image: null }]
+      : [{ name: "Organizer Name", image: null }];
 
   const eventMeta = event as {
     rsvpLimit?: number | null;
