@@ -57,7 +57,7 @@ async function main() {
     return;
   }
 
-  if (!senderDomain) {
+  if (senderDomain == "http://localhost:3000") {
     console.warn(
       "EMAIL_SENDER_DOMAIN is required to register an organization file bucket",
     );
