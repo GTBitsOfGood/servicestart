@@ -89,6 +89,7 @@ export default function MediaUploadCard({ variant }: MediaUploadCardProps) {
       }
 
       const payload = (await response.json()) as {
+        id?: string;
         uploadUrl?: string;
       };
 
@@ -102,6 +103,11 @@ export default function MediaUploadCard({ variant }: MediaUploadCardProps) {
           },
         });
         if (!putResponse.ok) {
+          if (payload.id) {
+            await fetch(`/api/media/${payload.id}`, {
+              method: "DELETE",
+            }).catch(() => undefined);
+          }
           throw new Error("Could not upload file to storage");
         }
       }

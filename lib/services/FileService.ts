@@ -13,7 +13,11 @@ function getBucketPrefix(): string {
   return process.env.JUNO_FILE_BUCKET_PREFIX?.trim() ?? "ServiceStart";
 }
 
-let cachedFileConfig: { configId: number; providerName: string } | null = null;
+let cachedFileConfig: {
+  configId: number;
+  providerName: string;
+  projectId: string;
+} | null = null;
 
 async function getFileConfig(): Promise<{
   configId: number;
@@ -28,18 +32,25 @@ async function getFileConfig(): Promise<{
   if (!projectId)
     throw new Error("JUNO_PROJECT_ID environment variable must be set");
 
+  // Check cache before making a network call to Juno.
+  if (
+    cachedFileConfig?.providerName === providerName &&
+    cachedFileConfig.projectId === projectId
+  ) {
+    return {
+      configId: cachedFileConfig.configId,
+      providerName: cachedFileConfig.providerName,
+    };
+  }
+
   const fileConfig = await juno.file.getConfig(projectId);
   const configId = parseJunoNumericId(fileConfig.id);
   if (!Number.isFinite(configId)) {
     throw new Error("Juno returned an invalid file config ID");
   }
 
-  if (cachedFileConfig?.providerName === providerName) {
-    if (cachedFileConfig.configId === configId) return cachedFileConfig;
-  }
-
-  cachedFileConfig = { configId, providerName };
-  return cachedFileConfig;
+  cachedFileConfig = { configId, providerName, projectId };
+  return { configId, providerName };
 }
 
 function formatBucketOrgName(organizationName: string): string {

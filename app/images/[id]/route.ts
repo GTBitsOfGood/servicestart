@@ -47,19 +47,10 @@ export async function GET(
   }
 
   try {
-    const { url } = await FileService.getDownloadPresignedUrl(
+    const buffer = await FileService.readFile(
       mediaRecord.organizationId,
       mediaRecord.fileName,
     );
-    const download = await fetch(url);
-    if (!download.ok) {
-      const err = new Error(`Blob download failed (${download.status})`);
-      if (download.status === 404) {
-        (err as NodeJS.ErrnoException).code = "ENOENT";
-      }
-      throw err;
-    }
-    const buffer = Buffer.from(await download.arrayBuffer());
 
     const contentType = getContentType(mediaRecord.fileName);
 
