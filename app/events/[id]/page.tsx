@@ -1,65 +1,19 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import BogButton from "@/components/bog/BogButton/BogButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
+import RegisterButton from "@/components/events/RegisterButton";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
 import EventService from "@/lib/services/EventService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
+import { UserService } from "@/lib/services/UserService";
+import { formatDateTime, formatRsvpDeadline } from "@/lib/clientUtils";
 
 interface EventDetailPageProps {
   params: Promise<{ id: string }>;
-}
-
-function parseDurationMinutes(duration: string | null) {
-  if (!duration) return null;
-
-  const timeMatch = duration.match(/^\s*(\d+):(\d+)(?::\d+)?\s*$/);
-  if (timeMatch) {
-    const hours = Number(timeMatch[1] ?? 0);
-    const minutes = Number(timeMatch[2] ?? 0);
-    return hours * 60 + minutes;
-  }
-
-  const hourMatch = duration.match(/(\d+)\s*hour/);
-  const minuteMatch = duration.match(/(\d+)\s*minute/);
-  const hours = hourMatch ? Number(hourMatch[1]) : 0;
-  const minutes = minuteMatch ? Number(minuteMatch[1]) : 0;
-  const total = hours * 60 + minutes;
-
-  return total > 0 ? total : null;
-}
-
-function formatDateTime(startTimestamp: Date | null, duration: string | null) {
-  if (!startTimestamp) {
-    return { date: "TBD", time: "", endTime: "" };
-  }
-
-  const start = new Date(startTimestamp);
-  const date = start.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "long",
-    day: "numeric",
-  });
-
-  const time = start.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-
-  const durationMinutes = parseDurationMinutes(duration);
-  const endTime = durationMinutes
-    ? new Date(
-        start.getTime() + durationMinutes * 60 * 1000,
-      ).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      })
-    : "";
-
-  return { date, time, endTime };
 }
 
 export default async function EventDetailPage({
@@ -102,9 +56,150 @@ export default async function EventDetailPage({
   const organization = await OrganizationsService.findById(
     event.organizationId,
   );
-  const organizers = organization?.name
-    ? [organization.name, organization.name]
-    : ["Organizer Name", "Organizer Name"];
+  const hostRecord = await EventService.getEventHosts(event.id);
+  const hostIds = hostRecord ? [hostRecord.userId] : [];
+  const hostUsers = await Promise.all(hostIds.map(UserService.findById));
+  const organizerProfiles = hostUsers.flatMap(
+    (
+      user: {
+        displayName?: string | null;
+        name?: string | null;
+        email?: string | null;
+        image?: string | null;
+      } | null,
+    ) => {
+      if (!user) return [];
+      return [
+        {
+          name: user.displayName ?? user.name ?? user.email ?? "Organizer",
+          image: user.image ?? null,
+        },
+      ];
+    },
+  );
+  const organizers = organizerProfiles.length
+    ? organizerProfiles
+    : organization?.name
+      ? [
+          { name: organization.name, image: null },
+          { name: organization.name, image: null },
+        ]
+      : [
+          { name: "Organizer Name", image: null },
+          { name: "Organizer Name", image: null },
+        ];
+
+  const eventMeta = event as {
+    rsvpLimit?: number | null;
+    rsvpDeadline?: Date | null;
+    accessibilityNotes?: string | null;
+    links?: string[] | null;
+  };
+  const rsvpLimit = eventMeta.rsvpLimit ?? null;
+  const rsvpDeadline = eventMeta.rsvpDeadline ?? null;
+  const accessibilityNotes = eventMeta.accessibilityNotes ?? null;
+  const links = eventMeta.links ?? [];
+  const rsvps = await EventService.listRSVPsByEvent(event.id);
+  const rsvpCount = rsvps.length;
+  const userHasRsvped = rsvps.some(
+    (rsvp: { userId: string }) => rsvp.userId === session.user.id,
+  );
+  const isFull = rsvpLimit !== null && rsvpCount >= rsvpLimit;
+  const isDeadlinePassed = rsvpDeadline ? new Date() > rsvpDeadline : false;
+  const initialRegisterState = {
+    registered: userHasRsvped,
+    isFull,
+    isDeadlinePassed,
+  };
+
+  async function registerForEvent() {
+    "use server";
+
+    const authSession = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!authSession?.user) {
+      redirect("/login");
+    }
+
+    const activeOrganizationId = authSession.session.activeOrganizationId;
+    if (!activeOrganizationId) {
+      redirect("/");
+    }
+
+    const membership = await MembersService.findByUserAndOrganization(
+      authSession.user.id,
+      activeOrganizationId,
+    );
+
+    if (!membership) {
+      redirect("/");
+    }
+
+    const eventRecord = await EventService.findById(id);
+    if (!eventRecord || eventRecord.organizationId !== activeOrganizationId) {
+      redirect("/");
+    }
+
+    const recordMeta = eventRecord as {
+      rsvpLimit?: number | null;
+      rsvpDeadline?: Date | null;
+    };
+    const recordRsvpLimit = recordMeta.rsvpLimit ?? null;
+    const recordRsvpDeadline = recordMeta.rsvpDeadline ?? null;
+    const currentRsvps = await EventService.listRSVPsByEvent(eventRecord.id);
+    const recordIsFull =
+      recordRsvpLimit !== null && currentRsvps.length >= recordRsvpLimit;
+    const recordDeadlinePassed = recordRsvpDeadline
+      ? new Date() > recordRsvpDeadline
+      : false;
+
+    const alreadyRsvped = currentRsvps.some(
+      (rsvp: { userId: string }) => rsvp.userId === authSession.user.id,
+    );
+
+    if (alreadyRsvped) {
+      await EventService.deleteRSVP(eventRecord.id, authSession.user.id);
+      const remainingRsvps = await EventService.listRSVPsByEvent(
+        eventRecord.id,
+      );
+      const remainingCount = remainingRsvps.length;
+      const remainingIsFull =
+        recordRsvpLimit !== null && remainingCount >= recordRsvpLimit;
+      const remainingDeadlinePassed = recordRsvpDeadline
+        ? new Date() > recordRsvpDeadline
+        : false;
+      return {
+        registered: false,
+        isFull: remainingIsFull,
+        isDeadlinePassed: remainingDeadlinePassed,
+      };
+    }
+
+    if (recordIsFull || recordDeadlinePassed) {
+      return {
+        registered: false,
+        isFull: recordIsFull,
+        isDeadlinePassed: recordDeadlinePassed,
+      };
+    }
+
+    await EventService.addRSVP(eventRecord.id, authSession.user.id);
+
+    const updatedRsvps = await EventService.listRSVPsByEvent(eventRecord.id);
+    const updatedCount = updatedRsvps.length;
+    const updatedIsFull =
+      recordRsvpLimit !== null && updatedCount >= recordRsvpLimit;
+    const updatedDeadlinePassed = recordRsvpDeadline
+      ? new Date() > recordRsvpDeadline
+      : false;
+    return {
+      registered: true,
+      isFull: updatedIsFull,
+      isDeadlinePassed: updatedDeadlinePassed,
+    };
+  }
 
   return (
     <div className="min-h-screen w-full px-4 pt-6 md:px-20 md:pt-10 flex flex-col">
@@ -133,18 +228,15 @@ export default async function EventDetailPage({
           <h1 className="text-heading-1 font-paragraph font-bold text-grey-text-strong">
             {event.name}
           </h1>
-          <BogButton
-            variant="primary"
-            size="small"
-            className="px-10 py-3 text-xl bg-brand-text text-white"
-          >
-            Register
-          </BogButton>
+          <RegisterButton
+            initialState={initialRegisterState}
+            onRegister={registerForEvent}
+          />
         </div>
 
         <div className="mt-4 flex flex-wrap items-stretch gap-30 text-paragraph-1 text-grey-text-weak">
           <div className="flex items-start gap-4">
-            <BogIcon name="calendar" size={16} />
+            <BogIcon name="calendar" size={20} className="mt-1" />
             <span className="flex flex-col">
               <span className="text-paragraph-1">{date}</span>
               {time ? (
@@ -155,7 +247,7 @@ export default async function EventDetailPage({
             </span>
           </div>
           <div className="flex gap-4">
-            <BogIcon name="map-pin" size={16} />
+            <BogIcon name="map-pin" size={20} className="mt-1" />
             <span className="text-paragraph-1">{event.location}</span>
           </div>
         </div>
@@ -192,12 +284,14 @@ export default async function EventDetailPage({
           <div className="mt-3 space-y-3 text-paragraph-1 text-grey-text-weak">
             <div className="flex items-center gap-2">
               <BogIcon name="users" size={16} />
-              <span className="text-paragraph-1">Max Capacity: 100</span>
+              <span className="text-paragraph-1">
+                Max Capacity: {rsvpLimit ?? "—"}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <BogIcon name="users" size={16} />
               <span className="text-paragraph-1">
-                Registration Deadline: Saturday, June 12th 11:59 pm
+                Registration Deadline: {formatRsvpDeadline(rsvpDeadline)}
               </span>
             </div>
           </div>
@@ -208,18 +302,19 @@ export default async function EventDetailPage({
             External Links
           </h2>
           <div className="mt-2 flex flex-col gap-6 text-paragraph-1 text-grey-text-strong">
-            <a
-              href="https://bitsofgood.org/"
-              className="block underline underline-offset-2 text-paragraph-1"
-            >
-              https://bitsofgood.org/
-            </a>
-            <a
-              href="https://hopeforhaiti.com"
-              className="block underline underline-offset-2 text-paragraph-1"
-            >
-              https://hopeforhaiti.com
-            </a>
+            {links.length > 0 ? (
+              links.map((link) => (
+                <a
+                  key={link}
+                  href={link}
+                  className="block underline underline-offset-2 text-paragraph-1"
+                >
+                  {link}
+                </a>
+              ))
+            ) : (
+              <span>—</span>
+            )}
           </div>
         </div>
 
@@ -228,8 +323,8 @@ export default async function EventDetailPage({
             Accessibility Notes
           </h2>
           <p className="mt-2 text-paragraph-1 text-grey-text-strong">
-            These are brief notes about accessibility related to the event. This
-            might include things like access spots, inclusive initiatives, etc.
+            {accessibilityNotes ??
+              "These are brief notes about accessibility related to the event. This might include things like access spots, inclusive initiatives, etc."}
           </p>
         </div>
 
@@ -238,35 +333,39 @@ export default async function EventDetailPage({
             Organizer(s)
           </h2>
           <div className="mt-3 space-y-6 text-paragraph-1 text-grey-text-strong">
-            {organizers.map((name, index) => (
-              <div key={`${name}-${index}`} className="flex items-center gap-4">
-                <ProfileAvatar size="md" />
-                <span className="text-paragraph-1 text-grey-text-strong">
-                  {name}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="mt-16 -mx-4 border-t border-grey-stroke-weak bg-solid-bg-sunken md:-mx-20">
-        <div className="px-4 py-10 md:px-20">
-          <div className="flex items-center justify-between text-paragraph-2 text-grey-text-weak">
-            <div className="flex items-center">
-              <img src="/logo.svg" alt="Logo" className="h-6 w-auto" />
-              <div className="flex flex-col items-start">
-                <img
-                  src="/bog.svg"
-                  alt="bits of good"
-                  className="h-2.5 w-auto pl-1"
-                />
-                <img src="/sunset.svg" alt="sunset" className="h-3.5 w-auto" />
-              </div>
-            </div>
-            <div className="text-right">
-              <div>© 2024 Bits of Good</div>
-              <div>bitsofgood.org</div>
-            </div>
+            {organizers.map(
+              (
+                organizer: { name: string; image: string | null },
+                index: number,
+              ) => {
+                const avatarStyle = organizer.image
+                  ? ({
+                      "--avatar-url": `url(${organizer.image})`,
+                    } as CSSProperties)
+                  : undefined;
+
+                return (
+                  <div
+                    key={`${organizer.name}-${index}`}
+                    className="flex items-center gap-4"
+                  >
+                    <div style={avatarStyle}>
+                      <ProfileAvatar
+                        size="md"
+                        className={
+                          organizer.image
+                            ? "bg-(image:--avatar-url) bg-cover bg-center"
+                            : undefined
+                        }
+                      />
+                    </div>
+                    <span className="text-paragraph-1 text-grey-text-strong">
+                      {organizer.name}
+                    </span>
+                  </div>
+                );
+              },
+            )}
           </div>
         </div>
       </div>
