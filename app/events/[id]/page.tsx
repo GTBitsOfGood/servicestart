@@ -29,7 +29,6 @@ export default async function EventDetailPage({
     redirect("/");
   }
 
-  const activeOrganizationId = session.session.activeOrganizationId;
   const eventVisibility = (event as { visibility?: string | null }).visibility;
   const isPublicEvent = eventVisibility === "public";
 
@@ -38,6 +37,7 @@ export default async function EventDetailPage({
       redirect("/login");
     }
 
+    const activeOrganizationId = session.session.activeOrganizationId;
     if (!activeOrganizationId) {
       redirect("/");
     }
@@ -102,9 +102,9 @@ export default async function EventDetailPage({
   const links = eventMeta.links ?? [];
   const rsvps = await EventService.listRSVPsByEvent(event.id);
   const rsvpCount = rsvps.length;
-  const userHasRsvped = rsvps.some(
-    (rsvp: { userId: string }) => rsvp.userId === session.user.id,
-  );
+  const userHasRsvped = session?.user
+    ? rsvps.some((rsvp: { userId: string }) => rsvp.userId === session.user.id)
+    : false;
   const isFull = rsvpLimit !== null && rsvpCount >= rsvpLimit;
   const isDeadlinePassed = rsvpDeadline ? new Date() > rsvpDeadline : false;
   const initialRegisterState = {
