@@ -56,6 +56,13 @@ async function main() {
     );
     return;
   }
+
+  if (!senderDomain) {
+    console.warn(
+      "EMAIL_SENDER_DOMAIN is required to register an organization file bucket",
+    );
+    return;
+  }
   if (!fileProviderName) {
     throw new Error(
       "FILE_PROVIDER_NAME is required to register an organization file bucket",
