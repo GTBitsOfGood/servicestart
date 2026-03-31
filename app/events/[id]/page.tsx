@@ -111,7 +111,7 @@ export default async function EventDetailPage({
       <div className="flex-1 pb-10">
         <Link
           href="/events"
-          className="inline-flex items-center gap-2 front-bold text-paragraph-1 text-grey-text-strong my-12"
+          className="inline-flex items-center gap-2 font-bold text-paragraph-1 text-grey-text-strong my-12"
         >
           <BogIcon name="arrow-left" size={14} />
           Back to Events
