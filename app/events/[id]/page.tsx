@@ -22,11 +22,6 @@ export default async function EventDetailPage({
   const session = await auth.api.getSession({
     headers: await headers(),
   });
-
-  if (!session?.user) {
-    redirect("/login");
-  }
-
   const { id } = await params;
   const event = await EventService.findById(id);
 
@@ -39,6 +34,10 @@ export default async function EventDetailPage({
   const isPublicEvent = eventVisibility === "public";
 
   if (!isPublicEvent) {
+    if (!session?.user) {
+      redirect("/login");
+    }
+
     if (!activeOrganizationId) {
       redirect("/");
     }
