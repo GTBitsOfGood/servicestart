@@ -8,17 +8,15 @@ import {
   signUpAndGetSession,
 } from "@/tests/unit/testUtils";
 
-const { getDownloadPresignedUrl } = vi.hoisted(() => ({
-  getDownloadPresignedUrl: vi
-    .fn()
-    .mockResolvedValue({ url: "https://download.example/presigned" }),
+const { readFile } = vi.hoisted(() => ({
+  readFile: vi.fn().mockResolvedValue(Buffer.from("binary image data here")),
 }));
 
 vi.mock("@/lib/services/FileService", async () => {
   const { createMockFileService } =
     await import("@/tests/unit/mockFileService");
   return {
-    FileService: createMockFileService({ getDownloadPresignedUrl }),
+    FileService: createMockFileService({ readFile }),
   };
 });
 
@@ -80,13 +78,6 @@ describe("GET /images/:id", () => {
       fileName: "member-image.jpg",
     });
 
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      arrayBuffer: async () =>
-        new TextEncoder().encode("binary image data here").buffer,
-    }) as unknown as typeof fetch;
-
     const request = new Request(`http://localhost/images/${mediaId}`, {
       headers: new Headers(headers),
     });
@@ -98,7 +89,7 @@ describe("GET /images/:id", () => {
     expect(response.headers.get("Content-Type")).toBe("image/jpeg");
     const body = await response.arrayBuffer();
     expect(new TextDecoder().decode(body)).toBe("binary image data here");
-    expect(getDownloadPresignedUrl).toHaveBeenCalled();
+    expect(readFile).toHaveBeenCalled();
   });
 
   it("returns 404 when file does not exist on disk", async () => {
@@ -107,10 +98,10 @@ describe("GET /images/:id", () => {
       fileName: "missing-on-disk.jpg",
     });
 
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: false,
-      status: 404,
-    }) as unknown as typeof fetch;
+    const enoent = Object.assign(new Error("not found"), {
+      code: "ENOENT",
+    }) as NodeJS.ErrnoException;
+    vi.mocked(readFile).mockRejectedValueOnce(enoent);
 
     const request = new Request(`http://localhost/images/${mediaId}`, {
       headers: new Headers(headers),
