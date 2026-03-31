@@ -70,11 +70,16 @@ async function main() {
 
   const bucketName = FileService.getBucketName(organizationId);
 
-  await juno.file.registerBucket({
-    name: bucketName,
-    configId,
-    fileProviderName,
-  });
+  try {
+    await juno.file.registerBucket({
+      name: bucketName,
+      configId,
+      fileProviderName,
+    });
+  } catch (error) {
+    console.error("Error registering file bucket:", error);
+    throw error;
+  }
 
   console.log(
     `Registered file bucket "${bucketName}" (organization ${organizationId}). configId=${configId}`,
