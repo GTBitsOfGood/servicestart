@@ -88,6 +88,24 @@ export default function MediaUploadCard({ variant }: MediaUploadCardProps) {
         throw new Error(body?.error ?? "Upload failed");
       }
 
+      const payload = (await response.json()) as {
+        uploadUrl?: string;
+      };
+
+      if (payload.uploadUrl) {
+        const putResponse = await fetch(payload.uploadUrl, {
+          method: "PUT",
+          body: file,
+          headers: {
+            "Content-Type": file.type || "application/octet-stream",
+            "x-ms-blob-type": "BlockBlob",
+          },
+        });
+        if (!putResponse.ok) {
+          throw new Error("Could not upload file to storage");
+        }
+      }
+
       startTransition(() => {
         router.refresh();
       });

@@ -1,6 +1,4 @@
-import { writeFile, mkdir } from "node:fs/promises";
-import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   addMember,
   buildTestUser,
@@ -9,10 +7,22 @@ import {
   setActiveOrganization,
   signUpAndGetSession,
 } from "@/tests/unit/testUtils";
-import { GET } from "@/app/images/[id]/route";
 
-const FILE_STORAGE_DIR =
-  process.env.FILE_STORAGE_DIR ?? "/tmp/servicestart-media-test";
+const { getDownloadPresignedUrl } = vi.hoisted(() => ({
+  getDownloadPresignedUrl: vi
+    .fn()
+    .mockResolvedValue({ url: "https://download.example/presigned" }),
+}));
+
+vi.mock("@/lib/services/FileService", async () => {
+  const { createMockFileService } =
+    await import("@/tests/unit/mockFileService");
+  return {
+    FileService: createMockFileService({ getDownloadPresignedUrl }),
+  };
+});
+
+import { GET } from "@/app/images/[id]/route";
 
 async function setupOrgAndUser(role: "owner" | "admin" | "member") {
   const organization = await createOrganization("acme");
@@ -54,10 +64,6 @@ describe("GET /images/:id", () => {
     const otherOrg = await createOrganization("other");
     const mediaId = await createMedia(otherOrg.id, { fileName: "their.jpg" });
 
-    const filePath = path.join(FILE_STORAGE_DIR, otherOrg.id, "their.jpg");
-    await mkdir(path.dirname(filePath), { recursive: true });
-    await writeFile(filePath, "image bytes");
-
     const request = new Request(`http://localhost/images/${mediaId}`, {
       headers: new Headers(headers),
     });
@@ -74,14 +80,12 @@ describe("GET /images/:id", () => {
       fileName: "member-image.jpg",
     });
 
-    const filePath = path.join(
-      FILE_STORAGE_DIR,
-      organization.id,
-      "member-image.jpg",
-    );
-    await mkdir(path.dirname(filePath), { recursive: true });
-    const imageContent = "binary image data here";
-    await writeFile(filePath, imageContent);
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      arrayBuffer: async () =>
+        new TextEncoder().encode("binary image data here").buffer,
+    }) as unknown as typeof fetch;
 
     const request = new Request(`http://localhost/images/${mediaId}`, {
       headers: new Headers(headers),
@@ -93,7 +97,8 @@ describe("GET /images/:id", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("image/jpeg");
     const body = await response.arrayBuffer();
-    expect(new TextDecoder().decode(body)).toBe(imageContent);
+    expect(new TextDecoder().decode(body)).toBe("binary image data here");
+    expect(getDownloadPresignedUrl).toHaveBeenCalled();
   });
 
   it("returns 404 when file does not exist on disk", async () => {
@@ -101,7 +106,11 @@ describe("GET /images/:id", () => {
     const mediaId = await createMedia(organization.id, {
       fileName: "missing-on-disk.jpg",
     });
-    // Don't create the file - media record exists but file doesn't
+
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+    }) as unknown as typeof fetch;
 
     const request = new Request(`http://localhost/images/${mediaId}`, {
       headers: new Headers(headers),
