@@ -17,7 +17,7 @@ async function main() {
   await juno.email.setupEmail({ sendgridKey: sendgridKey! });
   if (!senderDomain) {
     console.warn(
-      "EMAIL_SENDER_DOMAIN is required to register an organization file bucket",
+      "EMAIL_SENDER_DOMAIN is required to register a domain in Sendgrid. Skipping domain registration.",
     );
   } else {
     const registration = await juno.email.registerDomain({
