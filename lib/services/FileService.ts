@@ -32,7 +32,6 @@ async function getFileConfig(): Promise<{
   if (!projectId)
     throw new Error("JUNO_PROJECT_ID environment variable must be set");
 
-  // Check cache before making a network call to Juno.
   if (
     cachedFileConfig?.providerName === providerName &&
     cachedFileConfig.projectId === projectId
