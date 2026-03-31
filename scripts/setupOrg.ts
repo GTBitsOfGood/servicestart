@@ -20,24 +20,29 @@ const senderDomain = (
 
 async function main() {
   await juno.email.setupEmail({ sendgridKey: sendgridKey! });
+  if (senderDomain == "http://localhost:3000") {
+    console.warn(
+      "EMAIL_SENDER_DOMAIN is required to register an organization file bucket",
+    );
+  } else {
+    const registration = await juno.email.registerDomain({
+      domain: senderDomain,
+      subdomain: "mail",
+    });
 
-  const registration = await juno.email.registerDomain({
-    domain: senderDomain,
-    subdomain: "mail",
-  });
+    console.log(`Domain ID: ${registration.id}`);
 
-  console.log(`Domain ID: ${registration.id}`);
+    if (registration.records?.mailCname) {
+      console.log("mail_cname", registration.records.mailCname);
+    }
 
-  if (registration.records?.mailCname) {
-    console.log("mail_cname", registration.records.mailCname);
-  }
+    if (registration.records?.dkim1) {
+      console.log("dkim1", registration.records.dkim1);
+    }
 
-  if (registration.records?.dkim1) {
-    console.log("dkim1", registration.records.dkim1);
-  }
-
-  if (registration.records?.dkim2) {
-    console.log("dkim2", registration.records.dkim2);
+    if (registration.records?.dkim2) {
+      console.log("dkim2", registration.records.dkim2);
+    }
   }
 
   const projectId = process.env.JUNO_PROJECT_ID?.trim();
@@ -57,12 +62,6 @@ async function main() {
     return;
   }
 
-  if (senderDomain == "http://localhost:3000") {
-    console.warn(
-      "EMAIL_SENDER_DOMAIN is required to register an organization file bucket",
-    );
-    return;
-  }
   if (!fileProviderName) {
     throw new Error(
       "FILE_PROVIDER_NAME is required to register an organization file bucket",
