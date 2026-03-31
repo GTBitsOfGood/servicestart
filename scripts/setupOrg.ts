@@ -9,18 +9,13 @@ if (!sendgridKey) {
   throw new Error("SENDGRID_KEY environment variable is not set");
 }
 
-const senderDomain = (
-  process.env.EMAIL_SENDER_DOMAIN?.trim() ||
-  new URL(
-    process.env.BETTER_AUTH_URL ||
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      "http://localhost:3000",
-  ).hostname
-).toLowerCase();
+const senderDomain = process.env.EMAIL_SENDER_DOMAIN
+  ? process.env.EMAIL_SENDER_DOMAIN?.trim().toLowerCase()
+  : undefined;
 
 async function main() {
   await juno.email.setupEmail({ sendgridKey: sendgridKey! });
-  if (senderDomain == "http://localhost:3000") {
+  if (!senderDomain) {
     console.warn(
       "EMAIL_SENDER_DOMAIN is required to register an organization file bucket",
     );
