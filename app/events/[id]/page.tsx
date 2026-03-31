@@ -62,18 +62,6 @@ function formatDateTime(startTimestamp: Date | null, duration: string | null) {
   return { date, time, endTime };
 }
 
-function formatDeadline(startTimestamp: Date | null) {
-  if (!startTimestamp) return "TBD";
-  const deadline = new Date(startTimestamp);
-  deadline.setDate(deadline.getDate() - 1);
-  deadline.setHours(23, 59, 0, 0);
-  return deadline.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-}
-
 export default async function EventDetailPage({
   params,
 }: EventDetailPageProps) {
@@ -111,7 +99,6 @@ export default async function EventDetailPage({
     event.startTimestamp ?? null,
     event.duration ?? null,
   );
-  const registrationDeadline = formatDeadline(event.startTimestamp ?? null);
   const organization = await OrganizationsService.findById(
     event.organizationId,
   );
@@ -120,7 +107,7 @@ export default async function EventDetailPage({
     : ["Organizer Name", "Organizer Name"];
 
   return (
-    <div className="min-h-screen w-full px-20 pt-10 flex flex-col">
+    <div className="min-h-screen w-full px-4 pt-6 md:px-20 md:pt-10 flex flex-col">
       <div className="flex-1 pb-10">
         <Link
           href="/events"
@@ -143,13 +130,13 @@ export default async function EventDetailPage({
         </div>
 
         <div className="flex items-center justify-between my-16">
-          <h1 className="text-5xl font-paragraph font-bold text-grey-text-strong">
+          <h1 className="text-heading-1 font-paragraph font-bold text-grey-text-strong">
             {event.name}
           </h1>
           <BogButton
             variant="primary"
             size="small"
-            className="px-6 bg-brand-text text-white"
+            className="px-10 py-3 text-xl bg-brand-text text-white"
           >
             Register
           </BogButton>
@@ -159,9 +146,9 @@ export default async function EventDetailPage({
           <div className="flex items-start gap-4">
             <BogIcon name="calendar" size={16} />
             <span className="flex flex-col">
-              <span className="text-xl">{date}</span>
+              <span className="text-paragraph-1">{date}</span>
               {time ? (
-                <span className="text-xl">
+                <span className="text-paragraph-1">
                   {endTime ? `${time} - ${endTime} EST` : time}
                 </span>
               ) : null}
@@ -169,28 +156,28 @@ export default async function EventDetailPage({
           </div>
           <div className="flex gap-4">
             <BogIcon name="map-pin" size={16} />
-            <span className="text-xl">{event.location}</span>
+            <span className="text-paragraph-1">{event.location}</span>
           </div>
         </div>
 
         <div className="mt-12">
-          <h2 className="font-bold font-paragraph text-4xl text-grey-text-strong pb-4">
+          <h2 className="text-heading-3 font-paragraph font-bold text-grey-text-strong pb-4">
             Description
           </h2>
-          <p className="mt-2 text-2xl text-grey-text-weak">
+          <p className="mt-2 text-paragraph-1 text-grey-text-weak">
             {event.description || "No description provided."}
           </p>
         </div>
 
         <div className="mt-12">
-          <h2 className="font-bold font-paragraph text-4xl text-grey-text-strong pb-4">
+          <h2 className="text-heading-3 font-paragraph font-bold text-grey-text-strong pb-4">
             Tags
           </h2>
           <div className="mt-2 flex flex-wrap gap-2">
             {["Tag placeholder"].map((tag, index) => (
               <span
                 key={`${tag}-${index}`}
-                className="rounded-lg px-3 py-1 text-base text-[#2874AE] bg-[#DEEBFF]"
+                className="rounded-lg px-3 py-1 text-paragraph-2 text-notif-announcement bg-notif-announcement-bg"
               >
                 {tag}
               </span>
@@ -199,17 +186,17 @@ export default async function EventDetailPage({
         </div>
 
         <div className="mt-12">
-          <h2 className="text-4xl font-bold font-paragraph text-grey-text-strong pb-4">
+          <h2 className="text-heading-3 font-paragraph font-bold text-grey-text-strong pb-4">
             Additional Details
           </h2>
           <div className="mt-3 space-y-3 text-paragraph-1 text-grey-text-weak">
             <div className="flex items-center gap-2">
               <BogIcon name="users" size={16} />
-              <span className="text-xl">Max Capacity: 100</span>
+              <span className="text-paragraph-1">Max Capacity: 100</span>
             </div>
             <div className="flex items-center gap-2">
               <BogIcon name="users" size={16} />
-              <span className="text-xl">
+              <span className="text-paragraph-1">
                 Registration Deadline: Saturday, June 12th 11:59 pm
               </span>
             </div>
@@ -217,19 +204,19 @@ export default async function EventDetailPage({
         </div>
 
         <div className="mt-12">
-          <h2 className="text-3xl font-semibold font-paragraph text-grey-text-strong pb-4">
+          <h2 className="text-heading-4 font-paragraph font-semibold text-grey-text-strong pb-4">
             External Links
           </h2>
           <div className="mt-2 flex flex-col gap-6 text-paragraph-1 text-grey-text-strong">
             <a
               href="https://bitsofgood.org/"
-              className="block underline underline-offset-2 text-2xl"
+              className="block underline underline-offset-2 text-paragraph-1"
             >
               https://bitsofgood.org/
             </a>
             <a
               href="https://hopeforhaiti.com"
-              className="block underline underline-offset-2 text-2xl"
+              className="block underline underline-offset-2 text-paragraph-1"
             >
               https://hopeforhaiti.com
             </a>
@@ -237,17 +224,17 @@ export default async function EventDetailPage({
         </div>
 
         <div className="mt-12">
-          <h2 className="text-3xl font-semibold font-paragraph text-grey-text-strong pb-4">
+          <h2 className="text-heading-4 font-paragraph font-semibold text-grey-text-strong pb-4">
             Accessibility Notes
           </h2>
-          <p className="mt-2 text-2xl text-grey-text-strong">
+          <p className="mt-2 text-paragraph-1 text-grey-text-strong">
             These are brief notes about accessibility related to the event. This
             might include things like access spots, inclusive initiatives, etc.
           </p>
         </div>
 
         <div className="mt-12">
-          <h2 className="text-4xl font-paragraph font-semibold text-grey-text-strong pb-4">
+          <h2 className="text-heading-3 font-paragraph font-semibold text-grey-text-strong pb-4">
             Organizer(s)
           </h2>
           <div className="mt-3 space-y-6 text-paragraph-1 text-grey-text-strong">
@@ -262,8 +249,8 @@ export default async function EventDetailPage({
           </div>
         </div>
       </div>
-      <div className="mt-16 -mx-20 border-t border-grey-stroke-weak bg-solid-bg-sunken">
-        <div className="px-20 py-10">
+      <div className="mt-16 -mx-4 border-t border-grey-stroke-weak bg-solid-bg-sunken md:-mx-20">
+        <div className="px-4 py-10 md:px-20">
           <div className="flex items-center justify-between text-paragraph-2 text-grey-text-weak">
             <div className="flex items-center">
               <img src="/logo.svg" alt="Logo" className="h-6 w-auto" />
