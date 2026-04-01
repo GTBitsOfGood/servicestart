@@ -213,6 +213,12 @@ export default function DashboardLayoutBuilder({
     }
   }, [columns, onSave]);
 
+  const handleDiscard = useCallback(() => {
+    setColumns(splitInitialLayout(initialLayout.widgets));
+    setHasChanges(false);
+    setSaveError(null);
+  }, [initialLayout.widgets]);
+
   const widgetLabels = useMemo(
     () => Object.fromEntries(availableWidgets.map((w) => [w.id, w.label])),
     [availableWidgets],
@@ -249,23 +255,46 @@ export default function DashboardLayoutBuilder({
           ))}
         </div>
 
-        {hasChanges && (
-          <div className="mt-8">
+        <div className="mt-8 flex flex-col items-end gap-2">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleDiscard}
+              disabled={!hasChanges}
+              type="button"
+              className={`flex items-center gap-1 rounded px-2 py-2 text-paragraph-2 font-semibold transition-colors ${
+                hasChanges
+                  ? "text-brand-text hover:opacity-80"
+                  : "text-grey-off-state"
+              }`}
+            >
+              <BogIcon
+                name="arrow-counter-clockwise"
+                size={20}
+                color={
+                  hasChanges
+                    ? "var(--color-brand-text)"
+                    : "var(--color-grey-off-state)"
+                }
+              />
+              Discard Changes
+            </button>
             <button
               onClick={handleSave}
-              disabled={isSaving}
-              className="w-full rounded-lg bg-brand-text px-6 py-3 text-paragraph-1 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              disabled={!hasChanges || isSaving}
               type="button"
+              className={`rounded px-3 py-2 text-paragraph-2 font-semibold text-white transition-colors ${
+                hasChanges
+                  ? "bg-brand-text hover:opacity-90"
+                  : "bg-grey-fill-weak"
+              }`}
             >
               {isSaving ? "Saving..." : "Save Layout"}
             </button>
-            {saveError && (
-              <p className="mt-2 text-paragraph-2 text-status-red-text">
-                {saveError}
-              </p>
-            )}
           </div>
-        )}
+          {saveError && (
+            <p className="text-paragraph-2 text-status-red-text">{saveError}</p>
+          )}
+        </div>
       </div>
 
       {/* ── Right panel: preview ─────────────────────────────────── */}
@@ -426,7 +455,7 @@ function MoveTargetColumn({
   const { ref: topRef, isDropTarget: isTopTarget } = useDroppable({
     id: `${widgetId}__top`,
   });
-  const { ref: midRef } = useDroppable({
+  const { ref: midRef, isDropTarget: isMidTarget } = useDroppable({
     id: `${widgetId}__mid`,
   });
   const { ref: bottomRef, isDropTarget: isBottomTarget } = useDroppable({
@@ -475,7 +504,7 @@ function MoveTargetColumn({
           <div className="flex-1" />
         </>
       ) : (
-        widgetBox(false, false)
+        widgetBox(false, isMidTarget)
       )}
     </div>
   );
