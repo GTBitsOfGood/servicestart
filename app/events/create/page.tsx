@@ -44,7 +44,6 @@ export default function EventsCreationPage() {
       date === "" ||
       startTime === "" ||
       endTime === "" ||
-      // timezone === "" ||
       description === "" ||
       address === "" ||
       city === "" ||
