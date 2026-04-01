@@ -9,7 +9,6 @@ import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import { isAdmin } from "@/lib/clientUtils";
 import BogRadioGroup from "@/components/bog/BogRadioGroup/BogRadioGroup";
 import BogRadioItem from "@/components/bog/BogRadioItem/BogRadioItem";
-// import BogDropdown from "@/components/bog/BogDropdown/BogDropdown";
 
 export default function EventsCreationPage() {
   const router = useRouter();
@@ -19,7 +18,6 @@ export default function EventsCreationPage() {
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  // const [timezone, setTimezone] = useState("EST");
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
