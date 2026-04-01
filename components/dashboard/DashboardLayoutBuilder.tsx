@@ -7,6 +7,7 @@ import {
   useDraggable,
   useDroppable,
 } from "@dnd-kit/react";
+import { ArrowCounterClockwise } from "@phosphor-icons/react";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import type {
   DashboardLayout,
@@ -267,8 +268,7 @@ export default function DashboardLayoutBuilder({
                   : "text-grey-off-state"
               }`}
             >
-              <BogIcon
-                name="arrow-counter-clockwise"
+              <ArrowCounterClockwise
                 size={20}
                 color={
                   hasChanges

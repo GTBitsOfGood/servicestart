@@ -125,12 +125,15 @@ describe("DashboardLayoutBuilder", () => {
   it("shows save button after changes", () => {
     renderBuilder({ initialLayout: EMPTY_LAYOUT });
 
-    expect(screen.queryByText("Save Layout")).toBeNull();
+    expect(screen.getByText("Save Layout")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Save Layout/i })).toBeDisabled();
 
     const eventsCard = screen.getByRole("button", { name: "Events" });
     fireEvent.click(eventsCard);
 
-    expect(screen.getByText("Save Layout")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /Save Layout/i }),
+    ).not.toBeDisabled();
   });
 
   it("calls onSave with correct layout when save is clicked", async () => {
