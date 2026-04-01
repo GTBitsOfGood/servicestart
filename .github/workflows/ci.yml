@@ -125,7 +125,7 @@ jobs:
         run: pnpm run db:check
 
       - name: Create database
-        run: pnpm run db:test:create
+        run: pnpm run db:create
 
       - name: Migrate database
-        run: pnpm run db:test:migrate
+        run: DB_URL=postgresql://root:dev@localhost:5432/postgres pnpm run db:migrate
