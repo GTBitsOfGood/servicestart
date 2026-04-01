@@ -445,12 +445,15 @@ export default function EventsCreationPage() {
             <BogRadioItem
               value="public"
               label="Public"
-              className="flex h-[44px] px-2 py-3 items-center gap-2 self-stretch rounded border border-[#D9D9D9] bg-[#FAFBFC]"
+            <BogRadioItem
+              value="public"
+              label="Public"
+              className="flex h-[44px] px-2 py-3 items-center gap-2 self-stretch rounded border border-[var(--color-stroke-default)] bg-[var(--color-surface-default)]"
             />
             <BogRadioItem
               value="member-only"
               label="Member only"
-              className="flex h-[44px] px-2 py-3 items-center gap-2 self-stretch rounded border border-[#D9D9D9] bg-[#FAFBFC]"
+              className="flex h-[44px] px-2 py-3 items-center gap-2 self-stretch rounded border border-[var(--color-stroke-default)] bg-[var(--color-surface-default)]"
             />
           </BogRadioGroup>
         </div>
