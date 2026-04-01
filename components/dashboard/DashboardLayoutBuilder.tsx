@@ -146,8 +146,13 @@ export default function DashboardLayoutBuilder({
 
     const sourceId = String(operation.source.id) as WidgetId;
     const rawTargetId = String(operation.target.id);
-    const targetId = rawTargetId.replace(/__(?:top|bottom)$/, "") as WidgetId;
+    const targetId = rawTargetId.replace(
+      /__(?:top|mid|bottom)$/,
+      "",
+    ) as WidgetId;
     if (sourceId === targetId) return;
+
+    const isSwapZone = rawTargetId.endsWith("__mid");
 
     setColumns((prev) => {
       const { col1, col2 } = prev;
@@ -165,11 +170,11 @@ export default function DashboardLayoutBuilder({
         return srcInCol1 ? { col1: col, col2 } : { col1, col2: col };
       }
 
-      // Cross-column: move when valid (2→1), swap otherwise
+      // Cross-column: move (top/bottom zones) or swap (mid zone)
       const srcCol = srcInCol1 ? col1 : col2;
       const tgtCol = srcInCol1 ? col2 : col1;
 
-      if (srcCol.length === 2 && tgtCol.length === 1) {
+      if (!isSwapZone && srcCol.length === 2 && tgtCol.length === 1) {
         const newSrc = srcCol.filter((id) => id !== sourceId);
         const droppedOnTop = rawTargetId.endsWith("__top");
         const newTgt = droppedOnTop
@@ -377,6 +382,7 @@ function PreviewGrid({ col1, col2, widgetLabels, activeId }: PreviewGridProps) {
               label={widgetLabels[id] ?? id}
               isTall={s1 === "tall"}
               isDragSource={activeId === id}
+              disableDrop={isMoveCase && activeId !== id}
             />
           ))}
         </div>
@@ -396,6 +402,7 @@ function PreviewGrid({ col1, col2, widgetLabels, activeId }: PreviewGridProps) {
                 label={widgetLabels[id] ?? id}
                 isTall={s2 === "tall"}
                 isDragSource={activeId === id}
+                disableDrop={isMoveCase && activeId !== id}
               />
             ))}
           </div>
@@ -416,24 +423,22 @@ function MoveTargetColumn({
   widgetId: WidgetId;
   label: string;
 }) {
-  const topZoneId = `${widgetId}__top`;
-  const bottomZoneId = `${widgetId}__bottom`;
-
   const { ref: topRef, isDropTarget: isTopTarget } = useDroppable({
-    id: topZoneId,
+    id: `${widgetId}__top`,
+  });
+  const { ref: midRef, isDropTarget: isMidTarget } = useDroppable({
+    id: `${widgetId}__mid`,
   });
   const { ref: bottomRef, isDropTarget: isBottomTarget } = useDroppable({
-    id: bottomZoneId,
+    id: `${widgetId}__bottom`,
   });
 
-  const isHovering = isTopTarget || isBottomTarget;
-
-  const widgetBox = (shrunk: boolean) => (
+  const widgetBox = (shrunk: boolean, highlighted: boolean) => (
     <div
       className={`flex items-start rounded-xl border p-6 transition-colors ${
         shrunk ? "h-1/2" : "flex-1"
       } ${
-        isHovering
+        highlighted
           ? "border-brand-stroke-strong bg-brand-fill"
           : "border-transparent bg-white"
       }`}
@@ -445,31 +450,32 @@ function MoveTargetColumn({
   );
 
   const divider = (
-    <div className="mx-4 border-t-2 border-brand-stroke-strong" />
+    <div className="mx-4 border-t-4 border-brand-stroke-strong" />
   );
 
   return (
     <div className="relative flex flex-col">
-      {/* Invisible drop zones covering each half */}
-      <div ref={topRef} className="absolute inset-x-0 top-0 z-10 h-1/2" />
-      <div ref={bottomRef} className="absolute inset-x-0 bottom-0 z-10 h-1/2" />
+      {/* Three invisible drop zones: top 25% = move above, middle 50% = swap, bottom 25% = move below */}
+      <div ref={topRef} className="absolute inset-x-0 top-0 z-10 h-1/4" />
+      <div ref={midRef} className="absolute inset-x-0 top-1/4 z-10 h-1/2" />
+      <div ref={bottomRef} className="absolute inset-x-0 bottom-0 z-10 h-1/4" />
 
       {isTopTarget ? (
         <>
           <div className="flex-1" />
           {divider}
           <div className="h-2" />
-          {widgetBox(true)}
+          {widgetBox(true, false)}
         </>
       ) : isBottomTarget ? (
         <>
-          {widgetBox(true)}
+          {widgetBox(true, false)}
           <div className="h-2" />
           {divider}
           <div className="flex-1" />
         </>
       ) : (
-        widgetBox(false)
+        widgetBox(false, false)
       )}
     </div>
   );
@@ -482,6 +488,7 @@ interface PreviewWidgetProps {
   label: string;
   isTall: boolean;
   isDragSource: boolean;
+  disableDrop?: boolean;
 }
 
 function PreviewWidget({
@@ -489,9 +496,12 @@ function PreviewWidget({
   label,
   isTall,
   isDragSource,
+  disableDrop = false,
 }: PreviewWidgetProps) {
   const { ref: dragRef } = useDraggable({ id });
   const { ref: dropRef, isDropTarget } = useDroppable({ id });
+
+  const showHighlight = isDropTarget && !disableDrop;
 
   return (
     <div
@@ -505,7 +515,7 @@ function PreviewWidget({
       } ${
         isDragSource
           ? "border-dashed border-brand-hover bg-brand-surface"
-          : isDropTarget
+          : showHighlight
             ? "border-brand-stroke-strong bg-brand-fill"
             : "border-transparent bg-white"
       }`}
