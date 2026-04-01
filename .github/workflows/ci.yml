@@ -125,7 +125,7 @@ jobs:
         run: pnpm run db:check
 
       - name: Create database
-        run: pnpm run db:create
+        run: pnpm run db:test:create
 
       - name: Migrate database
-        run: pnpm run db:migrate
+        run: pnpm run db:test:migrate
