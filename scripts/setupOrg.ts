@@ -73,6 +73,7 @@ async function main() {
   const bucketName = FileService.getBucketName(organizationId);
 
   const buckets = await juno.file.getBucketsByConfigIdAndEnv(String(configId));
+  console.log("Buckets", buckets);
 
   if (buckets.some((bucket) => bucket.name === bucketName)) {
     console.log(
