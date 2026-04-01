@@ -349,7 +349,7 @@ export default function EventsCreationPage() {
               className="w-[18%]"
             />
           </div>
-          <div className="w-full">
+          <div className="w-full flex flex-col gap-2 items-start">
             {links.map((link, index) => (
               <BogTextInput
                 key={index}
@@ -362,6 +362,7 @@ export default function EventsCreationPage() {
                   setLinks(updated);
                 }}
                 placeholder="URL must be in the form https://www.example.[com, org, net, etc.]"
+                className="w-full"
               />
             ))}
             <BogButton
@@ -396,7 +397,7 @@ export default function EventsCreationPage() {
           <h6 className="text-black text-[20px] leading-[26px] font-medium">
             Ownerships
           </h6>
-          <div className="w-full">
+          <div className="w-full flex flex-col gap-2 items-start">
             {hosts.map((host, index) => (
               <BogTextInput
                 key={`${index}host`}
@@ -490,13 +491,13 @@ export default function EventsCreationPage() {
         <div className="flex flex-end items-start gap-5">
           <BogButton
             onClick={() => setExit(true)}
-            className="flex py-2 pr-3 pl-3 items-center -space-x-1 rounded bg-transparent text-[var(--color-brand-text)]"
+            className="flex py-3 px-4 items-center -space-x-1 rounded bg-transparent text-[var(--color-brand-text)]"
           >
             Cancel
           </BogButton>
           <BogButton
             onClick={handleSubmit}
-            className="flex py-2 px-3 items-center -space-x-1 rounded"
+            className="flex py-3 px-4 items-center -space-x-1 rounded"
           >
             Create Event
           </BogButton>
@@ -504,7 +505,7 @@ export default function EventsCreationPage() {
       </div>
       {exit && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="flex w-[580px] p-8 flex-col items-center gap-6 bg-white">
+          <div className="flex w-[580px] p-8 flex-col items-center gap-4 bg-white rounded">
             <div className="h-[68.717px] self-stretch">
               <div className="w-full">
                 <div className="inline-flex w-full justify-between items-center">
@@ -533,9 +534,11 @@ export default function EventsCreationPage() {
                 </svg>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-12 self-stretch">
-              <div className="flex flex-col items-start gap-6 self-stretch">
-                <p>Are you sure you want to discard the changes you made?</p>
+            <div className="flex flex-col items-end gap-12 self-stretch ">
+              <div className="flex flex-col items-start gap-12 self-stretch">
+                <p className="self-stretch">
+                  Are you sure you want to discard the changes you made?
+                </p>
               </div>
               <div className="flex items-start gap-5">
                 <BogButton
@@ -544,7 +547,12 @@ export default function EventsCreationPage() {
                 >
                   Cancel
                 </BogButton>
-                <BogButton onClick={handleExit}>Discard</BogButton>
+                <BogButton
+                  onClick={handleExit}
+                  className="flex py-2 px-3 items-center -gap-1"
+                >
+                  Discard
+                </BogButton>
               </div>
             </div>
           </div>
