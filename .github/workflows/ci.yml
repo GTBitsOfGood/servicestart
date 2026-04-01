@@ -123,3 +123,9 @@ jobs:
 
       - name: Check migrations
         run: pnpm run db:check
+
+      - name: Create database
+        run: pnpm run db:create
+
+      - name: Migrate database
+        run: pnpm run db:migrate
