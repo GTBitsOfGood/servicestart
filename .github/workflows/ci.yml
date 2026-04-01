@@ -128,4 +128,4 @@ jobs:
         run: pnpm run db:create
 
       - name: Migrate database
-        run: DB_URL=postgresql://root:dev@localhost:5432/postgres pnpm run db:migrate
+        run: DB_URL=postgresql://dev:root@localhost:5432/postgres pnpm run db:migrate
