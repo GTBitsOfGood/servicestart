@@ -121,6 +121,8 @@ export default function EventsCreationPage() {
     ) {
       setMissing(true);
       return;
+    } else {
+      setMissing(false);
     }
 
     const startingTime = new Date(`${date}T${startTime}`);
@@ -129,10 +131,18 @@ export default function EventsCreationPage() {
     if (timeDiff <= 0) {
       setWrongTime(true);
       return;
+    } else {
+      setWrongTime(false);
     }
+
     const duration = Math.floor(timeDiff / (1000 * 60));
     const linksNoEmpty = links.filter((l) => l.trim() !== "");
     const hostsNoEmpty = hosts.filter((h) => h.trim() !== "");
+
+    const currEmail = session?.data?.user?.email;
+    if (currEmail && !hostsNoEmpty.includes(currEmail)) {
+      hostsNoEmpty.unshift(currEmail);
+    }
 
     const json = {
       name: title,
