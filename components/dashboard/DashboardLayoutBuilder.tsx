@@ -426,7 +426,7 @@ function MoveTargetColumn({
   const { ref: topRef, isDropTarget: isTopTarget } = useDroppable({
     id: `${widgetId}__top`,
   });
-  const { ref: midRef, isDropTarget: isMidTarget } = useDroppable({
+  const { ref: midRef } = useDroppable({
     id: `${widgetId}__mid`,
   });
   const { ref: bottomRef, isDropTarget: isBottomTarget } = useDroppable({
