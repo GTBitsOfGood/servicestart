@@ -72,6 +72,15 @@ async function main() {
 
   const bucketName = FileService.getBucketName(organizationId);
 
+  const buckets = await juno.file.getBucketsByConfigIdAndEnv(String(configId));
+
+  if (buckets.some((bucket) => bucket.name === bucketName)) {
+    console.log(
+      `File bucket "${bucketName}" already exists for organization ${organizationId}. Skipping registration.`,
+    );
+    return;
+  }
+
   try {
     await juno.file.registerBucket({
       name: bucketName,
