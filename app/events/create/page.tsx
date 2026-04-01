@@ -98,7 +98,7 @@ export default function EventsCreationPage() {
       }
 
       router.push("/events");
-    } catch (error) {
+    } catch {
       setHasError(true);
     }
   };
