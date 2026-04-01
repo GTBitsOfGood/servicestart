@@ -2,6 +2,7 @@ import "dotenv/config";
 import { juno } from "../lib/junoClient";
 import { FileService } from "../lib/services/FileService";
 import { parseJunoNumericId } from "../lib/services/junoFileUtils";
+import { ResponseError } from "juno-sdk/internal/runtime";
 
 const sendgridKey = process.env.SENDGRID_KEY?.trim();
 
@@ -78,7 +79,9 @@ async function main() {
       fileProviderName,
     });
   } catch (error) {
-    console.error("Error registering file bucket:", error);
+    if (error instanceof ResponseError) {
+      console.error(await error.response.text());
+    }
     throw error;
   }
 
