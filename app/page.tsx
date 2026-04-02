@@ -1,20 +1,42 @@
-import NotificationsWidget from "@/components/notifications/NotificationsWidget";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { MembersService } from "@/lib/services/MemberService";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { DEFAULT_MEMBER_LAYOUT } from "@/lib/dashboard/constants";
+import DashboardGrid from "@/components/dashboard/DashboardGrid";
 
 export const metadata = {
   title: "Dashboard",
 };
 
-export default function Page() {
-  return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-heading-1 font-bold text-grey-text-strong">
-          Dashboard
-        </h1>
-        <NotificationsWidget />
-      </div>
+export default async function Page() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-      <div className="h-[644px] rounded-lg border-2 border-grey-stroke-weak bg-grey-fill-weaker" />
+  const organizationId = session?.session.activeOrganizationId;
+  let isAdmin = false;
+  let layout = DEFAULT_MEMBER_LAYOUT;
+
+  if (session?.user && organizationId) {
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      organizationId,
+    );
+    isAdmin = MembersService.isAdminOrOwner(membership?.role) ?? false;
+
+    layout = isAdmin
+      ? await OrganizationConfigService.getAdminDashboardLayout(organizationId)
+      : await OrganizationConfigService.getDashboardLayout(organizationId);
+  }
+
+  return (
+    <div className="px-24 pb-[72px] pt-8">
+      <h1 className="mb-8 font-normal text-heading-1 text-grey-text-strong">
+        {isAdmin ? "Admin Dashboard" : "Dashboard"}
+      </h1>
+
+      <DashboardGrid layout={layout} />
     </div>
   );
 }

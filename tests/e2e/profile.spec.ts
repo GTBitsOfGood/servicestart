@@ -11,8 +11,9 @@ test.describe("Profile Page", () => {
     const { user } = await createTestUserAndSignIn(page);
     await page.goto("/profile");
 
-    await expect(page.getByText(user.name)).toBeVisible();
-    await expect(page.getByText(user.email)).toBeVisible();
+    const main = page.getByRole("main");
+    await expect(main.getByText(user.name)).toBeVisible();
+    await expect(main.getByText(user.email)).toBeVisible();
   });
 
   test("shows Edit Details button", async ({ page }) => {
