@@ -30,7 +30,7 @@ const ORGS: Array<{
     id: "org_servicestart",
     name: "ServiceStart",
     slug: "servicestart",
-    navbar: { variant: "vertical-sidebar", color: "red" },
+    navbar: { variant: "horizontal-center", color: "red" },
   },
   {
     id: "org_vertical_icon",
@@ -149,7 +149,7 @@ export async function main() {
 
   log("Users and members created.");
   log(
-    "Navbar configs by org: servicestart (vertical sidebar, red), vertical-icon (vertical icon, white), horizontal-left (horizontal left, red), horizontal-center (horizontal center, white). Sign in and switch active org to test different navbar configs.",
+    "Navbar configs by org: servicestart (horizontal center, red), vertical-sidebar (vertical sidebar, red), vertical-icon (vertical icon, white), horizontal-left (horizontal left, red), horizontal-center (horizontal center, white). Sign in and switch active org to test different navbar configs.",
   );
 
   const orgId = "org_servicestart";
