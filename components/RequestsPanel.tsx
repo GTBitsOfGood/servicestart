@@ -72,7 +72,19 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
     }
     if (!res.ok) throw new Error("Failed to fetch join requests");
     const json = await res.json();
-    setJoinRequests(json.data as JoinRequestWithUser[]);
+    setJoinRequests(
+      (json.data as unknown[]).map((item) => {
+        const jr = item as Record<string, unknown>;
+        return {
+          ...jr,
+          createdAt: new Date(jr.createdAt as string),
+          history: (jr.history as Record<string, unknown>[]).map((h) => ({
+            ...h,
+            resolvedAt: new Date(h.resolvedAt as string),
+          })),
+        } as JoinRequestWithUser;
+      }),
+    );
     setStatus("ok");
   }, [isAuthorized]);
 
