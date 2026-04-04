@@ -6,6 +6,7 @@ import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import authClient from "@/lib/authClient";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
+import Link from "next/link";
 
 export function UserProfileMenu() {
   const [open, setOpen] = useState(false);
@@ -37,7 +38,7 @@ export function UserProfileMenu() {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className={`flex items-center gap-3 rounded-md px-3 py-2 transition-colors ${
+        className={`cursor-pointer flex items-center gap-3 rounded-md px-3 py-2 transition-colors ${
           open ? "bg-brand-text/10" : "hover:bg-brand-text/10"
         }`}
       >
@@ -62,16 +63,22 @@ export function UserProfileMenu() {
       {open && (
         <div className="absolute right-0 top-full mt-2 flex w-[214px] flex-col items-end rounded border border-grey-stroke-weak bg-solid-bg-sunken p-1 text-grey-text-strong shadow-lg text-small">
           <div className="flex w-full flex-col gap-3 rounded bg-solid-bg-base p-4">
-            <button className="text-left font-normal hover:text-grey-text-strong">
+            <Link
+              href="/profile"
+              className="text-left text-xl font-normal hover:text-grey-text-strong"
+            >
               Profile
-            </button>
-            <button className="text-left font-normal hover:text-grey-text-strong">
+            </Link>
+            <Link
+              href="/settings"
+              className="text-left text-xl font-normal hover:text-grey-text-strong"
+            >
               Settings
-            </button>
+            </Link>
             <button
               type="button"
               onClick={handleSignOut}
-              className="text-left font-normal text-status-red-text"
+              className="cursor-pointer text-left text-xl font-normal text-status-red-text"
             >
               Sign Out
             </button>
