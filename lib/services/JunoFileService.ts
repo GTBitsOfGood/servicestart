@@ -163,5 +163,8 @@ export const JunoFileService = {
   getUploadPresignedUrl,
   getDownloadPresignedUrl,
   readFile,
-  delete: deleteFile,
+  deleteFile,
+  upload: async () => {
+    throw new Error("Direct upload is not supported with JunoFileService");
+  },
 };

@@ -1,11 +1,18 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { FileService, resolveFileService } from "@/lib/services/FileService";
 import { LocalFileService } from "@/lib/services/LocalFileService";
 import { JunoFileService } from "@/lib/services/JunoFileService";
+import { JunoFileDeletionNotSupportedError } from "@/lib/errors";
 
 const TEST_STORAGE_DIR = "/tmp/servicestart-media-test";
+
+const { uploadFile, downloadFile, getConfig } = vi.hoisted(() => ({
+  uploadFile: vi.fn(),
+  downloadFile: vi.fn(),
+  getConfig: vi.fn(),
+}));
 
 function createMockFile(content: string, name: string): File {
   return {
@@ -13,10 +20,8 @@ function createMockFile(content: string, name: string): File {
     async arrayBuffer() {
       return new TextEncoder().encode(content).buffer;
     },
-  },
-}));
-
-import { FileService } from "@/lib/services/FileService";
+  } as File;
+}
 
 describe("resolveFileService", () => {
   let originalImplementation: string | undefined;
@@ -115,8 +120,8 @@ describe("FileService", () => {
   });
 
   it("delete throws JunoFileDeletionNotSupportedError", async () => {
-    await expect(FileService.delete("org-1", "a.jpg")).rejects.toBeInstanceOf(
-      JunoFileDeletionNotSupportedError,
-    );
+    await expect(
+      FileService.deleteFile("org-1", "a.jpg"),
+    ).rejects.toBeInstanceOf(JunoFileDeletionNotSupportedError);
   });
 });

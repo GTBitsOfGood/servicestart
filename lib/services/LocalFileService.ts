@@ -58,8 +58,29 @@ async function readFile(
   return fsReadFile(filePath);
 }
 
+function getBucketName(organizationId: string): string {
+  return path.join(getStorageDir(), organizationId);
+}
+
+async function getUploadPresignedUrl(
+  organizationId: string,
+  fileName: string,
+): Promise<{ url: string }> {
+  throw new Error("Presigned URLs are not supported with LocalFileService");
+}
+
+async function getDownloadPresignedUrl(
+  organizationId: string,
+  fileName: string,
+): Promise<{ url: string }> {
+  throw new Error("Presigned URLs are not supported with LocalFileService");
+}
+
 export const LocalFileService = {
   upload,
   deleteFile,
   readFile,
+  getBucketName,
+  getUploadPresignedUrl,
+  getDownloadPresignedUrl,
 };

@@ -3,6 +3,7 @@ import { juno } from "../lib/junoClient";
 import { FileService } from "../lib/services/FileService";
 import { parseJunoNumericId } from "../lib/services/junoFileUtils";
 import { ResponseError } from "juno-sdk/internal/runtime";
+import { JunoFileService } from "@/lib/services/JunoFileService";
 
 const sendgridKey = process.env.SENDGRID_KEY?.trim();
 
@@ -71,7 +72,10 @@ async function main() {
     throw new Error("Juno returned an invalid file config ID");
   }
 
-  const bucketName = FileService.getBucketName(organizationId);
+  const bucketName = JunoFileService.getBucketName(organizationId);
+  console.log(
+    `Registering file bucket "${bucketName}" for organization ${organizationId}...`,
+  );
 
   const buckets = await juno.file.getBucketsByConfigIdAndEnv(String(configId));
   console.log("Buckets", buckets);
