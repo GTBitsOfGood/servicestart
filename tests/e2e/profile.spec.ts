@@ -113,7 +113,13 @@ test.describe("Profile Picture Upload", () => {
 
     await page.getByRole("button", { name: /^save$/i }).click();
 
-    await expect(page).toHaveURL(/\/profile/);
+    // Confirm the save succeeded (not an error redirect)
+    await expect(page).toHaveURL(/\/profile\?saved=true/);
+
+    // Navigate fresh so the server-rendered session reflects the updated image
+    await page.goto("/profile");
+    await page.waitForLoadState("networkidle");
+
     await expect(page.locator("main img")).toBeVisible();
   });
 
@@ -129,7 +135,12 @@ test.describe("Profile Picture Upload", () => {
       buffer: Buffer.from(MINIMAL_JPEG_BASE64, "base64"),
     });
     await page.getByRole("button", { name: /^save$/i }).click();
-    await expect(page).toHaveURL(/\/profile/);
+    await expect(page).toHaveURL(/\/profile\?saved=true/);
+
+    // Navigate fresh to confirm image is there before removing it
+    await page.goto("/profile");
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator("main img")).toBeVisible();
 
     // Now remove it
     await page.getByRole("button", { name: /edit details/i }).click();
@@ -141,7 +152,10 @@ test.describe("Profile Picture Upload", () => {
     ).not.toBeVisible();
 
     await page.getByRole("button", { name: /^save$/i }).click();
-    await expect(page).toHaveURL(/\/profile/);
+    await expect(page).toHaveURL(/\/profile\?saved=true/);
+
+    await page.goto("/profile");
+    await page.waitForLoadState("networkidle");
     await expect(page.locator("main img")).not.toBeVisible();
   });
 });

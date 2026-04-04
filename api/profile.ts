@@ -1,8 +1,7 @@
 import { Hono } from "hono";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { auth } from "@/lib/auth";
-import { MembersService } from "@/lib/services/MemberService";
+import { requireMembership } from "@/lib/authUtils";
 import { FileService } from "@/lib/services/FileService";
 import { MediaService } from "@/lib/services/MediaService";
 import { MediaType } from "@/lib/schema";
@@ -20,29 +19,8 @@ function buildTitle(originalName: string) {
 }
 
 const app = new Hono().post("/picture", async (c) => {
-  const session = await auth.api.getSession({
-    headers: c.req.header(),
-  });
-
-  if (!session?.user) {
-    return c.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const activeOrganizationId = session.session.activeOrganizationId;
-  if (!activeOrganizationId) {
-    return c.json({ error: "No active organization" }, { status: 403 });
-  }
-
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    activeOrganizationId,
-  );
-  if (!membership) {
-    return c.json(
-      { error: "Forbidden: Organization membership required" },
-      { status: 403 },
-    );
-  }
+  const session = await requireMembership(c);
+  const activeOrganizationId = session.session.activeOrganizationId!;
 
   const body = await c.req.parseBody();
   const file = body["file"];
