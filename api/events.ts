@@ -67,13 +67,18 @@ const app = new Hono()
       const data = c.req.valid("json");
       const publishedAt = data.published ? new Date() : null;
       const publishedById = data.published ? session.user.id : null;
+      let ids: string[] = [];
 
       const hosts = data.hosts ?? [];
-      const ids = await Promise.all(
-        hosts.map((email) =>
-          UserService.findByEmail(email).then((user) => user.id),
-        ),
-      );
+      try {
+        ids = await Promise.all(
+          hosts.map((email) =>
+            UserService.findByEmail(email).then((user) => user.id),
+          ),
+        );
+      } catch {
+        return c.json({ error: "Failed to find host(s)" }, { status: 404 });
+      }
 
       const memberships = await Promise.all(
         ids.map((id) =>
