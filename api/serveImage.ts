@@ -55,7 +55,7 @@ const app = new Hono().basePath("/images").get("/:id", async (c) => {
       buffer.buffer.slice(
         buffer.byteOffset,
         buffer.byteOffset + buffer.byteLength,
-      ),
+      ) as ArrayBuffer,
       {
         headers: {
           "Content-Type": contentType,
