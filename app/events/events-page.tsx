@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ListBulletsIcon, SquaresFourIcon } from "@phosphor-icons/react";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
+import BogTabs, { type BogTab } from "@/components/bog/BogTabs/BogTabs";
 import EventCard from "@/components/EventCard";
 import {
   bucketEventsForPage,
@@ -151,38 +152,20 @@ export default function EventsPageClient({
         ) : null}
       </div>
 
-      <div
-        className="mt-16 flex flex-wrap gap-[26px]"
-        role="tablist"
-        aria-label="Event filters"
-      >
-        {tabs.map((t) => {
-          const active = tab === t.id;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() =>
-                replaceUrl(queryInput, t.id === "all" ? null : t.id)
-              }
-              className={`relative flex h-10 flex-col items-center justify-between pb-1 pl-1 pr-1 text-paragraph-2 ${
-                active
-                  ? "font-semibold text-grey-text-strong"
-                  : "font-normal text-grey-text-weak"
-              }`}
-            >
-              <span className="flex flex-1 items-center">{t.label}</span>
-              {active ? (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-grey-text-strong" />
-              ) : (
-                <span className="absolute bottom-0 left-0 right-0 h-px bg-black/5" />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <BogTabs
+        defaultValue={tab}
+        value={tab}
+        onValueChange={(value) =>
+          replaceUrl(queryInput, value === "all" ? null : (value as TabId))
+        }
+        tabContents={Object.fromEntries(
+          tabs.map((t) => [
+            t.id,
+            { label: t.label, content: null } satisfies BogTab,
+          ]),
+        )}
+        className="mt-16"
+      />
 
       <div className="mt-16 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <form
