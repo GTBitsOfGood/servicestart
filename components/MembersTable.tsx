@@ -518,10 +518,7 @@ export default function MembersTable({
           color="var(--color-dark-500)"
           className="shrink-0"
         />
-        <h1
-          className="whitespace-nowrap font-paragraph text-dark-500"
-          style={{ fontWeight: 700, fontSize: 32, letterSpacing: "-0.32px" }}
-        >
+        <h1 className="whitespace-nowrap font-normal text-heading-1 text-grey-text-strong">
           Member Directory
         </h1>
       </div>

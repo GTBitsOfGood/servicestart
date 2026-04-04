@@ -2,6 +2,12 @@ import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
 import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
+import { DashboardLayoutSchema } from "@/lib/dashboard/schema";
+import type { DashboardLayout } from "@/lib/dashboard/schema";
+import {
+  DEFAULT_ADMIN_LAYOUT,
+  DEFAULT_MEMBER_LAYOUT,
+} from "@/lib/dashboard/constants";
 
 export const ALLOWED_NAVBAR_VARIANTS = [
   "vertical-sidebar",
@@ -474,6 +480,147 @@ async function setLogoUrl(organizationId: string, logoUrl: string) {
   }
 }
 
+async function getAdminDashboardLayout(
+  organizationId: string,
+): Promise<DashboardLayout> {
+  const [row] = await db
+    .select({ value: organizationConfig.value })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.AdminDashboardLayout),
+      ),
+    )
+    .limit(1);
+
+  if (!row?.value) return DEFAULT_ADMIN_LAYOUT;
+
+  try {
+    return DashboardLayoutSchema.parse(JSON.parse(row.value));
+  } catch {
+    return DEFAULT_ADMIN_LAYOUT;
+  }
+}
+
+async function setAdminDashboardLayout(organizationId: string, value: string) {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error("Invalid JSON for admin dashboard layout");
+  }
+
+  const result = DashboardLayoutSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error("Invalid admin dashboard layout");
+  }
+
+  const jsonString = JSON.stringify(result.data);
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.AdminDashboardLayout),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: jsonString })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(
+            organizationConfig.key,
+            OrganizationConfigKey.AdminDashboardLayout,
+          ),
+        ),
+      );
+  } else {
+    await db.insert(organizationConfig).values({
+      id: randomUUID(),
+      organizationId,
+      key: OrganizationConfigKey.AdminDashboardLayout,
+      value: jsonString,
+    });
+  }
+}
+
+async function getDashboardLayout(
+  organizationId: string,
+): Promise<DashboardLayout> {
+  const [row] = await db
+    .select({ value: organizationConfig.value })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.DashboardLayout),
+      ),
+    )
+    .limit(1);
+
+  if (!row?.value) return DEFAULT_MEMBER_LAYOUT;
+
+  try {
+    return DashboardLayoutSchema.parse(JSON.parse(row.value));
+  } catch {
+    return DEFAULT_MEMBER_LAYOUT;
+  }
+}
+
+async function setDashboardLayout(organizationId: string, value: string) {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error("Invalid JSON for dashboard layout");
+  }
+
+  const result = DashboardLayoutSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error("Invalid dashboard layout");
+  }
+
+  const jsonString = JSON.stringify(result.data);
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.DashboardLayout),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: jsonString })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.DashboardLayout),
+        ),
+      );
+  } else {
+    await db.insert(organizationConfig).values({
+      id: randomUUID(),
+      organizationId,
+      key: OrganizationConfigKey.DashboardLayout,
+      value: jsonString,
+    });
+  }
+}
+
 const keyMap = {
   [OrganizationConfigKey.Description]: { get: getDesc, set: setDesc },
   [OrganizationConfigKey.PrimaryColor]: {
@@ -503,6 +650,14 @@ const keyMap = {
   [OrganizationConfigKey.LogoUrl]: {
     get: getLogoUrl,
     set: setLogoUrl,
+  },
+  [OrganizationConfigKey.AdminDashboardLayout]: {
+    get: getAdminDashboardLayout,
+    set: setAdminDashboardLayout,
+  },
+  [OrganizationConfigKey.DashboardLayout]: {
+    get: getDashboardLayout,
+    set: setDashboardLayout,
   },
 };
 
@@ -534,6 +689,10 @@ async function setConfig(
 export const OrganizationConfigService = {
   getConfig,
   setConfig,
+  getAdminDashboardLayout,
+  setAdminDashboardLayout,
+  getDashboardLayout,
+  setDashboardLayout,
 };
 
 export default OrganizationConfigService;
