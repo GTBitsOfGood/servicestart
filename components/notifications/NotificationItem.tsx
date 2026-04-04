@@ -392,7 +392,7 @@ export default function NotificationItem({
                     e.stopPropagation();
                     setExpanded(true);
                   }}
-                  className="inline-flex items-center gap-1 text-sm font-medium text-brand-text hover:opacity-80"
+                  className="inline-flex items-center gap-1 text-lg font-medium text-brand-text hover:opacity-80"
                 >
                   View Details
                   <BogIcon
@@ -498,7 +498,7 @@ export default function NotificationItem({
                 e.stopPropagation();
                 setExpanded(false);
               }}
-              className="inline-flex items-center gap-1 text-[12px] font-medium text-brand-text hover:opacity-80"
+              className="inline-flex items-center gap-1 text-lg font-medium text-brand-text hover:opacity-80"
             >
               View Details
               <BogIcon

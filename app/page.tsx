@@ -1,6 +1,4 @@
 import NotificationsWidget from "@/components/notifications/NotificationsWidget";
-import RequestsPanel from "@/components/RequestsPanel";
-import { OrganizationConfigKey } from "@/lib/schema";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
@@ -33,22 +31,8 @@ export default async function Page() {
       : await OrganizationConfigService.getDashboardLayout(organizationId);
   }
 
-  const variant = organizationId
-    ? (
-        await OrganizationConfigService.getConfig(organizationId, [
-          OrganizationConfigKey.NavbarVariant,
-        ])
-      )[OrganizationConfigKey.NavbarVariant]
-    : "vertical-sidebar";
-
-  const isTopNavbar =
-    variant === "horizontal-left" ||
-    variant === "horizontal-center" ||
-    variant === "horizontal-right";
-
   return (
     <div className="flex h-full min-h-screen">
-      {isTopNavbar && <RequestsPanel side="left" />}
       <div className="flex-1 px-24 pb-[72px] pt-8 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-heading-1 font-bold text-grey-text-strong">
@@ -58,7 +42,6 @@ export default async function Page() {
         </div>
         <DashboardGrid layout={layout} />
       </div>
-      {!isTopNavbar && <RequestsPanel side="right" />}
     </div>
   );
 }

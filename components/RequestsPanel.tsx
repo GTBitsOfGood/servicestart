@@ -222,6 +222,19 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
         </h2>
         <div className="mt-4 flex flex-col gap-3">
           <div className="flex w-full items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <BogTextInput
+                name="search"
+                type="search"
+                placeholder="Enter text to search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                iconProps={{
+                  iconProps: { name: "search", size: 20 },
+                  position: "right",
+                }}
+              />
+            </div>
             <div className="flex shrink-0 items-center gap-2">
               <BogDropdown
                 type="checkbox"
@@ -270,19 +283,6 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
                 showValueInTrigger={false}
                 showClearIcon={false}
                 className="w-[130px] px-2 py-1 font-medium text-[13px] justify-center gap-2"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <BogTextInput
-                name="search"
-                type="search"
-                placeholder="Enter text to search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                iconProps={{
-                  iconProps: { name: "search", size: 20 },
-                  position: "right",
-                }}
               />
             </div>
           </div>
@@ -350,50 +350,56 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
               Try again
             </button>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex items-center justify-center px-6 py-24 text-center">
-            <p className="text-paragraph-2 text-grey-text-weak">
-              {search ? "No requests match your search." : "No requests yet."}
-            </p>
-          </div>
         ) : (
           <>
-            {pending.length > 0 && (
-              <Section label="Pending" count={pending.length} defaultOpen>
-                {pending.map((jr) => (
+            <Section label="Pending" count={pending.length} defaultOpen>
+              {pending.length === 0 ? (
+                <p className="px-10 py-6 font-bold text-grey-text-strong text-paragraph-1">
+                  There are no pending requests at this time.
+                </p>
+              ) : (
+                pending.map((jr) => (
                   <NotificationItem
                     key={jr.id}
                     {...sharedItemProps(jr, NotificationType.ActionRequired)}
                   />
-                ))}
-              </Section>
-            )}
-            {approved.length > 0 && (
-              <Section
-                label="Approved"
-                count={approved.length}
-                defaultOpen={false}
-              >
-                {approved.map((jr) => (
+                ))
+              )}
+            </Section>
+            <Section
+              label="Approved"
+              count={approved.length}
+              defaultOpen={false}
+            >
+              {approved.length === 0 ? (
+                <p className="px-10 py-6 font-bold text-grey-text-strong text-paragraph-1">
+                  There are no approved requests at this time.
+                </p>
+              ) : (
+                approved.map((jr) => (
                   <NotificationItem
                     key={jr.id}
                     {...sharedItemProps(jr, NotificationType.General)}
                     hideTag
                   />
-                ))}
-              </Section>
-            )}
-            {denied.length > 0 && (
-              <Section label="Denied" count={denied.length} defaultOpen={false}>
-                {denied.map((jr) => (
+                ))
+              )}
+            </Section>
+            <Section label="Denied" count={denied.length} defaultOpen={false}>
+              {denied.length === 0 ? (
+                <p className="px-10 py-6 font-bold text-grey-text-strong text-paragraph-1">
+                  There are no denied requests at this time.
+                </p>
+              ) : (
+                denied.map((jr) => (
                   <NotificationItem
                     key={jr.id}
                     {...sharedItemProps(jr, NotificationType.General)}
                     hideTag
                   />
-                ))}
-              </Section>
-            )}
+                ))
+              )}
+            </Section>
           </>
         )}
       </div>
@@ -420,7 +426,7 @@ function Section({
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between px-10 py-6 text-left bg-grey-fill-weak"
       >
-        <div className="text-[16px] font-extrabold text-grey-text-weak ">
+        <div className="text-paragraph-1 font-extrabold text-grey-text-weak">
           {count} {label}
         </div>
         <BogIcon name={open ? "chevron-up" : "chevron-right"} size={18} />
