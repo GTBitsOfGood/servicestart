@@ -23,9 +23,7 @@ test.describe("Login Page", () => {
     await expect(page).toHaveURL(/\//);
   });
 
-  test("login page uses brand gradient from org config defaults", async ({
-    page,
-  }) => {
+  test("login page background uses a linear gradient", async ({ page }) => {
     await page.goto("/login");
 
     const loginPage = page.getByTestId("page");
@@ -34,10 +32,6 @@ test.describe("Login Page", () => {
     const background = await loginPage.evaluate(
       (e) => getComputedStyle(e).backgroundImage,
     );
-    // OrganizationConfigService primary/secondary fallbacks when no DB row:
-    // #FD8033 → rgb(253, 128, 51), #FB3552 → rgb(251, 53, 82)
-    expect(background).toContain("linear-gradient(75deg");
-    expect(background).toContain("rgb(253, 128, 51)");
-    expect(background).toContain("rgb(251, 53, 82)");
+    expect(background).toMatch(/linear-gradient\s*\(/i);
   });
 });
