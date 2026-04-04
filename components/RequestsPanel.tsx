@@ -70,6 +70,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
       setStatus("forbidden");
       return;
     }
+
     if (!res.ok) throw new Error("Failed to fetch join requests");
     const json = await res.json();
     setJoinRequests(
