@@ -2,111 +2,138 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ListBulletsIcon, SquaresFourIcon } from "@phosphor-icons/react";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import EventCard from "@/components/EventCard";
-import type { EventsPageEvent } from "@/lib/eventsPageUtils";
+import {
+  bucketEventsForPage,
+  type EventsPageEvent,
+} from "@/lib/eventsPageUtils";
 
 type TabId = "all" | "upcoming" | "drafts" | "past";
 
 type Props = {
-  upcoming: EventsPageEvent[];
-  drafts: EventsPageEvent[];
-  past: EventsPageEvent[];
+  events: EventsPageEvent[];
   isAdmin: boolean;
   canCreateEvents: boolean;
 };
 
-function matchesSearch(event: EventsPageEvent, q: string) {
-  if (!q.trim()) return true;
-  const n = q.trim().toLowerCase();
+const ADMIN_TABS: { id: TabId; label: string }[] = [
+  { id: "all", label: "All events" },
+  { id: "upcoming", label: "Upcoming events" },
+  { id: "drafts", label: "Drafts" },
+  { id: "past", label: "Past events" },
+];
+
+const MEMBER_TABS = ADMIN_TABS.filter(({ id }) => id !== "drafts");
+
+function EventSection({
+  title,
+  events,
+  view,
+}: {
+  title: string;
+  events: EventsPageEvent[];
+  view: "grid" | "list";
+}) {
+  if (events.length === 0) return null;
+
   return (
-    event.name.toLowerCase().includes(n) ||
-    event.location.toLowerCase().includes(n)
+    <section className="flex w-full flex-col gap-11">
+      <h2 className="text-heading-3 font-bold text-black">{title}</h2>
+      <div
+        className={
+          view === "grid" ? "flex flex-wrap gap-12" : "flex flex-col gap-12"
+        }
+      >
+        {events.map((event) => (
+          <EventCard key={event.id} event={event} layout={view} />
+        ))}
+      </div>
+    </section>
   );
 }
 
 export default function EventsPageClient({
-  upcoming: upcomingIn,
-  drafts: draftsIn,
-  past: pastIn,
+  events,
   isAdmin,
   canCreateEvents,
 }: Props) {
-  const [tab, setTab] = useState<TabId>("all");
-  const [query, setQuery] = useState("");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const queryFromUrl = searchParams.get("query") ?? "";
+  const rawFilter = searchParams.get("filter");
+  const filter =
+    rawFilter === "upcoming" ||
+    rawFilter === "past" ||
+    (isAdmin && rawFilter === "drafts")
+      ? rawFilter
+      : null;
+  const tab: TabId = filter ?? "all";
+
   const [view, setView] = useState<"grid" | "list">("grid");
+  const [queryInput, setQueryInput] = useState(queryFromUrl);
+  const [lastSyncedQuery, setLastSyncedQuery] = useState(queryFromUrl);
 
-  const upcoming = useMemo(
-    () => upcomingIn.filter((e) => matchesSearch(e, query)),
-    [upcomingIn, query],
-  );
-  const drafts = useMemo(
-    () => draftsIn.filter((e) => matchesSearch(e, query)),
-    [draftsIn, query],
-  );
-  const past = useMemo(
-    () => pastIn.filter((e) => matchesSearch(e, query)),
-    [pastIn, query],
-  );
-
-  const totalVisible = upcomingIn.length + draftsIn.length + pastIn.length;
-  const tabCounts = {
-    all: totalVisible,
-    upcoming: upcomingIn.length,
-    drafts: draftsIn.length,
-    past: pastIn.length,
-  };
-
-  const tabs: { id: TabId; label: string }[] = [
-    { id: "all", label: "All events" },
-    { id: "upcoming", label: "Upcoming events" },
-    ...(isAdmin ? [{ id: "drafts" as const, label: "Drafts" }] : []),
-    { id: "past", label: "Past events" },
-  ];
-
-  const showUpcoming = tab === "all" || tab === "upcoming" ? upcoming : [];
-  const showDrafts =
-    isAdmin && (tab === "all" || tab === "drafts") ? drafts : [];
-  const showPast = tab === "all" || tab === "past" ? past : [];
-
-  const gridClass =
-    view === "grid"
-      ? "flex flex-wrap gap-x-12 gap-y-10"
-      : "flex flex-col gap-6";
-
-  function Section({
-    title,
-    events,
-  }: {
-    title: string;
-    events: EventsPageEvent[];
-  }) {
-    if (events.length === 0) return null;
-    return (
-      <section className="flex w-full flex-col gap-11">
-        <h2 className="text-heading-3 font-bold text-black">
-          {title} [{events.length}]
-        </h2>
-        <div className={gridClass}>
-          {events.map((event) => (
-            <EventCard key={event.id} event={event} layout={view} />
-          ))}
-        </div>
-      </section>
-    );
+  if (queryFromUrl !== lastSyncedQuery) {
+    setQueryInput(queryFromUrl);
+    setLastSyncedQuery(queryFromUrl);
   }
 
-  const emptyAll =
-    tab === "all" &&
+  function replaceUrl(nextQuery: string, nextFilter: TabId | null) {
+    const normalizedQuery = nextQuery.trim();
+
+    if (normalizedQuery === queryFromUrl && nextFilter === tab) {
+      return;
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (normalizedQuery) {
+      params.set("query", normalizedQuery);
+    } else {
+      params.delete("query");
+    }
+
+    if (nextFilter && nextFilter !== "all") {
+      params.set("filter", nextFilter);
+    } else {
+      params.delete("filter");
+    }
+
+    const nextUrl = params.toString();
+    router.replace(nextUrl ? `${pathname}?${nextUrl}` : pathname);
+  }
+
+  function handleSearchSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    replaceUrl(queryInput, tab);
+  }
+
+  const buckets = useMemo(
+    () => bucketEventsForPage(events, new Date(), isAdmin),
+    [events, isAdmin],
+  );
+
+  const showUpcoming =
+    tab === "all" ? buckets.upcoming : tab === "upcoming" ? events : [];
+  const showDrafts = !isAdmin
+    ? []
+    : tab === "all"
+      ? buckets.drafts
+      : tab === "drafts"
+        ? events
+        : [];
+  const showPast = tab === "all" ? buckets.past : tab === "past" ? events : [];
+
+  const tabs = isAdmin ? ADMIN_TABS : MEMBER_TABS;
+  const isEmpty =
     showUpcoming.length === 0 &&
     showDrafts.length === 0 &&
     showPast.length === 0;
-
-  const emptyTab =
-    (tab === "upcoming" && upcoming.length === 0) ||
-    (tab === "drafts" && drafts.length === 0) ||
-    (tab === "past" && past.length === 0);
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-6 pb-16 pt-8 md:px-12 lg:px-24">
@@ -125,7 +152,7 @@ export default function EventsPageClient({
       </div>
 
       <div
-        className="mt-10 flex flex-wrap gap-2 border-b border-grey-stroke-weak md:gap-8"
+        className="mt-16 flex flex-wrap gap-[26px]"
         role="tablist"
         aria-label="Event filters"
       >
@@ -137,44 +164,53 @@ export default function EventsPageClient({
               type="button"
               role="tab"
               aria-selected={active}
-              onClick={() => setTab(t.id)}
-              className={`relative pb-3 pl-1 pr-1 text-paragraph-2 ${
+              onClick={() =>
+                replaceUrl(queryInput, t.id === "all" ? null : t.id)
+              }
+              className={`relative flex h-10 flex-col items-center justify-between pb-1 pl-1 pr-1 text-paragraph-2 ${
                 active
                   ? "font-semibold text-grey-text-strong"
                   : "font-normal text-grey-text-weak"
               }`}
             >
-              {t.label} [{tabCounts[t.id]}]
+              <span className="flex flex-1 items-center">{t.label}</span>
               {active ? (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-grey-text-strong" />
-              ) : null}
+              ) : (
+                <span className="absolute bottom-0 left-0 right-0 h-px bg-black/5" />
+              )}
             </button>
           );
         })}
       </div>
 
-      <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-h-9 min-w-0 flex-1 items-stretch overflow-hidden rounded-md border border-grey-stroke-weak bg-white sm:max-w-xl">
+      <div className="mt-16 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <form
+          onSubmit={handleSearchSubmit}
+          className="flex min-h-9 min-w-0 flex-1 items-stretch overflow-hidden rounded-md border border-grey-stroke-weak bg-white sm:max-w-xl"
+        >
           <label className="flex min-w-0 flex-1 items-center px-3">
             <span className="sr-only">Search events</span>
             <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              type="search"
+              value={queryInput}
+              onChange={(event) => setQueryInput(event.target.value)}
               placeholder="Enter text to search"
               className="min-w-0 flex-1 bg-transparent py-2 text-paragraph-2 text-grey-text-strong placeholder:text-grey-text-weak outline-none"
             />
           </label>
-          <div
+          <button
+            type="submit"
             className="flex w-10 shrink-0 items-center justify-center border-l border-grey-stroke-weak bg-solid-bg-base"
-            aria-hidden
+            aria-label="Search events"
           >
             <BogIcon
               name="search"
               size={18}
               className="text-grey-icon-strong"
             />
-          </div>
-        </div>
+          </button>
+        </form>
 
         <div
           className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#efeded] p-1.5"
@@ -216,16 +252,22 @@ export default function EventsPageClient({
         </div>
       </div>
 
-      <div className="mt-14 flex flex-col gap-16">
-        {emptyAll || emptyTab ? (
+      <div className="mt-16 flex flex-col gap-16">
+        {isEmpty ? (
           <p className="text-paragraph-1 text-grey-text-weak">
             No events match your filters.
           </p>
         ) : (
           <>
-            <Section title="Upcoming events" events={showUpcoming} />
-            {isAdmin ? <Section title="Drafts" events={showDrafts} /> : null}
-            <Section title="Past events" events={showPast} />
+            <EventSection
+              title="Upcoming events"
+              events={showUpcoming}
+              view={view}
+            />
+            {isAdmin ? (
+              <EventSection title="Drafts" events={showDrafts} view={view} />
+            ) : null}
+            <EventSection title="Past events" events={showPast} view={view} />
           </>
         )}
       </div>

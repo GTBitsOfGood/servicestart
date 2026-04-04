@@ -185,7 +185,8 @@ export async function main() {
       description: "Event description 3.",
       startTimestamp: new Date("2026-04-05T13:00:00"),
       duration: "4 hours",
-      coverImageUrl: null,
+      coverImageUrl: "https://placehold.co/600x400/blue/white",
+      publishedAt: new Date("2025-12-18T14:00:00"),
       visibility: EventVisibility.Public,
     },
     {
@@ -198,6 +199,7 @@ export async function main() {
       duration: "3 hours",
       coverImageUrl: null,
       visibility: EventVisibility.Public,
+      publishedAt: new Date("2025-12-18T14:00:00"),
     },
     {
       id: "event_005",
@@ -209,6 +211,7 @@ export async function main() {
       duration: "2 hours",
       coverImageUrl: null,
       visibility: EventVisibility.Public,
+      publishedAt: new Date("2025-12-18T14:00:00"),
     },
   ];
 

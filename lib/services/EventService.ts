@@ -1,4 +1,4 @@
-import { and, eq, gt, lt, isNull, isNotNull, like } from "drizzle-orm";
+import { and, eq, gt, lt, isNull, isNotNull, like, or } from "drizzle-orm";
 import db from "@/lib/db";
 import { events, eventRsvps, eventHosts, EventVisibility } from "@/lib/schema";
 import { randomUUID } from "node:crypto";
@@ -102,7 +102,10 @@ async function listByOrganization(
     );
   }
   if (query) {
-    conditions.push(like(events.name, `%${query}%`));
+    const pattern = `%${query}%`;
+    conditions.push(
+      or(like(events.name, pattern), like(events.location, pattern))!,
+    );
   }
   if (filter === "upcoming") {
     conditions.push(gt(events.startTimestamp, new Date()));

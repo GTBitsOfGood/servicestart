@@ -30,11 +30,14 @@ export default async function EventsPage({
   if (!membership) {
     redirect("/");
   }
-  const search = await searchParams;
-  const query = search?.query ?? undefined;
-  const filter = search?.filter ?? undefined;
 
   const isAdmin = MembersService.isAdminOrOwner(membership.role);
+  const search = await searchParams;
+  const query = Array.isArray(search?.query) ? search.query[0] : search?.query;
+  const filterParam = Array.isArray(search?.filter)
+    ? search.filter[0]
+    : search?.filter;
+  const filter = !isAdmin && filterParam === "drafts" ? undefined : filterParam;
 
   const rows = await EventService.listByOrganization(
     organizationId,
@@ -43,8 +46,9 @@ export default async function EventsPage({
       offset: 0,
     },
     {
-      query: Array.isArray(query) ? query![0] : query,
-      filter: Array.isArray(filter) ? filter![0] : filter,
+      published: isAdmin ? undefined : true,
+      query,
+      filter,
     },
   );
 
