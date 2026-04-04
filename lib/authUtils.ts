@@ -1,10 +1,13 @@
 import type { Context } from "hono";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import {
   ForbiddenError,
   NoActiveOrganizationError,
   UnauthorizedError,
 } from "@/lib/errors";
+import { JoinRequestStatus } from "@/lib/schema";
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
@@ -189,4 +192,72 @@ export async function getActiveOrganizationIdFromHeaders(
   }
 
   return organization.id;
+}
+
+/**
+ * Redirects unauthenticated users to /login and users with pending join
+ * requests to /joinrequeststatus.
+ */
+export async function redirectIfNotMember() {
+  const requestHeaders = await headers();
+  const session = await auth.api.getSession({
+    headers: requestHeaders,
+  });
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const organizationId =
+    await getActiveOrganizationIdFromHeaders(requestHeaders);
+
+  if (!organizationId) {
+    redirect("/");
+  }
+
+  const membership = await MembersService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+
+  if (membership) {
+    return session;
+  }
+
+  const joinRequest = await JoinRequestsService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+
+  if (joinRequest?.status === JoinRequestStatus.Pending) {
+    redirect("/joinrequeststatus");
+  }
+
+  redirect("/");
+}
+
+/**
+ * this function redirects non-admin users to the homepage
+ */
+
+export async function redirectIfNotAdmin() {
+  const session = await redirectIfNotMember();
+  const organizationId = await getActiveOrganizationIdFromHeaders(
+    await headers(),
+  );
+
+  if (!organizationId) {
+    redirect("/");
+  }
+
+  const membership = await MembersService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+
+  if (!MembersService.isAdminOrOwner(membership?.role)) {
+    redirect("/");
+  }
+
+  return session;
 }
