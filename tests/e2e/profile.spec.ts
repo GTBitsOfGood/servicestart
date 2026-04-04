@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import {
   createTestUserAndSignIn,
-  createTestAdminAndSignIn,
+  createTestMemberAndSignIn,
   expectPageRedirectsGuestButAllowsPendingJoin,
 } from "./testUtils";
 
@@ -100,7 +100,7 @@ test.describe("Profile Picture Upload", () => {
   test("uploads a profile picture and shows it on the profile page", async ({
     page,
   }) => {
-    await createTestAdminAndSignIn(page);
+    await createTestMemberAndSignIn(page);
     await page.goto("/profile");
 
     await page.getByRole("button", { name: /edit details/i }).click();
@@ -133,7 +133,7 @@ test.describe("Profile Picture Upload", () => {
   });
 
   test("removes a profile picture", async ({ page }) => {
-    await createTestAdminAndSignIn(page);
+    await createTestMemberAndSignIn(page);
     await page.goto("/profile");
 
     // Upload a photo first
