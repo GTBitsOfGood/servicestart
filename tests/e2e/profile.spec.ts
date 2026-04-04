@@ -101,6 +101,10 @@ test.describe("Profile Picture Upload", () => {
     await page.getByRole("button", { name: /edit details/i }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
 
+    const dialog = page.getByRole("dialog");
+    await dialog.locator('input[name="phone"]').fill("555-123-4567");
+    await dialog.locator('input[name="location"]').fill("Atlanta, GA");
+
     await page.locator('input[type="file"]').setInputFiles({
       name: "profile.jpg",
       mimeType: "image/jpeg",
@@ -129,6 +133,9 @@ test.describe("Profile Picture Upload", () => {
 
     // Upload a photo first
     await page.getByRole("button", { name: /edit details/i }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.locator('input[name="phone"]').fill("555-123-4567");
+    await dialog.locator('input[name="location"]').fill("Atlanta, GA");
     await page.locator('input[type="file"]').setInputFiles({
       name: "profile.jpg",
       mimeType: "image/jpeg",
