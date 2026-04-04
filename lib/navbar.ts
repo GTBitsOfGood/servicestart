@@ -54,4 +54,4 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
   },
 ];
 
-export const NO_NAVBAR_PAGES = ["/login", "/signup"];
+export const NO_NAVBAR_PAGES = ["/login", "/signup", "/joinrequeststatus"];
