@@ -72,29 +72,37 @@ function useRedirectGuard({ requireAdmin = false }: RedirectGuardOptions = {}) {
       return;
     }
 
+    const resolvedJoinRequestLookupKey = joinRequestLookupKey;
+    const resolvedOrganizationId = organizationId;
     let cancelled = false;
 
     async function resolveJoinRequest() {
       try {
         const response = await api.joinRequests[":organizationId"].$get({
-          param: { organizationId },
+          param: { organizationId: resolvedOrganizationId },
         });
 
         if (cancelled) return;
 
         if (!response.ok) {
-          setResolvedJoinRequest({ key: joinRequestLookupKey, status: null });
+          setResolvedJoinRequest({
+            key: resolvedJoinRequestLookupKey,
+            status: null,
+          });
           return;
         }
 
         const joinRequest = (await response.json()) as JoinRequestResponse;
         setResolvedJoinRequest({
-          key: joinRequestLookupKey,
+          key: resolvedJoinRequestLookupKey,
           status: joinRequest.status,
         });
       } catch {
         if (!cancelled) {
-          setResolvedJoinRequest({ key: joinRequestLookupKey, status: null });
+          setResolvedJoinRequest({
+            key: resolvedJoinRequestLookupKey,
+            status: null,
+          });
         }
       }
     }
