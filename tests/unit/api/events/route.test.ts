@@ -144,7 +144,7 @@ describe("POST /api/events", () => {
         json: {
           name: "Temp Event 2",
           location: "Georgia Tech",
-          hosts: [user.id, user2.id],
+          hosts: [user.email, user2.email],
           visibility: EventVisibility.Public,
         },
       },
@@ -181,7 +181,7 @@ describe("POST /api/events", () => {
         json: {
           name: "Temp Event 2",
           location: "Georgia Tech",
-          hosts: [user.id],
+          hosts: [user.email],
           visibility: EventVisibility.Public,
         },
       },

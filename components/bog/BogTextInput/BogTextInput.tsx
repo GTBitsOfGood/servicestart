@@ -7,7 +7,7 @@ interface BogTextInputProps {
   /** Whether or not the text input has multiple lines. */
   multiline?: boolean;
   /** The type of text the input stores. */
-  type?: "text" | "email" | "password" | "tel" | "search";
+  type?: "text" | "email" | "password" | "tel" | "search" | "date" | "time";
   /** The name of the data this text input represents for forms. */
   name: string;
   /** The label text next to the input. */

@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { EventService } from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
+import { UserService } from "@/lib/services/UserService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 import { ForbiddenError } from "@/lib/errors";
 import { EventVisibility } from "@/lib/schema";
@@ -66,14 +67,22 @@ const app = new Hono()
       const data = c.req.valid("json");
       const publishedAt = data.published ? new Date() : null;
       const publishedById = data.published ? session.user.id : null;
+      let ids: string[] = [];
 
       const hosts = data.hosts ?? [];
-      const memberships = await Promise.all(
-        hosts.map((userId) =>
-          MembersService.findByUserAndOrganization(
-            userId,
-            activeOrganizationId,
+      try {
+        ids = await Promise.all(
+          hosts.map((email) =>
+            UserService.findByEmail(email).then((user) => user.id),
           ),
+        );
+      } catch {
+        return c.json({ error: "Failed to find host(s)" }, { status: 404 });
+      }
+
+      const memberships = await Promise.all(
+        ids.map((id) =>
+          MembersService.findByUserAndOrganization(id, activeOrganizationId),
         ),
       );
 
@@ -107,7 +116,7 @@ const app = new Hono()
       }
 
       if (hosts.length > 0) {
-        await EventService.addEventHosts(event.id, hosts);
+        await EventService.addEventHosts(event.id, ids);
       }
 
       return c.json(event);
