@@ -5,11 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { SunsetLogo } from "@/components/navigation/Logo";
-import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import authClient from "@/lib/authClient";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
 import { NavbarProps } from "@/lib/navbar";
+import { UserProfileMenu } from "./UserProfileMenu";
 
 export function VerticalSidebarNav({ items }: NavbarProps) {
   const pathname = usePathname();
@@ -145,23 +145,7 @@ export function VerticalSidebarNav({ items }: NavbarProps) {
         </nav>
       </div>
 
-      <div className="flex items-center gap-3 px-6">
-        <ProfileAvatar />
-        {mounted && (displayName || displayRole) && (
-          <div className="flex flex-col gap-0 text-small">
-            {displayName && (
-              <span className="leading-none font-normal text-grey-text-strong">
-                {displayName}
-              </span>
-            )}
-            {displayRole && (
-              <span className="leading-none text-small font-normal text-grey-text-weak">
-                {displayRole}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
+      <UserProfileMenu direction="vertical" />
     </aside>
   );
 }
