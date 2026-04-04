@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { SunsetLogo } from "@/components/navigation/Logo";
-import authClient from "@/lib/authClient";
-import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
 import { NavbarProps } from "@/lib/navbar";
 import { UserProfileMenu } from "./UserProfileMenu";
@@ -14,22 +12,7 @@ import { UserProfileMenu } from "./UserProfileMenu";
 export function VerticalSidebarNav({ items }: NavbarProps) {
   const pathname = usePathname();
   const [openItemLabel, setOpenItemLabel] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-  const { organization } = useActiveOrganization();
-  const session = authClient.useSession();
   const { count: unreadCount } = useUnreadNotificationCount();
-
-  useEffect(() => {
-    const id = setTimeout(() => setMounted(true), 0);
-    return () => clearTimeout(id);
-  }, []);
-
-  const user = session.data?.user;
-  const rawRole = (organization?.data as { role?: string } | undefined)?.role;
-  const displayName = user?.name ?? (user?.email as string | undefined) ?? "";
-  const displayRole = rawRole
-    ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1)
-    : "";
 
   const navBgClass = "bg-brand-fill";
 
