@@ -240,4 +240,24 @@ export async function redirectIfNotMember() {
  * this function redirects non-admin users to the homepage
  */
 
-export async function redirectIfNotAdmin() {}
+export async function redirectIfNotAdmin() {
+  const session = await redirectIfNotMember();
+  const organizationId = await getActiveOrganizationIdFromHeaders(
+    await headers(),
+  );
+
+  if (!organizationId) {
+    redirect("/");
+  }
+
+  const membership = await MembersService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+
+  if (!MembersService.isAdminOrOwner(membership?.role)) {
+    redirect("/");
+  }
+
+  return session;
+}
