@@ -156,7 +156,7 @@ const app = new Hono()
       const eventsList = await EventService.listByOrganization(
         activeOrganizationId,
         { limit: pageSize, offset: (page - 1) * pageSize },
-        true,
+        { published: true },
       );
 
       return c.json({
@@ -171,7 +171,7 @@ const app = new Hono()
       const eventsList = await EventService.listByOrganization(
         activeOrganizationId,
         { limit: pageSize, offset: (page - 1) * pageSize },
-        published,
+        { published },
       );
 
       return c.json({
@@ -184,6 +184,7 @@ const app = new Hono()
     const eventsList = await EventService.listByOrganization(
       activeOrganizationId,
       { limit: pageSize, offset: (page - 1) * pageSize },
+      {},
     );
 
     return c.json({

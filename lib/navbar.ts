@@ -52,6 +52,7 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
       { label: "Dashboard", href: "/settings/dashboard" },
     ],
   },
+  { label: "Events", href: "/events", icon: "calendar" },
 ];
 
 export const NO_NAVBAR_PAGES = ["/login", "/signup", "/joinrequeststatus"];
