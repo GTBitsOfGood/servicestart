@@ -24,7 +24,7 @@ test.describe("Home route", () => {
   }) => {
     await createTestAdminAndSignIn(page);
     await page.goto("/");
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL((url) => new URL(url).pathname === "/");
     await expect(
       page.getByRole("heading", { name: /admin dashboard|dashboard/i }),
     ).toBeVisible();
