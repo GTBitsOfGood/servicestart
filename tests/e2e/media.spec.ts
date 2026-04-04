@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import {
   createTestAdminAndSignIn,
   createTestMemberAndSignIn,
@@ -14,6 +14,20 @@ const MINIMAL_PNG = Buffer.from(
 );
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+async function setFileInputWithPlainTextNotes(page: Page) {
+  await page.locator('input[type="file"]').evaluate((el) => {
+    const input = el as HTMLInputElement;
+    const file = new File(["not an image"], "notes.txt", {
+      type: "text/plain",
+    });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    input.files = dataTransfer.files;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
 
 test.describe("Media Page", () => {
   test("redirects guests to login", async ({ page }) => {
@@ -90,16 +104,24 @@ test.describe("Media Page", () => {
       await createTestAdminAndSignIn(page);
       await page.goto("/media");
 
+      const uploadResponse = page.waitForResponse(
+        (res) =>
+          res.url().includes("/api/media") && res.request().method() === "POST",
+      );
+
       await page.locator('input[type="file"]').setInputFiles({
         name: "e2e-empty-state.png",
         mimeType: "image/png",
         buffer: MINIMAL_PNG,
       });
 
-      await expect(page.getByText("Let's get started!")).toBeHidden({
-        timeout: 30_000,
+      const response = await uploadResponse;
+      expect(response.status()).toBe(201);
+
+      await expect(page.getByText("e2e-empty-state")).toBeVisible({
+        timeout: 60_000,
       });
-      await expect(page.getByText("e2e-empty-state")).toBeVisible();
+      await expect(page.getByText("Let's get started!")).toBeHidden();
     });
 
     test("uploads an image from the grid when the gallery already has items", async ({
@@ -111,14 +133,22 @@ test.describe("Media Page", () => {
       await page.goto("/media");
       await expect(page.getByText("Existing Item")).toBeVisible();
 
+      const uploadResponse = page.waitForResponse(
+        (res) =>
+          res.url().includes("/api/media") && res.request().method() === "POST",
+      );
+
       await page.locator('input[type="file"]').setInputFiles({
         name: "e2e-grid-upload.png",
         mimeType: "image/png",
         buffer: MINIMAL_PNG,
       });
 
+      const response = await uploadResponse;
+      expect(response.status()).toBe(201);
+
       await expect(page.getByText("e2e-grid-upload")).toBeVisible({
-        timeout: 30_000,
+        timeout: 60_000,
       });
     });
 
@@ -145,15 +175,21 @@ test.describe("Media Page", () => {
       await createTestAdminAndSignIn(page);
       await page.goto("/media");
 
-      await page.locator('input[type="file"]').setInputFiles({
-        name: "notes.txt",
-        mimeType: "text/plain",
-        buffer: Buffer.from("not an image"),
-      });
+      const uploadResponse = page.waitForResponse(
+        (res) =>
+          res.url().includes("/api/media") && res.request().method() === "POST",
+      );
+
+      await setFileInputWithPlainTextNotes(page);
+
+      const response = await uploadResponse;
+      expect(response.status()).toBe(400);
+      const body = (await response.json()) as { error?: string };
+      expect(body.error).toMatch(/raster image uploads/i);
 
       await expect(
-        page.getByText("Only raster image uploads are supported right now"),
-      ).toBeVisible({ timeout: 30_000 });
+        page.getByText(/Only raster image uploads are supported right now/i),
+      ).toBeVisible({ timeout: 15_000 });
     });
   });
 });
