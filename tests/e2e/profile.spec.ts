@@ -1,5 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { createTestUserAndSignIn } from "./testUtils";
+import { createTestUserAndSignIn, createTestAdminAndSignIn } from "./testUtils";
+
+// Minimal valid 1×1 JPEG (base64-encoded)
+const MINIMAL_JPEG_BASE64 =
+  "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAAR" +
+  "CAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AJQAB/9k=";
 
 test.describe("Profile Page", () => {
   test("redirects to login when not authenticated", async ({ page }) => {
@@ -83,5 +88,60 @@ test.describe("Profile Page", () => {
       await viewDetailsButtons.first().click();
       await expect(page).toHaveURL(/\/event\/.+/);
     }
+  });
+});
+
+test.describe("Profile Picture Upload", () => {
+  test("uploads a profile picture and shows it on the profile page", async ({
+    page,
+  }) => {
+    await createTestAdminAndSignIn(page);
+    await page.goto("/profile");
+
+    await page.getByRole("button", { name: /edit details/i }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "profile.jpg",
+      mimeType: "image/jpeg",
+      buffer: Buffer.from(MINIMAL_JPEG_BASE64, "base64"),
+    });
+
+    await expect(
+      page.getByRole("dialog").locator('img[alt="Profile preview"]'),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: /^save$/i }).click();
+
+    await expect(page).toHaveURL(/\/profile/);
+    await expect(page.locator("main img")).toBeVisible();
+  });
+
+  test("removes a profile picture", async ({ page }) => {
+    await createTestAdminAndSignIn(page);
+    await page.goto("/profile");
+
+    // Upload a photo first
+    await page.getByRole("button", { name: /edit details/i }).click();
+    await page.locator('input[type="file"]').setInputFiles({
+      name: "profile.jpg",
+      mimeType: "image/jpeg",
+      buffer: Buffer.from(MINIMAL_JPEG_BASE64, "base64"),
+    });
+    await page.getByRole("button", { name: /^save$/i }).click();
+    await expect(page).toHaveURL(/\/profile/);
+
+    // Now remove it
+    await page.getByRole("button", { name: /edit details/i }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+
+    await page.getByRole("button", { name: /remove photo/i }).click();
+    await expect(
+      page.getByRole("dialog").locator('img[alt="Profile preview"]'),
+    ).not.toBeVisible();
+
+    await page.getByRole("button", { name: /^save$/i }).click();
+    await expect(page).toHaveURL(/\/profile/);
+    await expect(page.locator("main img")).not.toBeVisible();
   });
 });

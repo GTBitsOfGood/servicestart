@@ -8,6 +8,7 @@ import notifications from "@/api/notifications";
 import organizationConfig from "@/api/organizationConfig";
 import members from "@/api/members";
 import messages from "@/api/messages";
+import profile from "@/api/profile";
 import { Hono } from "hono";
 import { handle } from "hono/netlify";
 
@@ -22,7 +23,8 @@ const app = new Hono()
   .route("/notifications", notifications)
   .route("/media", media)
   .route("/members", members)
-  .route("/messages", messages);
+  .route("/messages", messages)
+  .route("/profile", profile);
 
 export const GET = handle(app);
 export const POST = handle(app);
