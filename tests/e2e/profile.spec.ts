@@ -7,9 +7,10 @@ const MINIMAL_JPEG_BASE64 =
   "CAABAAEDASIAAhEBAxEB/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEQMRAD8AJQAB/9k=";
 
 test.describe("Profile Page", () => {
-  test("redirects to login when not authenticated", async ({ page }) => {
-    await page.goto("/profile");
-    await expect(page).toHaveURL(/\/login/);
+  test("requires sign-in but allows users with a pending join request", async ({
+    page,
+  }) => {
+    await expectPageRedirectsGuestButAllowsPendingJoin(page, "/profile");
   });
 
   test("shows user name and email when signed in", async ({ page }) => {
