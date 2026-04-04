@@ -144,7 +144,7 @@ export default function EventsPageClient({
         </h1>
         {canCreateEvents ? (
           <Link
-            href="/"
+            href="/events/create"
             className="inline-flex shrink-0 items-center justify-center rounded bg-brand-text px-4 py-2 text-center text-paragraph-1 font-semibold text-white hover:opacity-90"
           >
             Create event
@@ -196,7 +196,7 @@ export default function EventsPageClient({
         </form>
 
         <div
-          className="inline-flex shrink-0 items-center gap-2 rounded-full bg-[#efeded] p-1.5"
+          className="inline-flex shrink-0 items-center gap-2 rounded-full bg-grey-fill-weaker p-1.5"
           role="group"
           aria-label="Layout"
         >

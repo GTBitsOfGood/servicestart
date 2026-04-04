@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import EventsPageClient from "./events-page";
+import EventsPageClient from "@/components/events/EventsPageClient";
 import { auth } from "@/lib/auth";
 import EventService from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/MemberService";
