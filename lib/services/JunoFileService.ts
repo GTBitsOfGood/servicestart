@@ -158,7 +158,7 @@ async function deleteFile(organizationId: string, fileName: string) {
   throw new JunoFileDeletionNotSupportedError();
 }
 
-export const FileService = {
+export const JunoFileService = {
   getBucketName,
   getUploadPresignedUrl,
   getDownloadPresignedUrl,

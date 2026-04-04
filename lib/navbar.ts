@@ -42,6 +42,17 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
     requireAdmin: true,
   },
   { label: "Inbox", href: "/inbox", icon: "bell" },
+  {
+    label: "Settings",
+    href: "/settings",
+    icon: "gear",
+    requireAdmin: true,
+    subpages: [
+      { label: "Admin Dashboard", href: "/settings/admindashboard" },
+      { label: "Dashboard", href: "/settings/dashboard" },
+    ],
+  },
+  { label: "Events", href: "/events", icon: "calendar" },
 ];
 
-export const NO_NAVBAR_PAGES = ["/login", "/signup"];
+export const NO_NAVBAR_PAGES = ["/login", "/signup", "/joinrequeststatus"];

@@ -1,5 +1,3 @@
-"use server";
-
 import { ReactNode } from "react";
 import { VerticalSidebarNav } from "@/components/navigation/VerticalSidebarNav";
 import { VerticalIconNav } from "@/components/navigation/VerticalIconNav";
