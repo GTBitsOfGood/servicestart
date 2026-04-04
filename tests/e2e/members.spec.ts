@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { createTestAdminAndSignIn, createTestUserAndSignIn } from "./testUtils";
+import {
+  createTestAdminAndSignIn,
+  createTestUserAndSignIn,
+  expectPageRedirectsUnlessAdmin,
+} from "./testUtils";
 import {
   addMember,
   buildTestUser,
@@ -9,9 +13,10 @@ import { OrganizationConfigService } from "@/lib/services/OrganizationConfigServ
 import { OrganizationConfigKey } from "@/lib/schema";
 
 test.describe("Members Page", () => {
-  test("redirects to login when not authenticated", async ({ page }) => {
-    await page.goto("/members");
-    await expect(page).toHaveURL(/\/login/);
+  test("admin-only access: guests, pending join, and non-admins are redirected", async ({
+    page,
+  }) => {
+    await expectPageRedirectsUnlessAdmin(page, "/members");
   });
 
   test("redirects when authenticated but not an org member or admin", async ({
