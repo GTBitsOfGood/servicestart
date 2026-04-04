@@ -195,18 +195,28 @@ export async function getActiveOrganizationIdFromHeaders(
 }
 
 /**
- * Redirects unauthenticated users to /login and users with pending join
- * requests to /joinrequeststatus.
+ * Loads the Better Auth session for a Next.js server request. Redirects to
+ * `/login` when there is no signed-in user.
  */
-export async function redirectIfNotMember() {
-  const requestHeaders = await headers();
+export async function requireSessionOrRedirect(headerList: Headers) {
   const session = await auth.api.getSession({
-    headers: requestHeaders,
+    headers: headerList,
   });
 
   if (!session?.user) {
     redirect("/login");
   }
+
+  return session;
+}
+
+/**
+ * Redirects unauthenticated users to /login and users with pending join
+ * requests to /joinrequeststatus.
+ */
+export async function redirectIfNotMember() {
+  const requestHeaders = await headers();
+  const session = await requireSessionOrRedirect(requestHeaders);
 
   const organizationId =
     await getActiveOrganizationIdFromHeaders(requestHeaders);

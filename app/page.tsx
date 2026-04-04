@@ -1,7 +1,13 @@
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import {
+  getActiveOrganizationIdFromHeaders,
+  requireSessionOrRedirect,
+} from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
+import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { JoinRequestStatus } from "@/lib/schema";
 import { DEFAULT_MEMBER_LAYOUT } from "@/lib/dashboard/constants";
 import DashboardGrid from "@/components/dashboard/DashboardGrid";
 
@@ -10,9 +16,26 @@ export const metadata = {
 };
 
 export default async function Page() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const headerList = await headers();
+  const session = await requireSessionOrRedirect(headerList);
+
+  const resolvedOrganizationId =
+    await getActiveOrganizationIdFromHeaders(headerList);
+  if (resolvedOrganizationId) {
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      resolvedOrganizationId,
+    );
+    if (!membership) {
+      const joinRequest = await JoinRequestsService.findByUserAndOrganization(
+        session.user.id,
+        resolvedOrganizationId,
+      );
+      if (joinRequest?.status === JoinRequestStatus.Pending) {
+        redirect("/joinrequeststatus");
+      }
+    }
+  }
 
   const organizationId = session?.session.activeOrganizationId;
   let isAdmin = false;
