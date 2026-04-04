@@ -161,7 +161,7 @@ export default function EventsCreationPage() {
           </BogButton>
         </div>
         <div className="w-full">
-          <hr className="w-full border-[var(--color-media-divider)]" />
+          <hr className="w-full border-media-divider" />
         </div>
       </div>
       <div className="flex flex-col items-end gap-15 w-[90%]">
@@ -179,13 +179,11 @@ export default function EventsCreationPage() {
               className="self-start gap-2"
             />
             {missing && title === "" && (
-              <div className="text-[var(--color-status-red-text)] text-small">
-                Missing
-              </div>
+              <div className="text-status-red-text text-small">Missing</div>
             )}
           </div>
           <div className="flex items-start gap-6 self-stretch">
-            <div className="w-2/5">
+            <div className="w-1/5">
               <BogTextInput
                 name="date"
                 label="Date"
@@ -196,9 +194,7 @@ export default function EventsCreationPage() {
                 onChange={(e) => setDate(e.target.value)}
               />
               {missing && date === "" && (
-                <div className="text-[var(--color-status-red-text)] text-small">
-                  Missing
-                </div>
+                <div className="text-status-red-text text-small">Missing</div>
               )}
             </div>
             <div className="w-1/5">
@@ -212,9 +208,7 @@ export default function EventsCreationPage() {
                 onChange={(e) => setStartTime(e.target.value)}
               />
               {missing && startTime === "" && (
-                <div className="text-[var(--color-status-red-text)] text-small">
-                  Missing
-                </div>
+                <div className="text-status-red-text text-small">Missing</div>
               )}
             </div>
             <div className="w-1/5">
@@ -228,9 +222,7 @@ export default function EventsCreationPage() {
                 onChange={(e) => setEndTime(e.target.value)}
               />
               {missing && endTime === "" && (
-                <div className="text-[var(--color-status-red-text)] text-small">
-                  Missing
-                </div>
+                <div className="text-status-red-text text-small">Missing</div>
               )}
             </div>
           </div>
@@ -246,16 +238,14 @@ export default function EventsCreationPage() {
               placeholder="Write your description here"
             />
             {missing && description === "" && (
-              <div className="text-[var(--color-status-red-text)] text-small">
-                Missing
-              </div>
+              <div className="text-status-red-text text-small">Missing</div>
             )}
           </div>
         </div>
         <div className="flex flex-col items-start gap-6 self-stretch">
           <h4>Event Location</h4>
           <div className="flex items-start gap-10 self-stretch">
-            <div className="w-2/5">
+            <div className="w-1/3">
               <BogTextInput
                 name="address"
                 label="Address"
@@ -266,9 +256,7 @@ export default function EventsCreationPage() {
                 onChange={(e) => setAddress(e.target.value)}
               />
               {missing && address === "" && (
-                <div className="text-[var(--color-status-red-text)] text-small">
-                  Missing
-                </div>
+                <div className="text-status-red-text text-small">Missing</div>
               )}
             </div>
             <div className="w-1/5">
@@ -282,9 +270,7 @@ export default function EventsCreationPage() {
                 onChange={(e) => setCity(e.target.value)}
               />
               {missing && city === "" && (
-                <div className="text-[var(--color-status-red-text)] text-small">
-                  Missing
-                </div>
+                <div className="text-status-red-text text-small">Missing</div>
               )}
             </div>
             <div className="w-1/5">
@@ -298,9 +284,7 @@ export default function EventsCreationPage() {
                 onChange={(e) => setState(e.target.value)}
               />
               {missing && state === "" && (
-                <div className="text-[var(--color-status-red-text)] text-small">
-                  Missing
-                </div>
+                <div className="text-status-red-text text-small">Missing</div>
               )}
             </div>
             <div className="w-1/5">
@@ -314,9 +298,7 @@ export default function EventsCreationPage() {
                 onChange={(e) => setZipCode(e.target.value)}
               />
               {missing && zipCode === "" && (
-                <div className="text-[var(--color-status-red-text)] text-small">
-                  Missing
-                </div>
+                <div className="text-status-red-text text-small">Missing</div>
               )}
             </div>
           </div>
@@ -359,7 +341,7 @@ export default function EventsCreationPage() {
               />
             ))}
             <BogButton
-              className="bg-white text-[var(--color-brand-text)]"
+              className="bg-solid-bg-base text-brand-text"
               onClick={() => setLinks([...links, ""])}
             >
               <PlusIcon />
@@ -394,7 +376,7 @@ export default function EventsCreationPage() {
               />
             ))}
             <BogButton
-              className="bg-white text-[var(--color-brand-text)]"
+              className="bg-solid-bg-base text-brand-text"
               onClick={() => setHosts([...hosts, ""])}
             >
               <PlusIcon />
@@ -412,23 +394,23 @@ export default function EventsCreationPage() {
             <BogRadioItem
               value="public"
               label="Public"
-              className="flex h-[44px] px-2 py-3 items-center gap-2 self-stretch rounded border border-[var(--color-media-divider)] bg-[var(--color-media-page-bg)]"
+              className="flex h-[44px] px-2 py-3 items-center gap-2 self-stretch rounded border border-media-divider bg-media-page-bg"
             />
             <BogRadioItem
               value="member-only"
               label="Member only"
-              className="flex h-[44px] px-2 py-3 items-center gap-2 self-stretch rounded border border-[var(--color-media-divider)] bg-[var(--color-media-page-bg)]"
+              className="flex h-[44px] px-2 py-3 items-center gap-2 self-stretch rounded border border-media-divider bg-media-page-bg"
             />
           </BogRadioGroup>
         </div>
         {missing && (
-          <div className="w-full flex flex-row items-center p-4 gap-2 self-stretch rounded bg-[var(--color-brand-stroke-weak)] min-h-[40px]">
+          <div className="w-full flex flex-row items-center p-4 gap-2 self-stretch rounded bg-brand-stroke-weak min-h-[40px]">
             <WarningIcon />
             <p>Please fill out all required fields</p>
           </div>
         )}
         {wrongTime && (
-          <div className="w-full flex flex-row items-center p-4 gap-2 self-stretch rounded bg-[var(--color-brand-stroke-weak)] min-h-[40px]">
+          <div className="w-full flex flex-row items-center p-4 gap-2 self-stretch rounded bg-brand-stroke-weak min-h-[40px]">
             <WarningIcon />
             <p>Start time must be before end time</p>
           </div>
@@ -436,7 +418,7 @@ export default function EventsCreationPage() {
         <div className="flex flex-end items-start gap-5">
           <BogButton
             onClick={() => setExit(true)}
-            className="flex py-3 px-4 items-center -space-x-1 rounded bg-transparent text-[var(--color-brand-text)]"
+            className="flex py-3 px-4 items-center -space-x-1 rounded bg-transparent text-brand-text"
           >
             Cancel
           </BogButton>
@@ -450,7 +432,7 @@ export default function EventsCreationPage() {
       </div>
       {exit && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="flex w-2/5 p-8 flex-col items-center gap-4 bg-white rounded">
+          <div className="flex w-1/3 p-8 flex-col items-center gap-4 bg-solid-bg-base rounded">
             <div className="h-[68.717px] self-stretch">
               <div className="w-full">
                 <div className="inline-flex w-full justify-between items-center">
@@ -462,7 +444,7 @@ export default function EventsCreationPage() {
                     <ExitIcon />
                   </BogButton>
                 </div>
-                <hr className="w-full border-[var(--color-media-divider)]" />
+                <hr className="w-full border-media-divider" />
               </div>
             </div>
             <div className="flex flex-col items-end gap-12 self-stretch ">
@@ -474,7 +456,7 @@ export default function EventsCreationPage() {
               <div className="flex items-start gap-5">
                 <BogButton
                   onClick={() => setExit(false)}
-                  className="bg-transparent text-[var(--color-brand-text)]"
+                  className="bg-transparent text-brand-text"
                 >
                   Cancel
                 </BogButton>
@@ -491,7 +473,7 @@ export default function EventsCreationPage() {
       )}
       {hasError && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="flex w-2/5 p-8 flex-col items-center gap-4 bg-white rounded">
+          <div className="flex w-1/3 p-8 flex-col items-center gap-4 bg-solid-bg-base rounded">
             <div className="h-[68.717px] self-stretch">
               <div className="w-full">
                 <div className="inline-flex w-full justify-between items-center">
@@ -503,7 +485,7 @@ export default function EventsCreationPage() {
                     <ExitIcon />
                   </BogButton>
                 </div>
-                <hr className="w-full border-[var(--color-media-divider)]" />
+                <hr className="w-full border-media-divider" />
               </div>
             </div>
             <div className="flex flex-col items-end gap-12 self-stretch ">
