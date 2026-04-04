@@ -65,6 +65,7 @@ async function main() {
   }
 
   const fileConfig = await juno.file.getConfig(projectId);
+  console.log("File config", fileConfig);
   const configId = parseJunoNumericId(fileConfig.id);
   if (!Number.isFinite(configId)) {
     throw new Error("Juno returned an invalid file config ID");
