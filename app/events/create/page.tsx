@@ -479,7 +479,10 @@ export default function EventsCreationPage() {
                 <div className="inline-flex w-full justify-between items-center">
                   <h4>Event not created</h4>
                   <BogButton
-                    onClick={() => setHasError(false)}
+                    onClick={() => {
+                      setHasError(false);
+                      setErrorMessage("");
+                    }}
                     className="bg-transparent"
                   >
                     <ExitIcon />
@@ -498,7 +501,10 @@ export default function EventsCreationPage() {
               </div>
               <div className="flex items-start gap-5">
                 <BogButton
-                  onClick={() => setHasError(false)}
+                  onClick={() => {
+                    setHasError(false);
+                    setErrorMessage("");
+                  }}
                   className="flex py-2 px-3 items-center -gap-1"
                 >
                   Close
