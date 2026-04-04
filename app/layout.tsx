@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import { Suspense } from "react";
 import { ActiveOrganizationSync } from "../components/ActiveOrganizationSync";
+import MembershipRedirectGuard from "@/components/MembershipRedirectGuard";
 import NavbarWrapper from "@/components/navigation/NavbarWrapper";
 import Navbar from "@/components/navigation/Navbar";
 import NotificationToastProvider from "@/components/notifications/NotificationToastProvider";
@@ -14,6 +15,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ActiveOrganizationSync />
+        <MembershipRedirectGuard />
         <NotificationToastProvider />
         <Suspense fallback={children}>
           <NavbarWrapper noNavbarChildren={children}>

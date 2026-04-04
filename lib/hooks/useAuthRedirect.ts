@@ -139,7 +139,7 @@ function useRedirectGuard({ requireAdmin = false }: RedirectGuardOptions = {}) {
       return null;
     }
 
-    if (joinRequestStatus === JoinRequestStatus.Pending) {
+    if (organizationId) {
       return "/joinrequeststatus";
     }
 

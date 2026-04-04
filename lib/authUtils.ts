@@ -7,7 +7,6 @@ import {
   NoActiveOrganizationError,
   UnauthorizedError,
 } from "@/lib/errors";
-import { JoinRequestStatus } from "@/lib/schema";
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
@@ -195,8 +194,8 @@ export async function getActiveOrganizationIdFromHeaders(
 }
 
 /**
- * Redirects unauthenticated users to /login and users with pending join
- * requests to /joinrequeststatus.
+ * Redirects unauthenticated users to /login and signed-in non-members to
+ * /joinrequeststatus when an active organization can be resolved.
  */
 export async function redirectIfNotMember() {
   const requestHeaders = await headers();
@@ -224,16 +223,7 @@ export async function redirectIfNotMember() {
     return session;
   }
 
-  const joinRequest = await JoinRequestsService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
-
-  if (joinRequest?.status === JoinRequestStatus.Pending) {
-    redirect("/joinrequeststatus");
-  }
-
-  redirect("/");
+  redirect("/joinrequeststatus");
 }
 
 /**
