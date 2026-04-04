@@ -1,7 +1,9 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { getActiveOrganizationIdFromHeaders } from "@/lib/authUtils";
+import {
+  getActiveOrganizationIdFromHeaders,
+  requireSessionOrRedirect,
+} from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
@@ -15,13 +17,7 @@ export const metadata = {
 
 export default async function Page() {
   const headerList = await headers();
-  const session = await auth.api.getSession({
-    headers: headerList,
-  });
-
-  if (!session?.user) {
-    redirect("/login");
-  }
+  const session = await requireSessionOrRedirect(headerList);
 
   const resolvedOrganizationId =
     await getActiveOrganizationIdFromHeaders(headerList);
