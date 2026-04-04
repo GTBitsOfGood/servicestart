@@ -47,6 +47,9 @@
   .bog-tabs-label-wrapper {
     padding: 0.5rem 1.25rem 0.5rem 1.25rem;
   }
+  .bog-tabs-label-wrapper:hover {
+    background: var(--color-grey-fill-weak);
+  }
 
   .bog-tabs-trigger[data-state="active"] {
     color: var(--color-grey-text-strong);
@@ -56,10 +59,6 @@
   .bog-tabs-label {
     padding: 0.25rem;
     border-radius: 0.25rem;
-  }
-
-  .bog-tabs-trigger:hover .bog-tabs-label {
-    background: var(--color-grey-fill-weak);
   }
 
   .bog-tabs-content {

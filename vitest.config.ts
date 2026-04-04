@@ -14,6 +14,10 @@ export default defineConfig({
     fileParallelism: true,
     hookTimeout: 120_000,
     testTimeout: 120_000,
+    coverage: {
+      provider: "v8",
+      include: ["lib/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
+    },
   },
   resolve: {
     alias: {
