@@ -227,11 +227,11 @@ export default function NotificationItem({
             Once this request is denied, the requester will be notified and will
             not have access to {joinRequest.organization}
             <div className="mt-4 flex flex-col gap-1 text-left">
-              <label className="text-[13px] font-medium text-grey-text-strong">
+              <label className="text-md font-medium text-grey-text-strong">
                 Required Reasoning
               </label>
               <textarea
-                className="w-full rounded border border-grey-stroke-weak bg-grey-fill-weaker px-3 py-2 text-[12px] text-grey-text-strong placeholder:text-grey-text-weak focus:outline-none focus:ring-1 focus:ring-brand-text"
+                className="w-full rounded border border-grey-stroke-weak bg-grey-fill-weaker px-3 py-2 text-md text-grey-text-strong placeholder:text-grey-text-weak focus:outline-none focus:ring-1 focus:ring-brand-text"
                 rows={3}
                 placeholder="Enter reasoning for denial here."
                 value={denyReason}
@@ -392,7 +392,7 @@ export default function NotificationItem({
                     e.stopPropagation();
                     setExpanded(true);
                   }}
-                  className="inline-flex items-center gap-1 text-[12px] font-medium text-brand-text hover:opacity-80"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-brand-text hover:opacity-80"
                 >
                   View Details
                   <BogIcon

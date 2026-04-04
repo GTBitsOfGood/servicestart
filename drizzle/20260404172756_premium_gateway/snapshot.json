@@ -1,11 +1,20 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "cfa63a6b-7e44-4d78-9e49-c3093efdbb49",
+  "id": "24e34ef8-854d-4e4b-8e6a-5fb5e78be37d",
   "prevIds": [
-    "bb0631e7-bc9b-40ac-9c41-7d64fe1a0fb9"
+    "3b9403d0-1072-43df-baef-48b8c27e452f"
   ],
   "ddl": [
+    {
+      "values": [
+        "public",
+        "member-only"
+      ],
+      "name": "visibility",
+      "entityType": "enums",
+      "schema": "public"
+    },
     {
       "values": [
         "pending",
@@ -47,7 +56,9 @@
         "navbar_variant",
         "navbar_color",
         "members_page_enabled",
-        "logo_url"
+        "logo_url",
+        "admin_dashboard_layout",
+        "dashboard_layout"
       ],
       "name": "organization_config_key",
       "entityType": "enums",
@@ -67,6 +78,12 @@
     },
     {
       "isRlsEnabled": false,
+      "name": "event_hosts",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
       "name": "event_rsvps",
       "entityType": "tables",
       "schema": "public"
@@ -80,6 +97,12 @@
     {
       "isRlsEnabled": false,
       "name": "invitations",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "join_request_history",
       "entityType": "tables",
       "schema": "public"
     },
@@ -458,6 +481,32 @@
       "name": "user_id",
       "entityType": "columns",
       "schema": "public",
+      "table": "event_hosts"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "event_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "event_hosts"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "event_rsvps"
     },
     {
@@ -560,6 +609,71 @@
       "generated": null,
       "identity": null,
       "name": "duration",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "events"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "rsvp_limit",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "events"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "rsvp_deadline",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "events"
+    },
+    {
+      "type": "visibility",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "visibility",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "events"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "accessibility_notes",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "events"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 1,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "links",
       "entityType": "columns",
       "schema": "public",
       "table": "events"
@@ -719,6 +833,84 @@
       "entityType": "columns",
       "schema": "public",
       "table": "invitations"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "join_request_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "action",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "resolved_by_user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "resolved_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "denial_reason",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
     },
     {
       "type": "text",
@@ -1145,6 +1337,19 @@
       "generated": null,
       "identity": null,
       "name": "text",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "notifications"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "metadata",
       "entityType": "columns",
       "schema": "public",
       "table": "notifications"
@@ -2186,6 +2391,40 @@
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
+      "name": "event_hosts_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "event_hosts"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "event_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "events",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "event_hosts_event_id_events_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "event_hosts"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
       "name": "event_rsvps_user_id_users_id_fkey",
       "entityType": "fks",
       "schema": "public",
@@ -2275,6 +2514,40 @@
       "entityType": "fks",
       "schema": "public",
       "table": "invitations"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "join_request_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "join_requests",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "join_request_history_join_request_id_join_requests_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "resolved_by_user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "name": "join_request_history_resolved_by_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "join_request_history"
     },
     {
       "nameExplicit": false,
@@ -2620,6 +2893,16 @@
       "name": "invitations_pkey",
       "schema": "public",
       "table": "invitations",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "join_request_history_pkey",
+      "schema": "public",
+      "table": "join_request_history",
       "entityType": "pks"
     },
     {

@@ -173,6 +173,12 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
     (jr) => jr.status === JoinRequestStatus.Denied,
   );
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
   if (organization?.isPending || isSessionLoading) return null;
   if (!isAuthorized || status === "forbidden") return null;
 

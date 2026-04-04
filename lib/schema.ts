@@ -460,6 +460,7 @@ export const notifications = pgTable(
       .default(NotificationType.General)
       .notNull(),
     text: text("text").notNull(),
+    metadata: jsonb("metadata"),
   },
   (table) => [
     index("notification_userId_organizationId_idx").on(

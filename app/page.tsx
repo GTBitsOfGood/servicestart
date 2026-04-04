@@ -2,7 +2,6 @@ import NotificationsWidget from "@/components/notifications/NotificationsWidget"
 import RequestsPanel from "@/components/RequestsPanel";
 import { OrganizationConfigKey } from "@/lib/schema";
 import { headers } from "next/headers";
-import { getActiveOrganizationIdFromHeaders } from "@/lib/authUtils";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";

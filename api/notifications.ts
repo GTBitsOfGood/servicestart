@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { paginationQuerySchema } from "../lib/apiUtils";
-import { requireMembership } from "@/lib/authUtils";
+import { requireMembership, requireAdmin } from "@/lib/authUtils";
 import { ForbiddenError } from "@/lib/errors";
 import { NotificationService } from "@/lib/services/NotificationService";
 import { NotificationType } from "@/lib/schema";
@@ -132,7 +132,7 @@ const app = new Hono()
     return c.json({ success: true });
   })
   .post("/:id/approve", async (c) => {
-    const session = await requireMembership(c);
+    const session = await requireAdmin(c);
     const activeOrganizationId = session.session.activeOrganizationId!;
     const { id: notificationId } = c.req.param();
 
@@ -146,10 +146,11 @@ const app = new Hono()
       throw new ForbiddenError();
     }
 
-    const joinRequest = await JoinRequestsService.findByUserAndOrganization(
-      notification.userId,
-      activeOrganizationId,
-    );
+    const metadata = notification.metadata as { joinRequestId?: string } | null;
+    const joinRequestId = metadata?.joinRequestId;
+    if (!joinRequestId) return c.json({ error: "Join request not found" }, 404);
+
+    const joinRequest = await JoinRequestsService.findById(joinRequestId);
     if (!joinRequest) return c.json({ error: "Join request not found" }, 404);
 
     await JoinRequestsService.updateStatus(
@@ -166,7 +167,7 @@ const app = new Hono()
     return c.json({ success: true });
   })
   .post("/:id/deny", async (c) => {
-    const session = await requireMembership(c);
+    const session = await requireAdmin(c);
     const activeOrganizationId = session.session.activeOrganizationId!;
     const { id: notificationId } = c.req.param();
 
@@ -180,10 +181,11 @@ const app = new Hono()
       throw new ForbiddenError();
     }
 
-    const joinRequest = await JoinRequestsService.findByUserAndOrganization(
-      notification.userId,
-      activeOrganizationId,
-    );
+    const metadata = notification.metadata as { joinRequestId?: string } | null;
+    const joinRequestId = metadata?.joinRequestId;
+    if (!joinRequestId) return c.json({ error: "Join request not found" }, 404);
+
+    const joinRequest = await JoinRequestsService.findById(joinRequestId);
     if (!joinRequest) return c.json({ error: "Join request not found" }, 404);
 
     await JoinRequestsService.updateStatus(

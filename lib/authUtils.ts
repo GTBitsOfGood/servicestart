@@ -63,7 +63,10 @@ export async function createJoinRequestIfNeeded(
   );
   if (existingRequest) return;
 
-  await JoinRequestsService.create(userId, organizationId);
+  const joinRequestId = await JoinRequestsService.create(
+    userId,
+    organizationId,
+  );
 
   const user = await UserService.findById(userId);
   const userName = user?.name || user?.email || "A user";
@@ -71,6 +74,7 @@ export async function createJoinRequestIfNeeded(
     organizationId,
     `Join Request\n${userName} has requested to join the organization.`,
     NotificationType.ActionRequired,
+    { joinRequestId },
   );
 }
 
