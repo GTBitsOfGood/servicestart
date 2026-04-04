@@ -1,7 +1,13 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/lib/db";
-import { events, eventRsvps, shifts } from "@/lib/schema";
+import {
+  events,
+  eventRsvps,
+  shifts,
+  eventHosts,
+  EventVisibility,
+} from "@/lib/schema";
 import {
   addMember,
   buildTestUser,
@@ -30,6 +36,7 @@ describe("POST /api/events", () => {
         location: "Event Space 1",
         startTimestamp: null,
         duration: null,
+        visibility: EventVisibility.Public,
       },
     });
 
@@ -46,6 +53,7 @@ describe("POST /api/events", () => {
           location: "Event Space 1",
           startTimestamp: null,
           duration: null,
+          visibility: EventVisibility.Public,
         },
       },
       { headers },
@@ -66,6 +74,7 @@ describe("POST /api/events", () => {
           duration: "03:00:00",
           description: "Annual event",
           coverImageUrl: "https://example.com/picnic.jpg",
+          visibility: EventVisibility.Public,
         },
       },
       { headers },
@@ -101,6 +110,7 @@ describe("POST /api/events", () => {
         json: {
           name: "Temp Event 2",
           location: "Georgia Tech",
+          visibility: EventVisibility.Public,
         },
       },
       { headers },
@@ -118,6 +128,67 @@ describe("POST /api/events", () => {
     expect(row.startTimestamp).toBeNull();
     expect(row.duration).toBeNull();
     expect(row.coverImageUrl).toBeNull();
+  });
+
+  it("creates an event with hosts", async () => {
+    const { organization, headers, user } = await setupOrgAndUser("owner");
+
+    const testUser = buildTestUser();
+    const { user: user2, session: session2 } =
+      await signUpAndGetSession(testUser);
+    await setActiveOrganization(session2.id, organization.id);
+    await addMember(user2.id, organization.id, "member");
+
+    const response = await testApi.events.$post(
+      {
+        json: {
+          name: "Temp Event 2",
+          location: "Georgia Tech",
+          hosts: [user.id, user2.id],
+          visibility: EventVisibility.Public,
+        },
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    if (!("id" in data)) {
+      throw new Error("Response data is missing 'id' property");
+    }
+
+    const hosts = await db
+      .select()
+      .from(eventHosts)
+      .where(eq(eventHosts.eventId, data.id));
+    expect(hosts.length).toBeGreaterThan(0);
+    expect(hosts[0].userId).toBe(user.id);
+    expect(hosts[0].eventId).toBe(data.id);
+    expect(hosts[1].userId).toBe(user2.id);
+    expect(hosts[1].eventId).toBe(data.id);
+  });
+
+  it("returns 404 when host not in org", async () => {
+    const { headers } = await setupOrgAndUser("owner");
+
+    const organization = await createOrganization("acme2");
+    const testUser = buildTestUser();
+    const { user } = await signUpAndGetSession(testUser);
+    await addMember(user.id, organization.id, "member");
+
+    const response = await testApi.events.$post(
+      {
+        json: {
+          name: "Temp Event 2",
+          location: "Georgia Tech",
+          hosts: [user.id],
+          visibility: EventVisibility.Public,
+        },
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(404);
   });
 });
 
@@ -294,7 +365,10 @@ describe("GET /api/events/:eventId", () => {
   it("returns 404 when event belongs to different organization", async () => {
     const { headers } = await setupOrgAndUser("member");
     const otherOrg = await createOrganization("other");
-    const eventId = await createEvent(otherOrg.id, { name: "Other Event" });
+    const eventId = await createEvent(otherOrg.id, {
+      name: "Other Event",
+      visibility: EventVisibility.Member,
+    });
 
     const response = await testApi.events[":eventId"].$get(
       { param: { eventId } },
@@ -325,6 +399,27 @@ describe("GET /api/events/:eventId", () => {
     expect(data.name).toBe("Temp Event 3");
     expect(data.location).toBe("Scheller");
     expect(data.description).toBe("Annual event");
+  });
+
+  it("returns event details when public and different org", async () => {
+    const { headers } = await setupOrgAndUser("member");
+    const otherOrg = await createOrganization("other");
+    const eventId = await createEvent(otherOrg.id, {
+      name: "Other Event",
+      publishedAt: new Date(),
+    });
+
+    const response = await testApi.events[":eventId"].$get(
+      { param: { eventId } },
+      { headers },
+    );
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    if (!("name" in data)) {
+      throw new Error("Response data is missing 'name' property");
+    }
+    expect(data.name).toBe("Other Event");
   });
 });
 
@@ -542,6 +637,26 @@ describe("DELETE /api/events/:eventId", () => {
       .where(eq(eventRsvps.eventId, eventId));
     expect(rsvps).toHaveLength(0);
   });
+
+  it("cascades delete to hosts", async () => {
+    const { organization, user, headers } = await setupOrgAndUser("owner");
+    const eventId = await createEvent(organization.id, { name: "Event" });
+
+    await db.insert(eventHosts).values({ eventId, userId: user.id });
+
+    const response = await testApi.events[":eventId"].$delete(
+      { param: { eventId } },
+      { headers },
+    );
+
+    expect(response.status).toBe(200);
+
+    const hosts = await db
+      .select()
+      .from(eventHosts)
+      .where(eq(eventHosts.eventId, eventId));
+    expect(hosts).toHaveLength(0);
+  });
 });
 
 describe("POST /api/events/:eventId/rsvps", () => {
@@ -679,6 +794,44 @@ describe("POST /api/events/:eventId/rsvps", () => {
     );
 
     expect(response.status).toBe(404);
+  });
+
+  it("fails when RSVP limit has been reached", async () => {
+    const { organization, headers } = await setupOrgAndUser("member");
+    const eventId = await createEvent(organization.id, {
+      name: "Event",
+      rsvpLimit: 0,
+    });
+
+    const response = await testApi.events[":eventId"].rsvps.$post(
+      { param: { eventId }, query: {} },
+      { headers },
+    );
+
+    const rsvps = await db
+      .select({
+        eventId: eventRsvps.eventId,
+        userId: eventRsvps.userId,
+      })
+      .from(eventRsvps)
+      .where(eq(eventRsvps.eventId, eventId));
+    expect(rsvps.length).toBe(0);
+    expect(response.status).toBe(400);
+  });
+
+  it("fails when RSVP deadline has been passed", async () => {
+    const { organization, headers } = await setupOrgAndUser("member");
+    const eventId = await createEvent(organization.id, {
+      name: "Event",
+      rsvpDeadline: new Date("2000-06-15T14:00:00Z"),
+    });
+
+    const response = await testApi.events[":eventId"].rsvps.$post(
+      { param: { eventId }, query: {} },
+      { headers },
+    );
+
+    expect(response.status).toBe(400);
   });
 });
 

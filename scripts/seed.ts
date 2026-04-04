@@ -1,6 +1,6 @@
 import "dotenv/config"; //must be first to load environment variables
 import { randomUUID } from "node:crypto";
-import { schema } from "../lib/schema";
+import { EventVisibility, schema } from "../lib/schema";
 import db from "../lib/db";
 import { auth } from "@/lib/auth";
 import { OrganizationConfigKey, NotificationType } from "@/lib/schema";
@@ -30,7 +30,7 @@ const ORGS: Array<{
     id: "org_servicestart",
     name: "ServiceStart",
     slug: "servicestart",
-    navbar: { variant: "vertical-sidebar", color: "red" },
+    navbar: { variant: "horizontal-center", color: "red" },
   },
   {
     id: "org_vertical_icon",
@@ -149,7 +149,7 @@ export async function main() {
 
   log("Users and members created.");
   log(
-    "Navbar configs by org: servicestart (vertical sidebar, red), vertical-icon (vertical icon, white), horizontal-left (horizontal left, red), horizontal-center (horizontal center, white). Sign in and switch active org to test different navbar configs.",
+    "Navbar configs by org: servicestart (horizontal center, red), vertical-sidebar (vertical sidebar, red), vertical-icon (vertical icon, white), horizontal-left (horizontal left, red), horizontal-center (horizontal center, white). Sign in and switch active org to test different navbar configs.",
   );
 
   const orgId = "org_servicestart";
@@ -164,6 +164,7 @@ export async function main() {
       startTimestamp: new Date("2026-03-15T09:00:00"),
       duration: "2 hours",
       coverImageUrl: null,
+      visibility: EventVisibility.Public,
     },
     {
       id: "event_002",
@@ -174,6 +175,7 @@ export async function main() {
       startTimestamp: new Date("2026-03-22T10:00:00"),
       duration: "3 hours",
       coverImageUrl: null,
+      visibility: EventVisibility.Public,
     },
     {
       id: "event_003",
@@ -184,6 +186,7 @@ export async function main() {
       startTimestamp: new Date("2026-04-05T13:00:00"),
       duration: "4 hours",
       coverImageUrl: null,
+      visibility: EventVisibility.Public,
     },
     {
       id: "event_004",
@@ -194,6 +197,7 @@ export async function main() {
       startTimestamp: new Date("2026-01-10T11:00:00"),
       duration: "3 hours",
       coverImageUrl: null,
+      visibility: EventVisibility.Public,
     },
     {
       id: "event_005",
@@ -204,6 +208,7 @@ export async function main() {
       startTimestamp: new Date("2025-12-18T14:00:00"),
       duration: "2 hours",
       coverImageUrl: null,
+      visibility: EventVisibility.Public,
     },
   ];
 

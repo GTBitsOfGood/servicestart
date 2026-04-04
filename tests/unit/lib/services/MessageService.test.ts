@@ -98,8 +98,7 @@ describe("MessageService", () => {
     expect(mockEmailMembers).toHaveBeenCalledTimes(1);
     expect(mockEmailMembers).toHaveBeenCalledWith(org.id, {
       subject: "Hello",
-      textBody: "Hello members",
-      htmlBody: undefined,
+      content: [{ type: "text/plain", value: "Hello members" }],
     });
   });
 

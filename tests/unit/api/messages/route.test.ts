@@ -256,8 +256,7 @@ describe("POST /api/messages", () => {
     expect(mockEmailMembers).toHaveBeenCalledTimes(1);
     expect(mockEmailMembers).toHaveBeenCalledWith(organization.id, {
       subject: "Release",
-      textBody: "It shipped",
-      htmlBody: undefined,
+      content: [{ type: "text/plain", value: "It shipped" }],
     });
   });
 });
