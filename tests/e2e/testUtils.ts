@@ -1,4 +1,7 @@
 import type { Page } from "@playwright/test";
+import { eq } from "drizzle-orm";
+import db from "@/lib/db";
+import { organizations } from "@/lib/schema";
 import {
   addMember,
   buildTestUser,
@@ -91,4 +94,43 @@ export async function createTestAdminAndSignIn(
   ]);
 
   return { user, org };
+}
+
+/**
+ * Ensures an organization with slug `servicestart` exists so localhost
+ * resolves to a tenant and signup hooks can create join requests.
+ */
+export async function ensureServicestartOrganization() {
+  const [existing] = await db
+    .select({ id: organizations.id, slug: organizations.slug })
+    .from(organizations)
+    .where(eq(organizations.slug, "servicestart"))
+    .limit(1);
+  if (existing) {
+    return existing;
+  }
+  try {
+    return await createOrganization("servicestart");
+  } catch {
+    const [again] = await db
+      .select({ id: organizations.id, slug: organizations.slug })
+      .from(organizations)
+      .where(eq(organizations.slug, "servicestart"))
+      .limit(1);
+    if (!again) {
+      throw new Error("Failed to ensure servicestart organization");
+    }
+    return again;
+  }
+}
+
+/**
+ * Signs in a new user who has a pending join request for the default host org.
+ */
+export async function createTestUserWithPendingJoinRequestAndSignIn(
+  page: Page,
+  options: SignInOptions = {},
+) {
+  await ensureServicestartOrganization();
+  return createTestUserAndSignIn(page, options);
 }
