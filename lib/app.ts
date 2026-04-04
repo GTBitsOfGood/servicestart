@@ -9,6 +9,7 @@ import members from "@/api/members";
 import messages from "@/api/messages";
 import { Hono } from "hono";
 import notifications from "@/api/notifications";
+import emails from "@/api/emails";
 
 export const app = new Hono()
   .basePath("/api")
@@ -21,6 +22,7 @@ export const app = new Hono()
   .route("/media", media)
   .route("/notifications", notifications)
   .route("/members", members)
-  .route("/messages", messages);
+  .route("/messages", messages)
+  .route("/emails", emails);
 
 export type AppType = typeof app;

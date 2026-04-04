@@ -18,14 +18,24 @@ async function emailMembers(
   email: {
     subject: string;
     content: { type: "text/plain" | "text/html"; value: string }[];
+    targetUserIds?: string[];
   },
 ) {
-  const [organization, recipients] = await Promise.all([
+  const [organization, allRecipients] = await Promise.all([
     OrganizationsService.findById(organizationId),
     MembersService.listMemberContacts(organizationId),
   ]);
 
-  if (!organization || recipients.length === 0) {
+  if (!organization || allRecipients.length === 0) {
+    return;
+  }
+
+  const recipients =
+    email.targetUserIds && email.targetUserIds.length > 0
+      ? allRecipients.filter((r) => email.targetUserIds!.includes(r.userId))
+      : allRecipients;
+
+  if (recipients.length === 0) {
     return;
   }
 

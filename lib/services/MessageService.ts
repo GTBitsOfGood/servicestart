@@ -13,6 +13,7 @@ export type MessageCreateInput = {
   body?: MessageBody;
   textBody?: string;
   htmlBody?: string;
+  recipientUserIds?: string[];
 };
 
 function buildBodyFromText(textBody?: string, htmlBody?: string): MessageBody {
@@ -51,11 +52,13 @@ async function createAndSend(input: MessageCreateInput) {
       sentAt: messages.sentAt,
     });
 
+  const recipientUserIds =
+    input.recipientUserIds && input.recipientUserIds.length > 0
+      ? input.recipientUserIds
+      : await MembersService.getUserIdsByOrganization(input.organizationId);
+
   const textBody = input.textBody ?? input.htmlBody;
   const htmlBody = input.htmlBody;
-  const recipientUserIds = await MembersService.getUserIdsByOrganization(
-    input.organizationId,
-  );
 
   if (textBody && recipientUserIds.length > 0) {
     const content: Array<{ type: "text/plain" | "text/html"; value: string }> =
@@ -68,6 +71,7 @@ async function createAndSend(input: MessageCreateInput) {
     await EmailService.emailMembers(input.organizationId, {
       subject: input.subject,
       content,
+      targetUserIds: recipientUserIds,
     });
   }
 

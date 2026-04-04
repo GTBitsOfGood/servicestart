@@ -507,6 +507,16 @@ export default function MembersTable({
         onClose={() => setEmailModalOpen(false)}
         recipients={recipients}
         initialRecipientIds={emailRecipientIds}
+        onSend={async ({ subject, body, recipientIds }) => {
+          if (!organizationId) return;
+          await api.emails.send.$post({
+            json: {
+              subject,
+              body,
+              recipientIds,
+            },
+          });
+        }}
       />
 
       {/* Heading */}
