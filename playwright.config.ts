@@ -74,8 +74,14 @@ export default defineConfig({
   webServer: {
     command: "pnpm run build && pnpm run start",
     url: "http://localhost:3000",
+    // A plain `pnpm dev` bundle omits NEXT_PUBLIC_E2E_DISABLE_ACTIVE_ORG_SYNC and
+    // can break tenant-scoped client requests; prefer this webServer build for E2E.
     reuseExistingServer: !isCI,
     timeout: 120_000,
-    env: process.env as Record<string, string>,
+    env: {
+      ...(process.env as Record<string, string>),
+      // Inlined at `next build`; must match client bundle used by tests.
+      NEXT_PUBLIC_E2E_DISABLE_ACTIVE_ORG_SYNC: "true",
+    },
   },
 });
