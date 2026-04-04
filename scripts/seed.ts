@@ -174,7 +174,7 @@ export async function main() {
       description: "Event description 2.",
       startTimestamp: new Date("2026-03-22T10:00:00"),
       duration: "3 hours",
-      coverImageUrl: null,
+      coverImageUrl: "https://placehold.co/600x400/orange/white",
       visibility: EventVisibility.Public,
     },
     {

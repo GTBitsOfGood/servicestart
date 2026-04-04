@@ -1,12 +1,24 @@
 import Link from "next/link";
 import type { InferSelectModel } from "drizzle-orm";
+import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { events } from "@/lib/schema";
 
 export type Event = Omit<InferSelectModel<typeof events>, "startTimestamp"> & {
   startTimestamp: string | null;
 };
 
-export default function EventCard({ event }: { event: Event }) {
+export type EventCardEvent = Pick<
+  Event,
+  "id" | "name" | "location" | "coverImageUrl" | "startTimestamp"
+>;
+
+export default function EventCard({
+  event,
+  layout = "grid",
+}: {
+  event: EventCardEvent;
+  layout?: "grid" | "list";
+}) {
   const date = event.startTimestamp
     ? new Date(event.startTimestamp).toLocaleDateString("en-US", {
         day: "numeric",
@@ -19,38 +31,59 @@ export default function EventCard({ event }: { event: Event }) {
         minute: "2-digit",
       })
     : "";
+  const dateTime = time && date !== "TBD" ? `${date} • ${time}` : date;
+
+  const imageBlock = (
+    <div
+      className={
+        layout === "grid"
+          ? "mb-0 h-[162px] w-full shrink-0 rounded-xl bg-grey-fill-weaker bg-cover bg-center"
+          : "h-[96px] w-[140px] shrink-0 rounded-xl bg-grey-fill-weaker bg-cover bg-center sm:h-[108px] sm:w-[160px]"
+      }
+      style={{
+        backgroundImage: event.coverImageUrl
+          ? `url(${event.coverImageUrl})`
+          : undefined,
+      }}
+    />
+  );
+
+  const details = (
+    <div className="flex min-w-0 flex-col gap-3">
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="text-heading-4 font-bold text-black">{event.name}</div>
+        <div className="text-paragraph-2 font-semibold text-black">
+          {dateTime}
+        </div>
+      </div>
+      <div className="text-paragraph-2 text-black">{event.location}</div>
+      <Link
+        href={`/events/${event.id}`}
+        className="inline-flex w-fit items-center gap-1 pb-2 text-paragraph-1 font-semibold text-grey-text-weak hover:text-grey-text-strong"
+      >
+        View details
+        <BogIcon
+          name="chevron-right"
+          size={18}
+          className="text-grey-icon-weak"
+        />
+      </Link>
+    </div>
+  );
+
+  if (layout === "list") {
+    return (
+      <article className="flex w-full max-w-full gap-4 border-b border-grey-stroke-weak pb-6 sm:items-start sm:gap-6">
+        {imageBlock}
+        {details}
+      </article>
+    );
+  }
 
   return (
-    <div className="w-[230px] min-w-[230px] flex flex-col">
-      <div
-        className="w-full h-[145px] bg-[#D9D9D9] rounded-xl mb-3 bg-cover bg-center"
-        style={{
-          backgroundImage: event.coverImageUrl
-            ? `url(${event.coverImageUrl})`
-            : undefined,
-        }}
-      />
-      <div className="flex flex-col gap-2">
-        <div className="text-paragraph-2 font-bold text-black text-[18px]">
-          {event.name}
-        </div>
-        <div className="text-small font-semibold text-black text-[15px]">
-          {date}
-          {time ? ` • ${time}` : ""}
-        </div>
-        <div className="text-small text-black text-[15px]">
-          {event.organizationId}
-        </div>
-        <div className="text-small text-black text-[14px]">
-          {event.location}
-        </div>
-        <Link
-          href={`/event/${event.id}`}
-          className="text-small text-black/50 flex items-center gap-1 w-fit text-[14px]"
-        >
-          View details {">"}
-        </Link>
-      </div>
-    </div>
+    <article className="flex w-full max-w-[240px] flex-col gap-4">
+      {imageBlock}
+      {details}
+    </article>
   );
 }
