@@ -1,5 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { createTestUserAndSignIn, createTestAdminAndSignIn } from "./testUtils";
+import {
+  createTestUserAndSignIn,
+  createTestAdminAndSignIn,
+  expectPageRedirectsGuestButAllowsPendingJoin,
+} from "./testUtils";
 
 // Minimal valid 1×1 JPEG (base64-encoded)
 const MINIMAL_JPEG_BASE64 =

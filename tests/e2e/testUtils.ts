@@ -173,7 +173,12 @@ export async function createTestUserWithPendingJoinRequestAndSignIn(
 }
 
 function normalizedPathname(url: string): string {
-  const pathname = new URL(url).pathname;
+  let pathname: string;
+  try {
+    pathname = new URL(url).pathname;
+  } catch {
+    pathname = url;
+  }
   return pathname.length > 1 && pathname.endsWith("/")
     ? pathname.slice(0, -1)
     : pathname;
