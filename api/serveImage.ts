@@ -51,14 +51,18 @@ const app = new Hono().basePath("/images").get("/:id", async (c) => {
 
     const contentType = getContentType(mediaRecord.fileName);
 
-    c.header("Content-Type", contentType);
-    c.header("Content-Length", String(buffer.length));
-    c.header("Cache-Control", "private, max-age=3600");
-    return c.body(
+    return new Response(
       buffer.buffer.slice(
         buffer.byteOffset,
         buffer.byteOffset + buffer.byteLength,
       ),
+      {
+        headers: {
+          "Content-Type": contentType,
+          "Content-Length": String(buffer.length),
+          "Cache-Control": "private, max-age=3600",
+        },
+      },
     );
   } catch (err) {
     const code =
