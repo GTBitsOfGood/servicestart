@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Context } from "hono";
 import { auth } from "@/lib/auth";
 import db from "@/lib/db";
@@ -10,15 +10,35 @@ import {
   NoActiveOrganizationError,
   UnauthorizedError,
 } from "@/lib/errors";
-import { requireAdmin, requireAuth, requireMembership } from "@/lib/authUtils";
+import {
+  redirectIfNotAdmin,
+  redirectIfNotMember,
+  requireAdmin,
+  requireAuth,
+  requireMembership,
+} from "@/lib/authUtils";
 import {
   addMember,
   buildHost,
   buildTestUser,
   createOrganization,
+  createJoinRequest,
   setActiveOrganization,
   signUpAndGetSession,
 } from "../testUtils";
+
+const mockHeaders = vi.fn();
+const mockRedirect = vi.fn((path: string) => {
+  throw new Error(`NEXT_REDIRECT:${path}`);
+});
+
+vi.mock("next/headers", () => ({
+  headers: () => mockHeaders(),
+}));
+
+vi.mock("next/navigation", () => ({
+  redirect: (path: string) => mockRedirect(path),
+}));
 
 async function getJoinRequests(userId: string, organizationId: string) {
   return db
@@ -133,6 +153,11 @@ function buildContext(headers?: Record<string, string>) {
 }
 
 describe("auth guard helpers", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockHeaders.mockReturnValue(new Headers());
+  });
+
   it("requireAuth throws UnauthorizedError when not signed in", async () => {
     const context = buildContext();
 
@@ -217,5 +242,101 @@ describe("auth guard helpers", () => {
 
     const result = await requireAdmin(context);
     expect(result.user.id).toBe(signedInUser.id);
+  });
+
+  it("redirectIfNotMember redirects unauthenticated users to /login", async () => {
+    await expect(redirectIfNotMember()).rejects.toThrow("NEXT_REDIRECT:/login");
+    expect(mockRedirect).toHaveBeenCalledWith("/login");
+  });
+
+  it("redirectIfNotMember redirects pending join requests to /joinrequeststatus", async () => {
+    const user = buildTestUser();
+    const organization = await createOrganization("acme");
+    const { user: signedInUser, headers } = await signUpAndGetSession(user);
+    await createJoinRequest(
+      signedInUser.id,
+      organization.id,
+      JoinRequestStatus.Pending,
+    );
+
+    mockHeaders.mockReturnValue(
+      new Headers({
+        cookie: headers.Cookie,
+        host: buildHost("acme"),
+      }),
+    );
+
+    await expect(redirectIfNotMember()).rejects.toThrow(
+      "NEXT_REDIRECT:/joinrequeststatus",
+    );
+    expect(mockRedirect).toHaveBeenCalledWith("/joinrequeststatus");
+  });
+
+  it("redirectIfNotAdmin redirects signed-in non-admin members to /", async () => {
+    const user = buildTestUser();
+    const organization = await createOrganization("acme");
+    const {
+      user: signedInUser,
+      session,
+      headers,
+    } = await signUpAndGetSession(user);
+    await addMember(signedInUser.id, organization.id, "member");
+    await setActiveOrganization(session.id, organization.id);
+
+    mockHeaders.mockReturnValue(
+      new Headers({
+        cookie: headers.Cookie,
+        host: buildHost("acme"),
+      }),
+    );
+
+    await expect(redirectIfNotAdmin()).rejects.toThrow("NEXT_REDIRECT:/");
+    expect(mockRedirect).toHaveBeenCalledWith("/");
+  });
+
+  it("redirectIfNotMember returns session for valid members", async () => {
+    const user = buildTestUser();
+    const organization = await createOrganization("acme");
+    const {
+      user: signedInUser,
+      session,
+      headers,
+    } = await signUpAndGetSession(user);
+    await addMember(signedInUser.id, organization.id, "member");
+    await setActiveOrganization(session.id, organization.id);
+
+    mockHeaders.mockReturnValue(
+      new Headers({
+        cookie: headers.Cookie,
+        host: buildHost("acme"),
+      }),
+    );
+
+    const result = await redirectIfNotMember();
+    expect(result.user.id).toBe(signedInUser.id);
+    expect(mockRedirect).not.toHaveBeenCalled();
+  });
+
+  it("redirectIfNotAdmin returns session for admins", async () => {
+    const user = buildTestUser();
+    const organization = await createOrganization("acme");
+    const {
+      user: signedInUser,
+      session,
+      headers,
+    } = await signUpAndGetSession(user);
+    await addMember(signedInUser.id, organization.id, "owner");
+    await setActiveOrganization(session.id, organization.id);
+
+    mockHeaders.mockReturnValue(
+      new Headers({
+        cookie: headers.Cookie,
+        host: buildHost("acme"),
+      }),
+    );
+
+    const result = await redirectIfNotAdmin();
+    expect(result.user.id).toBe(signedInUser.id);
+    expect(mockRedirect).not.toHaveBeenCalled();
   });
 });
