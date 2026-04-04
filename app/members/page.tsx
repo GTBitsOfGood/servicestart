@@ -93,7 +93,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
   }
 
   return (
-    <div className="max-w-[1300px] mx-auto px-12 py-[60px]">
+    <div className="max-w-7xl mx-auto px-12 py-16">
       <MembersTable
         members={memberRows}
         total={total}
