@@ -54,7 +54,12 @@ const app = new Hono().basePath("/images").get("/:id", async (c) => {
     c.header("Content-Type", contentType);
     c.header("Content-Length", String(buffer.length));
     c.header("Cache-Control", "private, max-age=3600");
-    return c.body(buffer);
+    return c.body(
+      buffer.buffer.slice(
+        buffer.byteOffset,
+        buffer.byteOffset + buffer.byteLength,
+      ),
+    );
   } catch (err) {
     const code =
       err instanceof Error && "code" in err

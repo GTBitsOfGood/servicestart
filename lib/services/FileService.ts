@@ -15,7 +15,7 @@ export interface IFileService {
 }
 
 export function resolveFileService(): IFileService {
-  const provider = process.env.FILE_SERVICE_PROVIDER;
+  const provider = process.env.FILE_SERVICE_IMPLEMENTATION;
   if (provider === "juno") {
     return JunoFileService;
   }
