@@ -288,6 +288,31 @@ export const eventHosts = pgTable(
   ],
 );
 
+export const tags = pgTable("tags", {
+  tagId: text("tag_id").primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  tag: text("tag").notNull(),
+});
+
+export const eventTags = pgTable(
+  "event_tags",
+  {
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    tagId: text("tag_id")
+      .notNull()
+      .references(() => tags.tagId, { onDelete: "cascade" }),
+  },
+  (table) => [
+    {
+      pk: primaryKey({ columns: [table.eventId, table.tagId] }),
+    },
+  ],
+);
+
 export const announcements = pgTable(
   "announcements",
   {
@@ -465,6 +490,8 @@ export const relations = defineRelations(
     invitations,
     joinRequests,
     events,
+    tags,
+    eventTags,
     eventHosts,
     eventRsvps,
     announcements,
@@ -578,6 +605,10 @@ export const relations = defineRelations(
         from: r.events.id,
         to: r.eventHosts.eventId,
       }),
+      eventTags: r.many.eventTags({
+        from: r.events.id,
+        to: r.eventTags.eventId,
+      }),
     },
     eventRsvps: {
       user: r.one.users({
@@ -586,6 +617,18 @@ export const relations = defineRelations(
       }),
       event: r.one.events({
         from: r.eventRsvps.eventId,
+        to: r.events.id,
+      }),
+    },
+    tags: {
+      organizations: r.one.organizations({
+        from: r.tags.organizationId,
+        to: r.organizations.id,
+      }),
+    },
+    eventTags: {
+      event: r.many.events({
+        from: r.eventTags.eventId,
         to: r.events.id,
       }),
     },
