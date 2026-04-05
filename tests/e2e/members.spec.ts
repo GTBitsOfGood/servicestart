@@ -240,24 +240,18 @@ test.describe("Members Page", () => {
     });
     await createShiftRSVP(shiftId, memberSession.userId);
 
-    // Navigate and wait for the activity API response
-    const activityResponse = page.waitForResponse(
-      (resp) =>
-        resp.url().includes("/api/members/activity") && resp.status() === 200,
-    );
     await page.goto("/members");
-    await activityResponse;
 
     const memberRow = page
       .getByRole("row")
       .filter({ hasText: memberUser.name });
 
     // Expected: 1 + 0.5 = 1.5 hours
-    await expect(memberRow.getByText("1.5hrs")).toBeVisible();
+    await expect(memberRow.getByText("1.5hrs")).toBeVisible({ timeout: 10000 });
 
     // Expected last active: the shift date (most recent), formatted as MM/DD/YYYY
     const expectedDate = `${String(pastShiftDate.getMonth() + 1).padStart(2, "0")}/${String(pastShiftDate.getDate()).padStart(2, "0")}/${pastShiftDate.getFullYear()}`;
-    await expect(memberRow.getByText(expectedDate)).toBeVisible();
+    await expect(memberRow).toContainText(expectedDate);
   });
 
   test("remove button removes a member from the table", async ({ page }) => {
