@@ -1,6 +1,10 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import {
+  getActiveOrganizationIdFromHeaders,
+  redirectIfNotAdmin,
+} from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { OrganizationConfigKey } from "@/lib/schema";
@@ -13,25 +17,11 @@ interface MembersPageProps {
 }
 
 export default async function MembersPage({ searchParams }: MembersPageProps) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await redirectIfNotAdmin();
+  const headerList = await headers();
+  const organizationId = await getActiveOrganizationIdFromHeaders(headerList);
 
-  if (!session?.user) {
-    redirect("/login");
-  }
-
-  const organizationId = session.session.activeOrganizationId;
   if (!organizationId) {
-    redirect("/");
-  }
-
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
-
-  if (!MembersService.isAdminOrOwner(membership?.role)) {
     redirect("/");
   }
 
@@ -93,7 +83,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
   }
 
   return (
-    <div className="max-w-[1300px] mx-auto px-12 py-[60px]">
+    <div className="max-w-8xl mx-auto px-12 py-16">
       <MembersTable
         members={memberRows}
         total={total}

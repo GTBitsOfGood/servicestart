@@ -1,4 +1,4 @@
-import { and, eq, isNull, isNotNull } from "drizzle-orm";
+import { and, eq, gt, lt, isNull, isNotNull, ilike, or } from "drizzle-orm";
 import db from "@/lib/db";
 import { events, eventRsvps, eventHosts, EventVisibility } from "@/lib/schema";
 import { randomUUID } from "node:crypto";
@@ -85,13 +85,34 @@ async function findById(eventId: string) {
 async function listByOrganization(
   organizationId: string,
   options: { limit: number; offset: number },
-  published?: boolean,
+  {
+    published,
+    query,
+    filter,
+  }: {
+    published?: boolean;
+    query?: string;
+    filter?: string;
+  },
 ) {
   const conditions = [eq(events.organizationId, organizationId)];
   if (published !== undefined) {
     conditions.push(
       published ? isNotNull(events.publishedAt) : isNull(events.publishedAt),
     );
+  }
+  if (query) {
+    const pattern = `%${query}%`;
+    conditions.push(
+      or(ilike(events.name, pattern), ilike(events.location, pattern))!,
+    );
+  }
+  if (filter === "upcoming") {
+    conditions.push(gt(events.startTimestamp, new Date()));
+  } else if (filter === "past") {
+    conditions.push(lt(events.startTimestamp, new Date()));
+  } else if (filter === "drafts") {
+    conditions.push(isNull(events.publishedAt));
   }
 
   const checks = and(...conditions);

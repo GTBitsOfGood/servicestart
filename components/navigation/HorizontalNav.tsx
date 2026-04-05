@@ -8,6 +8,7 @@ import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { UserProfileMenu } from "@/components/navigation/UserProfileMenu";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
 import { NavbarItem, NavbarProps } from "@/lib/navbar";
+import NotificationCounter from "./NotificationCounter";
 
 type HorizontalAlignment = "left" | "center" | "right";
 
@@ -118,18 +119,8 @@ function RightSide() {
 
   return (
     <div className="flex items-center gap-6">
-      <button className="relative">
-        <span className="relative inline-flex">
-          <BogIcon name="bell" size={22} className="text-grey-text-strong" />
-          {unreadCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-status-red-text px-1 text-xs font-bold text-white">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
-          )}
-        </span>
-      </button>
-
-      <UserProfileMenu />
+      <NotificationCounter unreadCount={unreadCount} />
+      <UserProfileMenu direction="horizontal" />
     </div>
   );
 }

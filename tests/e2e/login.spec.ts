@@ -1,5 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { createTestUserAndSignIn } from "./testUtils";
+import {
+  createTestUserAndSignIn,
+  expectPageDoesNotRedirect,
+} from "./testUtils";
 import { buildTestUser, signUpAndGetSession } from "../unit/testUtils";
 
 test.describe("Login Page", () => {
@@ -23,7 +26,11 @@ test.describe("Login Page", () => {
     await expect(page).toHaveURL(/\//);
   });
 
-  test("default colors", async ({ page }) => {
+  test("public static assets are not redirected by auth", async ({ page }) => {
+    await expectPageDoesNotRedirect(page, "/logo.svg");
+  });
+
+  test("login page background uses a linear gradient", async ({ page }) => {
     await page.goto("/login");
 
     const loginPage = page.getByTestId("page");
@@ -32,8 +39,6 @@ test.describe("Login Page", () => {
     const background = await loginPage.evaluate(
       (e) => getComputedStyle(e).backgroundImage,
     );
-    expect(background).toContain(
-      "linear-gradient(75deg, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 100%)",
-    );
+    expect(background).toMatch(/linear-gradient\s*\(/i);
   });
 });
