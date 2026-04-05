@@ -728,6 +728,8 @@ export const schema = {
   events,
   eventRsvps,
   eventHosts,
+  tags,
+  eventTags,
   announcements,
   shifts,
   shiftRSVPs,

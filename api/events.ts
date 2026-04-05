@@ -40,6 +40,7 @@ const app = new Hono()
         coverImageUrl: z.string().nullable().optional(),
         published: z.boolean().default(false),
         hosts: z.array(z.string()).optional(),
+        tagIds: z.array(z.string()).optional(),
       }),
     ),
     async (c) => {
@@ -109,6 +110,7 @@ const app = new Hono()
         data.links ?? null,
         publishedAt,
         publishedById,
+        data.tagIds,
       );
 
       if (!event) {
