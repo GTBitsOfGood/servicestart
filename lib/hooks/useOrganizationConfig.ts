@@ -61,7 +61,7 @@ function writeCache(cacheKey: string, value: string) {
 
 export default function useOrganizationConfig<K extends readonly string[]>(
   keys: K,
-) {
+): ConfigResult<K> {
   const [state, setState] = useState<ConfigState<K>>(() => ({
     stateKey: "",
     data: {},
@@ -138,7 +138,7 @@ export default function useOrganizationConfig<K extends readonly string[]>(
   const slug = organization?.data?.slug ?? getSlugFromHost(host ?? undefined);
   const stateKey = buildStateKey(keys, slug);
 
-  if (state.stateKey !== stateKey) return {};
+  if (state.stateKey !== stateKey) return {} as ConfigResult<K>;
 
   return state.data;
 }
