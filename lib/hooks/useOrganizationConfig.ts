@@ -9,6 +9,11 @@ type ConfigResult<K extends readonly string[]> = Partial<
   Record<K[number], string>
 >;
 
+type ConfigState<K extends readonly string[]> = {
+  cacheKey: string;
+  data: ConfigResult<K>;
+};
+
 const CACHE_TTL_MS = 5 * 60 * 1000;
 function isCacheDisabled() {
   return (
@@ -57,7 +62,10 @@ function writeCache<K extends readonly string[]>(
 }
 
 export default function useOrganizationConfig<K extends string[]>(keys: K) {
-  const [data, setData] = useState<ConfigResult<K>>({});
+  const [state, setState] = useState<ConfigState<K>>(() => ({
+    cacheKey: "",
+    data: {},
+  }));
   const { organization } = useActiveOrganization();
 
   useEffect(() => {
@@ -65,13 +73,12 @@ export default function useOrganizationConfig<K extends string[]>(keys: K) {
       typeof window === "undefined" ? undefined : window.location.host;
     const slug = organization?.data?.slug ?? getSlugFromHost(host ?? undefined);
     const cacheKey = buildCacheKey(keys, slug);
-
-    if (!isCacheDisabled()) {
-      const cached = readCache<K>(cacheKey);
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-        setData(cached.data ?? {});
-        return;
-      }
+    const cached = !isCacheDisabled() ? readCache<K>(cacheKey) : null;
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      Promise.resolve().then(() => {
+        setState({ cacheKey, data: cached.data ?? {} });
+      });
+      return;
     }
 
     api.organizationConfig
@@ -83,13 +90,19 @@ export default function useOrganizationConfig<K extends string[]>(keys: K) {
       })
       .then((res: Response) => res.json() as Promise<ConfigResult<K>>)
       .then((responseData: ConfigResult<K>) => {
-        setData(responseData);
+        setState({ cacheKey, data: responseData });
         if (!isCacheDisabled()) {
           writeCache<K>(cacheKey, responseData);
         }
       })
-      .catch(() => setData({}));
+      .catch(() => setState({ cacheKey, data: {} }));
   }, [organization?.data?.slug, ...keys]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return data;
+  const host = typeof window === "undefined" ? undefined : window.location.host;
+  const slug = organization?.data?.slug ?? getSlugFromHost(host ?? undefined);
+  const cacheKey = buildCacheKey(keys, slug);
+
+  if (state.cacheKey !== cacheKey) return {};
+
+  return state.data;
 }
