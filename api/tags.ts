@@ -29,21 +29,33 @@ const app = new Hono()
     "/:tagId",
     zValidator("json", z.object({ tag: z.string().min(1, "Tag is required") })),
     async (c) => {
-      await requireAdmin(c);
+      const session = await requireAdmin(c);
+      const organizationId = session.session.activeOrganizationId!;
 
       const { tagId } = c.req.param();
       const data = c.req.valid("json");
 
-      await TagService.updateTag(tagId, data.tag);
+      const updated = await TagService.updateTag(
+        tagId,
+        organizationId,
+        data.tag,
+      );
+      if (!updated) {
+        return c.json({ error: "Tag not found" }, { status: 404 });
+      }
       return c.json({ success: true });
     },
   )
   .delete("/:tagId", async (c) => {
-    await requireAdmin(c);
+    const session = await requireAdmin(c);
+    const organizationId = session.session.activeOrganizationId!;
 
     const { tagId } = c.req.param();
-    await TagService.deleteTag(tagId);
 
+    const deleted = await TagService.deleteTag(tagId, organizationId);
+    if (!deleted) {
+      return c.json({ error: "Tag not found" }, { status: 404 });
+    }
     return c.json({ success: true });
   });
 

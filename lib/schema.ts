@@ -306,11 +306,7 @@ export const eventTags = pgTable(
       .notNull()
       .references(() => tags.tagId, { onDelete: "cascade" }),
   },
-  (table) => [
-    {
-      pk: primaryKey({ columns: [table.eventId, table.tagId] }),
-    },
-  ],
+  (table) => [primaryKey({ columns: [table.eventId, table.tagId] })],
 );
 
 export const announcements = pgTable(

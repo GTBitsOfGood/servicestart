@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "ab316f16-6dcb-42ce-add3-ddbf09bdd87b",
+  "id": "152c6737-b829-42ce-9a45-340d7bd59945",
   "prevIds": [
     "3b9403d0-1072-43df-baef-48b8c27e452f"
   ],
@@ -2838,6 +2838,17 @@
       "entityType": "fks",
       "schema": "public",
       "table": "tags"
+    },
+    {
+      "columns": [
+        "event_id",
+        "tag_id"
+      ],
+      "nameExplicit": false,
+      "name": "event_tags_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "event_tags"
     },
     {
       "columns": [

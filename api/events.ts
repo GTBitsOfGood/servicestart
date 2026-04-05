@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { EventService } from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
+import { TagService } from "@/lib/services/TagService";
 import { UserService } from "@/lib/services/UserService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 import { ForbiddenError } from "@/lib/errors";
@@ -93,6 +94,19 @@ const app = new Hono()
           { error: "At least one host not in organization" },
           { status: 404 },
         );
+      }
+
+      if (data.tagIds && data.tagIds.length > 0) {
+        const valid = await TagService.allBelongToOrg(
+          data.tagIds,
+          activeOrganizationId,
+        );
+        if (!valid) {
+          return c.json(
+            { error: "At least one tag not in organization" },
+            { status: 404 },
+          );
+        }
       }
 
       const event = await EventService.create(

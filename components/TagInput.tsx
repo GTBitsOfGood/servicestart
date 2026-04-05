@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import AsyncCreatableSelect from "react-select/async-creatable";
+import CreatableSelect from "react-select/creatable";
 import {
   components,
   MultiValue,
@@ -50,27 +50,13 @@ export function TagInput({
   id,
 }: TagInputProps) {
   const [allTags, setAllTags] = useState<TagOption[]>([]);
-  const [cacheKey, setCacheKey] = useState(0);
 
-  const refreshTags = useCallback(async (): Promise<TagOption[]> => {
+  const refreshTags = useCallback(async () => {
     const res = await api.tags.$get();
-    if (!res.ok) return [];
+    if (!res.ok) return;
     const { data } = await res.json();
-    const options = data.map((t) => ({ value: t.tagId, label: t.tag }));
-    setAllTags(options);
-    return options;
+    setAllTags(data.map((t) => ({ value: t.tagId, label: t.tag })));
   }, []);
-
-  const loadOptions = useCallback(
-    async (inputValue: string): Promise<TagOption[]> => {
-      const options = await refreshTags();
-      if (!inputValue) return options;
-      return options.filter((o) =>
-        o.label.toLowerCase().includes(inputValue.toLowerCase()),
-      );
-    },
-    [refreshTags],
-  );
 
   const handleCreate = useCallback(
     async (inputValue: string) => {
@@ -80,7 +66,6 @@ export function TagInput({
       const { data } = await res.json();
       setTagIds([...tagIds, data.tagId]);
       await refreshTags();
-      setCacheKey((k) => k + 1);
     },
     [tagIds, setTagIds, maxTags, refreshTags],
   );
@@ -98,13 +83,11 @@ export function TagInput({
     .filter((t): t is TagOption => t !== undefined);
 
   return (
-    <AsyncCreatableSelect
+    <CreatableSelect
       id={id}
       isMulti
-      cacheOptions={cacheKey}
-      defaultOptions={allTags}
+      options={allTags}
       value={value}
-      loadOptions={loadOptions}
       onChange={handleChange}
       onCreateOption={handleCreate}
       onMenuOpen={() => refreshTags()}

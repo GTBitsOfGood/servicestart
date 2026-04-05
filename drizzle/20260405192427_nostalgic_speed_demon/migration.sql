@@ -1,6 +1,7 @@
 CREATE TABLE "event_tags" (
-	"event_id" text NOT NULL,
-	"tag_id" text NOT NULL
+	"event_id" text,
+	"tag_id" text,
+	CONSTRAINT "event_tags_pkey" PRIMARY KEY("event_id","tag_id")
 );
 --> statement-breakpoint
 CREATE TABLE "tags" (
