@@ -218,6 +218,28 @@ export async function main() {
   await db.insert(schema.events).values(eventsData).onConflictDoNothing();
 
   log("Events created.");
+
+  const tagsData = [
+    { tagId: "tag_volunteer", organizationId: orgId, tag: "Volunteer" },
+    { tagId: "tag_workshop", organizationId: orgId, tag: "Workshop" },
+    { tagId: "tag_social", organizationId: orgId, tag: "Social" },
+    { tagId: "tag_fundraiser", organizationId: orgId, tag: "Fundraiser" },
+  ];
+
+  await db.insert(schema.tags).values(tagsData).onConflictDoNothing();
+
+  const eventTagsData = [
+    { eventId: "event_001", tagId: "tag_volunteer" },
+    { eventId: "event_001", tagId: "tag_workshop" },
+    { eventId: "event_002", tagId: "tag_social" },
+    { eventId: "event_003", tagId: "tag_workshop" },
+    { eventId: "event_003", tagId: "tag_fundraiser" },
+    { eventId: "event_004", tagId: "tag_volunteer" },
+  ];
+
+  await db.insert(schema.eventTags).values(eventTagsData).onConflictDoNothing();
+
+  log("Tags created.");
   const usersToRsvp = [
     "admin@example.com",
     "member1@example.com",
