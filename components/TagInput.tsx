@@ -50,20 +50,26 @@ export function TagInput({
   id,
 }: TagInputProps) {
   const [allTags, setAllTags] = useState<TagOption[]>([]);
+  const [cacheKey, setCacheKey] = useState(0);
+
+  const refreshTags = useCallback(async (): Promise<TagOption[]> => {
+    const res = await api.tags.$get();
+    if (!res.ok) return [];
+    const { data } = await res.json();
+    const options = data.map((t) => ({ value: t.tagId, label: t.tag }));
+    setAllTags(options);
+    return options;
+  }, []);
 
   const loadOptions = useCallback(
     async (inputValue: string): Promise<TagOption[]> => {
-      const res = await api.tags.$get();
-      if (!res.ok) return [];
-      const { data } = await res.json();
-      const options = data.map((t) => ({ value: t.tagId, label: t.tag }));
-      setAllTags(options);
+      const options = await refreshTags();
       if (!inputValue) return options;
       return options.filter((o) =>
         o.label.toLowerCase().includes(inputValue.toLowerCase()),
       );
     },
-    [],
+    [refreshTags],
   );
 
   const handleCreate = useCallback(
@@ -72,11 +78,11 @@ export function TagInput({
       const res = await api.tags.$post({ json: { tag: inputValue } });
       if (!res.ok) return;
       const { data } = await res.json();
-      const newOption: TagOption = { value: data.tagId, label: inputValue };
-      setAllTags((prev) => [...prev, newOption]);
       setTagIds([...tagIds, data.tagId]);
+      await refreshTags();
+      setCacheKey((k) => k + 1);
     },
-    [tagIds, setTagIds, maxTags],
+    [tagIds, setTagIds, maxTags, refreshTags],
   );
 
   const handleChange = useCallback(
@@ -95,12 +101,13 @@ export function TagInput({
     <AsyncCreatableSelect
       id={id}
       isMulti
-      cacheOptions
-      defaultOptions
+      cacheOptions={cacheKey}
+      defaultOptions={allTags}
       value={value}
       loadOptions={loadOptions}
       onChange={handleChange}
       onCreateOption={handleCreate}
+      onMenuOpen={() => refreshTags()}
       placeholder={placeholder}
       isDisabled={disabled}
       className={className}

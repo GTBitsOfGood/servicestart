@@ -3,11 +3,6 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { requireMembership, requireAdmin } from "@/lib/authUtils";
 import { TagService } from "@/lib/services/TagService";
-import {
-  ForbiddenError,
-  NoActiveOrganizationError,
-  UnauthorizedError,
-} from "@/lib/errors";
 
 const app = new Hono()
   .get("/", async (c) => {
