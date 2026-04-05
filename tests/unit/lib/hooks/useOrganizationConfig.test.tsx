@@ -94,7 +94,7 @@ describe("useOrganizationConfig", () => {
       cacheKey,
       JSON.stringify({
         timestamp: Date.now(),
-        data: { [OrganizationConfigKey.Description]: "cached" },
+        value: "cached",
       }),
     );
 
@@ -116,7 +116,7 @@ describe("useOrganizationConfig", () => {
       cacheKey,
       JSON.stringify({
         timestamp: Date.now(),
-        data: { [OrganizationConfigKey.Description]: "cached" },
+        value: "cached",
       }),
     );
 
@@ -135,6 +135,46 @@ describe("useOrganizationConfig", () => {
 
     await waitFor(() => {
       expect(result.current[OrganizationConfigKey.Description]).toBe("fresh");
+    });
+
+    expect(mockGet).toHaveBeenCalledTimes(1);
+  });
+
+  it("fetches only missing keys when some are cached", async () => {
+    const descriptionKey = "org-config:acme:description";
+    window.localStorage.setItem(
+      descriptionKey,
+      JSON.stringify({
+        timestamp: Date.now(),
+        value: "cached-description",
+      }),
+    );
+
+    mockGet.mockImplementation((args) => {
+      expect(args.query.organizationSlug).toBe("acme");
+      expect(args.query.keys).toEqual([OrganizationConfigKey.Tagline]);
+
+      return Promise.resolve({
+        json: () =>
+          Promise.resolve({
+            [OrganizationConfigKey.Tagline]: "fresh-tagline",
+          }),
+      });
+    });
+
+    const keys = [
+      OrganizationConfigKey.Description,
+      OrganizationConfigKey.Tagline,
+    ] as const;
+    const { result } = renderHook(() => useOrganizationConfig(keys));
+
+    await waitFor(() => {
+      expect(result.current[OrganizationConfigKey.Description]).toBe(
+        "cached-description",
+      );
+      expect(result.current[OrganizationConfigKey.Tagline]).toBe(
+        "fresh-tagline",
+      );
     });
 
     expect(mockGet).toHaveBeenCalledTimes(1);
