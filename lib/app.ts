@@ -25,7 +25,7 @@ export const app = new Hono()
   .route("/notifications", notifications)
   .route("/members", members)
   .route("/messages", messages)
-  .route("/emails", emails);
+  .route("/emails", emails)
   .route("/profile", profile)
   .route("/tags", tags);
 
