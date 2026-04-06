@@ -460,7 +460,7 @@ export const notifications = pgTable(
       .default(NotificationType.General)
       .notNull(),
     text: text("text").notNull(),
-    metadata: jsonb("metadata"),
+    metadata: jsonb("metadata"), // Used for linking a join request to the notification for admin approval/denial
   },
   (table) => [
     index("notification_userId_organizationId_idx").on(
