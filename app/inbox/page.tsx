@@ -316,13 +316,15 @@ export default function InboxPage() {
         recipients={recipients}
         onSend={async ({ subject, body, recipientIds }) => {
           if (!organizationId) return;
-          await api.emails.send.$post({
-            json: {
-              subject,
-              body,
-              recipientIds,
-            },
+          const res = await api.emails.$post({
+            json: { subject, body, recipientIds },
           });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(
+              (data as { error?: string }).error ?? "Failed to send email",
+            );
+          }
         }}
       />
     </div>

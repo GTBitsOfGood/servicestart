@@ -11,7 +11,7 @@ const sendEmailSchema = z.object({
 });
 
 const app = new Hono().post(
-  "/send",
+  "/",
   zValidator("json", sendEmailSchema),
   async (c) => {
     const session = await requireAdmin(c);
