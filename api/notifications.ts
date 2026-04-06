@@ -133,6 +133,7 @@ const app = new Hono()
   })
   .post("/:id/approve", async (c) => {
     const session = await requireAdmin(c);
+    //admin check
     const activeOrganizationId = session.session.activeOrganizationId!;
     const { id: notificationId } = c.req.param();
 
@@ -168,6 +169,7 @@ const app = new Hono()
   })
   .post("/:id/deny", async (c) => {
     const session = await requireAdmin(c);
+    //admin check
     const activeOrganizationId = session.session.activeOrganizationId!;
     const { id: notificationId } = c.req.param();
 
