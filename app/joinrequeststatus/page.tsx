@@ -3,10 +3,8 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
-  ArrowClockwise,
   ArrowUpRight,
   Check,
-  Clock,
   FileText,
   Question,
   X,
@@ -159,7 +157,21 @@ function TrackerIcon({ tone }: { tone: TrackerTone }) {
   if (tone === "current") {
     return (
       <span className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[#f6bf50] text-white">
-        <Clock size={18} weight="bold" />
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 28 28"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M2.625 14C2.625 10.9832 3.82344 8.08988 5.95667 5.95667C8.08988 3.82344 10.9832 2.625 14 2.625C17.0168 2.625 19.9101 3.82344 22.0434 5.95667C24.1766 8.08988 25.375 10.9832 25.375 14C25.375 17.0168 24.1766 19.9101 22.0434 22.0434C19.9101 24.1766 17.0168 25.375 14 25.375C10.9832 25.375 8.08988 24.1766 5.95667 22.0434C3.82344 19.9101 2.625 17.0168 2.625 14ZM14 0C10.287 0 6.72602 1.475 4.10051 4.10051C1.475 6.72602 0 10.287 0 14C0 17.713 1.475 21.2741 4.10051 23.8996C6.72602 26.5249 10.287 28 14 28C17.713 28 21.2741 26.5249 23.8996 23.8996C26.5249 21.2741 28 17.713 28 14C28 10.287 26.5249 6.72602 23.8996 4.10051C21.2741 1.475 17.713 0 14 0ZM14.875 8.3125C14.875 7.96441 14.7367 7.63056 14.4906 7.38442C14.2444 7.13829 13.9106 7 13.5625 7C13.2144 7 12.8806 7.13829 12.6344 7.38442C12.3883 7.63056 12.25 7.96441 12.25 8.3125V14.4375C12.2501 14.6996 12.3286 14.9557 12.4755 15.1728C12.6224 15.3899 12.8309 15.558 13.0743 15.6555L17.4493 17.4055C17.7697 17.5226 18.1232 17.5102 18.4347 17.3711C18.7462 17.232 18.9914 16.977 19.1181 16.6602C19.2448 16.3435 19.2432 15.9898 19.1137 15.6742C18.9842 15.3586 18.7367 15.1058 18.424 14.9695L14.875 13.5485V8.3125Z"
+            fill="white"
+          />
+        </svg>
       </span>
     );
   }
@@ -263,48 +275,56 @@ function JoinRequestStatusCard({
         </div>
 
         {/* Desktop labels — aligned under each circle */}
-        <div className="mt-[10px] hidden lg:grid lg:grid-cols-3">
-          <div className="flex flex-col items-center text-center">
-            <h2
-              className={`text-[18px] leading-[24px] font-normal ${tracker.steps[0].tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]"}`}
-            >
-              {tracker.steps[0].title}
-            </h2>
-            {tracker.steps[0].description && (
-              <p
-                className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${tracker.steps[0].tone === "inactive" ? "text-[#b0a8aa]" : "text-[#a49a9d]"}`}
+        <div className="relative mt-[10px] hidden min-h-[76px] lg:block">
+          <div className="absolute left-[8%] top-0 w-[180px] -translate-x-[40%]">
+            <div className="flex flex-col items-center text-center">
+              <h2
+                className={`text-[18px] leading-[24px] font-normal ${tracker.steps[0].tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]"}`}
               >
-                {tracker.steps[0].description}
-              </p>
-            )}
+                {tracker.steps[0].title}
+              </h2>
+              {tracker.steps[0].description && (
+                <p
+                  className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${tracker.steps[0].tone === "inactive" ? "text-[#b0a8aa]" : "text-[#a49a9d]"}`}
+                >
+                  {tracker.steps[0].description}
+                </p>
+              )}
+            </div>
           </div>
-          <div className="flex flex-col items-center text-center">
-            <h2
-              className={`text-[18px] leading-[24px] font-normal ${tracker.steps[1].tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]"}`}
-            >
-              {tracker.steps[1].title}
-            </h2>
-            {tracker.steps[1].description && (
-              <p
-                className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${tracker.steps[1].tone === "inactive" ? "text-[#b0a8aa]" : "text-[#a49a9d]"}`}
+
+          <div className="absolute left-1/2 top-0 w-[200px] -translate-x-1/2">
+            <div className="flex flex-col items-center text-center">
+              <h2
+                className={`text-[18px] leading-[24px] font-normal ${tracker.steps[1].tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]"}`}
               >
-                {tracker.steps[1].description}
-              </p>
-            )}
+                {tracker.steps[1].title}
+              </h2>
+              {tracker.steps[1].description && (
+                <p
+                  className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${tracker.steps[1].tone === "inactive" ? "text-[#b0a8aa]" : "text-[#a49a9d]"}`}
+                >
+                  {tracker.steps[1].description}
+                </p>
+              )}
+            </div>
           </div>
-          <div className="flex flex-col items-center text-center">
-            <h2
-              className={`text-[18px] leading-[24px] font-normal ${tracker.steps[2].tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]"}`}
-            >
-              {tracker.steps[2].title}
-            </h2>
-            {tracker.steps[2].description && (
-              <p
-                className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${tracker.steps[2].tone === "inactive" ? "text-[#b0a8aa]" : "text-[#a49a9d]"}`}
+
+          <div className="absolute left-[92%] top-0 w-[180px] -translate-x-[60%]">
+            <div className="flex flex-col items-center text-center">
+              <h2
+                className={`text-[18px] leading-[24px] font-normal ${tracker.steps[2].tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]"}`}
               >
-                {tracker.steps[2].description}
-              </p>
-            )}
+                {tracker.steps[2].title}
+              </h2>
+              {tracker.steps[2].description && (
+                <p
+                  className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${tracker.steps[2].tone === "inactive" ? "text-[#b0a8aa]" : "text-[#a49a9d]"}`}
+                >
+                  {tracker.steps[2].description}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -424,9 +444,25 @@ export default async function JoinRequestStatusPage() {
               </p>
               <Link
                 href="/joinrequeststatus"
-                className="inline-flex h-[31px] items-center gap-[6px] rounded-[4px] border border-[#cfc7ca] bg-white px-[12px] text-[12px] font-semibold text-[#7c7376] transition hover:bg-[#faf7f7]"
+                className="inline-flex items-center gap-[6px] rounded-[4px] border border-[#bfb5b8] bg-white px-[12px] py-[7px] text-[12px] font-semibold text-[#665b5f] transition hover:bg-[#faf7f7]"
               >
-                <ArrowClockwise size={15} weight="regular" />
+                <svg
+                  width="20"
+                  height="17"
+                  viewBox="0 0 20 17"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M19.1667 1.66535V6.66535M19.1667 6.66535H14.1667M19.1667 6.66535L15.3 3.03201C14.4044 2.13594 13.2964 1.48135 12.0793 1.12932C10.8623 0.777297 9.57592 0.739305 8.34024 1.01889C7.10455 1.29848 5.95983 1.88654 5.01289 2.72819C4.06594 3.56985 3.34764 4.63767 2.925 5.83201M0.833332 14.9987V9.99868M0.833332 9.99868H5.83333M0.833332 9.99868L4.7 13.632C5.59562 14.5281 6.70364 15.1827 7.92067 15.5347C9.1377 15.8867 10.4241 15.9247 11.6598 15.6451C12.8954 15.3655 14.0402 14.7775 14.9871 13.9358C15.9341 13.0942 16.6524 12.0264 17.075 10.832"
+                    stroke="#22070B"
+                    strokeOpacity="0.7"
+                    strokeWidth="1.66667"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
                 <span className="leading-none">Refresh</span>
               </Link>
             </div>
