@@ -2,13 +2,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ArrowClockwise } from "@phosphor-icons/react/dist/ssr/ArrowClockwise";
-import { ArrowUpRight } from "@phosphor-icons/react/dist/ssr/ArrowUpRight";
-import { Check } from "@phosphor-icons/react/dist/ssr/Check";
-import { Clock } from "@phosphor-icons/react/dist/ssr/Clock";
-import { FileText } from "@phosphor-icons/react/dist/ssr/FileText";
-import { Question } from "@phosphor-icons/react/dist/ssr/Question";
-import { X } from "@phosphor-icons/react/dist/ssr/X";
+import {
+  ArrowClockwise,
+  ArrowUpRight,
+  Check,
+  Clock,
+  FileText,
+  Question,
+  X,
+} from "@phosphor-icons/react/ssr";
 import { auth } from "@/lib/auth";
 import {
   createJoinRequestIfNeeded,
@@ -233,7 +235,7 @@ function JoinRequestStatusCard({
             className="absolute top-1/2 h-[2px] -translate-y-1/2"
             style={{
               backgroundColor: connectorColors[0],
-              left: 38,
+              left: "calc(8% + 38px)",
               right: "calc(50% + 19px)",
             }}
           />
@@ -243,11 +245,11 @@ function JoinRequestStatusCard({
             style={{
               backgroundColor: connectorColors[1],
               left: "calc(50% + 19px)",
-              right: 38,
+              right: "calc(8% + 38px)",
             }}
           />
           {/* Left circle — pinned to left edge */}
-          <div className="absolute left-0 top-0">
+          <div className="absolute left-[8%] top-0">
             <TrackerIcon tone={tracker.steps[0].tone} />
           </div>
           {/* Center circle — pinned to center */}
@@ -255,14 +257,14 @@ function JoinRequestStatusCard({
             <TrackerIcon tone={tracker.steps[1].tone} />
           </div>
           {/* Right circle — pinned to right edge */}
-          <div className="absolute right-0 top-0">
+          <div className="absolute right-[8%] top-0">
             <TrackerIcon tone={tracker.steps[2].tone} />
           </div>
         </div>
 
         {/* Desktop labels — aligned under each circle */}
         <div className="mt-[10px] hidden lg:grid lg:grid-cols-3">
-          <div className="flex flex-col items-start">
+          <div className="flex flex-col items-center text-center">
             <h2
               className={`text-[18px] leading-[24px] font-normal ${tracker.steps[0].tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]"}`}
             >
@@ -290,7 +292,7 @@ function JoinRequestStatusCard({
               </p>
             )}
           </div>
-          <div className="flex flex-col items-end text-right">
+          <div className="flex flex-col items-center text-center">
             <h2
               className={`text-[18px] leading-[24px] font-normal ${tracker.steps[2].tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]"}`}
             >
