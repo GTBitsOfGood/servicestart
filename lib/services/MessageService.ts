@@ -1,5 +1,5 @@
 import db from "@/lib/db";
-import { messages } from "@/lib/schema";
+import { messageRecipients, messages } from "@/lib/schema";
 import { EmailService } from "@/lib/services/EmailService";
 import { MembersService } from "@/lib/services/MemberService";
 
@@ -52,10 +52,21 @@ async function createAndSend(input: MessageCreateInput) {
       sentAt: messages.sentAt,
     });
 
-  const recipientUserIds =
-    input.recipientUserIds && input.recipientUserIds.length > 0
-      ? input.recipientUserIds
-      : await MembersService.getUserIdsByOrganization(input.organizationId);
+  const hasExplicitRecipients =
+    input.recipientUserIds && input.recipientUserIds.length > 0;
+
+  const recipientUserIds = hasExplicitRecipients
+    ? input.recipientUserIds!
+    : await MembersService.getUserIdsByOrganization(input.organizationId);
+
+  if (recipientUserIds.length > 0) {
+    await db.insert(messageRecipients).values(
+      recipientUserIds.map((userId) => ({
+        messageId: input.id,
+        userId,
+      })),
+    );
+  }
 
   const textBody = input.textBody ?? input.htmlBody;
   const htmlBody = input.htmlBody;
@@ -71,7 +82,7 @@ async function createAndSend(input: MessageCreateInput) {
     await EmailService.emailMembers(input.organizationId, {
       subject: input.subject,
       content,
-      targetUserIds: recipientUserIds,
+      ...(hasExplicitRecipients ? { targetUserIds: recipientUserIds } : {}),
     });
   }
 

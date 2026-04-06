@@ -61,11 +61,8 @@ async function emailMembers(
   const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
 
   await juno.email.sendEmail({
-    recipients,
-    sender: {
-      email: senderEmail,
-      name: organization.name,
-    },
+    recipients: recipients.map(({ email, name }) => ({ email, name })),
+    sender: { email: senderEmail, name: organization.name },
     subject: email.subject,
     contents: email.content,
   });
