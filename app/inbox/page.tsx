@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DropdownMenu } from "radix-ui";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
@@ -9,6 +9,11 @@ import NotificationItem from "@/components/notifications/NotificationItem";
 import { useNotifications } from "@/lib/hooks/useNotifications";
 import { NotificationType } from "@/lib/schema";
 import { cn } from "@/lib/utils";
+import authClient from "@/lib/authClient";
+import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
+import { isAdmin } from "@/lib/clientUtils";
+import SendEmailModal from "@/components/SendEmailModal";
+import api from "@/lib/api";
 
 type FilterValue = "all" | NotificationType;
 
@@ -70,9 +75,14 @@ function LoadingSkeleton() {
 }
 
 export default function InboxPage() {
+  const { data: session } = authClient.useSession();
+  const { organization } = useActiveOrganization();
+  const isAuthorizedAdmin = isAdmin(organization?.data, session?.user);
+
   const [tab, setTab] = useState<InboxTab>("all");
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<FilterValue>("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const {
     allNotifications,
@@ -80,10 +90,8 @@ export default function InboxPage() {
     unreadCount,
     isLoading,
     isRefreshing,
-    isMarkAllReadPending,
     errorMessage,
     refreshNotifications,
-    handleMarkAllRead,
     handleDelete,
     handleToggleRead,
   } = useNotifications(filterType === "all" ? undefined : filterType);
@@ -102,6 +110,34 @@ export default function InboxPage() {
 
     return result;
   }, [notifications, search]);
+
+  const organizationId = organization?.data?.id;
+  const [recipients, setRecipients] = useState<{ id: string; name: string }[]>(
+    [],
+  );
+
+  useEffect(() => {
+    if (!organizationId) return;
+    api.members
+      .$get({ query: { page: "1", pageSize: "500" } })
+      .then((res) => {
+        if (res.ok) {
+          return res.json();
+        }
+        throw new Error("Failed to fetch members");
+      })
+      .then((resJson) => {
+        if ("data" in resJson) {
+          setRecipients(
+            resJson.data.map((m: { userId: string; name: string }) => ({
+              id: m.userId,
+              name: m.name,
+            })),
+          );
+        }
+      })
+      .catch((err) => console.error(err));
+  }, [organizationId]);
 
   if (isLoading) {
     return (
@@ -132,19 +168,15 @@ export default function InboxPage() {
               Notifications
             </h1>
           </div>
-
-          <BogButton
-            variant="secondary"
-            size="small"
-            iconProps={{
-              iconProps: { name: "check", size: 20 },
-              position: "left",
-            }}
-            onClick={() => void handleMarkAllRead()}
-            disabled={isMarkAllReadPending || isRefreshing || unreadCount === 0}
-          >
-            Mark all read
-          </BogButton>
+          {isAuthorizedAdmin && (
+            <BogButton
+              variant="primary"
+              size="medium"
+              onClick={() => setIsModalOpen(true)}
+            >
+              New +
+            </BogButton>
+          )}
         </div>
 
         <div className="flex items-center justify-between">
@@ -278,6 +310,23 @@ export default function InboxPage() {
           )}
         </div>
       </div>
+      <SendEmailModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        recipients={recipients}
+        onSend={async ({ subject, body, recipientIds }) => {
+          if (!organizationId) return;
+          const res = await api.emails.$post({
+            json: { subject, body, recipientIds },
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(
+              (data as { error?: string }).error ?? "Failed to send email",
+            );
+          }
+        }}
+      />
     </div>
   );
 }

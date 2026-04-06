@@ -57,18 +57,21 @@ async function isAdminOrderOwnerFromUserAndOrgId(
 
 async function listMemberContacts(organizationId: string) {
   const rows = await db
-    .select({ email: users.email, name: users.name })
+    .select({ userId: members.userId, email: users.email, name: users.name })
     .from(members)
     .innerJoin(users, eq(users.id, members.userId))
     .where(eq(members.organizationId, organizationId));
 
-  const contactsByEmail = new Map<string, { email: string; name: string }>();
+  const contactsByEmail = new Map<
+    string,
+    { userId: string; email: string; name: string }
+  >();
 
   for (const row of rows) {
     const email = row.email.trim().toLowerCase();
     if (!email) continue;
 
-    contactsByEmail.set(email, { email, name: row.name });
+    contactsByEmail.set(email, { userId: row.userId, email, name: row.name });
   }
 
   return Array.from(contactsByEmail.values());

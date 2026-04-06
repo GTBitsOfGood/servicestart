@@ -8,6 +8,7 @@ import notifications from "@/api/notifications";
 import organizationConfig from "@/api/organizationConfig";
 import members from "@/api/members";
 import messages from "@/api/messages";
+import emails from "@/api/emails";
 import profile from "@/api/profile";
 import tags from "@/api/tags";
 import { Hono } from "hono";
@@ -25,6 +26,7 @@ const app = new Hono()
   .route("/media", media)
   .route("/members", members)
   .route("/messages", messages)
+  .route("/emails", emails)
   .route("/profile", profile)
   .route("/tags", tags);
 
