@@ -42,6 +42,7 @@ export default function EditProfileModal({
   const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingImageFileRef = useRef<File | null>(null);
 
   const isInvalid =
     !fullName.trim() || !phone.trim() || !email.trim() || !location.trim();
@@ -54,6 +55,7 @@ export default function EditProfileModal({
     setLocation(user.location ?? "");
     setEmail(user.email ?? "");
     setImagePreview(user.image ?? null);
+    pendingImageFileRef.current = null;
     setHasAttemptedSave(false);
   };
 
@@ -65,6 +67,7 @@ export default function EditProfileModal({
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    pendingImageFileRef.current = file;
     const reader = new FileReader();
     reader.onload = (ev) => setImagePreview(ev.target?.result as string);
     reader.readAsDataURL(file);
@@ -72,6 +75,7 @@ export default function EditProfileModal({
 
   const handleRemovePhoto = () => {
     setImagePreview(null);
+    pendingImageFileRef.current = null;
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -81,13 +85,34 @@ export default function EditProfileModal({
 
     setLoading(true);
     try {
+      let imageUrl: string | null | undefined = undefined;
+
+      if (pendingImageFileRef.current) {
+        const formData = new FormData();
+        formData.append("file", pendingImageFileRef.current);
+        const res = await fetch("/api/profile/picture", {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => null)) as {
+            error?: string;
+          } | null;
+          throw new Error(body?.error ?? "Failed to upload profile photo");
+        }
+        const data = (await res.json()) as { url: string };
+        imageUrl = data.url;
+      } else if (imagePreview === null && user.image) {
+        imageUrl = null;
+      }
+
       await authClient.updateUser({
         name: fullName,
         displayName: displayName || null,
         pronouns: pronouns || null,
         phoneNumber: phone || null,
         location: location || null,
-        // image upload tbd
+        ...(imageUrl !== undefined && { image: imageUrl }),
       });
 
       if (email !== user.email) {

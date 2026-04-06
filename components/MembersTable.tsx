@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PencilSimple, UserPlusIcon } from "@phosphor-icons/react";
 import api from "@/lib/api";
 import authClient from "@/lib/authClient";
@@ -87,6 +87,7 @@ export default function MembersTable({
   onAddDirectly,
 }: MembersTableProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [activity, setActivity] = useState<Record<string, ActivityData>>({});
   const [activityLoading, setActivityLoading] = useState(false);
@@ -224,7 +225,7 @@ export default function MembersTable({
   function goToPage(newPage: number) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("page", String(newPage));
-    router.push(`?${params.toString()}`);
+    router.push(`${pathname}?${params.toString()}`);
   }
 
   const startItem = total === 0 ? 0 : (page - 1) * pageSize + 1;
