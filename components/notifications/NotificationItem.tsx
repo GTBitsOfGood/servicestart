@@ -75,13 +75,13 @@ export default function NotificationItem({
       >
         <div
           className={cn(
-            "relative flex flex-col gap-1.5 px-14 py-10 transition-colors hover:bg-grey-fill-weaker",
+            "relative flex flex-col gap-1.5 px-5 py-5 sm:px-14 sm:py-10 transition-colors hover:bg-grey-fill-weaker",
             !notification.read && "bg-notif-unread-bg",
           )}
         >
           {!notification.read && (
             <div
-              className="absolute left-5 top-1/2 size-2 -translate-y-1/2 rounded-full bg-brand-text"
+              className="absolute left-1.5 sm:left-5 top-1/2 size-2 -translate-y-1/2 rounded-full bg-brand-text"
               aria-hidden
             />
           )}
@@ -128,13 +128,13 @@ export default function NotificationItem({
     >
       <div
         className={cn(
-          "relative px-14 py-10 transition-colors hover:bg-grey-fill-weaker",
+          "relative px-5 py-5 sm:px-14 sm:py-10 transition-colors hover:bg-grey-fill-weaker",
           !notification.read && "bg-notif-unread-bg",
         )}
       >
         {!notification.read && (
           <div
-            className="absolute left-5 top-1/2 size-2 -translate-y-1/2 rounded-full bg-brand-text"
+            className="absolute left-1.5 sm:left-5 top-1/2 size-2 -translate-y-1/2 rounded-full bg-brand-text"
             aria-hidden
           />
         )}
