@@ -169,7 +169,7 @@ const app = new Hono()
     }
 
     try {
-      await FileService.delete(
+      await FileService.deleteFile(
         mediaRecord.organizationId,
         mediaRecord.fileName,
       );
