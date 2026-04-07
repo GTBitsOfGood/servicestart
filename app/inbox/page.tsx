@@ -32,7 +32,7 @@ type InboxTab = "all" | "unread";
 
 function LoadingSkeleton() {
   return (
-    <div className="mx-auto w-full sm:w-9/10 max-w-8xl animate-pulse">
+    <div className="mx-auto w-full mobile:w-9/10 max-w-8xl animate-pulse">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="size-12 rounded-full bg-grey-fill-weak" />
@@ -41,14 +41,14 @@ function LoadingSkeleton() {
         <div className="h-10 w-40 rounded bg-grey-fill-weak" />
       </div>
 
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-5 flex flex-col gap-3 mobile:flex-row mobile:items-center mobile:justify-between">
         <div className="flex gap-2">
           <div className="h-10 w-48 rounded bg-grey-fill-weak" />
           <div className="h-10 w-48 rounded bg-grey-fill-weak" />
         </div>
         <div className="flex items-center gap-3">
           <div className="h-10 w-24 rounded bg-grey-fill-weak" />
-          <div className="h-10 w-full sm:w-80 rounded bg-grey-fill-weak" />
+          <div className="h-10 w-full mobile:w-80 rounded bg-grey-fill-weak" />
         </div>
       </div>
 
@@ -56,7 +56,7 @@ function LoadingSkeleton() {
         {Array.from({ length: 5 }).map((_, index) => (
           <div
             key={index}
-            className="border-t border-grey-stroke-weak px-5 py-5 sm:px-14 sm:py-10 first:border-t-0"
+            className="border-t border-grey-stroke-weak px-5 py-5 mobile:px-14 mobile:py-10 first:border-t-0"
           >
             <div className="mb-5 flex items-center justify-between">
               <div className="h-8 w-36 rounded-full bg-grey-fill-weak" />
@@ -141,15 +141,15 @@ export default function InboxPage() {
 
   if (isLoading) {
     return (
-      <div className="px-6 py-6 sm:px-10 sm:py-16 desktop:px-20">
+      <div className="px-6 py-6 mobile:px-10 mobile:py-16 desktop:px-20">
         <LoadingSkeleton />
       </div>
     );
   }
 
   return (
-    <div className="px-6 py-6 sm:px-10 sm:py-16 desktop:px-20">
-      <div className="mx-auto flex w-full sm:w-9/10 max-w-8xl flex-col gap-6">
+    <div className="px-6 py-6 mobile:px-10 mobile:py-16 desktop:px-20">
+      <div className="mx-auto flex w-full mobile:w-9/10 max-w-8xl flex-col gap-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -179,12 +179,12 @@ export default function InboxPage() {
           )}
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 mobile:flex-row mobile:items-center mobile:justify-between">
           <div className="flex">
             <button
               type="button"
               className={cn(
-                "flex items-center justify-center px-4 py-2 sm:px-8 border-b-2 text-paragraph-2 font-semibold",
+                "flex items-center justify-center px-4 py-2 mobile:px-8 border-b-2 text-paragraph-2 font-semibold",
                 tab === "all"
                   ? "border-grey-text-strong text-grey-text-strong"
                   : "border-transparent text-grey-text-weak hover:text-grey-text-strong",
@@ -196,7 +196,7 @@ export default function InboxPage() {
             <button
               type="button"
               className={cn(
-                "flex items-center justify-center gap-1 px-4 py-2 sm:px-8 border-b-2 text-paragraph-2",
+                "flex items-center justify-center gap-1 px-4 py-2 mobile:px-8 border-b-2 text-paragraph-2",
                 tab === "unread"
                   ? "border-grey-text-strong text-grey-text-strong font-semibold"
                   : "border-transparent text-grey-text-weak hover:text-grey-text-strong",
@@ -212,7 +212,7 @@ export default function InboxPage() {
             </button>
           </div>
 
-          <div className="flex w-full items-center gap-3 sm:w-auto">
+          <div className="flex w-full items-center gap-3 mobile:w-auto">
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
                 <button
@@ -259,7 +259,7 @@ export default function InboxPage() {
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
 
-            <div className="w-full sm:max-w-sm">
+            <div className="w-full mobile:max-w-sm">
               <BogTextInput
                 name="search"
                 type="search"
@@ -277,7 +277,7 @@ export default function InboxPage() {
 
         <div className="overflow-hidden rounded-lg border border-grey-stroke-weak">
           {errorMessage ? (
-            <div className="flex flex-col items-center justify-center gap-4 px-4 py-16 sm:px-10 sm:py-24 text-center">
+            <div className="flex flex-col items-center justify-center gap-4 px-4 py-16 mobile:px-10 mobile:py-24 text-center">
               <p className="text-paragraph-2 text-grey-text-weak">
                 {errorMessage}
               </p>
@@ -291,7 +291,7 @@ export default function InboxPage() {
               </BogButton>
             </div>
           ) : filteredNotifications.length === 0 ? (
-            <div className="flex items-center justify-center px-4 py-20 sm:px-10 sm:py-40 text-center">
+            <div className="flex items-center justify-center px-4 py-20 mobile:px-10 mobile:py-40 text-center">
               <p className="text-heading-3 text-grey-text-weak">
                 {search
                   ? "No notifications match your search."
