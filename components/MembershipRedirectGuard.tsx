@@ -39,10 +39,13 @@ export default function MembershipRedirectGuard() {
       session.isPending ||
       organization.isPending ||
       organization.isRefetching ||
-      !user ||
-      membership ||
-      !organizationId
+      !user
     ) {
+      lastRedirectRef.current = null;
+      return;
+    }
+
+    if (membership) {
       lastRedirectRef.current = null;
       return;
     }

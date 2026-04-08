@@ -199,6 +199,14 @@ function getConnectorColors(state: Exclude<RequestCardState, "no_request">) {
   return ["#57bc68", "#ddd9d9"] as const;
 }
 
+function getTrackerTitleClass(tone: TrackerTone) {
+  return tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]";
+}
+
+function getTrackerDescriptionClass(tone: TrackerTone) {
+  return tone === "inactive" ? "text-[#b0a8aa]" : "text-[#a49a9d]";
+}
+
 function JoinRequestStatusCard({
   state,
   submittedAt,
@@ -279,13 +287,13 @@ function JoinRequestStatusCard({
           <div className="absolute left-[8%] top-0 w-[180px] -translate-x-[40%]">
             <div className="flex flex-col items-center text-center">
               <h2
-                className={`text-[18px] leading-[24px] font-normal ${tracker.steps[0].tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]"}`}
+                className={`text-[18px] leading-[24px] font-normal ${getTrackerTitleClass(tracker.steps[0].tone)}`}
               >
                 {tracker.steps[0].title}
               </h2>
               {tracker.steps[0].description && (
                 <p
-                  className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${tracker.steps[0].tone === "inactive" ? "text-[#b0a8aa]" : "text-[#a49a9d]"}`}
+                  className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${getTrackerDescriptionClass(tracker.steps[0].tone)}`}
                 >
                   {tracker.steps[0].description}
                 </p>
@@ -296,13 +304,13 @@ function JoinRequestStatusCard({
           <div className="absolute left-1/2 top-0 w-[200px] -translate-x-1/2">
             <div className="flex flex-col items-center text-center">
               <h2
-                className={`text-[18px] leading-[24px] font-normal ${tracker.steps[1].tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]"}`}
+                className={`text-[18px] leading-[24px] font-normal ${getTrackerTitleClass(tracker.steps[1].tone)}`}
               >
                 {tracker.steps[1].title}
               </h2>
               {tracker.steps[1].description && (
                 <p
-                  className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${tracker.steps[1].tone === "inactive" ? "text-[#b0a8aa]" : "text-[#a49a9d]"}`}
+                  className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${getTrackerDescriptionClass(tracker.steps[1].tone)}`}
                 >
                   {tracker.steps[1].description}
                 </p>
@@ -313,13 +321,13 @@ function JoinRequestStatusCard({
           <div className="absolute left-[92%] top-0 w-[180px] -translate-x-[60%]">
             <div className="flex flex-col items-center text-center">
               <h2
-                className={`text-[18px] leading-[24px] font-normal ${tracker.steps[2].tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]"}`}
+                className={`text-[18px] leading-[24px] font-normal ${getTrackerTitleClass(tracker.steps[2].tone)}`}
               >
                 {tracker.steps[2].title}
               </h2>
               {tracker.steps[2].description && (
                 <p
-                  className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${tracker.steps[2].tone === "inactive" ? "text-[#b0a8aa]" : "text-[#a49a9d]"}`}
+                  className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${getTrackerDescriptionClass(tracker.steps[2].tone)}`}
                 >
                   {tracker.steps[2].description}
                 </p>
@@ -337,13 +345,13 @@ function JoinRequestStatusCard({
             >
               <TrackerIcon tone={step.tone} />
               <h2
-                className={`mt-[10px] text-[18px] leading-[24px] font-normal ${step.tone === "inactive" ? "text-[#9d9396]" : "text-[#3a2428]"}`}
+                className={`mt-[10px] text-[18px] leading-[24px] font-normal ${getTrackerTitleClass(step.tone)}`}
               >
                 {step.title}
               </h2>
               {step.description && (
                 <p
-                  className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${step.tone === "inactive" ? "text-[#b0a8aa]" : "text-[#a49a9d]"}`}
+                  className={`mt-[4px] max-w-[210px] text-[12px] leading-[15px] ${getTrackerDescriptionClass(step.tone)}`}
                 >
                   {step.description}
                 </p>
@@ -366,6 +374,8 @@ export default async function JoinRequestStatusPage() {
     redirect("/login");
   }
 
+  const userId = session.user.id;
+
   const organizationId =
     await getActiveOrganizationIdFromHeaders(requestHeaders);
 
@@ -373,9 +383,11 @@ export default async function JoinRequestStatusPage() {
     redirect("/");
   }
 
+  const activeOrganizationId = organizationId;
+
   const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
+    userId,
+    activeOrganizationId,
   );
 
   if (membership) {
@@ -383,23 +395,23 @@ export default async function JoinRequestStatusPage() {
   }
 
   const [organization, joinRequest] = await Promise.all([
-    OrganizationsService.findById(organizationId),
-    JoinRequestsService.findByUserAndOrganization(
-      session.user.id,
-      organizationId,
-    ),
+    OrganizationsService.findById(activeOrganizationId),
+    JoinRequestsService.findByUserAndOrganization(userId, activeOrganizationId),
   ]);
 
+  console.log("joinRequest:", joinRequest);
   const status = joinRequest?.status ?? "missing";
+  console.log("status:", status);
   const cardState = STATUS_TO_CARD_STATE[status];
+  console.log("cardState:", cardState);
+
   const submittedAt = joinRequest?.createdAt ?? DEFAULT_UPDATED_AT;
-  const lastUpdated =
-    joinRequest?.updatedAt ?? joinRequest?.createdAt ?? DEFAULT_UPDATED_AT;
+  const lastUpdated = joinRequest?.createdAt ?? DEFAULT_UPDATED_AT;
 
   async function submitJoinRequest() {
     "use server";
 
-    await createJoinRequestIfNeeded(session.user.id, organizationId);
+    await createJoinRequestIfNeeded(userId, activeOrganizationId);
     redirect("/joinrequeststatus");
   }
 
