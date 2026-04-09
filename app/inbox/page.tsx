@@ -119,7 +119,7 @@ export default function InboxPage() {
   useEffect(() => {
     if (!organizationId) return;
     api.members
-      .$get({ query: { page: "1", pageSize: "500" } })
+      .$get({ query: { page: "1", pageSize: "100" } })
       .then((res) => {
         if (res.ok) {
           return res.json();
