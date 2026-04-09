@@ -1,7 +1,5 @@
 import { eq } from "drizzle-orm";
-import { describe, expect, it } from "vitest";
-import { existsSync } from "node:fs";
-import path from "node:path";
+import { describe, expect, it, vi } from "vitest";
 import db from "@/lib/db";
 import { media } from "@/lib/schema";
 import {
@@ -13,10 +11,15 @@ import {
   signUpAndGetSession,
   testApi,
 } from "@/tests/unit/testUtils";
-import { app } from "@/lib/app";
+import { FileService } from "@/lib/services/FileService";
 
-const FILE_STORAGE_DIR =
-  process.env.FILE_STORAGE_DIR ?? "/tmp/servicestart-media-test";
+vi.mock("@/lib/services/FileService", async () => {
+  const { createMockFileService } =
+    await import("@/tests/unit/mockFileService");
+  return { FileService: createMockFileService() };
+});
+
+import { app } from "@/lib/app";
 
 async function setupOrgAndUser(role: "owner" | "admin" | "member") {
   const organization = await createOrganization("acme");
@@ -55,7 +58,7 @@ describe("POST /api/media", () => {
     expect(response.status).toBe(401);
   });
 
-  it("returns 403 when user has no active organization", async () => {
+  it("returns 400 when user has no active organization", async () => {
     const testUser = buildTestUser();
     const { headers } = await signUpAndGetSession(testUser);
     const formData = createFormDataWithFile("test.jpg", "content");
@@ -66,7 +69,7 @@ describe("POST /api/media", () => {
       headers: new Headers(headers),
     });
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(400);
   });
 
   it("returns 403 when user is not admin or owner", async () => {
@@ -121,6 +124,7 @@ describe("POST /api/media", () => {
     expect(data.organizationId).toBe(organization.id);
     expect(data.type).toBe("image");
     expect(data.uploadedAt).toBeDefined();
+    expect(data.uploadUrl).toBe("https://blob.example/presigned");
 
     const [row] = await db
       .select()
@@ -128,12 +132,7 @@ describe("POST /api/media", () => {
       .where(eq(media.id, data.id as typeof media.id));
     expect(row).toBeDefined();
 
-    const filePath = path.join(
-      FILE_STORAGE_DIR,
-      organization.id,
-      data.fileName as string,
-    );
-    expect(existsSync(filePath)).toBe(true);
+    expect(FileService.getUploadPresignedUrl).toHaveBeenCalled();
   });
 });
 
@@ -143,13 +142,13 @@ describe("GET /api/media (list)", () => {
     expect(response.status).toBe(401);
   });
 
-  it("returns 403 when user has no active organization", async () => {
+  it("returns 400 when user has no active organization", async () => {
     const testUser = buildTestUser();
     const { headers } = await signUpAndGetSession(testUser);
 
     const response = await testApi.media.$get({ query: {} }, { headers });
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(400);
   });
 
   it("returns 403 when user is not admin or owner", async () => {
@@ -275,7 +274,7 @@ describe("PATCH /api/media/:id", () => {
     expect(response.status).toBe(401);
   });
 
-  it("returns 403 when user has no active organization", async () => {
+  it("returns 400 when user has no active organization", async () => {
     const testUser = buildTestUser();
     const { headers } = await signUpAndGetSession(testUser);
     const org = await createOrganization("patch-org");
@@ -286,7 +285,7 @@ describe("PATCH /api/media/:id", () => {
       { headers },
     );
 
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(400);
   });
 
   it("returns 403 when user is not admin or owner", async () => {
@@ -391,25 +390,11 @@ describe("DELETE /api/media/:id", () => {
     expect(response.status).toBe(404);
   });
 
-  it("deletes media record and file when admin", async () => {
+  it("deletes media record when admin (Juno delete not implemented)", async () => {
     const { organization, headers } = await setupOrgAndUser("admin");
     const mediaId = await createMedia(organization.id, {
       fileName: "to-delete.jpg",
     });
-
-    const [mediaRecord] = await db
-      .select()
-      .from(media)
-      .where(eq(media.id, mediaId));
-    const filePath = path.join(
-      FILE_STORAGE_DIR,
-      organization.id,
-      mediaRecord.fileName,
-    );
-    const { writeFile, mkdir } = await import("node:fs/promises");
-    await mkdir(path.dirname(filePath), { recursive: true });
-    await writeFile(filePath, "test content");
-    expect(existsSync(filePath)).toBe(true);
 
     const response = await testApi.media[":id"].$delete(
       { param: { id: mediaId } },
@@ -422,6 +407,6 @@ describe("DELETE /api/media/:id", () => {
 
     const rows = await db.select().from(media).where(eq(media.id, mediaId));
     expect(rows).toHaveLength(0);
-    expect(existsSync(filePath)).toBe(false);
+    expect(FileService.deleteFile).toHaveBeenCalled();
   });
 });

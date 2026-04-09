@@ -4,8 +4,11 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { zValidator } from "@hono/zod-validator";
 import { auth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/authUtils";
+import { JunoFileDeletionNotSupportedError } from "@/lib/errors";
 import { MembersService } from "@/lib/services/MemberService";
 import { FileService } from "@/lib/services/FileService";
+import { LocalFileService } from "@/lib/services/LocalFileService";
 import { MediaService } from "@/lib/services/MediaService";
 import { MediaType } from "@/lib/schema";
 import { paginationQuerySchema } from "@/lib/apiUtils";
@@ -34,30 +37,8 @@ function buildTitle(originalName: string) {
 
 const app = new Hono()
   .post("/", async (c) => {
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
-
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const activeOrganizationId = session.session.activeOrganizationId;
-    if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
-    }
-
-    const membership = await MembersService.findByUserAndOrganization(
-      session.user.id,
-      activeOrganizationId,
-    );
-
-    if (!MembersService.isAdminOrOwner(membership?.role)) {
-      return c.json(
-        { error: "Forbidden: Admin or owner role required" },
-        { status: 403 },
-      );
-    }
+    const session = await requireAdmin(c);
+    const activeOrganizationId = session.session.activeOrganizationId!;
 
     const body = await c.req.parseBody();
     const file = body["file"];
@@ -108,39 +89,32 @@ const app = new Hono()
     };
 
     try {
-      await FileService.upload(mediaInput, file);
+      if (FileService === LocalFileService) {
+        const media = await MediaService.create(mediaInput);
+        try {
+          await FileService.upload(mediaInput, file);
+        } catch (uploadErr) {
+          await MediaService.deleteById(media.id, activeOrganizationId);
+          throw uploadErr;
+        }
+        return c.json(media, { status: 201 });
+      }
+
+      const { url: uploadUrl } = await FileService.getUploadPresignedUrl(
+        activeOrganizationId,
+        fileName,
+      );
       const media = await MediaService.create(mediaInput);
-      return c.json(media, { status: 201 });
+      return c.json({ ...media, uploadUrl }, { status: 201 });
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to upload file";
+        err instanceof Error ? err.message : "Failed to prepare upload";
       return c.json({ error: message }, { status: 500 });
     }
   })
   .get("/", zValidator("query", paginationQuerySchema), async (c) => {
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
-
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const activeOrganizationId = session.session.activeOrganizationId;
-    if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
-    }
-
-    const membership = await MembersService.findByUserAndOrganization(
-      session.user.id,
-      activeOrganizationId,
-    );
-    if (!MembersService.isAdminOrOwner(membership?.role)) {
-      return c.json(
-        { error: "Forbidden: Admin or owner role required" },
-        { status: 403 },
-      );
-    }
+    const session = await requireAdmin(c);
+    const activeOrganizationId = session.session.activeOrganizationId!;
 
     const { page, pageSize } = c.req.valid("query");
     const data = await MediaService.listByOrganization(activeOrganizationId, {
@@ -175,27 +149,9 @@ const app = new Hono()
   })
   .patch("/:id", zValidator("json", patchMediaSchema), async (c) => {
     const { id } = c.req.param();
-    const session = await auth.api.getSession({ headers: c.req.header() });
+    const session = await requireAdmin(c);
 
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const activeOrganizationId = session.session.activeOrganizationId;
-    if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
-    }
-
-    const membership = await MembersService.findByUserAndOrganization(
-      session.user.id,
-      activeOrganizationId,
-    );
-    if (!MembersService.isAdminOrOwner(membership?.role)) {
-      return c.json(
-        { error: "Forbidden: Admin or owner role required" },
-        { status: 403 },
-      );
-    }
+    const activeOrganizationId = session.session.activeOrganizationId!;
 
     const data = c.req.valid("json");
     const updates: { title?: string; altText?: string } = {};
@@ -215,27 +171,9 @@ const app = new Hono()
   })
   .delete("/:id", async (c) => {
     const { id } = c.req.param();
-    const session = await auth.api.getSession({ headers: c.req.header() });
+    const session = await requireAdmin(c);
 
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const activeOrganizationId = session.session.activeOrganizationId;
-    if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
-    }
-
-    const membership = await MembersService.findByUserAndOrganization(
-      session.user.id,
-      activeOrganizationId,
-    );
-    if (!MembersService.isAdminOrOwner(membership?.role)) {
-      return c.json(
-        { error: "Forbidden: Admin or owner role required" },
-        { status: 403 },
-      );
-    }
+    const activeOrganizationId = session.session.activeOrganizationId!;
 
     const mediaRecord = await MediaService.findById(id);
     if (!mediaRecord || mediaRecord.organizationId !== activeOrganizationId) {
@@ -248,9 +186,13 @@ const app = new Hono()
         mediaRecord.fileName,
       );
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to delete file";
-      return c.json({ error: message }, { status: 500 });
+      if (err instanceof JunoFileDeletionNotSupportedError) {
+        // Juno blob deletion is not available yet; still remove the app record.
+      } else {
+        const message =
+          err instanceof Error ? err.message : "Failed to delete file";
+        return c.json({ error: message }, { status: 500 });
+      }
     }
 
     const deleted = await MediaService.deleteById(id, activeOrganizationId);
