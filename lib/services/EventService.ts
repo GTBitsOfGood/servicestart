@@ -1,6 +1,13 @@
 import { and, eq, gt, lt, isNull, isNotNull, ilike, or } from "drizzle-orm";
 import db from "@/lib/db";
-import { events, eventRsvps, eventHosts, EventVisibility } from "@/lib/schema";
+import {
+  events,
+  eventRsvps,
+  eventTags,
+  eventHosts,
+  EventVisibility,
+  tags,
+} from "@/lib/schema";
 import { randomUUID } from "node:crypto";
 
 async function create(
@@ -18,6 +25,7 @@ async function create(
   links: string[] | null,
   publishedAt?: Date | null,
   publishedById?: string | null,
+  tagIds?: string[],
 ) {
   const id = randomUUID();
 
@@ -57,6 +65,11 @@ async function create(
       publishedAt: events.publishedAt,
       publishedById: events.publishedById,
     });
+  if (tagIds) {
+    await db
+      .insert(eventTags)
+      .values(tagIds.map((tagId) => ({ eventId: event.id, tagId })));
+  }
 
   return event ?? null;
 }
@@ -73,13 +86,21 @@ async function deleteById(eventId: string, organizationId: string) {
 }
 
 async function findById(eventId: string) {
-  const [event] = await db
-    .select()
+  const rows = await db
+    .select({
+      event: events,
+      tag: tags,
+    })
     .from(events)
-    .where(eq(events.id, eventId))
-    .limit(1);
+    .leftJoin(eventTags, eq(eventTags.eventId, events.id))
+    .leftJoin(tags, eq(tags.tagId, eventTags.tagId))
+    .where(eq(events.id, eventId));
 
-  return event ?? null;
+  if (rows.length === 0) return null;
+
+  const eventTagList = rows.flatMap((row) => (row.tag ? [row.tag] : []));
+
+  return { ...rows[0].event, tags: eventTagList };
 }
 
 async function listByOrganization(
