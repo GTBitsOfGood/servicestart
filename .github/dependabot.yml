@@ -9,6 +9,11 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    groups:
+      drizzle:
+        packages:
+          - "drizzle-orm"
+          - "drizzle-kit"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
