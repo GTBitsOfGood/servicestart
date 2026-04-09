@@ -2,7 +2,6 @@ import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { resolveFileService } from "@/lib/services/FileService";
 import { LocalFileService } from "@/lib/services/LocalFileService";
 import { JunoFileService } from "@/lib/services/JunoFileService";
-import { JunoFileDeletionNotSupportedError } from "@/lib/errors";
 
 const { uploadFile, downloadFile, getConfig } = vi.hoisted(() => ({
   uploadFile: vi.fn(),
@@ -133,6 +132,9 @@ describe("FileService (Juno implementation)", () => {
 
   it("delete throws JunoFileDeletionNotSupportedError", async () => {
     const FileService = await getFileService();
+    // Dynamic import: vi.resetModules() reloads lib/errors, so the class used
+    // in toBeInstanceOf must come from the same module graph as the thrown error.
+    const { JunoFileDeletionNotSupportedError } = await import("@/lib/errors");
     await expect(
       FileService.deleteFile("org-1", "a.jpg"),
     ).rejects.toBeInstanceOf(JunoFileDeletionNotSupportedError);
