@@ -1,12 +1,8 @@
-import { existsSync, readFileSync } from "node:fs";
-import path from "node:path";
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
-import { FileService, resolveFileService } from "@/lib/services/FileService";
+import { resolveFileService } from "@/lib/services/FileService";
 import { LocalFileService } from "@/lib/services/LocalFileService";
 import { JunoFileService } from "@/lib/services/JunoFileService";
 import { JunoFileDeletionNotSupportedError } from "@/lib/errors";
-
-const TEST_STORAGE_DIR = "/tmp/servicestart-media-test";
 
 const { uploadFile, downloadFile, getConfig } = vi.hoisted(() => ({
   uploadFile: vi.fn(),
@@ -14,14 +10,15 @@ const { uploadFile, downloadFile, getConfig } = vi.hoisted(() => ({
   getConfig: vi.fn(),
 }));
 
-function createMockFile(content: string, name: string): File {
-  return {
-    name,
-    async arrayBuffer() {
-      return new TextEncoder().encode(content).buffer;
+vi.mock("@/lib/junoClient", () => ({
+  juno: {
+    file: {
+      uploadFile,
+      downloadFile,
+      getConfig,
     },
-  } as File;
-}
+  },
+}));
 
 describe("resolveFileService", () => {
   let originalImplementation: string | undefined;
@@ -63,11 +60,15 @@ describe("resolveFileService", () => {
   });
 });
 
-describe("FileService", () => {
-  beforeEach(() => {
-    vi.resetAllMocks();
+describe("FileService (Juno implementation)", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    process.env.FILE_SERVICE_IMPLEMENTATION = "juno";
     process.env.FILE_PROVIDER_NAME = "test-provider";
     process.env.JUNO_PROJECT_ID = "42";
+    uploadFile.mockReset();
+    downloadFile.mockReset();
+    getConfig.mockReset();
     getConfig.mockResolvedValue({ id: 42 });
     uploadFile.mockResolvedValue({ url: "https://upload.example/presigned" });
     downloadFile.mockResolvedValue({ url: "https://download.example/sas" });
@@ -80,9 +81,16 @@ describe("FileService", () => {
   afterEach(() => {
     delete process.env.JUNO_FILE_BUCKET_PREFIX;
     delete process.env.JUNO_PROJECT_ID;
+    delete process.env.FILE_SERVICE_IMPLEMENTATION;
   });
 
-  it("getBucketName uses prefix and lowercases org id", () => {
+  async function getFileService() {
+    const mod = await import("@/lib/services/FileService");
+    return mod.FileService;
+  }
+
+  it("getBucketName uses prefix and lowercases org id", async () => {
+    const FileService = await getFileService();
     process.env.JUNO_FILE_BUCKET_PREFIX = "ServiceStart";
     expect(FileService.getBucketName("ABC-Org-ID")).toBe(
       "servicestart-orgabcorgid",
@@ -90,6 +98,7 @@ describe("FileService", () => {
   });
 
   it("getUploadPresignedUrl calls Juno uploadFile", async () => {
+    const FileService = await getFileService();
     const result = await FileService.getUploadPresignedUrl("org-1", "a.jpg");
 
     expect(result.url).toBe("https://upload.example/presigned");
@@ -103,6 +112,8 @@ describe("FileService", () => {
 
   it("throws when FILE_PROVIDER_NAME is missing", async () => {
     delete process.env.FILE_PROVIDER_NAME;
+    vi.resetModules();
+    const { FileService } = await import("@/lib/services/FileService");
 
     await expect(
       FileService.getUploadPresignedUrl("org-1", "a.jpg"),
@@ -112,6 +123,7 @@ describe("FileService", () => {
   });
 
   it("readFile downloads via presigned URL", async () => {
+    const FileService = await getFileService();
     const buf = await FileService.readFile("org-1", "a.jpg");
 
     expect(downloadFile).toHaveBeenCalled();
@@ -120,6 +132,7 @@ describe("FileService", () => {
   });
 
   it("delete throws JunoFileDeletionNotSupportedError", async () => {
+    const FileService = await getFileService();
     await expect(
       FileService.deleteFile("org-1", "a.jpg"),
     ).rejects.toBeInstanceOf(JunoFileDeletionNotSupportedError);

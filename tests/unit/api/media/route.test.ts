@@ -407,6 +407,6 @@ describe("DELETE /api/media/:id", () => {
 
     const rows = await db.select().from(media).where(eq(media.id, mediaId));
     expect(rows).toHaveLength(0);
-    expect(FileService.delete).toHaveBeenCalled();
+    expect(FileService.deleteFile).toHaveBeenCalled();
   });
 });

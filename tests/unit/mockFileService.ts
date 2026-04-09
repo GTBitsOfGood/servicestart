@@ -6,7 +6,8 @@ export type MockedFileService = {
   getUploadPresignedUrl: ReturnType<typeof vi.fn>;
   getDownloadPresignedUrl: ReturnType<typeof vi.fn>;
   readFile: ReturnType<typeof vi.fn>;
-  delete: ReturnType<typeof vi.fn>;
+  upload: ReturnType<typeof vi.fn>;
+  deleteFile: ReturnType<typeof vi.fn>;
 };
 
 /**
@@ -28,7 +29,10 @@ export function createMockFileService(
       .fn()
       .mockResolvedValue({ url: "https://blob.example/download-presigned" }),
     readFile: vi.fn().mockResolvedValue(Buffer.from("file body")),
-    delete: vi.fn().mockRejectedValue(new JunoFileDeletionNotSupportedError()),
+    upload: vi.fn().mockResolvedValue(undefined),
+    deleteFile: vi
+      .fn()
+      .mockRejectedValue(new JunoFileDeletionNotSupportedError()),
     ...overrides,
   };
 }

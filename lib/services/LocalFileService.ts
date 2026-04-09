@@ -66,6 +66,8 @@ async function getUploadPresignedUrl(
   organizationId: string,
   fileName: string,
 ): Promise<{ url: string }> {
+  void organizationId;
+  void fileName;
   throw new Error("Presigned URLs are not supported with LocalFileService");
 }
 
@@ -73,6 +75,8 @@ async function getDownloadPresignedUrl(
   organizationId: string,
   fileName: string,
 ): Promise<{ url: string }> {
+  void organizationId;
+  void fileName;
   throw new Error("Presigned URLs are not supported with LocalFileService");
 }
 

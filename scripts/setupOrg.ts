@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { juno } from "../lib/junoClient";
-import { FileService } from "../lib/services/FileService";
 import { parseJunoNumericId } from "../lib/services/junoFileUtils";
 import { ResponseError } from "juno-sdk/internal/runtime";
 import { JunoFileService } from "@/lib/services/JunoFileService";

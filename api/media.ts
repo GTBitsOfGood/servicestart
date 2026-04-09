@@ -8,6 +8,7 @@ import { requireAdmin } from "@/lib/authUtils";
 import { JunoFileDeletionNotSupportedError } from "@/lib/errors";
 import { MembersService } from "@/lib/services/MemberService";
 import { FileService } from "@/lib/services/FileService";
+import { LocalFileService } from "@/lib/services/LocalFileService";
 import { MediaService } from "@/lib/services/MediaService";
 import { MediaType } from "@/lib/schema";
 import { paginationQuerySchema } from "@/lib/apiUtils";
@@ -88,6 +89,17 @@ const app = new Hono()
     };
 
     try {
+      if (FileService === LocalFileService) {
+        const media = await MediaService.create(mediaInput);
+        try {
+          await FileService.upload(mediaInput, file);
+        } catch (uploadErr) {
+          await MediaService.deleteById(media.id, activeOrganizationId);
+          throw uploadErr;
+        }
+        return c.json(media, { status: 201 });
+      }
+
       const { url: uploadUrl } = await FileService.getUploadPresignedUrl(
         activeOrganizationId,
         fileName,
