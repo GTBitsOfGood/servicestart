@@ -45,7 +45,7 @@ importers:
         version: 4.2.2
       better-auth:
         specifier: ^1.4.18
-        version: 1.4.18(drizzle-kit@1.0.0-beta.21)(drizzle-orm@1.0.0-beta.21(@types/mssql@9.1.9(@azure/core-client@1.10.1))(@types/pg@8.20.0)(mssql@11.0.1(@azure/core-client@1.10.1))(pg@8.20.0)(zod@4.3.6))(next@16.2.3(@babel/core@7.28.6)(@playwright/test@1.59.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.2(@types/node@25.5.2)(happy-dom@20.8.9)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@8.0.8(@types/node@25.5.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@1.10.3)))
+        version: 1.4.18(drizzle-kit@1.0.0-beta.22-41a7d21)(drizzle-orm@1.0.0-beta.22-41a7d21(@types/mssql@9.1.9(@azure/core-client@1.10.1))(@types/pg@8.20.0)(mssql@11.0.1(@azure/core-client@1.10.1))(pg@8.20.0)(zod@4.3.6))(next@16.2.3(@babel/core@7.28.6)(@playwright/test@1.59.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.2(@types/node@25.5.2)(happy-dom@20.8.9)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@8.0.8(@types/node@25.5.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@1.10.3)))
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -53,8 +53,8 @@ importers:
         specifier: ^17.4.1
         version: 17.4.1
       drizzle-orm:
-        specifier: 1.0.0-beta.21
-        version: 1.0.0-beta.21(@types/mssql@9.1.9(@azure/core-client@1.10.1))(@types/pg@8.20.0)(mssql@11.0.1(@azure/core-client@1.10.1))(pg@8.20.0)(zod@4.3.6)
+        specifier: 1.0.0-beta.22-41a7d21
+        version: 1.0.0-beta.22-41a7d21(@types/mssql@9.1.9(@azure/core-client@1.10.1))(@types/pg@8.20.0)(mssql@11.0.1(@azure/core-client@1.10.1))(pg@8.20.0)(zod@4.3.6)
       hono:
         specifier: ^4.12.12
         version: 4.12.12
@@ -129,8 +129,8 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1(@types/react-dom@19.2.3(@types/react@19.2.10))(@types/react@19.2.10)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       drizzle-kit:
-        specifier: 1.0.0-beta.21
-        version: 1.0.0-beta.21
+        specifier: 1.0.0-beta.22-41a7d21
+        version: 1.0.0-beta.22-41a7d21
       eslint:
         specifier: ^9.39.2
         version: 9.39.2(jiti@2.6.1)
@@ -2867,12 +2867,12 @@ packages:
     resolution: {integrity: sha512-k8DaKGP6r1G30Lx8V4+pCsLzKr8vLmV2paqEj1Y55GdAgJuIqpRp5FfajGF8KtwMxCz9qJc6wUIJnm053d/WCw==}
     engines: {node: '>=12'}
 
-  drizzle-kit@1.0.0-beta.21:
-    resolution: {integrity: sha512-qG1vkkXPhz9GJ6RZhM/DvzL5jeDNYn35cyGeFA0+8iZQ6GTP4FhbOltNDHh/8XNmcI89b40lXJuH1PdxaA7zdQ==}
+  drizzle-kit@1.0.0-beta.22-41a7d21:
+    resolution: {integrity: sha512-oVaJ9jaC9SWb5OknLAy/eiVTVzDostTrYG3fJivzUYOnRrsgQtywqkfsCkYT9Qh2fb2EqIusDmZ7o5DpG/W/GQ==}
     hasBin: true
 
-  drizzle-orm@1.0.0-beta.21:
-    resolution: {integrity: sha512-HZcIbVn5J9T/Z91Wj12Pn7Pi8/1aykS/GPJf2lXeZnEuPjxaBfQ+YAt0Sl+XI+9R/D1BpK+2fdIqbpuaTbcvqA==}
+  drizzle-orm@1.0.0-beta.22-41a7d21:
+    resolution: {integrity: sha512-OSrigFeDbXxsjIbitduXnNce3MfFZis1Rb/sTYiPljf07CThPp6bPOnYfz5nCWe8KUYbhfgJD6bi6iBYSDryhg==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=4'
@@ -6773,7 +6773,7 @@ snapshots:
 
   baseline-browser-mapping@2.10.8: {}
 
-  better-auth@1.4.18(drizzle-kit@1.0.0-beta.21)(drizzle-orm@1.0.0-beta.21(@types/mssql@9.1.9(@azure/core-client@1.10.1))(@types/pg@8.20.0)(mssql@11.0.1(@azure/core-client@1.10.1))(pg@8.20.0)(zod@4.3.6))(next@16.2.3(@babel/core@7.28.6)(@playwright/test@1.59.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.2(@types/node@25.5.2)(happy-dom@20.8.9)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@8.0.8(@types/node@25.5.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@1.10.3))):
+  better-auth@1.4.18(drizzle-kit@1.0.0-beta.22-41a7d21)(drizzle-orm@1.0.0-beta.22-41a7d21(@types/mssql@9.1.9(@azure/core-client@1.10.1))(@types/pg@8.20.0)(mssql@11.0.1(@azure/core-client@1.10.1))(pg@8.20.0)(zod@4.3.6))(next@16.2.3(@babel/core@7.28.6)(@playwright/test@1.59.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(pg@8.20.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.2(@types/node@25.5.2)(happy-dom@20.8.9)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@8.0.8(@types/node@25.5.2)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@1.10.3))):
     dependencies:
       '@better-auth/core': 1.4.18(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.6))(jose@6.1.3)(kysely@0.28.14)(nanostores@1.1.0)
       '@better-auth/telemetry': 1.4.18(@better-auth/core@1.4.18(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.6))(jose@6.1.3)(kysely@0.28.14)(nanostores@1.1.0))
@@ -6788,8 +6788,8 @@ snapshots:
       nanostores: 1.1.0
       zod: 4.3.6
     optionalDependencies:
-      drizzle-kit: 1.0.0-beta.21
-      drizzle-orm: 1.0.0-beta.21(@types/mssql@9.1.9(@azure/core-client@1.10.1))(@types/pg@8.20.0)(mssql@11.0.1(@azure/core-client@1.10.1))(pg@8.20.0)(zod@4.3.6)
+      drizzle-kit: 1.0.0-beta.22-41a7d21
+      drizzle-orm: 1.0.0-beta.22-41a7d21(@types/mssql@9.1.9(@azure/core-client@1.10.1))(@types/pg@8.20.0)(mssql@11.0.1(@azure/core-client@1.10.1))(pg@8.20.0)(zod@4.3.6)
       next: 16.2.3(@babel/core@7.28.6)(@playwright/test@1.59.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       pg: 8.20.0
       react: 19.2.4
@@ -6983,7 +6983,7 @@ snapshots:
 
   dotenv@17.4.1: {}
 
-  drizzle-kit@1.0.0-beta.21:
+  drizzle-kit@1.0.0-beta.22-41a7d21:
     dependencies:
       '@drizzle-team/brocli': 0.11.0
       '@js-temporal/polyfill': 0.5.1
@@ -6991,7 +6991,7 @@ snapshots:
       get-tsconfig: 4.13.7
       jiti: 2.6.1
 
-  drizzle-orm@1.0.0-beta.21(@types/mssql@9.1.9(@azure/core-client@1.10.1))(@types/pg@8.20.0)(mssql@11.0.1(@azure/core-client@1.10.1))(pg@8.20.0)(zod@4.3.6):
+  drizzle-orm@1.0.0-beta.22-41a7d21(@types/mssql@9.1.9(@azure/core-client@1.10.1))(@types/pg@8.20.0)(mssql@11.0.1(@azure/core-client@1.10.1))(pg@8.20.0)(zod@4.3.6):
     dependencies:
       '@types/mssql': 9.1.9(@azure/core-client@1.10.1)
       mssql: 11.0.1(@azure/core-client@1.10.1)
