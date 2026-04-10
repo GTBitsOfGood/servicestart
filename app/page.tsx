@@ -1,24 +1,21 @@
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { DEFAULT_MEMBER_LAYOUT } from "@/lib/dashboard/constants";
 import DashboardGrid from "@/components/dashboard/DashboardGrid";
+import { redirectIfNotMember } from "@/lib/authUtils";
 
 export const metadata = {
   title: "Dashboard",
 };
 
 export default async function Page() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await redirectIfNotMember();
 
-  const organizationId = session?.session.activeOrganizationId;
+  const organizationId = session.session.activeOrganizationId;
   let isAdmin = false;
   let layout = DEFAULT_MEMBER_LAYOUT;
 
-  if (session?.user && organizationId) {
+  if (organizationId) {
     const membership = await MembersService.findByUserAndOrganization(
       session.user.id,
       organizationId,

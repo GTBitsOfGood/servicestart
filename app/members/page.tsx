@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { OrganizationConfigKey } from "@/lib/schema";
 import MembersTable from "@/components/MembersTable";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import { redirectIfNotAdmin } from "@/lib/authUtils";
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -13,27 +14,8 @@ interface MembersPageProps {
 }
 
 export default async function MembersPage({ searchParams }: MembersPageProps) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user) {
-    redirect("/login");
-  }
-
+  const session = await redirectIfNotAdmin();
   const organizationId = session.session.activeOrganizationId;
-  if (!organizationId) {
-    redirect("/");
-  }
-
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
-
-  if (!MembersService.isAdminOrOwner(membership?.role)) {
-    redirect("/");
-  }
 
   const config = await OrganizationConfigService.getConfig(organizationId, [
     OrganizationConfigKey.MembersPageEnabled,

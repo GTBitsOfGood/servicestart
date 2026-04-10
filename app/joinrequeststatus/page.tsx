@@ -399,11 +399,8 @@ export default async function JoinRequestStatusPage() {
     JoinRequestsService.findByUserAndOrganization(userId, activeOrganizationId),
   ]);
 
-  console.log("joinRequest:", joinRequest);
   const status = joinRequest?.status ?? "missing";
-  console.log("status:", status);
   const cardState = STATUS_TO_CARD_STATE[status];
-  console.log("cardState:", cardState);
 
   const submittedAt = joinRequest?.createdAt ?? DEFAULT_UPDATED_AT;
   const lastUpdated = joinRequest?.createdAt ?? DEFAULT_UPDATED_AT;

@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
@@ -11,26 +10,15 @@ import {
   NoActiveOrganizationError,
   UnauthorizedError,
 } from "@/lib/errors";
+import { redirectIfNotAdmin } from "@/lib/authUtils";
 
 export const metadata = {
   title: "Customize Member Dashboard",
 };
 
 export default async function DashboardSettingsPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user) redirect("/login");
-
+  const session = await redirectIfNotAdmin();
   const organizationId = session.session.activeOrganizationId;
-  if (!organizationId) redirect("/");
-
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
-  if (!MembersService.isAdminOrOwner(membership?.role)) redirect("/");
 
   const layout =
     await OrganizationConfigService.getDashboardLayout(organizationId);
