@@ -112,11 +112,9 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-      <div className="flex h-full flex-1 flex-col items-center justify-between pt-[8%]">
-        <div className="flex h-full w-[78%] flex-col items-center gap-[23px] rounded-[30px] border-[2px] border-[#FFF] p-[35px] pt-[12%] shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
-          <p className="self-stretch text-[48px] font-bold text-black">
-            Sign Up
-          </p>
+      <div className="flex h-full flex-1 flex-col items-center justify-between pt-[5%]">
+        <div className="flex h-full w-[78%] bg-white flex-col items-center gap-[23px] rounded-[30px] border-[2px] border-[#FFF] p-[35px] pt-[12%] shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
+          <h1 className="self-stretch">Sign Up</h1>
           <p className="self-stretch text-[20px] text-white">{tagline}</p>
           <BogTextInput
             name="first_name"
