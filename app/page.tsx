@@ -54,7 +54,7 @@ export default async function Page() {
   }
 
   return (
-    <div className="px-24 pb-[72px] pt-8">
+    <div className="min-w-0 px-24 pb-[72px] pt-8">
       <h1 className="mb-8 font-normal text-heading-1 text-grey-text-strong">
         {isAdmin ? "Admin Dashboard" : "Dashboard"}
       </h1>

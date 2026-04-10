@@ -43,6 +43,9 @@ export enum OrganizationConfigKey {
   LogoUrl = "logo_url",
   AdminDashboardLayout = "admin_dashboard_layout",
   DashboardLayout = "dashboard_layout",
+  MobileNavbarVariant = "mobile_navbar_variant",
+  MobileNavbarShowIcons = "mobile_navbar_show_icons",
+  MobileNavbarProfileOrientation = "mobile_navbar_profile_orientation",
 }
 
 export enum EventVisibility {
