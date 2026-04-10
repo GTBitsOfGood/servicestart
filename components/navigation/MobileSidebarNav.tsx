@@ -5,13 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import { UserProfileMenu } from "@/components/navigation/UserProfileMenu";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
 import { NavbarItem, NavbarProps } from "@/lib/navbar";
 import authClient from "@/lib/authClient";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
-import type { MobileProfileOrientation } from "@/lib/services/OrganizationConfigService";
+import { UserProfileMenu } from "@/components/navigation/UserProfileMenu";
 
 export type MobileDrawerSide = "left" | "right";
 
@@ -19,6 +18,18 @@ const navItemBase =
   "flex w-full items-center rounded-md px-4 py-3 text-paragraph-2 text-grey-text-strong transition-colors";
 const navActiveClass = "bg-[#FDE2E2] font-semibold text-grey-text-strong";
 const navInactiveHover = "hover:bg-grey-fill-weaker";
+
+function orderItemsForPinnedDrawer(items: NavbarItem[]): NavbarItem[] {
+  const settings = items.find((i) => i.href === "/settings");
+  const rest = items.filter((i) => i.href !== "/settings");
+  const profile: NavbarItem = {
+    label: "Profile",
+    href: "/profile",
+    icon: "user",
+  };
+  if (!settings) return [...rest, profile];
+  return [...rest, profile, settings];
+}
 
 function HamburgerIcon() {
   return (
@@ -73,7 +84,7 @@ function MobileTopBar({
   const bellButton = (
     <Link
       href="/inbox"
-      aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
+      aria-label="Notifications"
       className="relative rounded-md p-2 text-grey-text-strong transition-colors hover:bg-brand-text/10"
     >
       <BogIcon name="bell" size={24} />
@@ -107,7 +118,8 @@ function DrawerNavList({
   return (
     <div className="flex flex-col px-2 py-3">
       {items.map((item) => {
-        const hasDropdown = !!item.subpages?.length;
+        const hasDropdown =
+          Array.isArray(item.subpages) && item.subpages.length > 0;
         const isOpen = openItemLabel === item.label;
         const showUnreadBadge =
           item.href === "/inbox" || item.href === "/notifications";
@@ -230,48 +242,25 @@ function DrawerNavList({
 function PinnedProfileHeader({
   displayName,
   displayRole,
-  mounted,
-  orientation,
 }: {
   displayName: string;
   displayRole: string;
-  mounted: boolean;
-  orientation: MobileProfileOrientation;
 }) {
-  if (!mounted) {
-    return (
-      <div className="flex items-start gap-3">
-        <ProfileAvatar size="lg" />
-      </div>
-    );
-  }
-
-  if (orientation === "vertical") {
-    return (
-      <div className="flex flex-col items-start gap-3">
-        <ProfileAvatar size="lg" />
-        <div className="flex min-w-0 flex-col items-start gap-0.5 text-left">
-          <span className="truncate text-paragraph-1 font-semibold text-grey-text-strong">
-            {displayName}
-          </span>
-          <span className="truncate text-paragraph-2 text-grey-text-weak">
-            {displayRole}
-          </span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex items-start gap-3">
-      <ProfileAvatar size="lg" />
-      <div className="flex min-w-0 flex-col items-start text-left">
-        <span className="truncate text-paragraph-1 font-semibold text-grey-text-strong">
+    <div className="flex flex-col items-start gap-4">
+      <ProfileAvatar size="xl" />
+      <div className="flex min-w-0 flex-col items-start gap-1 text-left">
+        <span
+          className="truncate text-paragraph-1 text-grey-text-strong"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
           {displayName}
         </span>
-        <span className="truncate text-paragraph-2 text-grey-text-weak">
-          {displayRole}
-        </span>
+        {displayRole ? (
+          <span className="truncate text-paragraph-2 font-normal text-grey-text-strong">
+            {displayRole}
+          </span>
+        ) : null}
       </div>
     </div>
   );
@@ -282,26 +271,24 @@ export function MobileSidebarNav({
   drawerSide,
   pinnedUser = false,
   showIcons = drawerSide === "right",
-  profileAvatarOrientation = "horizontal",
+  pinnedProfileDisplayName = "",
+  pinnedProfileRole = "",
 }: NavbarProps & {
   drawerSide: MobileDrawerSide;
   pinnedUser?: boolean;
   showIcons?: boolean;
-  profileAvatarOrientation?: MobileProfileOrientation;
+  pinnedProfileDisplayName?: string;
+  pinnedProfileRole?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const isRight = drawerSide === "right";
+  const drawerItems = pinnedUser ? orderItemsForPinnedDrawer(items) : items;
 
   useEffect(() => {
     setIsOpen(false);
   }, [pathname]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
@@ -312,14 +299,16 @@ export function MobileSidebarNav({
 
   const session = authClient.useSession();
   const { organization } = useActiveOrganization();
-  const displayName =
+  const clientDisplayName =
     session.data?.user?.name ??
     (session.data?.user?.email as string | undefined) ??
     "";
   const rawRole = (organization?.data as { role?: string } | undefined)?.role;
-  const displayRole = rawRole
+  const clientDisplayRole = rawRole
     ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1)
     : "";
+  const displayName = clientDisplayName || pinnedProfileDisplayName;
+  const displayRole = clientDisplayRole || pinnedProfileRole;
 
   async function handleSignOut() {
     await authClient.signOut();
@@ -377,31 +366,12 @@ export function MobileSidebarNav({
             <PinnedProfileHeader
               displayName={displayName}
               displayRole={displayRole}
-              mounted={mounted}
-              orientation={profileAvatarOrientation}
             />
-
-            {mounted ? (
-              <div className="mt-4 flex flex-col gap-1">
-                <Link
-                  href="/profile"
-                  className="rounded-md px-2 py-2 text-paragraph-2 text-grey-text-strong hover:bg-grey-fill-weaker"
-                >
-                  Profile
-                </Link>
-                <Link
-                  href="/settings"
-                  className="rounded-md px-2 py-2 text-paragraph-2 text-grey-text-strong hover:bg-grey-fill-weaker"
-                >
-                  Settings
-                </Link>
-              </div>
-            ) : null}
           </div>
         ) : null}
 
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <DrawerNavList items={items} showIcons={showIcons} />
+          <DrawerNavList items={drawerItems} showIcons={showIcons} />
         </div>
 
         {pinnedUser ? (
@@ -421,7 +391,7 @@ export function MobileSidebarNav({
               verticalFlyout={isRight ? "start" : "end"}
               hostOpen={isOpen}
               showChevron
-              avatarLayout={profileAvatarOrientation}
+              inlineFooterProfile
             />
           </div>
         )}

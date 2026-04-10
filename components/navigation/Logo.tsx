@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { OrganizationConfigKey } from "@/lib/schema";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ interface SunsetLogoProps {
 export function SunsetLogo({ size = "md", className }: SunsetLogoProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
