@@ -11,9 +11,8 @@ updates:
       interval: "weekly"
     groups:
       drizzle:
-        packages:
-          - "drizzle-orm"
-          - "drizzle-kit"
+        patterns:
+          - "drizzle*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
