@@ -93,9 +93,11 @@ export default function LoginPage() {
         </div>
       </div>
       <div className="flex h-full flex-1 flex-col items-center justify-between pt-[12%]">
-        <div className="flex w-[78%] flex-col items-center gap-[23px] rounded-[30px] border-[2px] border-[#FFF] p-[35px] pt-[100px] shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
-          <p className="self-stretch text-[48px] font-bold text-black">Login</p>
-          <p className="self-stretch text-[24px] text-white">{tagline}</p>
+        <div className="flex w-[78%] bg-white flex-col items-center gap-6 rounded-4xl border-[2px] border-[#FFF] p-9 pt-25 shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
+          <h1 className="self-stretch">Login</h1>
+          <p className="self-stretch text-mobile-heading-2 text-white">
+            {tagline}
+          </p>
           <BogTextInput
             name="email"
             type="email"
@@ -103,7 +105,7 @@ export default function LoginPage() {
             placeholder="example@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="self-stretch rounded-[4px] px-[12px] text-[18px] font-semibold leading-[24px] text-[#22070B]"
+            className="self-stretch rounded-sm px-3 font-semibold text-grey-text-strong"
           />
           <BogTextInput
             name="password"
@@ -112,26 +114,29 @@ export default function LoginPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="self-stretch rounded-[4px] px-[12px] text-[18px] font-semibold leading-[24px] text-[#22070B]"
+            className="self-stretch rounded-sm px-3 font-semibold text-grey-text-strong"
           />
-          <button className="text-[16px] font-bold leading-[24px] underline">
+          <BogButton
+            className="text-desktop-paragraph-2 font-bold underline bg-transparent text-black"
+            onClick={() => router.push("/forgot-password")}
+          >
             Forgot Password?
-          </button>
+          </BogButton>
           <BogButton
             onClick={handleLogin}
             disabled={loading}
-            className="flex h-[10%] items-center justify-center rounded-[4px] bg-[#22070B] px-[25px] py-[8px] text-center text-[18px] leading-[24px] text-white"
+            className="flex h-[10%] items-center justify-center rounded-[4px] bg-grey-text-strong px-8 py-3 text-center text-desktop-paragraph-1 text-white"
           >
             Login
           </BogButton>
-          <p className="text-[16px] leading-[20px]">
+          <p className="text-desktop-paragraph-2">
             Don't have an account?{" "}
-            <button
+            <BogButton
+              className="text-desktop-paragraph-1 font-bold underline bg-transparent text-black"
               onClick={() => router.push("/signup")}
-              className="text-[18px] font-bold underline"
             >
-              Sign Up
-            </button>
+              Sign up
+            </BogButton>
           </p>
         </div>
         <div className="flex h-full flex-1 flex-col items-center justify-between pt-[249px]" />
