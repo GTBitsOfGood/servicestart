@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   getActiveOrganizationIdFromHeaders,
-  requireSessionOrRedirect,
+  redirectIfNotMember,
 } from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
@@ -18,7 +18,6 @@ export const metadata = {
 export default async function Page() {
   const session = await redirectIfNotMember();
   const headerList = await headers();
-  const session = await requireSessionOrRedirect(headerList);
 
   const resolvedOrganizationId =
     await getActiveOrganizationIdFromHeaders(headerList);
