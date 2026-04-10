@@ -17,8 +17,7 @@ export const metadata = {
 };
 
 export default async function DashboardSettingsPage() {
-  const session = await redirectIfNotAdmin();
-  const organizationId = session.session.activeOrganizationId;
+  const { organizationId } = await redirectIfNotAdmin();
 
   const layout =
     await OrganizationConfigService.getDashboardLayout(organizationId);

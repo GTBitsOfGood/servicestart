@@ -51,16 +51,12 @@ function FilterSelect({
 }
 
 export default async function MediaPage() {
-  const session = await redirectIfNotAdmin();
-  const activeOrganizationId = session.session.activeOrganizationId;
+  const { organizationId } = await redirectIfNotAdmin();
 
-  const mediaItems = await MediaService.listByOrganization(
-    activeOrganizationId,
-    {
-      limit: 24,
-      offset: 0,
-    },
-  );
+  const mediaItems = await MediaService.listByOrganization(organizationId, {
+    limit: 24,
+    offset: 0,
+  });
 
   const hasMedia = mediaItems.length > 0;
 

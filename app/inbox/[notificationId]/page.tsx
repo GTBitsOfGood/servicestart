@@ -25,7 +25,7 @@ export default async function NotificationDetailPage({
   params,
 }: NotificationDetailPageProps) {
   const session = await redirectIfNotMember();
-  const organizationId = session.session.activeOrganizationId;
+  const { organizationId } = session;
 
   const { notificationId } = await params;
   const notification = await NotificationService.findById(notificationId);
