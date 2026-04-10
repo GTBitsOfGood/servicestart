@@ -2,20 +2,21 @@ import { test, expect } from "@playwright/test";
 import {
   createTestAdminAndSignIn,
   createTestUserWithPendingJoinRequestAndSignIn,
+  expectPageRedirectsUnlessApprovedMember,
 } from "./testUtils";
 
 test.describe("Home route", () => {
-  test("redirects guests from / to /login", async ({ page }) => {
-    await page.goto("/");
-    await expect(page).toHaveURL(/\/login/);
+  test("redirects guests and pending join requests away from home", async ({
+    page,
+  }) => {
+    await expectPageRedirectsUnlessApprovedMember(page, "/");
   });
 
-  test("redirects users with a pending join request to /joinrequeststatus", async ({
+  test("pending join request users see status copy on joinrequeststatus", async ({
     page,
   }) => {
     await createTestUserWithPendingJoinRequestAndSignIn(page);
     await page.goto("/");
-    await expect(page).toHaveURL(/\/joinrequeststatus/);
     await expect(page.getByTestId("join-request-status-heading")).toBeVisible();
   });
 

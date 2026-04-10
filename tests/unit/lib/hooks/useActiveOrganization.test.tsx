@@ -122,6 +122,31 @@ describe("useActiveOrganization", () => {
     });
   });
 
+  it("does not call setActive on loopback when navigator.webdriver is true", async () => {
+    Object.defineProperty(window, "location", {
+      value: { ...originalLocation, hostname: "localhost" },
+      writable: true,
+    });
+    vi.stubGlobal("navigator", { ...navigator, webdriver: true });
+
+    mockUseSession.mockReturnValue({ data: { user: {}, session: {} } });
+    mockUseActiveOrganization.mockReturnValue({
+      data: { slug: "other", id: "org_other", name: "Other" },
+      error: null,
+      isPending: false,
+      isRefetching: false,
+      refetch: vi.fn(),
+    });
+
+    renderHook(() => useActiveOrganization());
+
+    await waitFor(() => {});
+
+    expect(mockSetActive).not.toHaveBeenCalled();
+
+    vi.unstubAllGlobals();
+  });
+
   it("does not call setActive when session exists and active org slug matches URL slug", async () => {
     mockUseSession.mockReturnValue({ data: { user: {}, session: {} } });
     mockUseActiveOrganization.mockReturnValue({

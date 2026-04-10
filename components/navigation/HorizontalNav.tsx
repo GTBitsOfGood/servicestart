@@ -28,7 +28,7 @@ function NavTabs({
   );
 
   return (
-    <nav className="flex h-full items-stretch gap-8 text-nav font-normal text-grey-text-strong">
+    <nav className="flex h-full max-w-full items-stretch gap-2 overflow-x-auto text-nav font-normal text-grey-text-strong mobile:gap-8">
       {items.map((item) => {
         const isActive =
           item.href === "/"
@@ -42,7 +42,7 @@ function NavTabs({
             <Link
               key={item.href}
               href={item.href}
-              className="relative flex h-full items-center gap-1 px-4"
+              className="relative flex h-full shrink-0 items-center gap-1 px-2 mobile:px-4"
             >
               <span
                 className={`font-normal ${isActive ? "font-semibold" : ""}`}
@@ -63,7 +63,7 @@ function NavTabs({
         return (
           <div key={item.href} className="relative">
             <button
-              className="relative flex h-full items-center gap-1 px-4 cursor-pointer"
+              className="relative flex h-full shrink-0 cursor-pointer items-center gap-1 px-2 mobile:px-4"
               onClick={() =>
                 setOpenDropdownLabel((prev) =>
                   prev === item.label ? null : item.label,
@@ -118,7 +118,7 @@ function RightSide() {
   const { count: unreadCount } = useUnreadNotificationCount();
 
   return (
-    <div className="flex items-center gap-6">
+    <div className="flex shrink-0 items-center gap-2 mobile:gap-6">
       <NotificationCounter unreadCount={unreadCount} />
       <UserProfileMenu direction="horizontal" />
     </div>
@@ -158,7 +158,7 @@ export function HorizontalNav({
     // center
     leftContent = logo;
     middleContent = (
-      <div className="flex h-full flex-1 items-stretch justify-center">
+      <div className="flex h-full min-w-0 flex-1 items-stretch justify-center">
         {tabs}
       </div>
     );
@@ -167,7 +167,7 @@ export function HorizontalNav({
 
   return (
     <header
-      className={`relative flex h-20 items-center px-10 shadow-sm ${navBgClass}`}
+      className={`relative flex h-16 items-center overflow-x-hidden px-3 shadow-sm mobile:h-20 mobile:px-6 desktop:px-10 ${navBgClass}`}
     >
       {leftContent}
       {middleContent}

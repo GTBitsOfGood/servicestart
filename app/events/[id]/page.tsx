@@ -95,11 +95,13 @@ export default async function EventDetailPage({
     rsvpDeadline?: Date | null;
     accessibilityNotes?: string | null;
     links?: string[] | null;
+    tags?: { tagId: string; tag: string }[] | null;
   };
   const rsvpLimit = eventMeta.rsvpLimit ?? null;
   const rsvpDeadline = eventMeta.rsvpDeadline ?? null;
   const accessibilityNotes = eventMeta.accessibilityNotes ?? null;
   const links = eventMeta.links ?? [];
+  const tagList = eventMeta.tags ?? [];
   const rsvps = await EventService.listRSVPsByEvent(event.id);
   const rsvpCount = rsvps.length;
   const userHasRsvped = session?.user
@@ -267,12 +269,12 @@ export default async function EventDetailPage({
             Tags
           </h2>
           <div className="mt-2 flex flex-wrap gap-2">
-            {["Tag placeholder"].map((tag, index) => (
+            {tagList.map((tag) => (
               <span
-                key={`${tag}-${index}`}
+                key={tag.tagId}
                 className="rounded-lg px-3 py-1 text-paragraph-2 text-notif-announcement bg-notif-announcement-bg"
               >
-                {tag}
+                {tag.tag}
               </span>
             ))}
           </div>

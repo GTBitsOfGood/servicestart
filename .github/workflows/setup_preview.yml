@@ -32,3 +32,16 @@ jobs:
         run: pnpm run db:migrate
       - name: Seed database
         run: pnpm run db:seed
+      - name: Setup Juno File Storage
+        run: pnpm run setupJunoFileStorage
+        env:
+          JUNO_API_KEY: ${{ secrets.JUNO_API_KEY }}
+          JUNO_BASE_URL: ${{ vars.JUNO_BASE_URL }}
+          FILE_PROVIDER_NAME: ${{ vars.FILE_PROVIDER_NAME }}
+          AZURE_STORAGE_ACCOUNT_NAME: ${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}
+          AZURE_STORAGE_ACCOUNT_KEY: ${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+          JUNO_PROJECT_ID: ${{ secrets.JUNO_PROJECT_ID }}
+          JUNO_FILE_BUCKET_PREFIX: ${{ vars.JUNO_FILE_BUCKET_PREFIX }}
+          SETUP_ORGANIZATION_ID: ${{ vars.SETUP_ORGANIZATION_ID }}
+      - name: Setup organization
+        run: pnpm run setupOrg

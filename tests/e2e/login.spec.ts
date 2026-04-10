@@ -1,5 +1,8 @@
 import { test, expect } from "@playwright/test";
-import { createTestUserAndSignIn } from "./testUtils";
+import {
+  createTestUserAndSignIn,
+  expectPageDoesNotRedirect,
+} from "./testUtils";
 import { buildTestUser, signUpAndGetSession } from "../unit/testUtils";
 
 test.describe("Login Page", () => {
@@ -21,6 +24,10 @@ test.describe("Login Page", () => {
     await createTestUserAndSignIn(page);
     await page.goto("/login");
     await expect(page).toHaveURL(/\//);
+  });
+
+  test("public static assets are not redirected by auth", async ({ page }) => {
+    await expectPageDoesNotRedirect(page, "/logo.svg");
   });
 
   test("login page background uses a linear gradient", async ({ page }) => {

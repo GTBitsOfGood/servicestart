@@ -12,6 +12,15 @@ export interface IFileService {
   upload(mediaInput: MediaUploadInput, file: File): Promise<void>;
   deleteFile(organizationId: string, fileName: string): Promise<void>;
   readFile(organizationId: string, fileName: string): Promise<Buffer>;
+  getBucketName(organizationId: string): string;
+  getUploadPresignedUrl(
+    organizationId: string,
+    fileName: string,
+  ): Promise<{ url: string }>;
+  getDownloadPresignedUrl(
+    organizationId: string,
+    fileName: string,
+  ): Promise<{ url: string }>;
 }
 
 export function resolveFileService(): IFileService {

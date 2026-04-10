@@ -14,6 +14,7 @@ import { EventVisibility } from "@/lib/schema";
 import WarningIcon from "@/components/WarningIcon";
 import ExitIcon from "@/components/ExitIcon";
 import PlusIcon from "@/components/PlusIcon";
+import { TagInput } from "@/components/TagInput";
 
 export default function EventsCreationPage() {
   const router = useRouter();
@@ -32,6 +33,7 @@ export default function EventsCreationPage() {
   const [deadline, setDeadline] = useState("");
   const [links, setLinks] = useState<string[]>([""]);
   const [notes, setNotes] = useState("");
+  const [tagIds, setTagIds] = useState<string[]>([]);
   const [hosts, setHosts] = useState<string[]>([""]);
   const [visibility, setVisibility] = useState("public");
   const [missing, setMissing] = useState(false);
@@ -98,6 +100,7 @@ export default function EventsCreationPage() {
       ...(notes != "" && { accessibilityNotes: notes }),
       ...(linksNoEmpty.length > 0 && { links: linksNoEmpty }),
       ...(hostsNoEmpty.length > 0 && { hosts: hostsNoEmpty }),
+      ...(tagIds.length > 0 && { tagIds }),
     };
 
     try {
@@ -356,6 +359,16 @@ export default function EventsCreationPage() {
             onChange={(e) => setNotes(e.target.value)}
             className="self-stretch"
           />
+          <div className="self-stretch flex flex-col gap-2">
+            <label className="text-paragraph-2 font-semibold text-grey-text-strong">
+              Tags
+            </label>
+            <TagInput
+              tagIds={tagIds}
+              setTagIds={setTagIds}
+              placeholder="Add tags"
+            />
+          </div>
         </div>
         <div className="flex flex-col items-start gap-9 self-stretch w-full">
           <h4>Ownerships</h4>

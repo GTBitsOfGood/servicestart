@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { EventService } from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
+import { TagService } from "@/lib/services/TagService";
 import { UserService } from "@/lib/services/UserService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 import { ForbiddenError } from "@/lib/errors";
@@ -40,6 +41,7 @@ const app = new Hono()
         coverImageUrl: z.string().nullable().optional(),
         published: z.boolean().default(false),
         hosts: z.array(z.string()).optional(),
+        tagIds: z.array(z.string()).optional(),
       }),
     ),
     async (c) => {
@@ -94,6 +96,19 @@ const app = new Hono()
         );
       }
 
+      if (data.tagIds && data.tagIds.length > 0) {
+        const valid = await TagService.allBelongToOrg(
+          data.tagIds,
+          activeOrganizationId,
+        );
+        if (!valid) {
+          return c.json(
+            { error: "At least one tag not in organization" },
+            { status: 404 },
+          );
+        }
+      }
+
       const event = await EventService.create(
         activeOrganizationId,
         data.name,
@@ -109,6 +124,7 @@ const app = new Hono()
         data.links ?? null,
         publishedAt,
         publishedById,
+        data.tagIds,
       );
 
       if (!event) {
@@ -156,7 +172,7 @@ const app = new Hono()
       const eventsList = await EventService.listByOrganization(
         activeOrganizationId,
         { limit: pageSize, offset: (page - 1) * pageSize },
-        true,
+        { published: true },
       );
 
       return c.json({
@@ -171,7 +187,7 @@ const app = new Hono()
       const eventsList = await EventService.listByOrganization(
         activeOrganizationId,
         { limit: pageSize, offset: (page - 1) * pageSize },
-        published,
+        { published },
       );
 
       return c.json({
@@ -184,6 +200,7 @@ const app = new Hono()
     const eventsList = await EventService.listByOrganization(
       activeOrganizationId,
       { limit: pageSize, offset: (page - 1) * pageSize },
+      {},
     );
 
     return c.json({
