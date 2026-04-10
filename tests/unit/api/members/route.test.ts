@@ -13,6 +13,11 @@ import {
   testApi,
 } from "@/tests/unit/testUtils";
 
+type MemberActivityBody = Record<
+  string,
+  { totalHours: number; lastActive: string | null }
+>;
+
 async function setupOrgAndUser(role: "owner" | "admin" | "member") {
   const slug = `members-api-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
   const organization = await createOrganization(slug);
@@ -182,7 +187,7 @@ describe("GET /api/members/activity", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as MemberActivityBody;
     expect(data[memberUser.id]).toBeDefined();
     expect(data[memberUser.id].totalHours).toBe(1);
     expect(data[memberUser.id].lastActive).not.toBeNull();
@@ -207,7 +212,7 @@ describe("GET /api/members/activity", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as MemberActivityBody;
     expect(data[memberUser.id].totalHours).toBe(1);
     expect(data[memberUser.id].lastActive).not.toBeNull();
   });
@@ -231,7 +236,7 @@ describe("GET /api/members/activity", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as MemberActivityBody;
     expect(data[memberUser.id].totalHours).toBe(0);
     expect(data[memberUser.id].lastActive).toBeNull();
   });
@@ -261,7 +266,7 @@ describe("GET /api/members/activity", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as MemberActivityBody;
     expect(data[memberUser.id].totalHours).toBe(2);
   });
 
@@ -285,7 +290,7 @@ describe("GET /api/members/activity", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as MemberActivityBody;
     expect(data[memberUser.id].totalHours).toBe(0);
     expect(data[memberUser.id].lastActive).toBeNull();
   });
@@ -311,7 +316,7 @@ describe("GET /api/members/activity", () => {
     );
 
     expect(response.status).toBe(200);
-    const data = await response.json();
+    const data = (await response.json()) as MemberActivityBody;
     expect(data[user1.id].totalHours).toBe(2);
     expect(data[user2.id].totalHours).toBe(0);
   });
@@ -320,7 +325,7 @@ describe("GET /api/members/activity", () => {
     const { headers } = await setupOrgAndUser("admin");
 
     const response = await testApi.members.activity.$get(
-      { query: {} },
+      { query: { userIds: [] } },
       { headers },
     );
 

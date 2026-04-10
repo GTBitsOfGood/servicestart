@@ -237,7 +237,7 @@ export async function main() {
       description: "Event description 2.",
       startTimestamp: new Date("2026-03-22T10:00:00"),
       duration: "3 hours",
-      coverImageUrl: null,
+      coverImageUrl: "https://placehold.co/600x400/orange/white",
       visibility: EventVisibility.Public,
     },
     {
@@ -248,7 +248,8 @@ export async function main() {
       description: "Event description 3.",
       startTimestamp: new Date("2026-04-05T13:00:00"),
       duration: "4 hours",
-      coverImageUrl: null,
+      coverImageUrl: "https://placehold.co/600x400/blue/white",
+      publishedAt: new Date("2025-12-18T14:00:00"),
       visibility: EventVisibility.Public,
     },
     {
@@ -261,6 +262,7 @@ export async function main() {
       duration: "3 hours",
       coverImageUrl: null,
       visibility: EventVisibility.Public,
+      publishedAt: new Date("2025-12-18T14:00:00"),
     },
     {
       id: "event_005",
@@ -272,12 +274,35 @@ export async function main() {
       duration: "2 hours",
       coverImageUrl: null,
       visibility: EventVisibility.Public,
+      publishedAt: new Date("2025-12-18T14:00:00"),
     },
   ];
 
   await db.insert(schema.events).values(eventsData).onConflictDoNothing();
 
   log("Events created.");
+
+  const tagsData = [
+    { tagId: "tag_volunteer", organizationId: orgId, tag: "Volunteer" },
+    { tagId: "tag_workshop", organizationId: orgId, tag: "Workshop" },
+    { tagId: "tag_social", organizationId: orgId, tag: "Social" },
+    { tagId: "tag_fundraiser", organizationId: orgId, tag: "Fundraiser" },
+  ];
+
+  await db.insert(schema.tags).values(tagsData).onConflictDoNothing();
+
+  const eventTagsData = [
+    { eventId: "event_001", tagId: "tag_volunteer" },
+    { eventId: "event_001", tagId: "tag_workshop" },
+    { eventId: "event_002", tagId: "tag_social" },
+    { eventId: "event_003", tagId: "tag_workshop" },
+    { eventId: "event_003", tagId: "tag_fundraiser" },
+    { eventId: "event_004", tagId: "tag_volunteer" },
+  ];
+
+  await db.insert(schema.eventTags).values(eventTagsData).onConflictDoNothing();
+
+  log("Tags created.");
   const usersToRsvp = [
     "admin@example.com",
     "member1@example.com",

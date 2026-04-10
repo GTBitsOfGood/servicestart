@@ -5,6 +5,7 @@ import Select, { type MultiValue } from "react-select";
 import BogModal from "@/components/bog/BogModal/BogModal";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
+import BogIcon from "@/components/bog/BogIcon/BogIcon";
 
 interface SendEmailModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export default function SendEmailModal({
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>(
     initialRecipientIds ?? [],
   );
+  const [sendMessageToRecipient, setSendMessageToRecipient] = useState(false);
   const [recipientMenuOpen, setRecipientMenuOpen] = useState(false);
 
   const isInvalid = !subject.trim() || !body.trim();
@@ -61,6 +63,7 @@ export default function SendEmailModal({
     setFooter("");
     setHasAttemptedSend(false);
     setSelectedRecipientIds(initialRecipientIds ?? []);
+    setSendMessageToRecipient(false);
   };
 
   const handleClose = () => {
@@ -88,24 +91,36 @@ export default function SendEmailModal({
         },
       }}
       trigger={<span />}
-      title={<h3>Send Email</h3>}
+      closeButton={<BogIcon name="x" size={25} />}
+      contentProps={{
+        className:
+          "!w-[96vw] mobile:!w-[88vw] tablet:!w-[76vw] desktop:!w-[700px] !max-w-[700px] !p-3 mobile:!p-5 desktop:!p-7 !gap-3",
+        style: { maxHeight: "92vh", overflowY: "auto" },
+      }}
+      title={
+        <span className="text-heading-4 text-grey-text-strong">Send Email</span>
+      }
       description={
-        <div className="flex flex-col gap-6 mt-6">
-          <div className="flex items-center justify-between">
-            <BogButton variant="secondary" size="medium">
+        <div className="mt-2 flex flex-col gap-4 desktop:gap-5 text-grey-text-strong">
+          <div className="flex items-center justify-start">
+            <BogButton
+              variant="secondary"
+              size="medium"
+              className="!rounded-md !px-4 !py-2 !mt-[-4px] !text-paragraph-2"
+            >
               Use Presaved Template
             </BogButton>
           </div>
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="text-paragraph-2">Recipient</span>
+              <span className="text-paragraph">Recipient</span>
               <button
                 type="button"
-                className="h-5 w-5 flex items-center justify-center text-black cursor-pointer"
+                className="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-grey-text-strong hover:bg-grey-fill-weak"
                 aria-label="Add recipient"
                 onClick={() => setRecipientMenuOpen((open) => !open)}
               >
-                +
+                <BogIcon name="plus" size={16} />
               </button>
             </div>
             <Select
@@ -113,6 +128,7 @@ export default function SendEmailModal({
               options={recipientOptions}
               value={selectedOptions}
               placeholder="Select recipients"
+              className="text-paragraph-2 text-grey-text-strong"
               classNamePrefix="bog-select"
               menuIsOpen={recipientMenuOpen}
               onMenuOpen={() => setRecipientMenuOpen(true)}
@@ -128,62 +144,84 @@ export default function SendEmailModal({
               styles={{
                 control: (base, state) => ({
                   ...base,
-                  minHeight: 44,
-                  borderRadius: 8,
-                  paddingTop: 4,
-                  paddingBottom: 4,
-                  backgroundColor: recipientMenuOpen
-                    ? "var(--color-solid-bg-sunken)"
-                    : "transparent",
-                  borderColor: recipientMenuOpen
-                    ? state.isFocused
-                      ? "var(--color-brand-stroke-strong)"
-                      : "var(--color-grey-stroke-weak)"
-                    : "transparent",
+                  borderRadius: 4,
+                  fontSize: "inherit",
+                  lineHeight: "inherit",
+                  backgroundColor: "var(--color-solid-bg-sunken)",
+                  borderColor: state.isFocused
+                    ? "var(--color-brand-stroke-strong)"
+                    : "var(--color-grey-stroke-weak)",
                   boxShadow: "none",
-                  paddingLeft: recipientMenuOpen ? 4 : 0,
+                  padding: 0,
                   cursor: "text",
                   "&:hover": {
-                    borderColor: recipientMenuOpen
-                      ? state.isFocused
-                        ? "var(--color-brand-stroke-strong)"
-                        : "var(--color-grey-stroke-strong)"
-                      : "transparent",
+                    borderColor: state.isFocused
+                      ? "var(--color-brand-stroke-strong)"
+                      : "var(--color-grey-stroke-strong)",
                   },
                 }),
                 valueContainer: (base) => ({
                   ...base,
                   backgroundColor: "transparent",
-                  paddingLeft: recipientMenuOpen ? base.paddingLeft : 0,
+                  padding: "8px 4px",
+                  fontSize: "inherit",
+                  lineHeight: "inherit",
                 }),
                 input: (base) => ({
                   ...base,
                   backgroundColor: "transparent",
+                  margin: 0,
+                  padding: 0,
+                  fontSize: "inherit",
+                  lineHeight: "inherit",
                 }),
                 placeholder: (base) => ({
                   ...base,
-                  color: "var(--color-grey-text-weak)",
+                  color: "var(--color-grey-text-weakest)",
+                  margin: 0,
+                  fontSize: "inherit",
+                  lineHeight: "inherit",
+                }),
+                singleValue: (base) => ({
+                  ...base,
+                  margin: 0,
+                  fontSize: "inherit",
+                  lineHeight: "inherit",
                 }),
                 multiValue: (base) => ({
                   ...base,
-                  borderRadius: 12,
-                  paddingLeft: 6,
-                  paddingRight: 2,
+                  borderRadius: 999,
+                  paddingLeft: 8,
+                  paddingRight: 4,
                   backgroundColor: "#fff",
-                  border: "1px solid #666",
+                  border: "1px solid var(--color-grey-stroke-strong)",
                 }),
                 multiValueLabel: (base) => ({
                   ...base,
                   color: "var(--color-dark-500)",
+                  fontSize: "inherit",
+                  lineHeight: "inherit",
                 }),
                 multiValueRemove: (base) => ({
                   ...base,
                   borderRadius: 999,
                   cursor: "pointer",
+                  backgroundColor: "transparent",
+                  color: "var(--color-grey-icon-strong)",
+                  ":hover": {
+                    backgroundColor: "transparent",
+                    color: "var(--color-status-red-text)",
+                  },
+                  ":active": {
+                    backgroundColor: "transparent",
+                    color: "var(--color-status-red-text)",
+                  },
                 }),
                 option: (base) => ({
                   ...base,
                   cursor: "pointer",
+                  fontSize: "inherit",
+                  lineHeight: "inherit",
                 }),
                 clearIndicator: (base) => ({
                   ...base,
@@ -200,7 +238,7 @@ export default function SendEmailModal({
             name="subject"
             label="Headline"
             required
-            placeholder="Subject Line"
+            placeholder="Message Headline"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             error={hasAttemptedSend && !subject.trim()}
@@ -208,7 +246,7 @@ export default function SendEmailModal({
           <BogTextInput
             name="subtitle"
             label="Subtitle"
-            placeholder="Email Subtitle (Optional)"
+            placeholder="Message Subtitle (Optional)"
             value={subtitle}
             onChange={(e) => setSubtitle(e.target.value)}
           />
@@ -217,10 +255,11 @@ export default function SendEmailModal({
             label="Text"
             required
             multiline
-            placeholder="Email Content"
+            placeholder="Message Text"
             value={body}
             onChange={(e) => setBody(e.target.value)}
             error={hasAttemptedSend && !body.trim()}
+            className="[&_textarea]:!min-h-[160px] [&_textarea]:!resize-y"
           />
           <BogTextInput
             name="footer"
@@ -229,13 +268,38 @@ export default function SendEmailModal({
             value={footer}
             onChange={(e) => setFooter(e.target.value)}
           />
+          <div className="mt-1 flex flex-col gap-3 mobile:flex-row mobile:items-center mobile:justify-end">
+            <label className="flex items-center gap-2 text-paragraph-2 text-grey-text-strong">
+              <input
+                type="checkbox"
+                checked={sendMessageToRecipient}
+                onChange={(event) =>
+                  setSendMessageToRecipient(event.target.checked)
+                }
+                className="h-4 w-4 accent-brand-text"
+              />
+              Send message to recipient
+            </label>
+            <BogButton
+              variant="primary"
+              size="medium"
+              onClick={handleSend}
+              disabled={isInvalid}
+              className="!rounded-md !px-4 !py-2"
+            >
+              Send Email
+            </BogButton>
+          </div>
         </div>
       }
       primaryLabel="Send Email"
-      secondaryLabel="Cancel"
+      secondaryLabel=""
       onPrimary={handleSend}
       onSecondary={handleClose}
       primaryDisabled={isInvalid}
+      buttonsContainerClassName="!hidden"
+      secondaryButtonClassName="!hidden"
+      primaryButtonClassName="!hidden"
     />
   );
 }

@@ -1,5 +1,5 @@
 import db from "@/lib/db";
-import { messages } from "@/lib/schema";
+import { messageRecipients, messages } from "@/lib/schema";
 import { EmailService } from "@/lib/services/EmailService";
 import { MembersService } from "@/lib/services/MemberService";
 
@@ -13,6 +13,7 @@ export type MessageCreateInput = {
   body?: MessageBody;
   textBody?: string;
   htmlBody?: string;
+  recipientUserIds?: string[];
 };
 
 function buildBodyFromText(textBody?: string, htmlBody?: string): MessageBody {
@@ -51,11 +52,24 @@ async function createAndSend(input: MessageCreateInput) {
       sentAt: messages.sentAt,
     });
 
+  const hasExplicitRecipients =
+    input.recipientUserIds && input.recipientUserIds.length > 0;
+
+  const recipientUserIds = hasExplicitRecipients
+    ? input.recipientUserIds!
+    : await MembersService.getUserIdsByOrganization(input.organizationId);
+
+  if (recipientUserIds.length > 0) {
+    await db.insert(messageRecipients).values(
+      recipientUserIds.map((userId) => ({
+        messageId: input.id,
+        userId,
+      })),
+    );
+  }
+
   const textBody = input.textBody ?? input.htmlBody;
   const htmlBody = input.htmlBody;
-  const recipientUserIds = await MembersService.getUserIdsByOrganization(
-    input.organizationId,
-  );
 
   if (textBody && recipientUserIds.length > 0) {
     const content: Array<{ type: "text/plain" | "text/html"; value: string }> =
@@ -68,6 +82,7 @@ async function createAndSend(input: MessageCreateInput) {
     await EmailService.emailMembers(input.organizationId, {
       subject: input.subject,
       content,
+      ...(hasExplicitRecipients ? { targetUserIds: recipientUserIds } : {}),
     });
   }
 

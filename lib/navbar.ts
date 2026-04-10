@@ -20,15 +20,6 @@ export type NavbarProps = {
 export const NAVBAR_ITEMS: NavbarItem[] = [
   { label: "Home", href: "/", icon: "house" },
   {
-    label: "Menu Item",
-    href: "/menu-parent",
-    icon: "chats",
-    subpages: [
-      { label: "Subpage", href: "/subpage-1" },
-      { label: "Subpage", href: "/subpage-2" },
-    ],
-  },
-  {
     label: "Members",
     href: "/members",
     icon: "users",
@@ -52,6 +43,7 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
       { label: "Dashboard", href: "/settings/dashboard" },
     ],
   },
+  { label: "Events", href: "/events", icon: "calendar" },
 ];
 
 export const NO_NAVBAR_PAGES = ["/login", "/signup", "/joinrequeststatus"];

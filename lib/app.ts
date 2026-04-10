@@ -7,8 +7,11 @@ import media from "@/api/media";
 import organizationConfig from "@/api/organizationConfig";
 import members from "@/api/members";
 import messages from "@/api/messages";
+import profile from "@/api/profile";
+import tags from "@/api/tags";
 import { Hono } from "hono";
 import notifications from "@/api/notifications";
+import emails from "@/api/emails";
 
 export const app = new Hono()
   .basePath("/api")
@@ -21,6 +24,9 @@ export const app = new Hono()
   .route("/media", media)
   .route("/notifications", notifications)
   .route("/members", members)
-  .route("/messages", messages);
+  .route("/messages", messages)
+  .route("/emails", emails)
+  .route("/profile", profile)
+  .route("/tags", tags);
 
 export type AppType = typeof app;

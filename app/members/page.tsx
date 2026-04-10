@@ -1,11 +1,14 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import {
+  getActiveOrganizationIdFromHeaders,
+  redirectIfNotAdmin,
+} from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { OrganizationConfigKey } from "@/lib/schema";
 import MembersTable from "@/components/MembersTable";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { redirectIfNotAdmin } from "@/lib/authUtils";
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -15,7 +18,12 @@ interface MembersPageProps {
 
 export default async function MembersPage({ searchParams }: MembersPageProps) {
   const session = await redirectIfNotAdmin();
-  const organizationId = session.session.activeOrganizationId;
+  const headerList = await headers();
+  const organizationId = await getActiveOrganizationIdFromHeaders(headerList);
+
+  if (!organizationId) {
+    redirect("/");
+  }
 
   const config = await OrganizationConfigService.getConfig(organizationId, [
     OrganizationConfigKey.MembersPageEnabled,
@@ -75,7 +83,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
   }
 
   return (
-    <div className="max-w-[1300px] mx-auto px-12 py-[60px]">
+    <div className="max-w-8xl mx-auto px-12 py-16">
       <MembersTable
         members={memberRows}
         total={total}

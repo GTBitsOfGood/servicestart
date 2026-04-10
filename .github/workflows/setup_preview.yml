@@ -32,3 +32,18 @@ jobs:
         run: pnpm run db:migrate
       - name: Seed database
         run: pnpm run db:seed
+      - name: Load Juno and file storage env from secrets
+        run: |
+          echo "JUNO_API_KEY=${{ secrets.JUNO_API_KEY }}" >> $GITHUB_ENV
+          echo "JUNO_BASE_URL=${{ vars.JUNO_BASE_URL }}" >> $GITHUB_ENV
+          echo "FILE_PROVIDER_NAME=${{ vars.FILE_PROVIDER_NAME }}" >> $GITHUB_ENV
+          echo "AZURE_STORAGE_ACCOUNT_NAME=${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}" >> $GITHUB_ENV
+          echo "AZURE_STORAGE_ACCOUNT_KEY=${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}" >> $GITHUB_ENV
+          echo "SENDGRID_KEY=${{ secrets.SENDGRID_KEY }}" >> $GITHUB_ENV
+          echo "JUNO_PROJECT_ID=${{ secrets.JUNO_PROJECT_ID }}" >> $GITHUB_ENV
+          echo "JUNO_FILE_BUCKET_PREFIX=${{ vars.JUNO_FILE_BUCKET_PREFIX }}" >> $GITHUB_ENV
+          echo "SETUP_ORGANIZATION_ID=${{ vars.SETUP_ORGANIZATION_ID }}" >> $GITHUB_ENV
+      - name: Setup Juno File Storage
+        run: pnpm run setupJunoFileStorage
+      - name: Setup organization
+        run: pnpm run setupOrg
