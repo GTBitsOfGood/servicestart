@@ -101,7 +101,7 @@ export const notificationTypeEnum = pgEnum(
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull(), // not unique
+  email: text("email").notNull(),
   organizationId: text("organization_id").references(() => organizations.id, {
     onDelete: "set null",
   }),

@@ -122,6 +122,11 @@ export const auth = betterAuth({
         type: "string",
         required: false,
       },
+      organizationId: {
+        type: "string",
+        required: false,
+        input: true,
+      },
     },
   },
   baseURL: process.env.BETTER_AUTH_URL || getBaseUrl(),
