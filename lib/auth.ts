@@ -131,7 +131,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    sendResetPassword: async ({ user, url, token: _token }, request) => {
+    sendResetPassword: async ({ user, url }, request) => {
       const host = request?.headers?.get("host");
       const slug = getSlugFromHost(host || undefined);
 
