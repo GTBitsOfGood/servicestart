@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import BogTabs from "@/components/bog/BogTabs/BogTabs";
 import EventCard, { type Event } from "@/components/EventCard";
 import EventService from "@/lib/services/EventService";
@@ -7,14 +8,14 @@ import SaveBanner from "@/components/SaveBanner";
 import db from "@/lib/db";
 import { organizations } from "@/lib/schema";
 import { inArray } from "drizzle-orm";
-import { redirectIfNotMember } from "@/lib/authUtils";
+import { requireSessionOrRedirect } from "@/lib/authUtils";
 
 interface ProfilePageProps {
   searchParams: Promise<{ saved?: string }>;
 }
 
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
-  const session = await redirectIfNotMember();
+  const session = await requireSessionOrRedirect(await headers());
 
   const user = session.user! as typeof session.user & {
     phoneNumber?: string | null;

@@ -459,7 +459,10 @@ export default async function JoinRequestStatusPage() {
         <section className="pt-16">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0">
-              <h1 className="text-heading-2 leading-10 font-normal tracking-tight text-grey-text-strong">
+              <h1
+                data-testid="join-request-status-heading"
+                className="text-heading-2 leading-10 font-normal tracking-tight text-grey-text-strong"
+              >
                 Join Request Status
               </h1>
               <p className="mt-6 text-paragraph-2 font-semibold text-grey-text-strong">
