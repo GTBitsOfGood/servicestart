@@ -176,13 +176,11 @@ async function sendResetPasswordEmail({
   slug,
   name,
   url,
-  token,
 }: {
   email: string;
   slug: string;
   name: string;
   url: string;
-  token: string;
 }) {
   const organization = await OrganizationsService.findBySlug(slug);
 
@@ -226,7 +224,7 @@ async function sendResetPasswordEmail({
           ``,
           `A password reset has been requested for your account.`,
           ``,
-          `Reset your password here: ${url}?token=${token}`,
+          `Reset your password here: ${url}`,
           ``,
           `If you weren't expecting this, you can safely ignore this email.`,
         ].join("\n"),

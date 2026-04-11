@@ -131,7 +131,7 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    sendResetPassword: async ({ user, url, token }, requester) => {
+    sendResetPassword: async ({ user, url }, requester) => {
       const host = requester?.headers?.get("host");
       const slug = getSlugFromHost(host || undefined);
 
@@ -140,7 +140,6 @@ export const auth = betterAuth({
         slug: slug,
         name: user.name,
         url: url,
-        token: token,
       });
     },
   },
