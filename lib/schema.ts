@@ -101,7 +101,10 @@ export const notificationTypeEnum = pgEnum(
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull().unique(),
+  email: text("email").notNull(), // not unique
+  organizationId: text("organization_id").references(() => organizations.id, {
+    onDelete: "set null",
+  }),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
   phoneNumber: text("phone_number"),
@@ -114,6 +117,21 @@ export const users = pgTable("users", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
+
+// Many-to-many join table for users <-> organizations
+export const userOrganizations = pgTable(
+  "user_organizations",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.organizationId] })],
+);
 
 export const sessions = pgTable(
   "sessions",
@@ -498,6 +516,7 @@ export const relations = defineRelations(
     messages,
     messageRecipients,
     notifications,
+    userOrganizations,
   },
   (r) => ({
     users: {
@@ -529,6 +548,11 @@ export const relations = defineRelations(
         from: r.users.id,
         to: r.notifications.userId,
       }),
+      // Many-to-many: organizations for a user
+      organizations: r.many.userOrganizations({
+        from: r.users.id,
+        to: r.userOrganizations.userId,
+      }),
     },
     sessions: {
       organizations: r.one.organizations({
@@ -552,6 +576,11 @@ export const relations = defineRelations(
       notifications: r.many.notifications({
         from: r.organizations.id,
         to: r.notifications.organizationId,
+      }),
+      // Many-to-many: users for an organization
+      users: r.many.userOrganizations({
+        from: r.organizations.id,
+        to: r.userOrganizations.organizationId,
       }),
     },
     members: {
