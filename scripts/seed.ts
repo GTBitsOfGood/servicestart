@@ -1,6 +1,6 @@
 import "dotenv/config"; //must be first to load environment variables
 import { randomUUID } from "node:crypto";
-import { EventVisibility, schema } from "../lib/schema";
+import { EventVisibility, JoinRequestStatus, schema } from "../lib/schema";
 import db from "../lib/db";
 import { auth } from "@/lib/auth";
 import { OrganizationConfigKey, NotificationType } from "@/lib/schema";
@@ -110,7 +110,27 @@ export async function main() {
       role: null,
       phoneNumber: null,
     },
+    {
+      name: "Join Request Pending",
+      email: "joinrequest-pending@example.com",
+      role: null,
+      phoneNumber: null,
+    },
+    {
+      name: "Join Request Approved",
+      email: "joinrequest-approved@example.com",
+      role: null,
+      phoneNumber: null,
+    },
+    {
+      name: "Join Request Denied",
+      email: "joinrequest-denied@example.com",
+      role: null,
+      phoneNumber: null,
+    },
   ];
+
+  const userIdsByEmail = new Map<string, string>();
 
   for (const userData of usersData) {
     const res = await auth.api
@@ -132,6 +152,8 @@ export async function main() {
         }),
       );
 
+    userIdsByEmail.set(userData.email, res.user.id);
+
     if (userData.role) {
       for (const org of ORGS) {
         await db
@@ -148,6 +170,47 @@ export async function main() {
   }
 
   log("Users and members created.");
+  const joinRequestSeedData = [
+    {
+      id: "jr_pending_servicestart",
+      email: "joinrequest-pending@example.com",
+      status: JoinRequestStatus.Pending,
+      createdAt: new Date("2026-02-25T15:00:00"),
+    },
+    {
+      id: "jr_approved_servicestart",
+      email: "joinrequest-approved@example.com",
+      status: JoinRequestStatus.Approved,
+      createdAt: new Date("2026-02-25T15:00:00"),
+    },
+    {
+      id: "jr_denied_servicestart",
+      email: "joinrequest-denied@example.com",
+      status: JoinRequestStatus.Denied,
+      createdAt: new Date("2026-02-25T15:00:00"),
+    },
+  ];
+
+  for (const joinRequest of joinRequestSeedData) {
+    const userId = userIdsByEmail.get(joinRequest.email);
+
+    if (!userId) {
+      throw new Error(`Missing seeded user for ${joinRequest.email}`);
+    }
+
+    await db
+      .insert(schema.joinRequests)
+      .values({
+        id: joinRequest.id,
+        userId,
+        organizationId: "org_servicestart",
+        status: joinRequest.status,
+        createdAt: joinRequest.createdAt,
+      })
+      .onConflictDoNothing();
+  }
+
+  log("Join requests created for pending, approved, and denied states.");
   log(
     "Navbar configs by org: servicestart (horizontal center, red), vertical-sidebar (vertical sidebar, red), vertical-icon (vertical icon, white), horizontal-left (horizontal left, red), horizontal-center (horizontal center, white). Sign in and switch active org to test different navbar configs.",
   );
