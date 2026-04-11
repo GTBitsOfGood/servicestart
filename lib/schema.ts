@@ -161,8 +161,8 @@ export const accounts = pgTable(
   (table) => [index("account_userId_idx").on(table.userId)],
 );
 
-export const verification = pgTable(
-  "verification",
+export const verifications = pgTable(
+  "verifications",
   {
     id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
@@ -300,6 +300,27 @@ export const eventHosts = pgTable(
       pk: primaryKey({ columns: [table.userId, table.eventId] }),
     },
   ],
+);
+
+export const tags = pgTable("tags", {
+  tagId: text("tag_id").primaryKey(),
+  organizationId: text("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  tag: text("tag").notNull(),
+});
+
+export const eventTags = pgTable(
+  "event_tags",
+  {
+    eventId: text("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    tagId: text("tag_id")
+      .notNull()
+      .references(() => tags.tagId, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.eventId, table.tagId] })],
 );
 
 export const announcements = pgTable(
@@ -480,6 +501,8 @@ export const relations = defineRelations(
     invitations,
     joinRequests,
     events,
+    tags,
+    eventTags,
     eventHosts,
     eventRsvps,
     announcements,
@@ -593,6 +616,10 @@ export const relations = defineRelations(
         from: r.events.id,
         to: r.eventHosts.eventId,
       }),
+      eventTags: r.many.eventTags({
+        from: r.events.id,
+        to: r.eventTags.eventId,
+      }),
     },
     eventRsvps: {
       user: r.one.users({
@@ -601,6 +628,18 @@ export const relations = defineRelations(
       }),
       event: r.one.events({
         from: r.eventRsvps.eventId,
+        to: r.events.id,
+      }),
+    },
+    tags: {
+      organizations: r.one.organizations({
+        from: r.tags.organizationId,
+        to: r.organizations.id,
+      }),
+    },
+    eventTags: {
+      event: r.many.events({
+        from: r.eventTags.eventId,
         to: r.events.id,
       }),
     },
@@ -692,7 +731,7 @@ export const schema = {
   users,
   sessions,
   accounts,
-  verification,
+  verifications,
   organizations,
   members,
   invitations,
@@ -700,6 +739,8 @@ export const schema = {
   events,
   eventRsvps,
   eventHosts,
+  tags,
+  eventTags,
   announcements,
   shifts,
   shiftRSVPs,

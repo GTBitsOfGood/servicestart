@@ -17,3 +17,16 @@ export class NoActiveOrganizationError extends HTTPException {
     super(400, { message });
   }
 }
+
+/**
+ * Raised when deleting blobs through Juno is not available yet.
+ * Follow up with #gt-infra-support about deletion support for sprint planning.
+ */
+export class JunoFileDeletionNotSupportedError extends Error {
+  constructor(
+    message = "Juno file deletion is not implemented yet. Contact #gt-infra-support for status.",
+  ) {
+    super(message);
+    this.name = "JunoFileDeletionNotSupportedError";
+  }
+}

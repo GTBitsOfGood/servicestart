@@ -46,8 +46,8 @@ export default function NotificationsSidebar({
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
 
         <Dialog.Content className="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col bg-white shadow-xl outline-none data-[state=open]:animate-fade-in">
-          <div className="shrink-0 px-8 pt-12">
-            <div className="mb-8 flex items-center justify-between">
+          <div className="shrink-0 px-5 pt-6 mobile:px-8 mobile:pt-12">
+            <div className="mb-4 mobile:mb-8 flex items-center justify-between">
               <Dialog.Title className="text-heading-3 text-grey-text-strong">
                 Notifications
               </Dialog.Title>
@@ -105,7 +105,7 @@ export default function NotificationsSidebar({
             {isLoading ? (
               <SidebarLoadingSkeleton />
             ) : errorMessage ? (
-              <div className="flex h-full flex-col items-center justify-center gap-2 px-8 text-center">
+              <div className="flex h-full flex-col items-center justify-center gap-2 px-5 mobile:px-8 text-center">
                 <BogIcon
                   name="error"
                   size={84}
@@ -123,7 +123,7 @@ export default function NotificationsSidebar({
                 </button>
               </div>
             ) : notifications.length === 0 ? (
-              <div className="flex h-full items-center justify-center px-8 text-center">
+              <div className="flex h-full items-center justify-center px-5 mobile:px-8 text-center">
                 <p className="text-heading-3 text-grey-text-weak">
                   No notifications yet.
                 </p>
@@ -152,7 +152,7 @@ function SidebarLoadingSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="border-t border-grey-stroke-weak px-14 py-10 first:border-t-0"
+          className="border-t border-grey-stroke-weak px-5 py-5 mobile:px-14 mobile:py-10 first:border-t-0"
         >
           <div className="mb-3 flex items-center justify-between">
             <div className="h-5 w-32 rounded bg-grey-fill-weak" />

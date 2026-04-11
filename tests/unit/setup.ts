@@ -7,7 +7,7 @@ import {
   organizations,
   sessions,
   users,
-  verification,
+  verifications,
   shifts,
   shiftRSVPs,
   events,
@@ -19,13 +19,11 @@ import {
 import { beforeAll, beforeEach, afterAll } from "vitest";
 import { execSync } from "child_process";
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, rmSync } from "node:fs";
 
 const id = randomUUID().split("-")[0];
 const dbName = `testdb_${id}`;
 
 process.env.NEXT_PUBLIC_BRANCH_NAME = dbName;
-process.env.FILE_STORAGE_DIR = `/tmp/servicestart-media-test-${id}`;
 
 // We need to configure env vars before importing later
 let db: typeof import("@/lib/db").default;
@@ -49,15 +47,6 @@ beforeAll(async () => {
 beforeEach(async () => {
   if (!db) throw new Error("DB not initialized yet (beforeAll did not run)");
 
-  // Wipe file storage directory
-  const fileStorageDir = process.env.FILE_STORAGE_DIR;
-  if (fileStorageDir) {
-    if (existsSync(fileStorageDir)) {
-      rmSync(fileStorageDir, { recursive: true, force: true });
-    }
-    mkdirSync(fileStorageDir, { recursive: true });
-  }
-
   // Child tables first, then parent tables
   // Add line here when you create a new table
   await db.delete(media);
@@ -73,7 +62,7 @@ beforeEach(async () => {
   await db.delete(members);
   await db.delete(sessions);
   await db.delete(accounts);
-  await db.delete(verification);
+  await db.delete(verifications);
   await db.delete(users);
   await db.delete(organizations);
 });

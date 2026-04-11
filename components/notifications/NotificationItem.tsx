@@ -266,13 +266,13 @@ export default function NotificationItem({
       >
         <div
           className={cn(
-            "relative flex flex-col gap-1.5 px-14 py-10 transition-colors hover:bg-grey-fill-weaker",
+            "relative flex flex-col gap-1.5 px-5 py-5 mobile:px-14 mobile:py-10 transition-colors hover:bg-grey-fill-weaker",
             !notification.read && "bg-notif-unread-bg",
           )}
         >
           {!notification.read && (
             <div
-              className="absolute left-5 top-1/2 size-2 -translate-y-1/2 rounded-full bg-brand-text"
+              className="absolute left-1.5 mobile:left-5 top-1/2 size-2 -translate-y-1/2 rounded-full bg-brand-text"
               aria-hidden
             />
           )}
@@ -321,18 +321,44 @@ export default function NotificationItem({
         !notification.read && "bg-notif-unread-bg",
       )}
     >
-      {!notification.read && (
-        <div
-          className="absolute left-5 top-1/2 size-2 -translate-y-1/2 rounded-full bg-brand-text"
-          aria-hidden
-        />
-      )}
+      <div
+        className={cn(
+          "relative px-5 py-5 mobile:px-14 mobile:py-10 transition-colors hover:bg-grey-fill-weaker",
+          !notification.read && "bg-notif-unread-bg",
+        )}
+      >
+        {!notification.read && (
+          <div
+            className="absolute left-1.5 mobile:left-5 top-1/2 size-2 -translate-y-1/2 rounded-full bg-brand-text"
+            aria-hidden
+          />
+        )}
 
-      <div className="flex flex-col gap-3">
-        {!hideTag && (
-          <div className="flex items-center justify-between gap-3">
-            <NotificationTag type={notification.type} variant="light" />
-            <div className="relative flex items-center">
+        <div className="flex flex-col gap-3">
+          {!hideTag && (
+            <div className="flex items-center justify-between gap-3">
+              <NotificationTag type={notification.type} variant="light" />
+              <div className="relative flex items-center">
+                <span
+                  className={cn(
+                    "whitespace-nowrap text-paragraph-2 text-grey-text-weak transition-opacity",
+                    showActions &&
+                      "group-hover:opacity-0 group-focus-within:opacity-0",
+                  )}
+                >
+                  {formatTime(notification.createdAt)}
+                </span>
+
+                {showActions && (
+                  <div className="pointer-events-none absolute right-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+                    {actionButtons}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {hideTag && (
+            <div className="flex items-center justify-between gap-3">
               <span
                 className={cn(
                   "whitespace-nowrap text-paragraph-2 text-grey-text-weak transition-opacity",
@@ -342,75 +368,58 @@ export default function NotificationItem({
               >
                 {formatTime(notification.createdAt)}
               </span>
-
-              {showActions && (
-                <div className="pointer-events-none absolute right-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-                  {actionButtons}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        {hideTag && (
-          <div className="flex items-center justify-between gap-3">
-            <span
-              className={cn(
-                "whitespace-nowrap text-paragraph-2 text-grey-text-weak transition-opacity",
-                showActions &&
-                  "group-hover:opacity-0 group-focus-within:opacity-0",
-              )}
-            >
-              {formatTime(notification.createdAt)}
-            </span>
-            <div className="relative flex items-center">
-              {showActions && (
-                <div className="pointer-events-none absolute right-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
-                  {actionButtons}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        <div className="flex w-full items-start justify-between gap-8">
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <p className="text-paragraph-1 font-semibold text-grey-text-strong">
-              {title}
-            </p>
-
-            {!joinRequest && (
-              <p className="line-clamp-2 text-paragraph-2 text-grey-text-weak">
-                {body}
-              </p>
-            )}
-
-            {joinRequest && !expanded && (
-              <div className="mt-2 flex items-end justify-start">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setExpanded(true);
-                  }}
-                  className="inline-flex items-center gap-1 text-lg font-medium text-brand-text hover:opacity-80"
-                >
-                  View Details
-                  <BogIcon
-                    name="chevron-right"
-                    size={12}
-                    color="var(--color-brand-text)"
-                  />
-                </button>
+              <div className="relative flex items-center">
+                {showActions && (
+                  <div className="pointer-events-none absolute right-0 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
+                    {actionButtons}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+          <div className="flex w-full items-start justify-between gap-8">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <p className="text-paragraph-1 font-semibold text-grey-text-strong">
+                {title}
+              </p>
 
-          <div className="flex w-[120px] shrink-0 items-start justify-end">
-            {expanded ? (
-              <div className="invisible">{renderJoinRequestButtons(true)}</div>
-            ) : (
-              renderJoinRequestButtons(true)
-            )}
+              {!joinRequest && (
+                <p className="line-clamp-2 text-paragraph-2 text-grey-text-weak">
+                  {body}
+                </p>
+              )}
+
+              {joinRequest && !expanded && (
+                <div className="mt-2 flex items-end justify-start">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setExpanded(true);
+                    }}
+                    className="inline-flex items-center gap-1 text-lg font-medium text-brand-text hover:opacity-80"
+                  >
+                    View Details
+                    <BogIcon
+                      name="chevron-right"
+                      size={12}
+                      color="var(--color-brand-text)"
+                    />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex w-[120px] shrink-0 items-start justify-end">
+              {expanded ? (
+                <div className="invisible">
+                  {renderJoinRequestButtons(true)}
+                </div>
+              ) : (
+                renderJoinRequestButtons(true)
+              )}
+            </div>
           </div>
         </div>
 

@@ -13,7 +13,15 @@ export default defineConfig(
   reactHooks.configs.flat.recommended,
   vitest.configs.recommended,
   eslintConfigPrettier,
-  globalIgnores(["node_modules/", ".next/", "components/bog/", "juno/"]),
+  globalIgnores([
+    "node_modules/",
+    ".next/",
+    "components/bog/",
+    "juno/",
+    "playwright-report/",
+    "test-results/",
+    "coverage/",
+  ]),
   {
     rules: {
       "vitest/valid-title": "off", // Caused issues with using functions as test titles

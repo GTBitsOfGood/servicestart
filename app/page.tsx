@@ -1,9 +1,12 @@
 import NotificationsWidget from "@/components/notifications/NotificationsWidget";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { redirectIfNotMember } from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
+import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { DEFAULT_MEMBER_LAYOUT } from "@/lib/dashboard/constants";
+import { JoinRequestStatus } from "@/lib/schema";
 import DashboardGrid from "@/components/dashboard/DashboardGrid";
 
 export const metadata = {
@@ -11,25 +14,27 @@ export const metadata = {
 };
 
 export default async function Page() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await redirectIfNotMember();
+  const { organizationId } = session;
 
-  const organizationId = session?.session.activeOrganizationId;
-  let isAdmin = false;
-  let layout = DEFAULT_MEMBER_LAYOUT;
-
-  if (session?.user && organizationId) {
-    const membership = await MembersService.findByUserAndOrganization(
+  const membership = await MembersService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+  if (!membership) {
+    const joinRequest = await JoinRequestsService.findByUserAndOrganization(
       session.user.id,
       organizationId,
     );
-    isAdmin = MembersService.isAdminOrOwner(membership?.role) ?? false;
-
-    layout = isAdmin
-      ? await OrganizationConfigService.getAdminDashboardLayout(organizationId)
-      : await OrganizationConfigService.getDashboardLayout(organizationId);
+    if (joinRequest?.status === JoinRequestStatus.Pending) {
+      redirect("/joinrequeststatus");
+    }
   }
+
+  const isAdmin = MembersService.isAdminOrOwner(membership?.role) ?? false;
+  const layout = isAdmin
+    ? await OrganizationConfigService.getAdminDashboardLayout(organizationId)
+    : await OrganizationConfigService.getDashboardLayout(organizationId);
 
   return (
     <div className="flex h-full min-h-screen">

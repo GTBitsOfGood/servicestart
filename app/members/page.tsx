@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { redirectIfNotAdmin } from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { OrganizationConfigKey } from "@/lib/schema";
@@ -13,27 +14,8 @@ interface MembersPageProps {
 }
 
 export default async function MembersPage({ searchParams }: MembersPageProps) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user) {
-    redirect("/login");
-  }
-
-  const organizationId = session.session.activeOrganizationId;
-  if (!organizationId) {
-    redirect("/");
-  }
-
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
-
-  if (!MembersService.isAdminOrOwner(membership?.role)) {
-    redirect("/");
-  }
+  const authSession = await redirectIfNotAdmin();
+  const { organizationId } = authSession;
 
   const config = await OrganizationConfigService.getConfig(organizationId, [
     OrganizationConfigKey.MembersPageEnabled,
@@ -71,7 +53,8 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
         return { error: "Unauthorized" };
       }
 
-      if (session.session.activeOrganizationId !== orgId) {
+      const activeOrganizationId = session.session.activeOrganizationId;
+      if (!activeOrganizationId || activeOrganizationId !== orgId) {
         return { error: "Forbidden" };
       }
 
@@ -93,14 +76,14 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
   }
 
   return (
-    <div className="max-w-[1300px] mx-auto px-12 py-[60px]">
+    <div className="max-w-8xl mx-auto px-12 py-16">
       <MembersTable
         members={memberRows}
         total={total}
         page={page}
         pageSize={pageSize}
         organizationId={organizationId}
-        currentUserId={session.user.id}
+        currentUserId={authSession.user.id}
         onAddDirectly={addMemberDirectly}
       />
     </div>

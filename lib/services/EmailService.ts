@@ -18,14 +18,24 @@ async function emailMembers(
   email: {
     subject: string;
     content: { type: "text/plain" | "text/html"; value: string }[];
+    targetUserIds?: string[];
   },
 ) {
-  const [organization, recipients] = await Promise.all([
+  const [organization, allRecipients] = await Promise.all([
     OrganizationsService.findById(organizationId),
     MembersService.listMemberContacts(organizationId),
   ]);
 
-  if (!organization || recipients.length === 0) {
+  if (!organization || allRecipients.length === 0) {
+    return;
+  }
+
+  const recipients =
+    email.targetUserIds && email.targetUserIds.length > 0
+      ? allRecipients.filter((r) => email.targetUserIds!.includes(r.userId))
+      : allRecipients;
+
+  if (recipients.length === 0) {
     return;
   }
 
@@ -51,11 +61,8 @@ async function emailMembers(
   const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
 
   await juno.email.sendEmail({
-    recipients,
-    sender: {
-      email: senderEmail,
-      name: organization.name,
-    },
+    recipients: recipients.map(({ email, name }) => ({ email, name })),
+    sender: { email: senderEmail, name: organization.name },
     subject: email.subject,
     contents: email.content,
   });
@@ -164,8 +171,64 @@ async function sendInvitationEmail({
   });
 }
 
+async function sendResetPasswordEmail({
+  email,
+  slug,
+  name,
+  url,
+}: {
+  email: string;
+  slug: string;
+  name: string;
+  url: string;
+}) {
+  const organization = await OrganizationsService.findBySlug(slug);
+
+  if (!organization) {
+    throw new Error(`Cannot derive sender email for organization`);
+  }
+
+  const normalizedOrganization = slug
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (!normalizedOrganization) {
+    throw new Error(
+      `Cannot derive sender email local-part for organization ${organization.id}`,
+    );
+  }
+
+  const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
+
+  await juno.email.sendEmail({
+    recipients: [{ email }],
+    sender: {
+      email: senderEmail,
+      name: organization.name,
+    },
+    subject: `Reset Password for ${organization.name}`,
+    contents: [
+      {
+        type: "text/plain",
+        value: [
+          `Hi ${name},`,
+          ``,
+          `A password reset has been requested for your account.`,
+          ``,
+          `Reset your password here: ${url}`,
+          ``,
+          `If you weren't expecting this, you can safely ignore this email.`,
+        ].join("\n"),
+      },
+    ],
+  });
+}
+
 export const EmailService = {
   emailMembers,
   registerOrganizationSender,
   sendInvitationEmail,
+  sendResetPasswordEmail,
 };
