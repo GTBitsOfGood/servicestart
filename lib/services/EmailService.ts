@@ -171,8 +171,64 @@ async function sendInvitationEmail({
   });
 }
 
+async function sendResetPasswordEmail({
+  email,
+  slug,
+  name,
+  url,
+}: {
+  email: string;
+  slug: string;
+  name: string;
+  url: string;
+}) {
+  const organization = await OrganizationsService.findBySlug(slug);
+
+  if (!organization) {
+    throw new Error(`Cannot derive sender email for organization`);
+  }
+
+  const normalizedOrganization = slug
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (!normalizedOrganization) {
+    throw new Error(
+      `Cannot derive sender email local-part for organization ${organization.id}`,
+    );
+  }
+
+  const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
+
+  await juno.email.sendEmail({
+    recipients: [{ email }],
+    sender: {
+      email: senderEmail,
+      name: organization.name,
+    },
+    subject: `Reset Password for ${organization.name}`,
+    contents: [
+      {
+        type: "text/plain",
+        value: [
+          `Hi ${name},`,
+          ``,
+          `A password reset has been requested for your account.`,
+          ``,
+          `Reset your password here: ${url}`,
+          ``,
+          `If you weren't expecting this, you can safely ignore this email.`,
+        ].join("\n"),
+      },
+    ],
+  });
+}
+
 export const EmailService = {
   emailMembers,
   registerOrganizationSender,
   sendInvitationEmail,
+  sendResetPasswordEmail,
 };
