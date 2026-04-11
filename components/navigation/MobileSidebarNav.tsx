@@ -16,7 +16,8 @@ export type MobileDrawerSide = "left" | "right";
 
 const navItemBase =
   "flex w-full items-center rounded-md px-4 py-3 text-paragraph-2 text-grey-text-strong transition-colors";
-const navActiveClass = "bg-brand-fill-weaker font-semibold text-grey-text-strong";
+const navActiveClass =
+  "bg-brand-fill-weaker font-semibold text-grey-text-strong";
 const navInactiveHover = "hover:bg-grey-fill-weaker";
 
 function orderItemsForPinnedDrawer(items: NavbarItem[]): NavbarItem[] {
