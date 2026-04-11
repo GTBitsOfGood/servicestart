@@ -7,12 +7,17 @@ import {
   NoActiveOrganizationError,
   UnauthorizedError,
 } from "@/lib/errors";
-import { JoinRequestStatus } from "@/lib/schema";
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
 import { UserService } from "@/lib/services/UserService";
 import { getSlugFromHost } from "./clientAuthUtils";
+
+type AppSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
+
+type SessionWithOrganization = AppSession & {
+  organizationId: string;
+};
 
 /**
  * Accepts invite if one exists and is pending
@@ -231,19 +236,13 @@ export async function redirectIfNotMember() {
   );
 
   if (membership) {
-    return session;
+    return {
+      ...session,
+      organizationId,
+    } satisfies SessionWithOrganization;
   }
 
-  const joinRequest = await JoinRequestsService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
-
-  if (joinRequest?.status === JoinRequestStatus.Pending) {
-    redirect("/joinrequeststatus");
-  }
-
-  redirect("/");
+  redirect("/joinrequeststatus");
 }
 
 /**
@@ -252,13 +251,7 @@ export async function redirectIfNotMember() {
 
 export async function redirectIfNotAdmin() {
   const session = await redirectIfNotMember();
-  const organizationId = await getActiveOrganizationIdFromHeaders(
-    await headers(),
-  );
-
-  if (!organizationId) {
-    redirect("/");
-  }
+  const { organizationId } = session;
 
   const membership = await MembersService.findByUserAndOrganization(
     session.user.id,
@@ -269,5 +262,8 @@ export async function redirectIfNotAdmin() {
     redirect("/");
   }
 
-  return session;
+  return {
+    ...session,
+    organizationId,
+  } satisfies SessionWithOrganization;
 }
