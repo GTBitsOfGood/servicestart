@@ -32,5 +32,11 @@ jobs:
       - name: Load DB_URL from secrets
         run: echo "DB_URL=${{ secrets.DB_URL }}${{ github.ref_name != 'main' && '/pr' || '' }}${{ github.ref_name  != 'main' && github.event.number || '' }}" >> $GITHUB_ENV
 
+      - name: Ensure preview database exists
+        if: github.ref_name != 'main'
+        run: |
+          psql "${{ secrets.DB_URL }}/postgres" -tAc "SELECT 1 FROM pg_database WHERE datname = 'pr${{ github.event.number }}'" | grep -q 1 || \
+            psql "${{ secrets.DB_URL }}/postgres" -c 'create database "pr${{ github.event.number }}";'
+
       - name: Migrate database
         run: pnpm run db:migrate

@@ -46,4 +46,12 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
   { label: "Events", href: "/events", icon: "calendar" },
 ];
 
-export const NO_NAVBAR_PAGES = ["/login", "/signup", "/joinrequeststatus"];
+export const NO_NAVBAR_PAGES = [
+  "/login",
+  "/signup",
+  "/joinrequeststatus",
+  "/resetpassword",
+  "/forgotpassword",
+];
+
+export const MEMBERSHIP_REDIRECT_EXCLUDED_PAGES = NO_NAVBAR_PAGES;

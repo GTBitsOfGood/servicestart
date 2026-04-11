@@ -1,10 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import {
-  getActiveOrganizationIdFromHeaders,
-  redirectIfNotAdmin,
-} from "@/lib/authUtils";
+import { redirectIfNotAdmin } from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { OrganizationConfigKey } from "@/lib/schema";
@@ -17,13 +14,8 @@ interface MembersPageProps {
 }
 
 export default async function MembersPage({ searchParams }: MembersPageProps) {
-  const session = await redirectIfNotAdmin();
-  const headerList = await headers();
-  const organizationId = await getActiveOrganizationIdFromHeaders(headerList);
-
-  if (!organizationId) {
-    redirect("/");
-  }
+  const authSession = await redirectIfNotAdmin();
+  const { organizationId } = authSession;
 
   const config = await OrganizationConfigService.getConfig(organizationId, [
     OrganizationConfigKey.MembersPageEnabled,
@@ -61,7 +53,8 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
         return { error: "Unauthorized" };
       }
 
-      if (session.session.activeOrganizationId !== orgId) {
+      const activeOrganizationId = session.session.activeOrganizationId;
+      if (!activeOrganizationId || activeOrganizationId !== orgId) {
         return { error: "Forbidden" };
       }
 
@@ -90,7 +83,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
         page={page}
         pageSize={pageSize}
         organizationId={organizationId}
-        currentUserId={session.user.id}
+        currentUserId={authSession.user.id}
         onAddDirectly={addMemberDirectly}
       />
     </div>

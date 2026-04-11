@@ -7,9 +7,14 @@ import { MembersService } from "@/lib/services/MemberService";
 
 const EVENTS_PAGE_LIMIT = 500;
 
-export default async function EventsPage({
-  searchParams,
-}: PageProps<"/events">) {
+interface EventsPageProps {
+  searchParams: Promise<{
+    filter?: string | string[];
+    query?: string | string[];
+  }>;
+}
+
+export default async function EventsPage({ searchParams }: EventsPageProps) {
   const session = await auth.api.getSession({
     headers: await headers(),
   });

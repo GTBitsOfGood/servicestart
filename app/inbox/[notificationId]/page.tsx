@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import NotificationTag from "@/components/notifications/NotificationTag";
 import { NotificationService } from "@/lib/services/NotificationService";
+import { redirectIfNotMember } from "@/lib/authUtils";
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
@@ -25,11 +24,8 @@ interface NotificationDetailPageProps {
 export default async function NotificationDetailPage({
   params,
 }: NotificationDetailPageProps) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) redirect("/login");
-
-  const organizationId = session.session.activeOrganizationId;
-  if (!organizationId) redirect("/");
+  const session = await redirectIfNotMember();
+  const { organizationId } = session;
 
   const { notificationId } = await params;
   const notification = await NotificationService.findById(notificationId);
