@@ -53,3 +53,5 @@ export const NO_NAVBAR_PAGES = [
   "/reset-password",
   "/forgot-password",
 ];
+
+export const MEMBERSHIP_REDIRECT_EXCLUDED_PAGES = NO_NAVBAR_PAGES;
