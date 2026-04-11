@@ -188,13 +188,6 @@ async function sendResetPasswordEmail({
     throw new Error(`Cannot derive sender email for organization`);
   }
 
-  const org = await OrganizationsService.findById(organization?.id || "");
-  if (!org) {
-    throw new Error(
-      `Cannot derive sender email for organization ${organization.id}`,
-    );
-  }
-
   const normalizedOrganization = slug
     .trim()
     .toLowerCase()
@@ -213,9 +206,9 @@ async function sendResetPasswordEmail({
     recipients: [{ email }],
     sender: {
       email: senderEmail,
-      name: org.name,
+      name: organization.name,
     },
-    subject: `Reset Password for ${org.name}`,
+    subject: `Reset Password for ${organization.name}`,
     contents: [
       {
         type: "text/plain",
