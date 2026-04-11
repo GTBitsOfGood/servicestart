@@ -7,7 +7,7 @@ import {
   organizations,
   sessions,
   users,
-  verification,
+  verifications,
   shifts,
   shiftRSVPs,
   events,
@@ -62,7 +62,7 @@ beforeEach(async () => {
   await db.delete(members);
   await db.delete(sessions);
   await db.delete(accounts);
-  await db.delete(verification);
+  await db.delete(verifications);
   await db.delete(users);
   await db.delete(organizations);
 });
