@@ -118,7 +118,7 @@ export default function LoginPage() {
           />
           <BogButton
             className="text-desktop-paragraph-2 font-bold underline bg-transparent text-black"
-            onClick={() => router.push("/forgot-password")}
+            onClick={() => router.push("/forgotpassword")}
           >
             Forgot Password?
           </BogButton>

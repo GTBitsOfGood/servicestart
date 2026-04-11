@@ -10,7 +10,7 @@ import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import authClient from "@/lib/authClient";
 import LeftArrowIcon from "@/components/LeftArrowIcon";
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
 
@@ -25,7 +25,7 @@ export default function LoginPage() {
   const handleEmailSubmit = async () => {
     const { error } = await authClient.requestPasswordReset({
       email,
-      redirectTo: "/reset-password",
+      redirectTo: "/resetpassword",
     });
 
     if (error) {

@@ -11,7 +11,7 @@ import authClient from "@/lib/authClient";
 import XIcon from "@/components/XIcon";
 import LeftArrowIcon from "@/components/LeftArrowIcon";
 
-export default function LoginPage() {
+export default function ResetPasswordPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -137,7 +137,7 @@ export default function LoginPage() {
             <div className="flex w-full h-full flex-col items-center justify-between pt-[16%]">
               <div className="flex bg-white w-[80%] h-[600px] flex-col items-flex-start justify-center gap-3 shrink-0 border-[2px] rounded-4xl shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
                 <div className="flex flex-col p-12 items-center gap-2">
-                  <h4 className="text-grey-text-weak">Logging in...</h4>
+                  <h4 className="text-grey-text-weak">Resetting password...</h4>
                 </div>
               </div>
             </div>

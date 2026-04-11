@@ -50,8 +50,8 @@ export const NO_NAVBAR_PAGES = [
   "/login",
   "/signup",
   "/joinrequeststatus",
-  "/reset-password",
-  "/forgot-password",
+  "/resetpassword",
+  "/forgotpassword",
 ];
 
 export const MEMBERSHIP_REDIRECT_EXCLUDED_PAGES = NO_NAVBAR_PAGES;
