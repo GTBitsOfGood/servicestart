@@ -161,8 +161,8 @@ export const accounts = pgTable(
   (table) => [index("account_userId_idx").on(table.userId)],
 );
 
-export const verification = pgTable(
-  "verification",
+export const verifications = pgTable(
+  "verifications",
   {
     id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
@@ -716,7 +716,7 @@ export const schema = {
   users,
   sessions,
   accounts,
-  verification,
+  verifications,
   organizations,
   members,
   invitations,
