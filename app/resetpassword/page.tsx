@@ -88,7 +88,7 @@ export default function ResetPasswordPage() {
     >
       <div className="flex h-full w-1/2 flex-shrink-0 items-center justify-between px-8">
         <div
-          className="flex h-[95%] w-full flex-col justify-flex-end rounded-3xl pt-[90%] pb-5 pl-5 pr-1/2"
+          className="flex h-[95%] w-full flex-col justify-flex-end rounded-3xl pb-5 pl-5 pr-1/2"
           style={{
             background: `linear-gradient(180deg, ${primary_color} 0%, #FFF 100%)`,
           }}
@@ -105,8 +105,8 @@ export default function ResetPasswordPage() {
         </div>
       </div>
       {isExpired ? (
-        <div className="flex h-full flex-1 flex-col items-center justify-between pt-[16%]">
-          <div className="flex w-[80%] bg-white flex-col p-12 justify-center items-center gap-5 border-[2px] rounded-4xl shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
+        <div className="flex h-full flex-1 flex-col items-center justify-center">
+          <div className="flex w-[80%] bg-white flex-col p-12 justify-center items-center gap-5 border-2 rounded-4xl shadow-md">
             <div className="flex flex-col items-center gap-5 self-stretch">
               <div className="flex flex-col items-center gap-14 self-stretch">
                 <div className="flex flex-col items-flex-start gap-12 self-stretch">
@@ -134,16 +134,16 @@ export default function ResetPasswordPage() {
       ) : (
         <div className="flex flex-col w-full h-full justify-center items-center">
           {loading ? (
-            <div className="flex w-full h-full flex-col items-center justify-between pt-[16%]">
-              <div className="flex bg-white w-[80%] h-[600px] flex-col items-flex-start justify-center gap-3 shrink-0 border-[2px] rounded-4xl shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
+            <div className="flex w-full h-full flex-col items-center justify-center">
+              <div className="flex bg-white w-[80%] h-1/2 flex-col items-flex-start justify-center gap-3 shrink-0 border-2 rounded-4xl shadow-md">
                 <div className="flex flex-col p-12 items-center gap-2">
                   <h4 className="text-grey-text-weak">Resetting password...</h4>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="flex h-full flex-1 flex-col items-center justify-between pt-[25%]">
-              <div className="flex bg-white flex-col p-12 justify-center items-center gap-5 border-[2px] rounded-4xl shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
+            <div className="flex h-full flex-1 flex-col items-center justify-center">
+              <div className="flex bg-white flex-col p-12 justify-center items-center gap-5 border-2 rounded-4xl shadow-md">
                 <div className="flex flex-col items-center gap-5 self-stretch">
                   <div className="flex flex-col items-center gap-14 self-stretch">
                     <div className="flex flex-col items-center gap-12 self-stretch">
