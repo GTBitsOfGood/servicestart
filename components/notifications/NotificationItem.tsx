@@ -321,6 +321,12 @@ export default function NotificationItem({
         !notification.read && "bg-notif-unread-bg",
       )}
     >
+      {!notification.read && (
+        <div
+          className="absolute left-5 top-1/2 size-2 -translate-y-1/2 rounded-full bg-brand-text"
+          aria-hidden
+        />
+      )}
       <div
         className={cn(
           "relative px-5 py-5 mobile:px-14 mobile:py-10 transition-colors hover:bg-grey-fill-weaker",

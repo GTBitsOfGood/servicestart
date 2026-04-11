@@ -1,4 +1,5 @@
 import NotificationsWidget from "@/components/notifications/NotificationsWidget";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { redirectIfNotMember } from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
