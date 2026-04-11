@@ -5,7 +5,15 @@ import db from "@/lib/db";
 import { afterUserCreated } from "@/lib/authUtils";
 import { headers } from "next/headers";
 import { getSlugFromHost } from "./clientAuthUtils";
-import { eventRsvps, events, sessions, shiftRSVPs, shifts } from "./schema";
+import {
+  eventRsvps,
+  events,
+  sessions,
+  shiftRSVPs,
+  shifts,
+  users,
+} from "./schema";
+import { UserService } from "@/lib/services/UserService";
 import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
 import { EmailService } from "@/lib/services/EmailService";
 import { getBaseUrl } from "./clientUtils";
@@ -124,7 +132,7 @@ export const auth = betterAuth({
       },
       organizationId: {
         type: "string",
-        required: false,
+        required: true,
         input: true,
       },
     },
@@ -136,6 +144,53 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    async findUserByEmail({
+      email,
+      context,
+    }: {
+      email: string;
+      context: { body?: { organizationId?: string } };
+    }) {
+      const organizationId = context?.body?.organizationId;
+      if (!organizationId) throw new Error("Organization context required");
+      return UserService.findByEmailAndOrganization(email, organizationId);
+    },
+    async createUser({
+      email,
+      organizationId,
+      ...rest
+    }: {
+      email: string;
+      organizationId: string;
+      name?: string;
+      image?: string;
+      phoneNumber?: string;
+      displayName?: string;
+      pronouns?: string;
+      location?: string;
+    }) {
+      const existing = await UserService.findByEmailAndOrganization(
+        email,
+        organizationId,
+      );
+      if (existing) {
+        throw new Error("User already exists for this organization");
+      }
+      const id = crypto.randomUUID();
+      const name = rest.name || "";
+      await db.insert(users).values({
+        id,
+        name,
+        email,
+        organizationId,
+        image: rest.image,
+        phoneNumber: rest.phoneNumber,
+        displayName: rest.displayName,
+        pronouns: rest.pronouns,
+        location: rest.location,
+      });
+      return await UserService.findById(id);
+    },
   },
   databaseHooks: {
     session: {

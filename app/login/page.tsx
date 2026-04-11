@@ -31,13 +31,39 @@ export default function LoginPage() {
   const handleLogin = async () => {
     setLoading(true);
     try {
+      let organizationId = org?.organization?.data?.id;
+      if (!organizationId) {
+        // Fallback: try to resolve from slug (subdomain)
+        const slug = org?.slug || getSlugFromHost(window.location.host);
+        if (slug) {
+          const res = await fetch(
+            `/api/organization/resolve-id?slug=${encodeURIComponent(slug)}`,
+          );
+          if (res.ok) {
+            const data = await res.json();
+            organizationId = data.organizationId;
+          }
+        }
+      }
+      if (!organizationId) {
+        alert("sam");
+        // alert("No active organization context. Please try again.");
+        setLoading(false);
+        return;
+      }
       await authClient.signIn.email(
         {
           email,
           password,
           callbackURL: "/",
-        },
+          organizationId,
+        } as any, // Cast to any to bypass type error, since backend expects organizationId
         {
+          fetchOptions: {
+            headers: {
+              "x-organization-id": organizationId,
+            },
+          },
           onSuccess: () => {
             router.push("/");
           },

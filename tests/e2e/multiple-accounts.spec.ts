@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import db from "@/lib/db";
 import { members, organizations, users } from "@/lib/schema";
 import { buildTestUser, createOrganization } from "../unit/testUtils";
@@ -29,6 +29,7 @@ async function ensureOrganization(slug: string) {
 
 function buildTenantUrl(subdomain: string) {
   const base = new URL(process.env.BASE_URL || "http://localhost:3000");
+  // Use lvh.me for local subdomain logic compatibility
   const domain = process.env.E2E_TENANT_DOMAIN || "lvh.me";
   const port = base.port ? `:${base.port}` : "";
   return `${base.protocol}//${subdomain}.${domain}${port}`;

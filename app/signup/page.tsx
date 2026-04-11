@@ -51,14 +51,42 @@ export default function SignupPage() {
       return;
     }
     try {
+      let organizationId = org?.organization?.data?.id;
+      let orgPrefix = org?.slug || getSlugFromHost(window.location.host);
+      if (!organizationId) {
+        // Fallback: try to resolve from slug (subdomain)
+        const slug = orgPrefix;
+        if (slug) {
+          // Call an API endpoint to resolve org id from slug
+          const res = await fetch(
+            `/api/organization/resolve-id?slug=${encodeURIComponent(slug)}`,
+          );
+          if (res.ok) {
+            const data = await res.json();
+            organizationId = data.organizationId;
+          }
+        }
+      }
+      if (!organizationId) {
+        alert("No active organization context. Please try again.");
+        setLoading(false);
+        return;
+      }
+      // Use the actual email for signup (no plus addressing)
       await authClient.signUp.email(
         {
           email,
           password,
           name: `${firstName} ${lastName}`,
           callbackURL: "/",
+          organizationId,
         },
         {
+          fetchOptions: {
+            headers: {
+              "x-organization-id": organizationId,
+            },
+          },
           onSuccess: () => {
             router.push("/");
           },
@@ -94,26 +122,26 @@ export default function SignupPage() {
         background: `linear-gradient(75deg, ${primary_color} 0%, ${secondary_color} 100%)`,
       }}
     >
-      <div className="flex h-full w-[53%] flex-shrink-0 items-center justify-between px-[30px]">
+      <div className="flex h-full w-[53%] shrink-0 items-center justify-between px-7.5">
         <div
-          className="flex h-[94%] w-full flex-col justify-end rounded-[20px] pt-[90%] pb-[20px] pl-[20px] pr-[60%]"
+          className="flex h-[94%] w-full flex-col justify-end rounded-[20px] pt-[90%] pb-5 pl-5 pr-[60%]"
           style={{
             background: `linear-gradient(180deg, ${primary_color} 0%, #FFF 100%)`,
           }}
         >
-          <div className="h-[130px] w-[339px]">
+          <div className="h-32.5 w-84.75">
             {logo && (
               <img
                 src={`/images/${logo}`}
                 alt="Organization Logo"
-                className="h-[107px] w-[107px]"
+                className="h-26.75 w-26.75"
               />
             )}
           </div>
         </div>
       </div>
       <div className="flex h-full flex-1 flex-col items-center justify-between pt-[8%]">
-        <div className="flex h-full w-[78%] flex-col items-center gap-[23px] rounded-[30px] border-[2px] border-[#FFF] p-[35px] pt-[12%] shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
+        <div className="flex h-full w-[78%] flex-col items-center gap-5.75 rounded-[30px] border-2 border-[#FFF] p-8.75 pt-[12%] shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
           <p className="self-stretch text-[48px] font-bold text-black">
             Sign Up
           </p>
@@ -125,7 +153,7 @@ export default function SignupPage() {
             placeholder="John"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="self-stretch rounded-[4px] px-[12px] text-[18px] font-semibold leading-[24px] text-[#22070B]"
+            className="self-stretch rounded-sm px-3 text-[18px] font-semibold leading-6 text-[#22070B]"
           />
           <BogTextInput
             name="last_name"
@@ -134,7 +162,7 @@ export default function SignupPage() {
             placeholder="Smith"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            className="self-stretch rounded-[4px] px-[12px] text-[18px] font-semibold leading-[24px] text-[#22070B]"
+            className="self-stretch rounded-sm px-3 text-[18px] font-semibold leading-6 text-[#22070B]"
           />
           <BogTextInput
             name="email"
@@ -143,7 +171,7 @@ export default function SignupPage() {
             placeholder="example@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="self-stretch rounded-[4px] px-[12px] text-[18px] font-semibold leading-[24px] text-[#22070B]"
+            className="self-stretch rounded-sm px-3 text-[18px] font-semibold leading-6 text-[#22070B]"
           />
           <BogTextInput
             name="password"
