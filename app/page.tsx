@@ -1,4 +1,3 @@
-import NotificationsWidget from "@/components/notifications/NotificationsWidget";
 import { redirect } from "next/navigation";
 import { redirectIfNotMember } from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
