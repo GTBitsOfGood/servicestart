@@ -35,16 +35,12 @@ export default async function Page() {
     : await OrganizationConfigService.getDashboardLayout(organizationId);
 
   return (
-    <div className="flex h-full min-h-screen">
-      <div className="flex-1 px-24 pb-[72px] pt-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-heading-1 font-bold text-grey-text-strong">
-            {isAdmin ? "Admin Dashboard" : "Dashboard"}
-          </h1>
-          <NotificationsWidget />
-        </div>
-        <DashboardGrid layout={layout} />
-      </div>
+    <div className="min-w-0 px-24 pb-[72px] pt-8">
+      <h1 className="mb-8 font-normal text-heading-1 text-grey-text-strong">
+        {isAdmin ? "Admin Dashboard" : "Dashboard"}
+      </h1>
+
+      <DashboardGrid layout={layout} />
     </div>
   );
 }
