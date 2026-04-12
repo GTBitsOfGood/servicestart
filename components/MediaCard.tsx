@@ -22,7 +22,10 @@ export default function MediaCard({ item }: MediaCardProps) {
           />
         ) : null}
       </div>
-      <p className="mt-2 text-paragraph-2 font-semibold text-grey-text-strong">
+      <p
+        data-testid="media-card-title"
+        className="mt-2 text-paragraph-2 font-semibold text-grey-text-strong"
+      >
         {item.title}
       </p>
     </article>

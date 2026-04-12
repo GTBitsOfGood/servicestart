@@ -1,11 +1,8 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import MediaCard from "@/components/MediaCard";
 import MediaUploadCard from "@/components/MediaUploadCard";
-import { auth } from "@/lib/auth";
-import { MembersService } from "@/lib/services/MemberService";
 import { MediaService } from "@/lib/services/MediaService";
+import { redirectIfNotAdmin } from "@/lib/authUtils";
 
 const typeOptions = ["Videos", "Images", "Documents", "All"] as const;
 const dateOptions = ["Today", "Last Week", "Last Month", "All Time"] as const;
@@ -54,35 +51,12 @@ function FilterSelect({
 }
 
 export default async function MediaPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
+  const { organizationId } = await redirectIfNotAdmin();
+
+  const mediaItems = await MediaService.listByOrganization(organizationId, {
+    limit: 24,
+    offset: 0,
   });
-
-  if (!session?.user) {
-    redirect("/login");
-  }
-
-  const activeOrganizationId = session.session.activeOrganizationId;
-  if (!activeOrganizationId) {
-    redirect("/");
-  }
-
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    activeOrganizationId,
-  );
-
-  if (!MembersService.isAdminOrOwner(membership?.role)) {
-    redirect("/");
-  }
-
-  const mediaItems = await MediaService.listByOrganization(
-    activeOrganizationId,
-    {
-      limit: 24,
-      offset: 0,
-    },
-  );
 
   const hasMedia = mediaItems.length > 0;
 

@@ -1,14 +1,9 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import {
-  getActiveOrganizationIdFromHeaders,
-  requireSessionOrRedirect,
-} from "@/lib/authUtils";
+import { redirectIfNotMember } from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { JoinRequestStatus } from "@/lib/schema";
-import { DEFAULT_MEMBER_LAYOUT } from "@/lib/dashboard/constants";
 import DashboardGrid from "@/components/dashboard/DashboardGrid";
 
 export const metadata = {
@@ -16,45 +11,30 @@ export const metadata = {
 };
 
 export default async function Page() {
-  const headerList = await headers();
-  const session = await requireSessionOrRedirect(headerList);
+  const session = await redirectIfNotMember();
+  const { organizationId } = session;
 
-  const resolvedOrganizationId =
-    await getActiveOrganizationIdFromHeaders(headerList);
-  if (resolvedOrganizationId) {
-    const membership = await MembersService.findByUserAndOrganization(
-      session.user.id,
-      resolvedOrganizationId,
-    );
-    if (!membership) {
-      const joinRequest = await JoinRequestsService.findByUserAndOrganization(
-        session.user.id,
-        resolvedOrganizationId,
-      );
-      if (joinRequest?.status === JoinRequestStatus.Pending) {
-        redirect("/joinrequeststatus");
-      }
-    }
-  }
-
-  const organizationId = session?.session.activeOrganizationId;
-  let isAdmin = false;
-  let layout = DEFAULT_MEMBER_LAYOUT;
-
-  if (session?.user && organizationId) {
-    const membership = await MembersService.findByUserAndOrganization(
+  const membership = await MembersService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+  if (!membership) {
+    const joinRequest = await JoinRequestsService.findByUserAndOrganization(
       session.user.id,
       organizationId,
     );
-    isAdmin = MembersService.isAdminOrOwner(membership?.role) ?? false;
-
-    layout = isAdmin
-      ? await OrganizationConfigService.getAdminDashboardLayout(organizationId)
-      : await OrganizationConfigService.getDashboardLayout(organizationId);
+    if (joinRequest?.status === JoinRequestStatus.Pending) {
+      redirect("/joinrequeststatus");
+    }
   }
 
+  const isAdmin = MembersService.isAdminOrOwner(membership?.role) ?? false;
+  const layout = isAdmin
+    ? await OrganizationConfigService.getAdminDashboardLayout(organizationId)
+    : await OrganizationConfigService.getDashboardLayout(organizationId);
+
   return (
-    <div className="px-24 pb-[72px] pt-8">
+    <div className="min-w-0 px-24 pb-[72px] pt-8">
       <h1 className="mb-8 font-normal text-heading-1 text-grey-text-strong">
         {isAdmin ? "Admin Dashboard" : "Dashboard"}
       </h1>

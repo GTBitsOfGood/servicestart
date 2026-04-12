@@ -18,6 +18,19 @@ export const ALLOWED_NAVBAR_VARIANTS = [
 ] as const;
 
 type AllowedNavbarVariant = (typeof ALLOWED_NAVBAR_VARIANTS)[number];
+export const ALLOWED_MOBILE_NAVBAR_VARIANTS = [
+  "mobile-left-sidebar",
+  "mobile-right-sidebar",
+  "mobile-left-sidebar-icons",
+  "mobile-right-sidebar-no-icons",
+  "mobile-left-sidebar-pinned",
+  "mobile-right-sidebar-pinned",
+  "mobile-left-sidebar-pinned-icons",
+  "mobile-right-sidebar-pinned-no-icons",
+] as const;
+
+export type MobileNavbarVariant =
+  (typeof ALLOWED_MOBILE_NAVBAR_VARIANTS)[number];
 
 async function getDesc(organizationId: string) {
   const [row] = await db
@@ -369,6 +382,247 @@ async function setNavbarVariant(organizationId: string, variant: string) {
   }
 }
 
+async function getMobileNavbarVariant(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.MobileNavbarVariant),
+      ),
+    )
+    .limit(1);
+
+  const value = row?.value;
+  if (
+    value &&
+    ALLOWED_MOBILE_NAVBAR_VARIANTS.includes(value as MobileNavbarVariant)
+  ) {
+    return value;
+  }
+  return "mobile-left-sidebar";
+}
+
+async function setMobileNavbarVariant(organizationId: string, variant: string) {
+  if (!variant || typeof variant !== "string") {
+    throw new Error("Mobile navbar variant must be a non-empty string");
+  }
+  if (
+    !ALLOWED_MOBILE_NAVBAR_VARIANTS.includes(variant as MobileNavbarVariant)
+  ) {
+    throw new Error(`Invalid mobile navbar variant: ${variant}`);
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.MobileNavbarVariant),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: variant })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.MobileNavbarVariant),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.MobileNavbarVariant,
+      value: variant,
+    });
+  }
+}
+
+export const MOBILE_PROFILE_ORIENTATIONS = ["vertical", "horizontal"] as const;
+export type MobileProfileOrientation =
+  (typeof MOBILE_PROFILE_ORIENTATIONS)[number];
+
+export function resolveMobileShowIcons(
+  stored: string,
+  variantDerived: boolean,
+): boolean {
+  if (stored === "true") return true;
+  if (stored === "false") return false;
+  return variantDerived;
+}
+
+export function resolveMobileProfileOrientation(
+  stored: string,
+): MobileProfileOrientation {
+  if (stored === "vertical" || stored === "horizontal") return stored;
+  return "horizontal";
+}
+
+async function getMobileNavbarShowIcons(organizationId: string) {
+  const [row] = await db
+    .select({ value: organizationConfig.value })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.MobileNavbarShowIcons),
+      ),
+    )
+    .limit(1);
+
+  const v = row?.value;
+  if (v === "true" || v === "false") return v;
+  return "";
+}
+
+async function setMobileNavbarShowIcons(organizationId: string, value: string) {
+  if (value === "inherit") {
+    await db
+      .delete(organizationConfig)
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(
+            organizationConfig.key,
+            OrganizationConfigKey.MobileNavbarShowIcons,
+          ),
+        ),
+      );
+    return;
+  }
+  if (value !== "true" && value !== "false") {
+    throw new Error("Value must be 'true', 'false', or 'inherit'");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.MobileNavbarShowIcons),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(
+            organizationConfig.key,
+            OrganizationConfigKey.MobileNavbarShowIcons,
+          ),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.MobileNavbarShowIcons,
+      value,
+    });
+  }
+}
+
+async function getMobileNavbarProfileOrientation(organizationId: string) {
+  const [row] = await db
+    .select({ value: organizationConfig.value })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(
+          organizationConfig.key,
+          OrganizationConfigKey.MobileNavbarProfileOrientation,
+        ),
+      ),
+    )
+    .limit(1);
+
+  const v = row?.value;
+  if (v === "vertical" || v === "horizontal") return v;
+  return "";
+}
+
+async function setMobileNavbarProfileOrientation(
+  organizationId: string,
+  value: string,
+) {
+  if (value === "inherit") {
+    await db
+      .delete(organizationConfig)
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(
+            organizationConfig.key,
+            OrganizationConfigKey.MobileNavbarProfileOrientation,
+          ),
+        ),
+      );
+    return;
+  }
+  if (
+    !MOBILE_PROFILE_ORIENTATIONS.includes(value as MobileProfileOrientation)
+  ) {
+    throw new Error(
+      "Profile orientation must be 'vertical', 'horizontal', or 'inherit'",
+    );
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(
+          organizationConfig.key,
+          OrganizationConfigKey.MobileNavbarProfileOrientation,
+        ),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(
+            organizationConfig.key,
+            OrganizationConfigKey.MobileNavbarProfileOrientation,
+          ),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.MobileNavbarProfileOrientation,
+      value,
+    });
+  }
+}
+
 async function getNavbarColor(organizationId: string) {
   const [row] = await db
     .select({
@@ -638,6 +892,18 @@ const keyMap = {
   [OrganizationConfigKey.NavbarVariant]: {
     get: getNavbarVariant,
     set: setNavbarVariant,
+  },
+  [OrganizationConfigKey.MobileNavbarVariant]: {
+    get: getMobileNavbarVariant,
+    set: setMobileNavbarVariant,
+  },
+  [OrganizationConfigKey.MobileNavbarShowIcons]: {
+    get: getMobileNavbarShowIcons,
+    set: setMobileNavbarShowIcons,
+  },
+  [OrganizationConfigKey.MobileNavbarProfileOrientation]: {
+    get: getMobileNavbarProfileOrientation,
+    set: setMobileNavbarProfileOrientation,
   },
   [OrganizationConfigKey.NavbarColor]: {
     get: getNavbarColor,

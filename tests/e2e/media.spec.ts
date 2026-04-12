@@ -91,7 +91,9 @@ test.describe("Media Page", () => {
 
     await page.goto("/media");
 
-    await expect(page.getByText("E2E Media Card Title")).toBeVisible();
+    await expect(
+      page.getByTestId("media-card-title").getByText("E2E Media Card Title"),
+    ).toBeVisible();
     await expect(
       page.getByRole("button", { name: /choose a file to upload/i }),
     ).toBeVisible();
