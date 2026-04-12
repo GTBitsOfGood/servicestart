@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "710846e1-08f0-4068-8b19-7a9ff85bc207",
+  "id": "9345293b-e63b-4578-a137-fb4b095bd4c4",
   "prevIds": [
     "b2d69b4b-9767-4ab3-86f8-4ce1f2f4abca"
   ],
@@ -58,10 +58,7 @@
         "members_page_enabled",
         "logo_url",
         "admin_dashboard_layout",
-        "dashboard_layout",
-        "mobile_navbar_variant",
-        "mobile_navbar_show_icons",
-        "mobile_navbar_profile_orientation"
+        "dashboard_layout"
       ],
       "name": "organization_config_key",
       "entityType": "enums",
@@ -106,6 +103,12 @@
     {
       "isRlsEnabled": false,
       "name": "invitations",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "join_request_history",
       "entityType": "tables",
       "schema": "public"
     },
@@ -880,6 +883,84 @@
       "name": "id",
       "entityType": "columns",
       "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "join_request_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "action",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "resolved_by_user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "resolved_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "denial_reason",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
       "table": "join_requests"
     },
     {
@@ -930,6 +1011,19 @@
       "generated": null,
       "identity": null,
       "name": "status",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "join_requests"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "denial_reason",
       "entityType": "columns",
       "schema": "public",
       "table": "join_requests"
@@ -1281,6 +1375,19 @@
       "generated": null,
       "identity": null,
       "name": "text",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "notifications"
+    },
+    {
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "metadata",
       "entityType": "columns",
       "schema": "public",
       "table": "notifications"
@@ -2522,6 +2629,40 @@
     {
       "nameExplicit": false,
       "columns": [
+        "join_request_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "join_requests",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "join_request_history_join_request_id_join_requests_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "resolved_by_user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "name": "join_request_history_resolved_by_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "join_request_history"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
         "user_id"
       ],
       "schemaTo": "public",
@@ -2891,6 +3032,16 @@
       "name": "invitations_pkey",
       "schema": "public",
       "table": "invitations",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "join_request_history_pkey",
+      "schema": "public",
+      "table": "join_request_history",
       "entityType": "pks"
     },
     {

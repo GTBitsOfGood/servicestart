@@ -12,6 +12,8 @@ import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
 import { UserService } from "@/lib/services/UserService";
 import { getSlugFromHost } from "./clientAuthUtils";
+import { NotificationService } from "@/lib/services/NotificationService";
+import { NotificationType } from "@/lib/schema";
 
 type AppSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 
@@ -69,7 +71,19 @@ export async function createJoinRequestIfNeeded(
   );
   if (existingRequest) return;
 
-  await JoinRequestsService.create(userId, organizationId);
+  const joinRequestId = await JoinRequestsService.create(
+    userId,
+    organizationId,
+  );
+
+  const user = await UserService.findById(userId);
+  const userName = user?.name || user?.email || "A user";
+  await NotificationService.notifyAdmins(
+    organizationId,
+    `Join Request\n${userName} has requested to join the organization.`,
+    NotificationType.ActionRequired,
+    { joinRequestId },
+  );
 }
 
 /**

@@ -12,6 +12,7 @@ const patchParamsSchema = z.object({
   status: z.enum(JOIN_REQUEST_STATUS_VALUES, {
     error: "Invalid status. Must be pending, approved, or denied",
   }),
+  denialReason: z.string().optional(),
 });
 
 const app = new Hono()
@@ -84,7 +85,11 @@ const app = new Hono()
       );
     }
 
-    const { id: joinRequestId, status: newStatus } = c.req.valid("query");
+    const {
+      id: joinRequestId,
+      status: newStatus,
+      denialReason,
+    } = c.req.valid("query");
 
     const joinRequest = await JoinRequestsService.findByIdAndOrganization(
       joinRequestId,
@@ -95,7 +100,10 @@ const app = new Hono()
       return c.json({ error: "Join request not found" }, { status: 404 });
     }
 
-    if (joinRequest.status === JoinRequestStatus.Approved) {
+    if (
+      joinRequest.status === JoinRequestStatus.Approved &&
+      newStatus !== JoinRequestStatus.Pending
+    ) {
       return c.json({
         message: "Join request is already approved",
         joinRequest,
@@ -105,19 +113,13 @@ const app = new Hono()
     const updatedRequest = await JoinRequestsService.updateStatus(
       joinRequestId,
       newStatus as JoinRequestStatus,
+      session.user.id,
+      c.req.raw.headers,
+      denialReason,
+      joinRequest.status as JoinRequestStatus,
     );
 
-    if (newStatus === JoinRequestStatus.Approved) {
-      await auth.api.addMember({
-        body: {
-          organizationId: activeOrganizationId,
-          userId: joinRequest.userId,
-          role: "member",
-        },
-      });
-    }
-
-    return c.json(updatedRequest);
+    return c.json({ success: true, joinRequest: updatedRequest });
   })
   .get("/:organizationId", async (c) => {
     const session = await auth.api.getSession({
