@@ -55,3 +55,4 @@ jobs:
           JUNO_PROJECT_ID: ${{ secrets.JUNO_PROJECT_ID }}
           JUNO_FILE_BUCKET_PREFIX: ${{ vars.JUNO_FILE_BUCKET_PREFIX }}
           SETUP_ORGANIZATION_ID: ${{ vars.SETUP_ORGANIZATION_ID }}
+          SENDGRID_KEY: ${{ secrets.SENDGRID_KEY }}
