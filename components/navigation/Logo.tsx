@@ -1,16 +1,24 @@
 "use client";
 
-import React from "react";
+import { useEffect, useState } from "react";
 import { OrganizationConfigKey } from "@/lib/schema";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
+import { cn } from "@/lib/utils";
 
 type SunsetLogoSize = "sm" | "md";
 
 interface SunsetLogoProps {
   size?: SunsetLogoSize;
+  className?: string;
 }
 
-export function SunsetLogo({ size = "md" }: SunsetLogoProps) {
+export function SunsetLogo({ size = "md", className }: SunsetLogoProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
   const config = useOrganizationConfig([OrganizationConfigKey.LogoUrl]);
   const customLogoSrc = config[OrganizationConfigKey.LogoUrl];
 
@@ -19,10 +27,11 @@ export function SunsetLogo({ size = "md" }: SunsetLogoProps) {
   const bogHeightClass = "h-[10px]";
   const sunsetHeightClass = "h-[15px]";
 
-  // Org has a custom logo URL → single image
-  if (customLogoSrc && customLogoSrc.trim() !== "") {
+  const useCustomLogo = mounted && customLogoSrc && customLogoSrc.trim() !== "";
+
+  if (useCustomLogo) {
     return (
-      <div className="flex items-center">
+      <div className={cn("flex items-center", className)}>
         <img
           src={customLogoSrc}
           alt="Organization logo"
@@ -32,9 +41,8 @@ export function SunsetLogo({ size = "md" }: SunsetLogoProps) {
     );
   }
 
-  // Default: full logo (circle + bits of good + sunset)
   return (
-    <div className="flex items-center">
+    <div className={cn("flex items-center", className)}>
       <img src="/logo.svg" alt="Logo" className={`${circleClass} w-auto`} />
       <div className="flex flex-col items-start">
         <img
