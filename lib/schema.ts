@@ -98,27 +98,30 @@ export const notificationTypeEnum = pgEnum(
   NOTIFICATION_TYPE_VALUES,
 );
 
-export const users = pgTable("users", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  organizationId: text("organization_id").references(() => organizations.id, {
-    onDelete: "set null",
-  }),
-  emailVerified: boolean("email_verified").default(false).notNull(),
-  image: text("image"),
-  phoneNumber: text("phone_number"),
-  displayName: text("display_name"),
-  pronouns: text("pronouns"),
-  location: text("location"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    organizationId: text("organization_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    emailVerified: boolean("email_verified").default(false).notNull(),
+    image: text("image"),
+    phoneNumber: text("phone_number"),
+    displayName: text("display_name"),
+    pronouns: text("pronouns"),
+    location: text("location"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [sql`UNIQUE (email, organization_id)`],
+);
 
-// Many-to-many join table for users <-> organizations
 export const userOrganizations = pgTable(
   "user_organizations",
   {

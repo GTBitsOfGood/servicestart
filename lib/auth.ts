@@ -144,53 +144,6 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    async findUserByEmail({
-      email,
-      context,
-    }: {
-      email: string;
-      context: { body?: { organizationId?: string } };
-    }) {
-      const organizationId = context?.body?.organizationId;
-      if (!organizationId) throw new Error("Organization context required");
-      return UserService.findByEmailAndOrganization(email, organizationId);
-    },
-    async createUser({
-      email,
-      organizationId,
-      ...rest
-    }: {
-      email: string;
-      organizationId: string;
-      name?: string;
-      image?: string;
-      phoneNumber?: string;
-      displayName?: string;
-      pronouns?: string;
-      location?: string;
-    }) {
-      const existing = await UserService.findByEmailAndOrganization(
-        email,
-        organizationId,
-      );
-      if (existing) {
-        throw new Error("User already exists for this organization");
-      }
-      const id = crypto.randomUUID();
-      const name = rest.name || "";
-      await db.insert(users).values({
-        id,
-        name,
-        email,
-        organizationId,
-        image: rest.image,
-        phoneNumber: rest.phoneNumber,
-        displayName: rest.displayName,
-        pronouns: rest.pronouns,
-        location: rest.location,
-      });
-      return await UserService.findById(id);
-    },
   },
   databaseHooks: {
     session: {
@@ -203,6 +156,70 @@ export const auth = betterAuth({
     },
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
+        console.log("we are here");
+        // --- Multi-tenant BetterAuth DB adapter override ---
+        // Get organizationId from headers or context
+        let organizationId =
+          ctx.request?.headers.get("x-organization-id") ||
+          ctx.request?.headers.get("organizationid") ||
+          ctx.request?.headers.get("orgid");
+        // Fallback: try context body
+        if (!organizationId && ctx.request?.body) {
+          try {
+            const body =
+              typeof ctx.request.body === "string"
+                ? JSON.parse(ctx.request.body)
+                : ctx.request.body;
+            organizationId = body?.organizationId;
+          } catch {}
+        }
+        // Store in context for later use
+        ctx.context.organizationId = organizationId;
+
+        // Override createUser to always use organizationId
+        ctx.context.internalAdapter.createUser = async (user) => {
+          console.log("runs");
+          if (!organizationId)
+            throw new Error(
+              "organizationId required for multi-tenant user creation",
+            );
+          const { email, name, ...rest } = user;
+          const existing = await UserService.findByEmailAndOrganization(
+            email,
+            organizationId,
+          );
+          if (existing)
+            throw new Error("User already exists for this organization");
+          const id = crypto.randomUUID();
+          await db.insert(users).values({
+            id,
+            name: name || "",
+            email,
+            organizationId,
+            ...rest,
+          });
+          return await UserService.findById(id);
+        };
+
+        // Override findUserByEmail to always use organizationId
+        ctx.context.internalAdapter.findUserByEmail = async (
+          email,
+          options,
+        ) => {
+          console.log("does run");
+          if (!organizationId)
+            throw new Error(
+              "organizationId required for multi-tenant user lookup",
+            );
+          const user = await UserService.findByEmailAndOrganization(
+            email,
+            organizationId,
+          );
+          if (!user) return null;
+          return { user, accounts: [] };
+        };
+        // --- End override ---
+
         if (ctx.path.startsWith("/login")) {
           const session = ctx.context.session;
           if (session?.user) {
