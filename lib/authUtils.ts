@@ -12,6 +12,7 @@ import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
 import { UserService } from "@/lib/services/UserService";
 import { getSlugFromHost } from "./clientAuthUtils";
+import { User } from "better-auth/client";
 
 type AppSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 

@@ -132,39 +132,42 @@ export async function main() {
 
   const userIdsByEmail = new Map<string, string>();
 
-  for (const userData of usersData) {
-    const res = await auth.api
-      .signUpEmail({
-        body: {
-          email: userData.email,
-          password: DEFAULT_TEST_PASSWORD,
-          name: userData.name,
-          phoneNumber: userData.phoneNumber,
-        },
-      })
-      .catch(() =>
-        // User already exists, sign in to get the user info
-        auth.api.signInEmail({
+  for (const org of ORGS) {
+    for (const userData of usersData) {
+      const res = await auth.api
+        .signUpEmail({
           body: {
             email: userData.email,
             password: DEFAULT_TEST_PASSWORD,
-          },
-        }),
-      );
-
-    userIdsByEmail.set(userData.email, res.user.id);
-
-    if (userData.role) {
-      for (const org of ORGS) {
-        await db
-          .insert(schema.members)
-          .values({
-            id: `member_${res.user.id}_${org.id}`,
-            userId: res.user.id,
+            name: userData.name,
+            phoneNumber: userData.phoneNumber,
             organizationId: org.id,
-            role: userData.role,
-          })
-          .onConflictDoNothing();
+          },
+        })
+        .catch(() =>
+          // User already exists, sign in to get the user info
+          auth.api.signInEmail({
+            body: {
+              email: userData.email,
+              password: DEFAULT_TEST_PASSWORD,
+            },
+          }),
+        );
+
+      userIdsByEmail.set(userData.email, res.user.id);
+
+      if (userData.role) {
+        for (const org of ORGS) {
+          await db
+            .insert(schema.members)
+            .values({
+              id: `member_${res.user.id}_${org.id}`,
+              userId: res.user.id,
+              organizationId: org.id,
+              role: userData.role,
+            })
+            .onConflictDoNothing();
+        }
       }
     }
   }

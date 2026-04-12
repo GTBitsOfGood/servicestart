@@ -30,6 +30,18 @@ export const baseTestUser = {
   name: "Test User",
 };
 
+async function getOrgId() {
+  const org = await db
+    .select({ id: organizations.id })
+    .from(organizations)
+    .limit(1);
+  if (!org[0]) {
+    const org = await createOrganization(`org-${Date.now()}`);
+    return org.id;
+  }
+  return org[0].id;
+}
+
 /**
  * Builds a test user object with a unique email and name.
  * Does not create the user in the database.
@@ -73,7 +85,10 @@ export async function signUpAndGetHeaders(
   user: ReturnType<typeof buildTestUser>,
 ) {
   const res = await auth.api.signUpEmail({
-    body: user,
+    body: {
+      ...user,
+      organizationId: await getOrgId(),
+    },
     returnHeaders: true,
   });
 
@@ -90,7 +105,10 @@ export async function signUpAndGetSession(
   user: ReturnType<typeof buildTestUser>,
 ) {
   const res = await auth.api.signUpEmail({
-    body: user,
+    body: {
+      ...user,
+      organizationId: await getOrgId(),
+    },
     returnHeaders: true,
   });
 
@@ -301,9 +319,11 @@ export async function createTestUser() {
     email: `testuser${userNumber}@example.com`,
     name: `Test User ${userNumber}`,
   };
-
   const res = await auth.api.signUpEmail({
-    body: user,
+    body: {
+      ...user,
+      organizationId: await getOrgId(),
+    },
     returnHeaders: true,
   });
 

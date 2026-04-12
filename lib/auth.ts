@@ -1,4 +1,4 @@
-import { betterAuth } from "better-auth";
+import { betterAuth, User } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware, organization } from "better-auth/plugins";
 import db from "@/lib/db";
@@ -154,104 +154,101 @@ export const auth = betterAuth({
         },
       },
     },
-    hooks: {
-      before: createAuthMiddleware(async (ctx) => {
-        console.log("we are here");
-        // --- Multi-tenant BetterAuth DB adapter override ---
-        // Get organizationId from headers or context
-        let organizationId =
-          ctx.request?.headers.get("x-organization-id") ||
-          ctx.request?.headers.get("organizationid") ||
-          ctx.request?.headers.get("orgid");
-        // Fallback: try context body
-        if (!organizationId && ctx.request?.body) {
-          try {
-            const body =
-              typeof ctx.request.body === "string"
-                ? JSON.parse(ctx.request.body)
-                : ctx.request.body;
-            organizationId = body?.organizationId;
-          } catch {}
-        }
-        // Store in context for later use
-        ctx.context.organizationId = organizationId;
+  },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      console.log("we are here");
+      // --- Multi-tenant BetterAuth DB adapter override ---
+      // Get organizationId from headers or context
+      let organizationId =
+        ctx.request?.headers.get("x-organization-id") ||
+        ctx.request?.headers.get("organizationid") ||
+        ctx.request?.headers.get("orgid");
+      // Fallback: try context body
+      if (!organizationId && ctx.request?.body) {
+        try {
+          const body =
+            typeof ctx.request.body === "string"
+              ? JSON.parse(ctx.request.body)
+              : ctx.request.body;
+          organizationId = body?.organizationId;
+        } catch {}
+      }
+      // Store in context for later use
+      ctx.context.organizationId = organizationId;
 
-        // Override createUser to always use organizationId
-        ctx.context.internalAdapter.createUser = async (user) => {
-          console.log("runs");
-          if (!organizationId)
-            throw new Error(
-              "organizationId required for multi-tenant user creation",
-            );
-          const { email, name, ...rest } = user;
-          const existing = await UserService.findByEmailAndOrganization(
-            email,
-            organizationId,
+      // Override createUser to always use organizationId
+      ctx.context.internalAdapter.createUser = (async (user: User) => {
+        console.log("runs");
+        if (!organizationId)
+          throw new Error(
+            "organizationId required for multi-tenant user creation",
           );
-          if (existing)
-            throw new Error("User already exists for this organization");
-          const id = crypto.randomUUID();
-          await db.insert(users).values({
-            id,
-            name: name || "",
-            email,
-            organizationId,
-            ...rest,
-          });
-          return await UserService.findById(id);
-        };
-
-        // Override findUserByEmail to always use organizationId
-        ctx.context.internalAdapter.findUserByEmail = async (
+        const { email, name, ...rest } = user;
+        const existing = await UserService.findByEmailAndOrganization(
           email,
-          options,
-        ) => {
-          console.log("does run");
-          if (!organizationId)
-            throw new Error(
-              "organizationId required for multi-tenant user lookup",
-            );
-          const user = await UserService.findByEmailAndOrganization(
-            email,
-            organizationId,
-          );
-          if (!user) return null;
-          return { user, accounts: [] };
-        };
-        // --- End override ---
+          organizationId,
+        );
+        if (existing)
+          throw new Error("User already exists for this organization");
+        const id = crypto.randomUUID();
+        await db.insert(users).values({
+          name: name || "",
+          email,
+          organizationId,
+          ...rest,
+          id,
+        });
+        return await UserService.findById(id);
+      }) as any;
 
-        if (ctx.path.startsWith("/login")) {
-          const session = ctx.context.session;
-          if (session?.user) {
-            const headers = ctx?.headers;
-            await afterUserCreated(session.user.id, headers);
-          }
+      // Override findUserByEmail to always use organizationId
+      ctx.context.internalAdapter.findUserByEmail = async (email, options) => {
+        console.log("does run");
+        if (!organizationId)
+          throw new Error(
+            "organizationId required for multi-tenant user lookup",
+          );
+        const user = await UserService.findByEmailAndOrganization(
+          email,
+          organizationId,
+        );
+        if (!user) return null;
+        return { user, accounts: [] };
+      };
+      // --- End override ---
+
+      if (ctx.path.startsWith("/login")) {
+        const session = ctx.context.session;
+        if (session?.user) {
+          const headers = ctx?.headers;
+          await afterUserCreated(session.user.id, headers);
         }
-      }),
-      after: createAuthMiddleware(async (ctx) => {
-        if (ctx.path.startsWith("/login")) {
-          const session = ctx.context.session;
-          if (session?.user) {
-            const theHeaders = ctx?.headers;
-            const host =
-              theHeaders?.get?.("host") ??
-              (theHeaders as Record<string, string> | undefined)?.host;
-            const slug = getSlugFromHost(host);
-            const [result] = await db
-              .select({ activeOrganizationId: sessions.activeOrganizationId })
-              .from(sessions)
-              .where(eq(sessions.id, session.session.id))
-              .limit(1);
-            await auth.api.setActiveOrganization({
-              body: {
-                organizationId: result?.activeOrganizationId,
-                organizationSlug: slug,
-              },
-              headers: await headers(),
-            });
-          }
+      }
+    }),
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path.startsWith("/login")) {
+        const session = ctx.context.session;
+        if (session?.user) {
+          const theHeaders = ctx?.headers;
+          const host =
+            theHeaders?.get?.("host") ??
+            (theHeaders as Record<string, string> | undefined)?.host;
+          const slug = getSlugFromHost(host);
+          const [result] = await db
+            .select({ activeOrganizationId: sessions.activeOrganizationId })
+            .from(sessions)
+            .where(eq(sessions.id, session.session.id))
+            .limit(1);
+          await auth.api.setActiveOrganization({
+            body: {
+              organizationId: result?.activeOrganizationId,
+              organizationSlug: slug,
+            },
+            headers: await headers(),
+          });
         }
-      }),
-    },
+      }
+    }),
   },
 });
