@@ -137,10 +137,10 @@ async function seedOrg(org: (typeof ORGS)[number]) {
           phoneNumber: userData.phoneNumber,
           organizationId: org.id,
         },
-        headers: { "x-organization-id": org.id },
+        headers: { "x-organization-slug": org.slug },
       })
       .catch((e) => {
-        console.error(`Error creating user ${userData.email}:`, e);
+        // console.error(`Error creating user ${userData.email}:`, e);
         // User already exists, sign in to get the user info
         console.log(
           `User ${userData.email} already exists, signing in to retrieve user ID...`,
@@ -150,7 +150,7 @@ async function seedOrg(org: (typeof ORGS)[number]) {
             email: userData.email,
             password: DEFAULT_TEST_PASSWORD,
           },
-          headers: { "x-organization-id": org.id },
+          headers: { "x-organization-slug": org.slug },
         });
       });
 
@@ -309,7 +309,7 @@ async function seedOrg(org: (typeof ORGS)[number]) {
   for (const email of usersToRsvp) {
     const res = await auth.api.signInEmail({
       body: { email, password: DEFAULT_TEST_PASSWORD },
-      headers: { "x-organization-id": org.id },
+      headers: { "x-organization-slug": org.slug },
     });
 
     await db
@@ -422,7 +422,7 @@ async function seedOrg(org: (typeof ORGS)[number]) {
   for (const email of memberEmails) {
     const res = await auth.api.signInEmail({
       body: { email, password: DEFAULT_TEST_PASSWORD },
-      headers: { "x-organization-id": org.id },
+      headers: { "x-organization-slug": org.slug },
     });
 
     const notificationValues = notificationTemplates.map((tmpl) => ({

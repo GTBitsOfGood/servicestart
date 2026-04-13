@@ -17,6 +17,7 @@ import { UserService } from "@/lib/services/UserService";
 import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
 import { EmailService } from "@/lib/services/EmailService";
 import { getBaseUrl } from "./clientUtils";
+import { OrganizationsService } from "./services/OrganizationService";
 
 export const auth = betterAuth({
   plugins: [
@@ -171,20 +172,16 @@ export const auth = betterAuth({
       console.log("we are here");
       // --- Multi-tenant BetterAuth DB adapter override ---
       // Get organizationId from headers or context
-      let organizationId =
-        ctx.headers?.get("x-organization-id") ||
-        ctx.headers?.get("organizationid") ||
-        ctx.headers?.get("orgid");
-      // Fallback: try context body
-      if (!organizationId && ctx.request?.body) {
-        try {
-          const body =
-            typeof ctx.request.body === "string"
-              ? JSON.parse(ctx.request.body)
-              : ctx.request.body;
-          organizationId = body?.organizationId;
-        } catch {}
+      const organizationSlug = ctx.headers?.get("x-organization-slug");
+      if (!organizationSlug) {
+        console.warn(
+          "No organization slug provided in request headers. Multi-tenancy may not work correctly.",
+        );
+        return;
       }
+      const organizationId = await OrganizationsService.findBySlug(
+        organizationSlug!,
+      ).then((org) => org?.id);
 
       console.log("Organization ID from request:", organizationId);
       // Store in context for later use
@@ -198,7 +195,10 @@ export const auth = betterAuth({
           );
         const { email, name, ...rest } = user;
         // Try to find user by email
-        let existingUser = await UserService.findByEmail(email);
+        let existingUser = await UserService.findByEmailAndOrganization(
+          email,
+          organizationId,
+        );
         let id: string;
         if (!existingUser) {
           // Create new user

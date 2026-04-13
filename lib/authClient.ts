@@ -5,6 +5,7 @@ import {
   inferAdditionalFields,
   inferOrgAdditionalFields,
 } from "better-auth/client/plugins";
+import { getSlugFromHostname } from "./utils";
 
 function getOrganizationId() {
   if (typeof window !== "undefined") {
@@ -61,8 +62,8 @@ const baseClient = createAuthClient({
   ],
   fetchOptions: {
     onRequest: async (ctx) => {
-      const organizationId = getOrganizationId();
-      ctx.headers.set("x-organization-id", organizationId ?? "");
+      const slug = getSlugFromHostname(window.location.hostname);
+      ctx.headers.set("x-organization-slug", slug);
       return ctx;
     },
   },
