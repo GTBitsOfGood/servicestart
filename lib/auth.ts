@@ -12,6 +12,7 @@ import {
   shiftRSVPs,
   shifts,
   users,
+  members,
 } from "./schema";
 import { UserService } from "@/lib/services/UserService";
 import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
@@ -213,16 +214,26 @@ export const auth = betterAuth({
         } else {
           id = existingUser.id;
         }
-        // Check if already a member of this org
-        // const alreadyMember = await UserService.findByEmailAndOrganization(
-        //   email,
-        //   organizationId,
-        // );
-        // if (alreadyMember) {
-        //   throw new Error("User already exists for this organization");
-        // }
-        // Add to user_organizations
-        // await UserService.addUserToOrganization(id, organizationId);
+        // Create membership in members table if not already present
+        const existingMembership = await db
+          .select()
+          .from(members)
+          .where(
+            and(
+              eq(members.userId, id),
+              eq(members.organizationId, organizationId),
+            ),
+          )
+          .limit(1)
+          .then((rows) => rows[0] ?? null);
+        if (!existingMembership) {
+          await db.insert(members).values({
+            id: crypto.randomUUID(),
+            userId: id,
+            organizationId,
+            role: "member",
+          });
+        }
         return await UserService.findById(id);
       }) as any;
 
