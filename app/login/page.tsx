@@ -38,10 +38,14 @@ export default function LoginPage() {
         {
           email,
           password,
-          organizationSlug,
           callbackURL: "/",
         },
         {
+          fetchOptions: {
+            headers: {
+              "x-organization-slug": organizationSlug,
+            },
+          },
           onSuccess: () => {
             router.push("/");
           },

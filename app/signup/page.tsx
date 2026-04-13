@@ -62,6 +62,11 @@ export default function SignupPage() {
           callbackURL: "/",
         },
         {
+          fetchOptions: {
+            headers: {
+              "x-organization-slug": organizationSlug,
+            },
+          },
           onSuccess: () => {
             router.push("/");
           },
