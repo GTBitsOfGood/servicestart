@@ -30,18 +30,6 @@ export const baseTestUser = {
   name: "Test User",
 };
 
-async function getOrgId() {
-  const org = await db
-    .select({ id: organizations.id })
-    .from(organizations)
-    .limit(1);
-  if (!org[0]) {
-    const org = await createOrganization(`org-${Date.now()}`);
-    return org.id;
-  }
-  return org[0].id;
-}
-
 async function getOrgSlug() {
   const org = await db
     .select({ slug: organizations.slug })
