@@ -17,7 +17,7 @@ export function createUserOverride(ctx: CreateUserCtx) {
       throw new Error("organizationId required for multi-tenant user creation");
     const { email, name, ...rest } = user;
     // Try to find user by email
-    let existingUser = await UserService.findByEmailAndOrganization(
+    const existingUser = await UserService.findByEmailAndOrganization(
       email,
       organizationId,
     );

@@ -56,7 +56,8 @@ async function signUpOnTenant(
 
 test.describe("Multitenant signup", () => {
   test("allows same email across org subdomains", async ({ browser }) => {
-    const orgA = await ensureOrganization("a");
+    await ensureOrganization("a");
+    await ensureOrganization("b");
 
     const credentials = buildTestUser();
     const sharedUser = {
@@ -66,7 +67,6 @@ test.describe("Multitenant signup", () => {
 
     const tenantA = buildTenantUrl("a");
     const tenantB = buildTenantUrl("b");
-    await ensureOrganization("b");
 
     const contextA = await browser.newContext();
     const pageA = await contextA.newPage();

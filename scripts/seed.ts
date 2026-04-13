@@ -139,7 +139,7 @@ async function seedOrg(org: (typeof ORGS)[number]) {
         },
         headers: { "x-organization-slug": org.slug },
       })
-      .catch((e) => {
+      .catch(() => {
         // console.error(`Error creating user ${userData.email}:`, e);
         // User already exists, sign in to get the user info
         console.log(

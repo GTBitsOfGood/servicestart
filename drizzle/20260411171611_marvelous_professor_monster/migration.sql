@@ -1,4 +1,4 @@
-CREATE TABLE "user_organizations" (
+CREATE TABLE IF NOT EXISTS "user_organizations" (
 	"user_id" text,
 	"organization_id" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
