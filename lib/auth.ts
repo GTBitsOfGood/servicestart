@@ -170,21 +170,16 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
-      console.log("we are here");
       // --- Multi-tenant BetterAuth DB adapter override ---
       // Get organizationId from headers or context
       const organizationSlug = ctx.headers?.get("x-organization-slug");
       if (!organizationSlug) {
-        console.warn(
-          "No organization slug provided in request headers. Multi-tenancy may not work correctly.",
-        );
         return;
       }
       const organizationId = await OrganizationsService.findBySlug(
         organizationSlug!,
       ).then((org) => org?.id);
 
-      console.log("Organization ID from request:", organizationId);
       // Store in context for later use
       ctx.context.organizationId = organizationId;
 

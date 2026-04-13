@@ -105,7 +105,7 @@ export async function afterUserCreated(
 
     await createJoinRequestIfNeeded(userId, organization.id);
   } catch (err) {
-    console.error("Failed to handle organization membership:", err);
+    console.error(err);
   }
 }
 /**
