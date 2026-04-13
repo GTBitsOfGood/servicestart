@@ -188,34 +188,44 @@ export const auth = betterAuth({
       // Store in context for later use
       ctx.context.organizationId = organizationId;
 
-      // Override createUser to always use organizationId
+      // Override createUser to always use organizationId and user_organizations
       ctx.context.internalAdapter.createUser = (async (user: User) => {
-        console.log("runs");
         if (!organizationId)
           throw new Error(
             "organizationId required for multi-tenant user creation",
           );
         const { email, name, ...rest } = user;
-        const existing = await UserService.findByEmailAndOrganization(
+        // Try to find user by email
+        let existingUser = await UserService.findByEmail(email);
+        let id: string;
+        if (!existingUser) {
+          // Create new user
+          id = crypto.randomUUID();
+          await db.insert(users).values({
+            name: name || "",
+            email,
+            ...rest,
+            id,
+          });
+          existingUser = await UserService.findById(id);
+        } else {
+          id = existingUser.id;
+        }
+        // Check if already a member of this org
+        const alreadyMember = await UserService.findByEmailAndOrganization(
           email,
           organizationId,
         );
-        if (existing)
+        if (alreadyMember) {
           throw new Error("User already exists for this organization");
-        const id = crypto.randomUUID();
-        await db.insert(users).values({
-          name: name || "",
-          email,
-          organizationId,
-          ...rest,
-          id,
-        });
+        }
+        // Add to user_organizations
+        await UserService.addUserToOrganization(id, organizationId);
         return await UserService.findById(id);
       }) as any;
 
-      // Override findUserByEmail to always use organizationId
+      // Override findUserByEmail to always use organizationId and user_organizations
       ctx.context.internalAdapter.findUserByEmail = async (email, options) => {
-        console.log("does run");
         if (!organizationId)
           throw new Error(
             "organizationId required for multi-tenant user lookup",
