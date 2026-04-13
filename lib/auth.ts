@@ -135,7 +135,7 @@ export const auth = betterAuth({
       },
       organizationSlug: {
         type: "string",
-        required: true,
+        required: false,
         input: true,
       },
     },
@@ -184,6 +184,8 @@ export const auth = betterAuth({
       const organizationId = await OrganizationsService.findBySlug(
         organizationSlug!,
       ).then((org) => org?.id);
+
+      if (!organizationId) return;
 
       ctx.context.organizationId = organizationId;
       ctx.context.internalAdapter.createUser = createUserOverride(

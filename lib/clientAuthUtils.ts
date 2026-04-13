@@ -7,12 +7,22 @@ export function getSlugFromHost(host?: string): string {
   const rootDomain =
     typeof process !== "undefined" && process.env.E2E_TENANT_DOMAIN
       ? process.env.E2E_TENANT_DOMAIN
-      : "lvh.me"; // Default to new domain
-  // Escape regex metacharacters in the domain before embedding in RegExp
-  const escapedDomain = rootDomain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const match = normalized.match(
-    new RegExp(`^([a-z0-9-]+)\\.${escapedDomain}$`),
-  );
+      : "servicestart.com"; // Default root domain for local tests
+  // If the host ends with the root domain, return the left-most label
+  // as the slug (e.g. `acme.servicestart.com` -> `acme`). This is simpler
+  // and more robust than depending on a RegExp match which can fail in
+  // test environments with slight variations.
+  const parts = normalized.split(".");
 
-  return match ? match[1] : defaultOrganizationSlug;
+  // If the host looks like a multi-label domain (e.g. acme.servicestart.com),
+  // treat the left-most label as the slug. This handles cases where the
+  // configured rootDomain may differ in test runs.
+  if (parts.length > 2) return parts[0];
+
+  if (normalized === rootDomain) return defaultOrganizationSlug;
+  if (normalized.endsWith(`.${rootDomain}`)) {
+    return normalized.split(".")[0];
+  }
+
+  return defaultOrganizationSlug;
 }

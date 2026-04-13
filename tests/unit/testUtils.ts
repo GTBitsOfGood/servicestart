@@ -84,11 +84,13 @@ export async function createOrganization(slug: string) {
 export async function signUpAndGetHeaders(
   user: ReturnType<typeof buildTestUser>,
 ) {
+  const slug = await getOrgSlug();
   const res = await auth.api.signUpEmail({
     body: {
       ...user,
-      organizationSlug: await getOrgSlug(),
+      organizationSlug: slug,
     },
+    headers: { "x-organization-slug": slug },
     returnHeaders: true,
   });
 
@@ -104,11 +106,13 @@ export async function signUpAndGetHeaders(
 export async function signUpAndGetSession(
   user: ReturnType<typeof buildTestUser>,
 ) {
+  const slug = await getOrgSlug();
   const res = await auth.api.signUpEmail({
     body: {
       ...user,
-      organizationSlug: await getOrgSlug(),
+      organizationSlug: slug,
     },
+    headers: { "x-organization-slug": slug },
     returnHeaders: true,
   });
 
@@ -319,11 +323,13 @@ export async function createTestUser() {
     email: `testuser${userNumber}@example.com`,
     name: `Test User ${userNumber}`,
   };
+  const slug = await getOrgSlug();
   const res = await auth.api.signUpEmail({
     body: {
       ...user,
-      organizationSlug: await getOrgSlug(),
+      organizationSlug: slug,
     },
+    headers: { "x-organization-slug": slug },
     returnHeaders: true,
   });
 
