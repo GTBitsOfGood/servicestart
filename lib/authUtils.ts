@@ -246,6 +246,24 @@ export async function redirectIfNotMember() {
   redirect("/joinrequeststatus");
 }
 
+export function findUserByEmailOverride(ctx: any, organizationId: string) {
+  return async (email: string, options?: any) => {
+    if (!organizationId)
+      throw new Error("organizationId required for multi-tenant user lookup");
+    const user = await UserService.findByEmailAndOrganization(
+      email,
+      organizationId,
+    );
+    if (!user) return null;
+
+    const accounts = await ctx.context.internalAdapter.findAccountByUserId(
+      user.id,
+    );
+
+    return { user, accounts };
+  };
+}
+
 /**
  * this function redirects non-admin users to the homepage
  */

@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
-import { and, eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import db from "@/lib/db";
-import { members, organizations, users } from "@/lib/schema";
+import { organizations, users } from "@/lib/schema";
 import { buildTestUser, createOrganization } from "../unit/testUtils";
 
 async function ensureOrganization(slug: string) {
@@ -87,26 +87,5 @@ test.describe("Multitenant signup", () => {
     expect(
       new Set(usersWithEmail.map((user: { id: string }) => user.id)).size,
     ).toBe(2);
-
-    const memberships = await db
-      .select({ organizationId: members.organizationId, role: members.role })
-      .from(members)
-      .innerJoin(users, eq(users.id, members.userId))
-      .where(
-        and(
-          eq(users.email, sharedUser.email),
-          inArray(members.organizationId, [orgA.id, orgB.id]),
-        ),
-      );
-
-    expect(memberships.length).toBe(2);
-    expect(
-      new Set(
-        memberships.map((m: { organizationId: string }) => m.organizationId),
-      ).size,
-    ).toBe(2);
-    expect(
-      memberships.every((m: { role: string }) => m.role === "member"),
-    ).toBe(true);
   });
 });

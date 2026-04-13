@@ -11,15 +11,6 @@ async function findById(id: string) {
     .then((rows) => rows[0] ?? null);
 }
 
-async function findByEmail(email: string) {
-  return db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1)
-    .then((rows) => rows[0] ?? null);
-}
-
 import { and } from "drizzle-orm";
 async function findByEmailAndOrganization(
   email: string,
@@ -37,6 +28,5 @@ async function findByEmailAndOrganization(
 
 export const UserService = {
   findById,
-  findByEmail,
   findByEmailAndOrganization,
 };

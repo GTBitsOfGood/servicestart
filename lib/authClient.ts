@@ -7,7 +7,7 @@ import {
 } from "better-auth/client/plugins";
 import { getSlugFromHostname } from "./utils";
 
-function getOrganizationId() {
+export function getOrganizationId() {
   if (typeof window !== "undefined") {
     // Try to get from global context, or parse from subdomain, or use injected context
     if ((window as any).__ACTIVE_ORG_ID__)

@@ -1,3 +1,5 @@
+import { createUserOverride } from "@/lib/createUserOverride";
+import { findUserByEmailOverride } from "@/lib/authUtils";
 import { betterAuth, User } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware, organization } from "better-auth/plugins";
@@ -180,85 +182,12 @@ export const auth = betterAuth({
         organizationSlug!,
       ).then((org) => org?.id);
 
-      // Store in context for later use
       ctx.context.organizationId = organizationId;
-
-      // Override createUser to always use organizationId and user_organizations
-      ctx.context.internalAdapter.createUser = (async (user: User) => {
-        if (!organizationId)
-          throw new Error(
-            "organizationId required for multi-tenant user creation",
-          );
-        const { email, name, ...rest } = user;
-        // Try to find user by email
-        let existingUser = await UserService.findByEmailAndOrganization(
-          email,
-          organizationId,
-        );
-        let id: string;
-        if (!existingUser) {
-          // Create new user
-          id = crypto.randomUUID();
-          await db.insert(users).values({
-            name: name || "",
-            email,
-            ...rest,
-            id,
-          });
-          existingUser = await UserService.findById(id);
-        } else {
-          id = existingUser.id;
-        }
-        // Create membership in members table if not already present
-        const existingMembership = await db
-          .select()
-          .from(members)
-          .where(
-            and(
-              eq(members.userId, id),
-              eq(members.organizationId, organizationId),
-            ),
-          )
-          .limit(1)
-          .then((rows) => rows[0] ?? null);
-        if (!existingMembership) {
-          await db.insert(members).values({
-            id: crypto.randomUUID(),
-            userId: id,
-            organizationId,
-            role: "member",
-          });
-        }
-        return await UserService.findById(id);
-      }) as any;
-
-      // Override findUserByEmail to always use organizationId and user_organizations
-      ctx.context.internalAdapter.findUserByEmail = async (email, options) => {
-        if (!organizationId)
-          throw new Error(
-            "organizationId required for multi-tenant user lookup",
-          );
-        const user = await UserService.findByEmailAndOrganization(
-          email,
-          organizationId,
-        );
-        if (!user) return null;
-
-        const accounts = await ctx.context.internalAdapter.findAccountByUserId(
-          user.id,
-        );
-
-        return { user, accounts };
-      };
-      // --- End override ---
-
-      if (ctx.path.startsWith("/login")) {
-        const session = ctx.context.session;
-        if (session?.user) {
-          const headers = ctx?.headers;
-          await afterUserCreated(session.user.id, headers);
-        }
-      }
+      ctx.context.internalAdapter.createUser = createUserOverride(ctx) as any;
+      ctx.context.internalAdapter.findUserByEmail = findUserByEmailOverride(
+        ctx,
+        organizationId,
+      );
     }),
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.path.startsWith("/login")) {

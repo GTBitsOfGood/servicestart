@@ -122,7 +122,10 @@ export const users = pgTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
-  (table) => [sql`UNIQUE (email, organization_id)`],
+  (table) => [
+    sql`UNIQUE (email, organization_id)`,
+    index("users_email_org_idx").on(table.email, table.organizationId),
+  ],
 );
 
 export const userOrganizations = pgTable(
