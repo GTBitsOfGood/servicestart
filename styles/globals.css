@@ -66,6 +66,10 @@
   --color-dark-500: #3f3f3f;
   --color-status-active: #63cc80;
 
+  --color-join-step-complete: #13b461;
+  --color-join-step-pending: #ffbe4c;
+  --width-join-step: 220px;
+
   --color-notif-action-required: #c73a3a;
   --color-notif-action-required-bg: #ffe3e3;
   --color-notif-announcement: #0051cc;

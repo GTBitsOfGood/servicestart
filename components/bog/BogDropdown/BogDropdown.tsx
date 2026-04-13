@@ -36,6 +36,16 @@ interface BogDropdownProps extends React.HTMLAttributes<HTMLDivElement> {
   value?: string | string[];
   /** The default value of the dropdown for uncontrolled components. */
   defaultValue?: string | string[];
+  /** The visual variant of the dropdown. */
+  variant?: "primary" | "secondary";
+  /** The border radius of the dropdown trigger. */
+  radius?: "none" | "small" | "medium" | "large" | "full";
+  /** The size of the dropdown. */
+  size?: "small" | "medium" | "large";
+  /** Whether to show the selected value in the trigger. */
+  showValueInTrigger?: boolean;
+  /** Whether to show the clear (x) icon in the trigger. */
+  showClearIcon?: boolean;
 }
 
 export default function BogDropdown({
@@ -50,6 +60,11 @@ export default function BogDropdown({
   className,
   value,
   defaultValue,
+  variant = "secondary",
+  radius = "medium",
+  size = "medium",
+  showValueInTrigger = true,
+  showClearIcon = true,
 }: BogDropdownProps) {
   const isCheckbox = type === "checkbox";
   const isControlled = value !== undefined;
@@ -204,7 +219,7 @@ export default function BogDropdown({
       <DropdownMenu.Root modal={false} open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenu.Trigger
           ref={triggerRef}
-          className={styles.trigger}
+          className={`${styles.trigger} ${styles[variant]} ${styles[`radius-${radius}`]} ${styles[size]}`}
           data-disabled={disabled}
           disabled={disabled}
           onClick={() => openInput()}
@@ -230,7 +245,7 @@ export default function BogDropdown({
                 }}
               />
               <div className={styles.iconHolder}>
-                {hasValues() && (
+                {hasValues() && showClearIcon && (
                   <span onClick={handleClear} role="button">
                     <BogIcon name="x" size={14} className={styles.clearIcon} />
                   </span>
@@ -240,13 +255,13 @@ export default function BogDropdown({
             </>
           ) : (
             <>
-              {selected.length > 0
+              {showValueInTrigger && selected.length > 0
                 ? Array.isArray(selected)
                   ? selected.join(", ")
                   : selected
                 : placeholder}
               <div className={styles.iconHolder}>
-                {hasValues() && (
+                {hasValues() && showClearIcon && (
                   <span
                     onClick={handleClear}
                     role="button"
