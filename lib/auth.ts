@@ -205,7 +205,6 @@ export const auth = betterAuth({
             ...rest,
             id,
           });
-          existingUser = await UserService.findById(id);
         } else {
           id = existingUser.id;
         }
