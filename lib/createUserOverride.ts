@@ -32,7 +32,6 @@ export function createUserOverride(ctx: CreateUserCtx) {
         ...rest,
         id,
       });
-      existingUser = await UserService.findById(id);
     } else {
       id = existingUser.id;
     }
