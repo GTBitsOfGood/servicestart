@@ -45,8 +45,13 @@ async function signUpOnTenant(
   await page.getByPlaceholder("Smith").fill(user.name.substring(9));
   await page.getByPlaceholder("example@email.com").fill(user.email);
   await page.getByPlaceholder("Password").fill(user.password);
-  await page.getByRole("button", { name: "Create Account" }).click();
-  await expect(page).toHaveURL(/\//);
+  // Wait for navigation after clicking "Create Account"
+  await Promise.all([
+    page.waitForNavigation({ url: `${baseUrl}/` }),
+    page.getByRole("button", { name: "Create Account" }).click(),
+  ]);
+  // Optionally, wait for a dashboard element that only appears after login
+  // await page.waitForSelector('text=Dashboard');
 }
 
 test.describe("Multitenant signup", () => {
