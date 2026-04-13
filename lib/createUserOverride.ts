@@ -3,7 +3,14 @@ import db from "@/lib/db";
 import { users } from "@/lib/schema";
 import { UserService } from "@/lib/services/UserService";
 
-export function createUserOverride(ctx: any) {
+interface CreateUserCtx {
+  context: {
+    organizationId?: string;
+    [key: string]: unknown;
+  };
+}
+
+export function createUserOverride(ctx: CreateUserCtx) {
   return async (user: User) => {
     const organizationId = ctx.context.organizationId;
     if (!organizationId)
@@ -21,6 +28,7 @@ export function createUserOverride(ctx: any) {
       await db.insert(users).values({
         name: name || "",
         email,
+        organizationId,
         ...rest,
         id,
       });

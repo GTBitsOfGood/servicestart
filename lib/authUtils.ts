@@ -12,7 +12,7 @@ import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
 import { UserService } from "@/lib/services/UserService";
 import { getSlugFromHost } from "./clientAuthUtils";
-import { User } from "better-auth/client";
+// import { User } from "better-auth/client";
 import { NotificationService } from "@/lib/services/NotificationService";
 import { NotificationType } from "@/lib/schema";
 
@@ -260,8 +260,19 @@ export async function redirectIfNotMember() {
   redirect("/joinrequeststatus");
 }
 
-export function findUserByEmailOverride(ctx: any, organizationId: string) {
-  return async (email: string, options?: any) => {
+interface FindUserCtx {
+  context: {
+    internalAdapter: {
+      findAccountByUserId: (userId: string) => Promise<unknown>;
+    };
+  };
+}
+
+export function findUserByEmailOverride(
+  ctx: FindUserCtx,
+  organizationId: string,
+) {
+  return async (email: string) => {
     if (!organizationId)
       throw new Error("organizationId required for multi-tenant user lookup");
     const user = await UserService.findByEmailAndOrganization(

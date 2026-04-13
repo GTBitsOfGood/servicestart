@@ -32,10 +32,13 @@ export default function LoginPage() {
   const handleLogin = async () => {
     setLoading(true);
     try {
+      const organizationSlug =
+        org?.slug || getSlugFromHost(window.location.host);
       await authClient.signIn.email(
         {
           email,
           password,
+          organizationSlug,
           callbackURL: "/",
         },
         {

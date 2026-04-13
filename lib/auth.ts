@@ -1,6 +1,6 @@
 import { createUserOverride } from "@/lib/createUserOverride";
 import { findUserByEmailOverride } from "@/lib/authUtils";
-import { betterAuth, User } from "better-auth";
+import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware, organization } from "better-auth/plugins";
 import db from "@/lib/db";
@@ -13,10 +13,9 @@ import {
   sessions,
   shiftRSVPs,
   shifts,
-  users,
-  members,
+  // members
 } from "./schema";
-import { UserService } from "@/lib/services/UserService";
+// import { UserService } from "@/lib/services/UserService";
 import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
 import { EmailService } from "@/lib/services/EmailService";
 import { getBaseUrl } from "./clientUtils";
@@ -134,7 +133,7 @@ export const auth = betterAuth({
         type: "string",
         required: false,
       },
-      organizationId: {
+      organizationSlug: {
         type: "string",
         required: true,
         input: true,
@@ -174,16 +173,20 @@ export const auth = betterAuth({
     before: createAuthMiddleware(async (ctx) => {
       // --- Multi-tenant BetterAuth DB adapter override ---
       // Get organizationId from headers or context
-      const organizationSlug = ctx.headers?.get("x-organization-slug");
+      let organizationSlug = ctx.headers?.get("x-organization-slug");
       if (!organizationSlug) {
-        return;
+        const host = ctx.headers?.get("host") ?? undefined;
+        if (host) {
+          organizationSlug = getSlugFromHost(host);
+        }
       }
+      if (!organizationSlug) return;
       const organizationId = await OrganizationsService.findBySlug(
         organizationSlug!,
       ).then((org) => org?.id);
 
       ctx.context.organizationId = organizationId;
-      ctx.context.internalAdapter.createUser = createUserOverride(ctx) as any;
+      ctx.context.internalAdapter.createUser = createUserOverride(ctx);
       ctx.context.internalAdapter.findUserByEmail = findUserByEmailOverride(
         ctx,
         organizationId,

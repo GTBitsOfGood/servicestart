@@ -51,42 +51,17 @@ export default function SignupPage() {
       return;
     }
     try {
-      let organizationId = org?.organization?.data?.id;
-      let orgPrefix = org?.slug || getSlugFromHost(window.location.host);
-      if (!organizationId) {
-        // Fallback: try to resolve from slug (subdomain)
-        const slug = orgPrefix;
-        if (slug) {
-          // Call an API endpoint to resolve org id from slug
-          const res = await fetch(
-            `/api/organization/resolve-id?slug=${encodeURIComponent(slug)}`,
-          );
-          if (res.ok) {
-            const data = await res.json();
-            organizationId = data.organizationId;
-          }
-        }
-      }
-      if (!organizationId) {
-        alert("No active organization context. Please try again.");
-        setLoading(false);
-        return;
-      }
-      // Use the actual email for signup (no plus addressing)
+      const organizationSlug =
+        org?.slug || getSlugFromHost(window.location.host);
       await authClient.signUp.email(
         {
           email,
           password,
           name: `${firstName} ${lastName}`,
+          organizationSlug,
           callbackURL: "/",
-          organizationId,
         },
         {
-          fetchOptions: {
-            headers: {
-              "x-organization-id": organizationId,
-            },
-          },
           onSuccess: () => {
             router.push("/");
           },
