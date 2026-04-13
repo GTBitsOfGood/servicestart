@@ -2,10 +2,12 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { paginationQuerySchema } from "../lib/apiUtils";
-import { requireMembership } from "@/lib/authUtils";
+import { requireMembership, requireAdmin } from "@/lib/authUtils";
 import { ForbiddenError } from "@/lib/errors";
 import { NotificationService } from "@/lib/services/NotificationService";
 import { NotificationType } from "@/lib/schema";
+import { JoinRequestsService } from "@/lib/services/JoinRequestService";
+import { JoinRequestStatus } from "@/lib/schema";
 
 const notificationsQuerySchema = paginationQuerySchema.and(
   z.object({
@@ -127,6 +129,77 @@ const app = new Hono()
     }
 
     await NotificationService.deleteNotification(id);
+    return c.json({ success: true });
+  })
+  .post("/:id/approve", async (c) => {
+    const session = await requireAdmin(c);
+    //admin check
+    const activeOrganizationId = session.session.activeOrganizationId!;
+    const { id: notificationId } = c.req.param();
+
+    const notification = await NotificationService.findById(notificationId);
+    if (!notification) return c.json({ error: "Notification not found" }, 404);
+
+    if (
+      notification.userId !== session.user.id ||
+      notification.organizationId !== activeOrganizationId
+    ) {
+      throw new ForbiddenError();
+    }
+
+    const metadata = notification.metadata as { joinRequestId?: string } | null;
+    const joinRequestId = metadata?.joinRequestId;
+    if (!joinRequestId) return c.json({ error: "Join request not found" }, 404);
+
+    const joinRequest = await JoinRequestsService.findById(joinRequestId);
+    if (!joinRequest) return c.json({ error: "Join request not found" }, 404);
+
+    await JoinRequestsService.updateStatus(
+      joinRequest.id,
+      JoinRequestStatus.Approved,
+      session.user.id,
+      c.req.raw.headers,
+      undefined,
+      joinRequest.status,
+    );
+
+    await NotificationService.updateReadStatus(notificationId, true);
+
+    return c.json({ success: true });
+  })
+  .post("/:id/deny", async (c) => {
+    const session = await requireAdmin(c);
+    //admin check
+    const activeOrganizationId = session.session.activeOrganizationId!;
+    const { id: notificationId } = c.req.param();
+
+    const notification = await NotificationService.findById(notificationId);
+    if (!notification) return c.json({ error: "Notification not found" }, 404);
+
+    if (
+      notification.userId !== session.user.id ||
+      notification.organizationId !== activeOrganizationId
+    ) {
+      throw new ForbiddenError();
+    }
+
+    const metadata = notification.metadata as { joinRequestId?: string } | null;
+    const joinRequestId = metadata?.joinRequestId;
+    if (!joinRequestId) return c.json({ error: "Join request not found" }, 404);
+
+    const joinRequest = await JoinRequestsService.findById(joinRequestId);
+    if (!joinRequest) return c.json({ error: "Join request not found" }, 404);
+
+    await JoinRequestsService.updateStatus(
+      joinRequest.id,
+      JoinRequestStatus.Denied,
+      session.user.id,
+      c.req.raw.headers,
+      undefined,
+      joinRequest.status,
+    );
+
+    await NotificationService.updateReadStatus(notificationId, true);
 
     return c.json({ success: true });
   });

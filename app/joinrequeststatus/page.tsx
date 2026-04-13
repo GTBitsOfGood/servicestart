@@ -1,14 +1,17 @@
+import {
+  ArrowsClockwiseIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  FileDashedIcon,
+  QuestionIcon,
+  XCircleIcon,
+} from "@phosphor-icons/react/ssr";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { Fragment } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import ApprovedStatusIcon from "./components/icons/ApprovedStatusIcon";
-import DeniedStatusIcon from "./components/icons/DeniedStatusIcon";
-import ExternalLinkIcon from "./components/icons/ExternalLinkIcon";
-import HelpIcon from "./components/icons/HelpIcon";
-import NoRequestIcon from "./components/icons/NoRequestIcon";
-import PendingStatusIcon from "./components/icons/PendingStatusIcon";
-import RefreshIcon from "./components/icons/RefreshIcon";
 import { auth } from "@/lib/auth";
 import {
   createJoinRequestIfNeeded,
@@ -20,483 +23,307 @@ import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
 import { cn } from "@/lib/utils";
 
-export const metadata = {
-  title: "Join Request Status",
-};
-
-type RequestCardState = "no_request" | "pending" | "approved" | "denied";
-
-type TrackerTone = "complete" | "current" | "inactive" | "denied";
-
-type TrackerStep = {
-  title: string;
-  description?: string;
-  tone: TrackerTone;
-};
-
-const TRACKER_ICON_BASE_CLASS =
-  "flex size-10 items-center justify-center rounded-full text-white";
-
-const TRACKER_TONE_STYLES: Record<
-  TrackerTone,
-  {
-    description: string;
-    iconClass: string;
-    title: string;
-  }
-> = {
-  complete: {
-    description: "text-grey-text-weak",
-    iconClass: "bg-status-active",
-    title: "text-grey-text-strong",
-  },
-  current: {
-    description: "text-grey-text-weak",
-    iconClass: "bg-amber-400",
-    title: "text-grey-text-strong",
-  },
-  denied: {
-    description: "text-grey-text-weak",
-    iconClass: "bg-status-red-text",
-    title: "text-grey-text-strong",
-  },
-  inactive: {
-    description: "text-stone-400",
-    iconClass: "bg-stone-300 text-transparent",
-    title: "text-stone-500",
-  },
-};
-
-const STATUS_TO_CARD_STATE: Record<
-  JoinRequestStatus | "missing",
-  RequestCardState
-> = {
-  [JoinRequestStatus.Pending]: "pending",
-  [JoinRequestStatus.Approved]: "approved",
-  [JoinRequestStatus.Denied]: "denied",
-  missing: "no_request",
-};
+export const metadata: Metadata = { title: "Join Request Status" };
 
 const DEFAULT_UPDATED_AT = new Date("2026-02-25T15:00:00");
 
-function formatDateTime(value: Date) {
-  const date = new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(value);
-  const time = new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(value);
+type StepStatus = "complete" | "clock" | "denied" | "upcoming";
+type Step = { title: string; subtitle?: string; status: StepStatus };
 
-  return `${date} at ${time}`;
-}
-
-function formatShortDate(value: Date) {
+function formatDate(d: Date) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).format(value);
+  }).format(d);
 }
 
-function addDays(value: Date, days: number) {
-  const nextDate = new Date(value);
-  nextDate.setDate(nextDate.getDate() + days);
-  return nextDate;
+function formatDateTime(d: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(d);
 }
 
-function getTrackerSteps(
-  state: Exclude<RequestCardState, "no_request">,
-  submittedAt: Date,
-) {
-  const submittedLabel = `Submitted on ${formatShortDate(submittedAt)}`;
-  const reviewedAt = addDays(submittedAt, 1);
-  const reviewedLabel = `Reviewed ${formatShortDate(reviewedAt)}`;
-
-  if (state === "pending") {
-    return {
-      steps: [
-        {
-          title: "Request submitted",
-          description: submittedLabel,
-          tone: "complete",
-        },
+function getSteps(status: JoinRequestStatus, createdAt: Date): Step[] {
+  const submitted = `Submitted on ${formatDate(createdAt)}`;
+  const reviewDate = new Date(createdAt);
+  reviewDate.setDate(reviewDate.getDate() + 1);
+  const reviewed = `Reviewed ${formatDate(reviewDate)}`;
+  switch (status) {
+    case JoinRequestStatus.Pending:
+      return [
+        { title: "Request submitted", subtitle: submitted, status: "complete" },
         {
           title: "Pending review",
-          description: "You will be notified once a decision is made",
-          tone: "current",
+          subtitle: "You will be notified once a decision is made",
+          status: "clock",
         },
-        {
-          title: "Decision",
-          tone: "inactive",
-        },
-      ] satisfies TrackerStep[],
-    };
-  }
-
-  if (state === "approved") {
-    return {
-      steps: [
-        {
-          title: "Request submitted",
-          description: submittedLabel,
-          tone: "complete",
-        },
-        {
-          title: "Reviewed",
-          description: reviewedLabel,
-          tone: "complete",
-        },
+        { title: "Decision", status: "upcoming" },
+      ];
+    case JoinRequestStatus.Approved:
+      return [
+        { title: "Request submitted", subtitle: submitted, status: "complete" },
+        { title: "Reviewed", subtitle: reviewed, status: "complete" },
         {
           title: "Approved",
-          description: "Your join request has been approved",
-          tone: "complete",
+          subtitle: "Your join request has been approved",
+          status: "complete",
         },
-      ] satisfies TrackerStep[],
-    };
+      ];
+    case JoinRequestStatus.Denied:
+      return [
+        { title: "Request submitted", subtitle: submitted, status: "complete" },
+        { title: "Reviewed", subtitle: reviewed, status: "complete" },
+        {
+          title: "Request denied",
+          subtitle: "If you think this was a mistake, please contact an admin",
+          status: "denied",
+        },
+      ];
   }
-
-  return {
-    steps: [
-      {
-        title: "Request submitted",
-        description: submittedLabel,
-        tone: "complete",
-      },
-      {
-        title: "Reviewed",
-        description: reviewedLabel,
-        tone: "complete",
-      },
-      {
-        title: "Request denied",
-        description: "If you think this was a mistake, please contact an admin",
-        tone: "denied",
-      },
-    ] satisfies TrackerStep[],
-  };
 }
 
-function TrackerIcon({ tone }: { tone: TrackerTone }) {
-  const iconClass = cn(
-    TRACKER_ICON_BASE_CLASS,
-    TRACKER_TONE_STYLES[tone].iconClass,
+const STEP_ICONS = {
+  complete: {
+    icon: CheckCircleIcon,
+    bg: "bg-join-step-complete",
+    sm: 27,
+    lg: 36,
+  },
+  clock: { icon: ClockIcon, bg: "bg-join-step-pending", sm: 21, lg: 28 },
+  denied: { icon: XCircleIcon, bg: "bg-status-red-text", sm: 22.5, lg: 30 },
+} as const;
+
+function StepIcon({ status, size }: { status: StepStatus; size: "sm" | "lg" }) {
+  const base = cn(
+    size === "sm" ? "size-9" : "size-12",
+    "flex shrink-0 items-center justify-center rounded-full",
   );
 
-  if (tone === "complete") {
+  if (status === "upcoming") {
     return (
-      <span className={iconClass}>
-        <ApprovedStatusIcon />
-      </span>
+      <div className={cn(base, "bg-media-divider lg:bg-grey-off-state")} />
     );
   }
 
-  if (tone === "current") {
-    return (
-      <span className={iconClass}>
-        <PendingStatusIcon />
-      </span>
-    );
-  }
-
-  if (tone === "denied") {
-    return (
-      <span className={iconClass}>
-        <DeniedStatusIcon />
-      </span>
-    );
-  }
-
-  return <span className={iconClass} />;
-}
-
-function getConnectorClasses(state: Exclude<RequestCardState, "no_request">) {
-  if (state === "approved") {
-    return ["bg-status-active", "bg-status-active"] as const;
-  }
-
-  if (state === "pending") {
-    return ["bg-status-active", "bg-stone-300"] as const;
-  }
-
-  return ["bg-status-active", "bg-stone-300"] as const;
-}
-
-function getTrackerTitleClass(tone: TrackerTone) {
-  return TRACKER_TONE_STYLES[tone].title;
-}
-
-function getTrackerDescriptionClass(tone: TrackerTone) {
-  return TRACKER_TONE_STYLES[tone].description;
-}
-
-function JoinRequestStatusCard({
-  state,
-  submittedAt,
-  onSubmit,
-}: {
-  state: RequestCardState;
-  submittedAt: Date;
-  onSubmit: () => Promise<void>;
-}) {
-  if (state === "no_request") {
-    return (
-      <section className="mt-3.5 flex min-h-50 items-center justify-center rounded-3xl bg-stone-50 px-6 py-10 sm:px-10">
-        <div className="flex max-w-xl flex-col items-center text-center">
-          <NoRequestIcon className="text-stone-500" />
-          <h2 className="mt-3.5 text-2xl leading-8 font-normal text-stone-600">
-            No request found
-          </h2>
-          <p className="mt-0.5 text-xs leading-4 text-grey-text-weak">
-            You haven't submitted a join request for this organization yet.
-          </p>
-
-          <form action={onSubmit} className="mt-3.5">
-            <button
-              type="submit"
-              className="inline-flex h-9 items-center gap-1.5 rounded bg-brand-text px-3.5 text-xs font-semibold text-white transition hover:opacity-90"
-            >
-              <ExternalLinkIcon />
-              <span className="leading-none">Submit a request</span>
-            </button>
-          </form>
-        </div>
-      </section>
-    );
-  }
-
-  const tracker = getTrackerSteps(state, submittedAt);
-  const connectorClasses = getConnectorClasses(state);
+  const { icon: Icon, bg, [size]: iconSize } = STEP_ICONS[status];
 
   return (
-    <section className="mt-3.5 rounded-3xl bg-stone-50 px-8 py-14 sm:px-12 lg:px-10">
-      <div className="mx-auto max-w-5xl">
-        {/* Desktop tracker */}
-        <div className="hidden px-10 lg:block xl:px-16">
-          <div className="flex items-center">
-            <TrackerIcon tone={tracker.steps[0].tone} />
-            <div className={cn("h-0.5 flex-1", connectorClasses[0])} />
-            <TrackerIcon tone={tracker.steps[1].tone} />
-            <div className={cn("h-0.5 flex-1", connectorClasses[1])} />
-            <TrackerIcon tone={tracker.steps[2].tone} />
-          </div>
+    <div className={cn(base, bg)}>
+      <Icon weight="fill" className="text-white" size={iconSize} />
+    </div>
+  );
+}
 
-          {/* Desktop labels — aligned under each circle */}
-          <div className="mt-2.5 grid min-h-20 grid-cols-3 gap-6">
-            <div className="flex flex-col items-center text-center">
-              <h2
-                className={cn(
-                  "text-lg leading-6 font-normal",
-                  getTrackerTitleClass(tracker.steps[0].tone),
-                )}
-              >
-                {tracker.steps[0].title}
-              </h2>
-              {tracker.steps[0].description && (
-                <p
-                  className={cn(
-                    "mt-1 max-w-52 text-xs leading-4",
-                    getTrackerDescriptionClass(tracker.steps[0].tone),
-                  )}
-                >
-                  {tracker.steps[0].description}
-                </p>
+function StepLabel({ step }: { step: Step }) {
+  const titleClass =
+    step.status === "upcoming"
+      ? "text-heading-4 font-semibold text-[#8e8082] lg:text-heading-3 lg:text-grey-stroke-strong"
+      : "text-heading-4 font-semibold text-grey-text-strong lg:text-heading-3";
+
+  return (
+    <>
+      <span className={titleClass}>{step.title}</span>
+      {step.subtitle && (
+        <span className="text-paragraph-2 font-normal leading-normal text-grey-stroke-strong">
+          {step.subtitle}
+        </span>
+      )}
+    </>
+  );
+}
+
+function Stepper({ steps }: { steps: Step[] }) {
+  const lineBg = (s: Step) =>
+    s.status === "complete" ? "bg-join-step-complete" : "bg-grey-off-state";
+
+  return (
+    <>
+      <div className="flex flex-col gap-8 lg:hidden">
+        {steps.map((step, i) => (
+          <div key={step.title} className="flex items-start gap-4">
+            <div className="flex shrink-0 flex-col items-center">
+              <StepIcon status={step.status} size="sm" />
+              {i < steps.length - 1 && (
+                <div className={cn("my-1 min-h-8 w-px flex-1", lineBg(step))} />
               )}
             </div>
-
-            <div className="flex flex-col items-center text-center">
-              <h2
-                className={cn(
-                  "text-lg leading-6 font-normal",
-                  getTrackerTitleClass(tracker.steps[1].tone),
-                )}
-              >
-                {tracker.steps[1].title}
-              </h2>
-              {tracker.steps[1].description && (
-                <p
-                  className={cn(
-                    "mt-1 max-w-52 text-xs leading-4",
-                    getTrackerDescriptionClass(tracker.steps[1].tone),
-                  )}
-                >
-                  {tracker.steps[1].description}
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col items-center text-center">
-              <h2
-                className={cn(
-                  "text-lg leading-6 font-normal",
-                  getTrackerTitleClass(tracker.steps[2].tone),
-                )}
-              >
-                {tracker.steps[2].title}
-              </h2>
-              {tracker.steps[2].description && (
-                <p
-                  className={cn(
-                    "mt-1 max-w-52 text-xs leading-4",
-                    getTrackerDescriptionClass(tracker.steps[2].tone),
-                  )}
-                >
-                  {tracker.steps[2].description}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile — stacked vertically */}
-        <div className="grid gap-10 lg:hidden">
-          {tracker.steps.map((step) => (
             <div
-              key={step.title}
-              className="flex flex-col items-center text-center"
-            >
-              <TrackerIcon tone={step.tone} />
-              <h2
-                className={cn(
-                  "mt-2.5 text-lg leading-6 font-normal",
-                  getTrackerTitleClass(step.tone),
-                )}
-              >
-                {step.title}
-              </h2>
-              {step.description && (
-                <p
-                  className={cn(
-                    "mt-1 max-w-52 text-xs leading-4",
-                    getTrackerDescriptionClass(step.tone),
-                  )}
-                >
-                  {step.description}
-                </p>
+              className={cn(
+                "flex min-w-0 flex-1 flex-col gap-1 pt-0.5",
+                i < steps.length - 1 ? "pb-0" : "",
               )}
+            >
+              <StepLabel step={step} />
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
-    </section>
+
+      <div className="hidden w-full items-start lg:flex">
+        {steps.map((step, i) => (
+          <Fragment key={step.title}>
+            <div className="flex w-join-step shrink-0 flex-col items-center gap-4">
+              <StepIcon status={step.status} size="lg" />
+              <div className="flex w-full flex-col items-center gap-2 text-center">
+                <StepLabel step={step} />
+              </div>
+            </div>
+            {i < steps.length - 1 && (
+              <div
+                className={cn(
+                  "mt-6 h-0.5 min-w-0 flex-1 self-start",
+                  lineBg(step),
+                )}
+              />
+            )}
+          </Fragment>
+        ))}
+      </div>
+    </>
   );
 }
 
 export default async function JoinRequestStatusPage() {
   const requestHeaders = await headers();
-  const session = await auth.api.getSession({
-    headers: requestHeaders,
-  });
-
-  if (!session?.user) {
-    redirect("/login");
-  }
+  const session = await auth.api.getSession({ headers: requestHeaders });
+  if (!session?.user) redirect("/login");
 
   const userId = session.user.id;
-
   const organizationId =
     await getActiveOrganizationIdFromHeaders(requestHeaders);
-
-  if (!organizationId) {
-    redirect("/");
-  }
-
-  const activeOrganizationId = organizationId;
+  if (!organizationId) redirect("/");
+  const activeOrgId = organizationId;
 
   const membership = await MembersService.findByUserAndOrganization(
     userId,
-    activeOrganizationId,
+    activeOrgId,
   );
-
-  if (membership) {
-    redirect("/");
-  }
+  if (membership) redirect("/");
 
   const [organization, joinRequest] = await Promise.all([
-    OrganizationsService.findById(activeOrganizationId),
-    JoinRequestsService.findByUserAndOrganization(userId, activeOrganizationId),
+    OrganizationsService.findById(activeOrgId),
+    JoinRequestsService.findByUserAndOrganization(userId, activeOrgId),
   ]);
 
-  const status = joinRequest?.status ?? "missing";
-  const cardState = STATUS_TO_CARD_STATE[status];
-
-  const submittedAt = joinRequest?.createdAt ?? DEFAULT_UPDATED_AT;
   const lastUpdated = joinRequest?.createdAt ?? DEFAULT_UPDATED_AT;
+  const lastUpdatedText = `Last updated ${formatDateTime(lastUpdated)}`;
 
   async function submitJoinRequest() {
     "use server";
-
-    await createJoinRequestIfNeeded(userId, activeOrganizationId);
+    await createJoinRequestIfNeeded(userId, activeOrgId);
     redirect("/joinrequeststatus");
   }
 
+  const refreshBtnClass =
+    "inline-flex items-center justify-center gap-1 rounded border border-solid border-grey-stroke-strong pl-4 pr-3 py-2 text-paragraph-1 font-normal text-grey-text-weak hover:bg-grey-fill-weak";
+
   return (
-    <main className="min-h-screen bg-stone-50 px-6 py-10 text-grey-text-strong sm:px-10 lg:px-16 lg:py-11">
+    <main className="min-h-screen bg-white px-6 py-10 text-grey-text-strong sm:px-10 lg:px-16 lg:py-11">
       <div className="mx-auto max-w-7xl">
-        <div className="ml-1">
-          <div className="flex items-start gap-1">
+        <div className="ml-1 flex items-start gap-1">
+          <Image
+            src="/logo.svg"
+            alt="Bits of Good Sunset logo"
+            width={47}
+            height={47}
+          />
+          <div className="flex flex-col pt-1">
+            <Image src="/bog.svg" alt="bits of good" width={56} height={10} />
             <Image
-              src="/logo.svg"
-              alt="Bits of Good Sunset logo"
-              width={47}
-              height={47}
+              src="/sunset.svg"
+              alt="sunset"
+              width={88}
+              height={18}
+              className="mt-0.5"
             />
-            <div className="flex flex-col pt-1">
-              <Image src="/bog.svg" alt="bits of good" width={56} height={10} />
-              <Image
-                src="/sunset.svg"
-                alt="sunset"
-                width={88}
-                height={18}
-                className="mt-0.5"
-              />
-            </div>
           </div>
         </div>
 
-        <section className="pt-16">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="min-w-0">
-              <h1
-                data-testid="join-request-status-heading"
-                className="text-heading-2 leading-10 font-normal tracking-tight text-grey-text-strong"
-              >
-                Join Request Status
-              </h1>
-              <p className="mt-6 text-paragraph-2 font-semibold text-grey-text-strong">
-                [{organization?.name ?? "Organization Name"}]
-              </p>
-            </div>
+        <section className="pt-8 lg:pt-10">
+          <div className="flex items-center justify-between gap-4">
+            <h1
+              data-testid="join-request-status-heading"
+              className="text-heading-2 font-bold text-grey-text-strong lg:text-heading-1"
+            >
+              Join Request Status
+            </h1>
+            <span
+              className="shrink-0 text-grey-icon-strong lg:hidden"
+              aria-hidden
+            >
+              <QuestionIcon size={24} />
+            </span>
+          </div>
 
-            <div className="flex items-center gap-2.5 self-start lg:self-auto">
-              <p className="text-xs leading-4 text-stone-500">
-                Last updated {formatDateTime(lastUpdated)}
-              </p>
-              <Link
-                href="/joinrequeststatus"
-                className="inline-flex items-center gap-1.5 rounded border border-stone-300 bg-white px-3 py-2 text-xs font-semibold text-stone-600 transition hover:bg-stone-50"
-              >
-                <RefreshIcon className="text-grey-text-strong" />
-                <span className="leading-none">Refresh</span>
+          <div className="mt-6 flex flex-col gap-4 lg:mt-8 lg:flex-row lg:items-end lg:justify-between">
+            <p className="text-heading-4 font-semibold text-grey-text-strong">
+              {organization.name ?? "Organization Name"}
+            </p>
+            <div className="hidden shrink-0 items-end gap-4 lg:flex">
+              <span className="text-paragraph-1 font-normal text-grey-stroke-strong">
+                {lastUpdatedText}
+              </span>
+              <Link href="/joinrequeststatus" className={refreshBtnClass}>
+                <ArrowsClockwiseIcon size={20} className="shrink-0" />
+                Refresh
               </Link>
             </div>
           </div>
 
-          <JoinRequestStatusCard
-            state={cardState}
-            submittedAt={submittedAt}
-            onSubmit={submitJoinRequest}
-          />
+          <div className="mt-6 rounded-3xl bg-solid-bg-sunken p-8 lg:mt-8 lg:px-14 lg:py-10">
+            {joinRequest ? (
+              <Stepper
+                steps={getSteps(joinRequest.status, joinRequest.createdAt)}
+              />
+            ) : (
+              <div className="flex flex-col items-center gap-4 py-2 text-center lg:py-4">
+                <FileDashedIcon className="size-12 text-grey-text-strong/30 lg:size-16" />
+                <div className="flex max-w-md flex-col gap-1">
+                  <p className="text-heading-4 font-semibold text-grey-text-strong lg:text-heading-3">
+                    No request found
+                  </p>
+                  <p className="text-paragraph-2 font-normal text-grey-stroke-strong">
+                    You haven&apos;t submitted a join request for this
+                    organization yet.
+                  </p>
+                </div>
+                <form action={submitJoinRequest}>
+                  <button
+                    type="submit"
+                    className="mt-1 h-10 rounded bg-brand-text px-5 text-paragraph-1 font-semibold text-white lg:h-11 lg:px-6"
+                  >
+                    Submit a request
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
 
-          <div className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs leading-4 text-stone-500">
-            <HelpIcon className="shrink-0 text-stone-500" />
+          <div className="mt-8 hidden items-center justify-center gap-2 text-paragraph-1 font-normal text-grey-stroke-strong lg:flex">
+            <QuestionIcon size={20} className="shrink-0" />
             <p>
               Have questions?{" "}
-              <span className="text-stone-500 underline underline-offset-2">
+              <span className="underline decoration-solid underline-offset-2">
                 Contact an organization admin
               </span>
+            </p>
+          </div>
+
+          <div className="mt-8 flex flex-col gap-4 lg:hidden">
+            <Link
+              href="/joinrequeststatus"
+              className={cn(refreshBtnClass, "w-full")}
+            >
+              <ArrowsClockwiseIcon size={20} className="shrink-0" />
+              Refresh
+            </Link>
+            <p className="text-center text-paragraph-2 font-normal text-grey-stroke-strong">
+              {lastUpdatedText}
             </p>
           </div>
         </section>

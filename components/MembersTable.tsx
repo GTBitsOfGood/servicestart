@@ -17,6 +17,8 @@ import BogButton from "@/components/bog/BogButton/BogButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import SendEmailModal from "@/components/SendEmailModal";
 import AddMemberModal from "@/components/AddMemberModal";
+import { Dialog } from "radix-ui";
+import RequestsPanel from "@/components/RequestsPanel";
 
 interface MemberRow {
   userId: string;
@@ -98,6 +100,7 @@ export default function MembersTable({
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailRecipientIds, setEmailRecipientIds] = useState<string[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [requestsPanelOpen, setRequestsPanelOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -522,18 +525,37 @@ export default function MembersTable({
         }}
       />
 
-      {/* Heading */}
-      <div className="flex items-center gap-4">
-        <BogIcon
-          name="users"
-          size={40}
-          weight="fill"
-          color="var(--color-dark-500)"
-          className="shrink-0"
-        />
-        <h1 className="whitespace-nowrap font-normal text-heading-1 text-grey-text-strong">
-          Member Directory
-        </h1>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <BogIcon
+            name="users"
+            size={40}
+            weight="fill"
+            color="var(--color-dark-500)"
+            className="shrink-0"
+          />
+          <h1 className="whitespace-nowrap font-normal text-heading-1 text-grey-text-strong">
+            Member Directory
+          </h1>
+        </div>
+        <BogButton
+          variant="primary"
+          size="medium"
+          onClick={() => setRequestsPanelOpen(true)}
+        >
+          <div className="flex items-center gap-4">
+            <span className="font-semibold text-desktop-paragraph-2 text-white whitespace-nowrap px-1">
+              Requests
+            </span>
+            <BogIcon
+              name="users"
+              size={20}
+              weight="fill"
+              color="white"
+              className="shrink-0"
+            />
+          </div>
+        </BogButton>
       </div>
 
       {/* Search bar + Settings button */}
@@ -739,6 +761,23 @@ export default function MembersTable({
         organizationId={organizationId}
         onAddDirectly={onAddDirectly}
       />
+
+      <Dialog.Root
+        open={requestsPanelOpen}
+        onOpenChange={(next) => {
+          if (!next) setRequestsPanelOpen(false);
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
+          <Dialog.Content className="fixed inset-y-0 left-0 z-50 outline-none">
+            <Dialog.Title asChild>
+              <span className="sr-only">Join Requests</span>
+            </Dialog.Title>
+            <RequestsPanel side="left" />
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {/* Table */}
       <BogTable

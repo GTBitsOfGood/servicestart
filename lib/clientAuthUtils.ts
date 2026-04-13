@@ -8,8 +8,8 @@ export function getSlugFromHost(host?: string): string {
     typeof process !== "undefined" && process.env.E2E_TENANT_DOMAIN
       ? process.env.E2E_TENANT_DOMAIN
       : "lvh.me"; // Default to new domain
-  // Escape dots for regex
-  const escapedDomain = rootDomain.replace(/\./g, "\\.");
+  // Escape regex metacharacters in the domain before embedding in RegExp
+  const escapedDomain = rootDomain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const match = normalized.match(
     new RegExp(`^([a-z0-9-]+)\\.${escapedDomain}$`),
   );

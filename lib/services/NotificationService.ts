@@ -13,6 +13,7 @@ async function createForUserIds(
   organizationId: string,
   text: string,
   type: NotificationType = NotificationType.General,
+  metadata?: Record<string, unknown> | null,
 ) {
   if (userIds.length === 0) {
     return [];
@@ -28,6 +29,7 @@ async function createForUserIds(
     organizationId,
     type,
     text,
+    metadata: metadata ?? null,
   }));
 
   return db.insert(notifications).values(values).returning({
@@ -38,15 +40,32 @@ async function createForUserIds(
     read: notifications.read,
     type: notifications.type,
     text: notifications.text,
+    metadata: notifications.metadata,
   });
 }
 
-async function notify(userId: string, orgId: string, text: string) {
-  const [notification] = await createForUserIds([userId], orgId, text);
+async function notify(
+  userId: string,
+  orgId: string,
+  text: string,
+  metadata?: Record<string, unknown> | null,
+) {
+  const [notification] = await createForUserIds(
+    [userId],
+    orgId,
+    text,
+    NotificationType.General,
+    metadata,
+  );
   return notification ?? null;
 }
 
-async function notifyAdmins(organizationId: string, text: string) {
+async function notifyAdmins(
+  organizationId: string,
+  text: string,
+  type: NotificationType = NotificationType.ActionRequired,
+  metadata?: Record<string, unknown> | null,
+) {
   const adminMembers = await db
     .select({ userId: members.userId })
     .from(members)
@@ -58,12 +77,22 @@ async function notifyAdmins(organizationId: string, text: string) {
     );
 
   const userIds = adminMembers.map((member) => member.userId);
-  return createForUserIds(userIds, organizationId, text);
+  return createForUserIds(userIds, organizationId, text, type, metadata);
 }
 
-async function notifyAllMembers(organizationId: string, text: string) {
+async function notifyAllMembers(
+  organizationId: string,
+  text: string,
+  metadata?: Record<string, unknown> | null,
+) {
   const userIds = await MembersService.getUserIdsByOrganization(organizationId);
-  return createForUserIds(userIds, organizationId, text);
+  return createForUserIds(
+    userIds,
+    organizationId,
+    text,
+    NotificationType.General,
+    metadata,
+  );
 }
 
 async function listByUserAndOrganization(
@@ -99,6 +128,7 @@ async function listByUserAndOrganization(
       read: notifications.read,
       type: notifications.type,
       text: notifications.text,
+      metadata: notifications.metadata,
     })
     .from(notifications)
     .where(and(...conditions))
@@ -141,6 +171,7 @@ async function findById(notificationId: string) {
       read: notifications.read,
       type: notifications.type,
       text: notifications.text,
+      metadata: notifications.metadata,
     })
     .from(notifications)
     .where(eq(notifications.id, notificationId))
@@ -162,6 +193,7 @@ async function updateReadStatus(notificationId: string, status: boolean) {
       read: notifications.read,
       type: notifications.type,
       text: notifications.text,
+      metadata: notifications.metadata,
     });
 
   return updated ?? null;

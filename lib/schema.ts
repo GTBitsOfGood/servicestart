@@ -266,11 +266,25 @@ export const joinRequests = pgTable(
       .references(() => organizations.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     status: joinRequestStatusEnum("status").notNull(),
+    denialReason: text("denial_reason"),
   },
   (table) => [
     index("join_request_organizationId_idx").on(table.organizationId),
   ],
 );
+
+export const joinRequestHistory = pgTable("join_request_history", {
+  id: text("id").primaryKey(),
+  joinRequestId: text("join_request_id")
+    .notNull()
+    .references(() => joinRequests.id, { onDelete: "cascade" }),
+  action: text("action").notNull(), // "approved" | "denied" | "removed"
+  resolvedByUserId: text("resolved_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  resolvedAt: timestamp("resolved_at").defaultNow().notNull(),
+  denialReason: text("denial_reason"),
+});
 
 export const events = pgTable(
   "events",
@@ -494,6 +508,7 @@ export const notifications = pgTable(
       .default(NotificationType.General)
       .notNull(),
     text: text("text").notNull(),
+    metadata: jsonb("metadata"), // Used for linking a join request to the notification for admin approval/denial
   },
   (table) => [
     index("notification_userId_organizationId_idx").on(
