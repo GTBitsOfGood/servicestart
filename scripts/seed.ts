@@ -52,32 +52,26 @@ const ORGS: Array<{
   },
 ];
 
-export async function main() {
-  log("Seeding database...");
+async function seedOrg(org: (typeof ORGS)[number]) {
+  await db
+    .insert(schema.organizations)
+    .values({
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+    })
+    .onConflictDoNothing();
 
-  for (const org of ORGS) {
-    await db
-      .insert(schema.organizations)
-      .values({
-        id: org.id,
-        name: org.name,
-        slug: org.slug,
-      })
-      .onConflictDoNothing();
-
-    await OrganizationConfigService.setConfig(
-      org.id,
-      OrganizationConfigKey.NavbarVariant,
-      org.navbar.variant,
-    );
-    await OrganizationConfigService.setConfig(
-      org.id,
-      OrganizationConfigKey.NavbarColor,
-      org.navbar.color,
-    );
-  }
-
-  log("Organizations created with navbar configs.");
+  await OrganizationConfigService.setConfig(
+    org.id,
+    OrganizationConfigKey.NavbarVariant,
+    org.navbar.variant,
+  );
+  await OrganizationConfigService.setConfig(
+    org.id,
+    OrganizationConfigKey.NavbarColor,
+    org.navbar.color,
+  );
 
   const usersData = [
     {
@@ -132,47 +126,49 @@ export async function main() {
 
   const userIdsByEmail = new Map<string, string>();
 
-  for (const org of ORGS) {
-    for (const userData of usersData) {
-      const res = await auth.api
-        .signUpEmail({
+  for (const userData of usersData) {
+    console.log(`Seeding user: ${userData.email}...`);
+    const res = await auth.api
+      .signUpEmail({
+        body: {
+          email: userData.email,
+          password: DEFAULT_TEST_PASSWORD,
+          name: userData.name,
+          phoneNumber: userData.phoneNumber,
+          organizationId: org.id,
+        },
+        headers: { "x-organization-id": org.id },
+      })
+      .catch((e) => {
+        console.error(`Error creating user ${userData.email}:`, e);
+        // User already exists, sign in to get the user info
+        console.log(
+          `User ${userData.email} already exists, signing in to retrieve user ID...`,
+        );
+        return auth.api.signInEmail({
           body: {
             email: userData.email,
             password: DEFAULT_TEST_PASSWORD,
-            name: userData.name,
-            phoneNumber: userData.phoneNumber,
-            organizationId: org.id,
           },
+          headers: { "x-organization-id": org.id },
+        });
+      });
+
+    userIdsByEmail.set(userData.email, res.user.id);
+
+    if (userData.role) {
+      await db
+        .insert(schema.members)
+        .values({
+          id: `member_${res.user.id}_${org.id}`,
+          userId: res.user.id,
+          organizationId: org.id,
+          role: userData.role,
         })
-        .catch(() =>
-          // User already exists, sign in to get the user info
-          auth.api.signInEmail({
-            body: {
-              email: userData.email,
-              password: DEFAULT_TEST_PASSWORD,
-            },
-          }),
-        );
-
-      userIdsByEmail.set(userData.email, res.user.id);
-
-      if (userData.role) {
-        for (const org of ORGS) {
-          await db
-            .insert(schema.members)
-            .values({
-              id: `member_${res.user.id}_${org.id}`,
-              userId: res.user.id,
-              organizationId: org.id,
-              role: userData.role,
-            })
-            .onConflictDoNothing();
-        }
-      }
+        .onConflictDoNothing();
     }
   }
 
-  log("Users and members created.");
   const joinRequestSeedData = [
     {
       id: "jr_pending_servicestart",
@@ -206,7 +202,7 @@ export async function main() {
       .values({
         id: joinRequest.id,
         userId,
-        organizationId: "org_servicestart",
+        organizationId: org.id,
         status: joinRequest.status,
         createdAt: joinRequest.createdAt,
       })
@@ -218,12 +214,10 @@ export async function main() {
     "Navbar configs by org: servicestart (horizontal center, red), vertical-sidebar (vertical sidebar, red), vertical-icon (vertical icon, white), horizontal-left (horizontal left, red), horizontal-center (horizontal center, white). Sign in and switch active org to test different navbar configs.",
   );
 
-  const orgId = "org_servicestart";
-
   const eventsData = [
     {
       id: "event_001",
-      organizationId: orgId,
+      organizationId: org.id,
       name: "Event 1",
       location: "Georgia Tech",
       description: "Event description 1.",
@@ -234,7 +228,7 @@ export async function main() {
     },
     {
       id: "event_002",
-      organizationId: orgId,
+      organizationId: org.id,
       name: "Event 2",
       location: "GT Admissions Center",
       description: "Event description 2.",
@@ -245,7 +239,7 @@ export async function main() {
     },
     {
       id: "event_003",
-      organizationId: orgId,
+      organizationId: org.id,
       name: "Event 3",
       location: "Bits of Good",
       description: "Event description 3.",
@@ -257,7 +251,7 @@ export async function main() {
     },
     {
       id: "event_004",
-      organizationId: orgId,
+      organizationId: org.id,
       name: "Event 4",
       location: "BOG",
       description: "Event description 4.",
@@ -269,7 +263,7 @@ export async function main() {
     },
     {
       id: "event_005",
-      organizationId: orgId,
+      organizationId: org.id,
       name: "Event 5",
       location: "Student Center",
       description: "Event description 5.",
@@ -286,10 +280,10 @@ export async function main() {
   log("Events created.");
 
   const tagsData = [
-    { tagId: "tag_volunteer", organizationId: orgId, tag: "Volunteer" },
-    { tagId: "tag_workshop", organizationId: orgId, tag: "Workshop" },
-    { tagId: "tag_social", organizationId: orgId, tag: "Social" },
-    { tagId: "tag_fundraiser", organizationId: orgId, tag: "Fundraiser" },
+    { tagId: "tag_volunteer", organizationId: org.id, tag: "Volunteer" },
+    { tagId: "tag_workshop", organizationId: org.id, tag: "Workshop" },
+    { tagId: "tag_social", organizationId: org.id, tag: "Social" },
+    { tagId: "tag_fundraiser", organizationId: org.id, tag: "Fundraiser" },
   ];
 
   await db.insert(schema.tags).values(tagsData).onConflictDoNothing();
@@ -315,6 +309,7 @@ export async function main() {
   for (const email of usersToRsvp) {
     const res = await auth.api.signInEmail({
       body: { email, password: DEFAULT_TEST_PASSWORD },
+      headers: { "x-organization-id": org.id },
     });
 
     await db
@@ -427,27 +422,36 @@ export async function main() {
   for (const email of memberEmails) {
     const res = await auth.api.signInEmail({
       body: { email, password: DEFAULT_TEST_PASSWORD },
+      headers: { "x-organization-id": org.id },
     });
 
-    for (const org of ORGS) {
-      const notificationValues = notificationTemplates.map((tmpl) => ({
-        id: randomUUID(),
-        userId: res.user.id,
-        organizationId: org.id,
-        type: tmpl.type,
-        text: tmpl.text,
-        read: tmpl.read,
-        createdAt: new Date(Date.now() - tmpl.minutesAgo * 60 * 1000),
-      }));
+    const notificationValues = notificationTemplates.map((tmpl) => ({
+      id: randomUUID(),
+      userId: res.user.id,
+      organizationId: org.id,
+      type: tmpl.type,
+      text: tmpl.text,
+      read: tmpl.read,
+      createdAt: new Date(Date.now() - tmpl.minutesAgo * 60 * 1000),
+    }));
 
-      await db
-        .insert(schema.notifications)
-        .values(notificationValues)
-        .onConflictDoNothing();
-    }
+    await db
+      .insert(schema.notifications)
+      .values(notificationValues)
+      .onConflictDoNothing();
   }
 
   log("Notifications created.");
+}
+
+export async function main() {
+  log("Seeding database...");
+
+  for (const org of ORGS) {
+    log(`Seeding organization: ${org.name}...`);
+    await seedOrg(org);
+  }
+
   log("Seeding completed successfully.");
 }
 

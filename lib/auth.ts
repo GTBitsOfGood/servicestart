@@ -172,9 +172,9 @@ export const auth = betterAuth({
       // --- Multi-tenant BetterAuth DB adapter override ---
       // Get organizationId from headers or context
       let organizationId =
-        ctx.request?.headers.get("x-organization-id") ||
-        ctx.request?.headers.get("organizationid") ||
-        ctx.request?.headers.get("orgid");
+        ctx.headers?.get("x-organization-id") ||
+        ctx.headers?.get("organizationid") ||
+        ctx.headers?.get("orgid");
       // Fallback: try context body
       if (!organizationId && ctx.request?.body) {
         try {
@@ -185,6 +185,8 @@ export const auth = betterAuth({
           organizationId = body?.organizationId;
         } catch {}
       }
+
+      console.log("Organization ID from request:", organizationId);
       // Store in context for later use
       ctx.context.organizationId = organizationId;
 
@@ -212,15 +214,15 @@ export const auth = betterAuth({
           id = existingUser.id;
         }
         // Check if already a member of this org
-        const alreadyMember = await UserService.findByEmailAndOrganization(
-          email,
-          organizationId,
-        );
-        if (alreadyMember) {
-          throw new Error("User already exists for this organization");
-        }
+        // const alreadyMember = await UserService.findByEmailAndOrganization(
+        //   email,
+        //   organizationId,
+        // );
+        // if (alreadyMember) {
+        //   throw new Error("User already exists for this organization");
+        // }
         // Add to user_organizations
-        await UserService.addUserToOrganization(id, organizationId);
+        // await UserService.addUserToOrganization(id, organizationId);
         return await UserService.findById(id);
       }) as any;
 
@@ -235,7 +237,12 @@ export const auth = betterAuth({
           organizationId,
         );
         if (!user) return null;
-        return { user, accounts: [] };
+
+        const accounts = await ctx.context.internalAdapter.findAccountByUserId(
+          user.id,
+        );
+
+        return { user, accounts };
       };
       // --- End override ---
 

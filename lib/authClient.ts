@@ -59,7 +59,14 @@ const baseClient = createAuthClient({
       schema: inferOrgAdditionalFields<typeof auth>(),
     }),
   ],
+  fetchOptions: {
+    onRequest: async (ctx) => {
+      const organizationId = getOrganizationId();
+      ctx.headers.set("x-organization-id", organizationId ?? "");
+      return ctx;
+    },
+  },
 });
 
-const authClient = wrapWithOrgProxy(baseClient);
-export default authClient;
+// const authClient = wrapWithOrgProxy(baseClient);
+export default baseClient;
