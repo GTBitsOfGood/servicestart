@@ -1,2 +1,0 @@
-CREATE TYPE "notification_type" AS ENUM('general', 'announcement');--> statement-breakpoint
-ALTER TABLE "notifications" ADD COLUMN "type" "notification_type" DEFAULT 'general'::"notification_type" NOT NULL;

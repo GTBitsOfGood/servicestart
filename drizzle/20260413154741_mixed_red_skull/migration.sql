@@ -1,1 +1,0 @@
-CREATE INDEX "users_email_org_idx" ON "users" ("email","organization_id");

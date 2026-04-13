@@ -1,1 +1,0 @@
-ALTER TABLE "verification" RENAME TO "verifications";
