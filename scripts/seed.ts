@@ -135,7 +135,7 @@ async function seedOrg(org: (typeof ORGS)[number]) {
           password: DEFAULT_TEST_PASSWORD,
           name: userData.name,
           phoneNumber: userData.phoneNumber,
-          organizationId: org.id,
+          organizationSlug: org.slug,
         },
         headers: { "x-organization-slug": org.slug },
       })

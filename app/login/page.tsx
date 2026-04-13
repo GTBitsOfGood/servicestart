@@ -38,7 +38,6 @@ export default function LoginPage() {
         {
           email,
           password,
-          organizationSlug,
           callbackURL: "/",
         },
         {

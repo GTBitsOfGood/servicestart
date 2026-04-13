@@ -42,6 +42,18 @@ async function getOrgId() {
   return org[0].id;
 }
 
+async function getOrgSlug() {
+  const org = await db
+    .select({ slug: organizations.slug })
+    .from(organizations)
+    .limit(1);
+  if (!org[0]) {
+    const org = await createOrganization(`org-${Date.now()}`);
+    return org.slug;
+  }
+  return org[0].slug;
+}
+
 /**
  * Builds a test user object with a unique email and name.
  * Does not create the user in the database.
@@ -87,7 +99,7 @@ export async function signUpAndGetHeaders(
   const res = await auth.api.signUpEmail({
     body: {
       ...user,
-      organizationId: await getOrgId(),
+      organizationSlug: await getOrgSlug(),
     },
     returnHeaders: true,
   });
@@ -107,7 +119,7 @@ export async function signUpAndGetSession(
   const res = await auth.api.signUpEmail({
     body: {
       ...user,
-      organizationId: await getOrgId(),
+      organizationSlug: await getOrgSlug(),
     },
     returnHeaders: true,
   });
@@ -322,7 +334,7 @@ export async function createTestUser() {
   const res = await auth.api.signUpEmail({
     body: {
       ...user,
-      organizationId: await getOrgId(),
+      organizationSlug: await getOrgSlug(),
     },
     returnHeaders: true,
   });

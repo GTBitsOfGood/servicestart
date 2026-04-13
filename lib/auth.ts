@@ -186,13 +186,11 @@ export const auth = betterAuth({
       ).then((org) => org?.id);
 
       ctx.context.organizationId = organizationId;
-      ctx.context.internalAdapter.createUser = createUserOverride(
-        ctx,
-      ) as typeof createUserOverride;
+      ctx.context.internalAdapter.createUser = createUserOverride(ctx) as any;
       ctx.context.internalAdapter.findUserByEmail = findUserByEmailOverride(
         ctx,
         organizationId,
-      );
+      ) as any;
     }),
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.path.startsWith("/login")) {
