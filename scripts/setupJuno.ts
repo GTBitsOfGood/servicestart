@@ -2,7 +2,7 @@ import { exec, execSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 import "dotenv/config";
 
-let junoProcess: ReturnType<typeof exec> | undefined;
+let junoProcess: ReturnType<typeof exec>;
 
 const JUNO_HEADERS = {
   "Content-Type": "application/json",
@@ -74,15 +74,23 @@ async function main() {
     );
   }
 
-  const { apiKey } = (await res.json()) as { apiKey: string };
+  const { apiKey }: { apiKey: string } = await res.json().catch((error) => {
+    console.error("Error parsing API key response:", error);
+    console.log("Juno response:", res);
+    throw error;
+  });
 
   console.log("API key created. Storing in .env...");
 
-  const envFile = await fs.readFile(".env", "utf-8").catch(() => "");
+  // Read .env, find line beginning with JUNO_API_KEY= and replace it with JUNO_API_KEY=${string}
+  const envFile = await fs.readFile(".env", "utf-8");
 
+  // Check that JUNO_API_KEY is in the .env file
   if (!/^JUNO_API_KEY=.*$/m.test(envFile)) {
+    // If not, add it to the end of the file
     await fs.appendFile(".env", `\nJUNO_API_KEY=${apiKey}\n`);
   } else {
+    // If it is, replace the existing line
     const newEnvFile = envFile.replace(
       /^JUNO_API_KEY=.*$/m,
       `JUNO_API_KEY=${apiKey}`,
@@ -92,7 +100,7 @@ async function main() {
 
   console.log("API key stored in .env. Juno setup complete.");
 
-  junoProcess?.kill();
+  junoProcess.kill();
 }
 
 main()

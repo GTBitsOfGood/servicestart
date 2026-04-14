@@ -18,8 +18,7 @@ async function main() {
   await juno.email.setupEmail({ sendgridKey: sendgridKey! });
   if (!senderDomain) {
     console.warn(
-      "EMAIL_SENDER_DOMAIN is required to register a domain in Sendgrid. Skippin\n" +
-        "g domain registration.",
+      "EMAIL_SENDER_DOMAIN is required to register a domain in Sendgrid. Skipping domain registration.",
     );
   } else {
     const registration = await juno.email.registerDomain({
@@ -54,7 +53,7 @@ async function main() {
   }
   if (!organizationId) {
     console.warn(
-      "SETUP_ORGANIZATION_ID is not set; skipping Juno file bucket registration.\n",
+      "SETUP_ORGANIZATION_ID is not set; skipping Juno file bucket registration.",
     );
     return;
   }
@@ -74,7 +73,7 @@ async function main() {
 
   const bucketName = JunoFileService.getBucketName(organizationId);
   console.log(
-    `Registering file bucket "${bucketName}" for organization ${organizationId}..`,
+    `Registering file bucket "${bucketName}" for organization ${organizationId}...`,
   );
 
   const buckets = await juno.file.getBucketsByConfigIdAndEnv(String(configId));
