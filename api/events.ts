@@ -75,7 +75,10 @@ const app = new Hono()
       try {
         ids = await Promise.all(
           hosts.map((email) =>
-            UserService.findByEmail(email).then((user) => user.id),
+            UserService.findByEmailAndOrganization(
+              email,
+              activeOrganizationId,
+            ).then((user) => user.id),
           ),
         );
       } catch {
