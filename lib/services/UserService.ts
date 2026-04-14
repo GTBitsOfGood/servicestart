@@ -26,17 +26,7 @@ async function findByEmailAndOrganization(
     .then((rows) => rows[0] ?? null);
 }
 
-async function findByEmail(email: string) {
-  return db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1)
-    .then((rows) => rows[0] ?? null);
-}
-
 export const UserService = {
   findById,
   findByEmailAndOrganization,
-  findByEmail,
 };

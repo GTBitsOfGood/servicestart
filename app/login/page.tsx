@@ -32,8 +32,6 @@ export default function LoginPage() {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const organizationSlug =
-        org?.slug || getSlugFromHost(window.location.host);
       await authClient.signIn.email(
         {
           email,
@@ -41,11 +39,7 @@ export default function LoginPage() {
           callbackURL: "/",
         },
         {
-          fetchOptions: {
-            headers: {
-              "x-organization-slug": organizationSlug,
-            },
-          },
+          // Don't set headers here; `authClient` sets `x-organization-slug` automatically
           onSuccess: () => {
             router.push("/");
           },

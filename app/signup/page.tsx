@@ -62,11 +62,7 @@ export default function SignupPage() {
           callbackURL: "/",
         },
         {
-          fetchOptions: {
-            headers: {
-              "x-organization-slug": organizationSlug,
-            },
-          },
+          // Don't set headers here; `authClient` sets `x-organization-slug` automatically
           onSuccess: () => {
             router.push("/");
           },

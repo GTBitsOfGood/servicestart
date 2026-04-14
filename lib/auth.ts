@@ -1,4 +1,4 @@
-import { createUserOverride } from "@/lib/createUserOverride";
+import { createUserOverride } from "@/lib/authUtils";
 import { findUserByEmailOverride } from "@/lib/authUtils";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
