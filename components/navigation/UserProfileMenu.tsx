@@ -90,10 +90,8 @@ export function UserProfileMenu({
       >
         <div
           className={cn(
-            "flex min-w-0 flex-1 gap-3",
-            inlineFooterProfile
-              ? "flex-row flex-nowrap items-center"
-              : "items-start",
+            "flex min-w-0 flex-1 gap-3 items-center",
+            inlineFooterProfile && "flex-row flex-nowrap items-center",
           )}
         >
           <ProfileAvatar
@@ -101,7 +99,7 @@ export function UserProfileMenu({
             className={inlineFooterProfile ? "shrink-0" : undefined}
           />
           {userLabelsMounted && (displayName || displayRole) ? (
-            <div className="flex min-w-0 flex-col items-start gap-0">
+            <div className="flex min-w-0 flex-col gap-0">
               <span className="min-w-0 truncate leading-none font-normal text-grey-text-strong">
                 {displayName}
               </span>
@@ -110,15 +108,15 @@ export function UserProfileMenu({
               </span>
             </div>
           ) : null}
+          {showChevron ? (
+            <BogIcon
+              name={menuIconName}
+              size={14}
+              weight="regular"
+              className="shrink-0 text-grey-text-strong"
+            />
+          ) : null}
         </div>
-        {showChevron ? (
-          <BogIcon
-            name={menuIconName}
-            size={14}
-            weight="regular"
-            className="shrink-0 text-grey-text-strong"
-          />
-        ) : null}
       </button>
 
       {open && (
