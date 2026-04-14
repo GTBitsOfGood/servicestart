@@ -124,18 +124,26 @@ async function getDownloadPresignedUrl(
   organizationId: string,
   fileName: string,
 ): Promise<{ url: string }> {
-  const { configId, providerName } = await getFileConfig();
-  const bucketName = getBucketName(organizationId);
-  const res = await juno.file.downloadFile({
-    fileName,
-    bucketName,
-    providerName,
-    configId,
-  });
-  if (!res?.url) {
-    throw new Error("Juno did not return a download URL");
+  try {
+    const { configId, providerName } = await getFileConfig();
+    const bucketName = getBucketName(organizationId);
+    const res = await juno.file.downloadFile({
+      fileName,
+      bucketName,
+      providerName,
+      configId,
+    });
+    if (!res?.url) {
+      throw new Error("Juno did not return a download URL");
+    }
+    return { url: normalizePresignedUrl(res.url, bucketName, fileName) };
+  } catch (err) {
+    const message =
+      err instanceof Error
+        ? `Failed to get download URL: ${err.message}`
+        : "Failed to get download URL";
+    throw new Error(message);
   }
-  return { url: normalizePresignedUrl(res.url, bucketName, fileName) };
 }
 
 async function readFile(organizationId: string, fileName: string) {
