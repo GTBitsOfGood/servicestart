@@ -106,14 +106,28 @@ async function getUploadPresignedUrl(
   organizationId: string,
   fileName: string,
 ): Promise<{ url: string }> {
-  const { configId, providerName } = await getFileConfig();
-  const bucketName = getBucketName(organizationId);
-  const res = await juno.file.uploadFile({
-    fileName,
-    bucketName,
-    providerName,
-    configId,
+  const { configId, providerName } = await getFileConfig().catch((err) => {
+    const message =
+      err instanceof Error
+        ? `Failed to get file config: ${err.message}`
+        : "Failed to get file config";
+    throw new Error(message);
   });
+  const bucketName = getBucketName(organizationId);
+  const res = await juno.file
+    .uploadFile({
+      fileName,
+      bucketName,
+      providerName,
+      configId,
+    })
+    .catch((err) => {
+      const message =
+        err instanceof Error
+          ? `Failed to get upload URL: ${err.message}`
+          : "Failed to get upload URL";
+      throw new Error(message);
+    });
   if (!res?.url) {
     throw new Error("Juno did not return an upload URL");
   }

@@ -2,6 +2,7 @@
 
 import { startTransition, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import api from "@/lib/api";
 
 type MediaUploadCardProps = {
   variant: "grid" | "empty";
