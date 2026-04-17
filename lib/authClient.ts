@@ -6,7 +6,7 @@ import {
   inferOrgAdditionalFields,
 } from "better-auth/client/plugins";
 
-export default createAuthClient({
+const baseClient = createAuthClient({
   plugins: [
     inferAdditionalFields<typeof auth>(),
     organizationClient({
@@ -14,3 +14,5 @@ export default createAuthClient({
     }),
   ],
 });
+
+export default baseClient;

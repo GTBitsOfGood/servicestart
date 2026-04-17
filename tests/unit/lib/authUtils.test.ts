@@ -58,8 +58,8 @@ describe("join request hooks", () => {
     const user = buildTestUser();
 
     const result = await auth.api.signUpEmail({
-      body: user,
-      headers: { host: buildHost("acme") },
+      body: { ...user, organizationSlug: "acme" },
+      headers: { host: buildHost("acme"), "x-organization-slug": "acme" },
     });
 
     const requests = await getJoinRequests(result.user.id, organization.id);
@@ -73,8 +73,11 @@ describe("join request hooks", () => {
     const user = buildTestUser();
 
     const result = await auth.api.signUpEmail({
-      body: user,
-      headers: { host: "servicestart.com" },
+      body: { ...user, organizationSlug: "servicestart" },
+      headers: {
+        host: "servicestart.com",
+        "x-organization-slug": "servicestart",
+      },
     });
 
     const requests = await getJoinRequests(result.user.id, organization.id);
@@ -87,8 +90,8 @@ describe("join request hooks", () => {
     const user = buildTestUser();
 
     const signUpResult = await auth.api.signUpEmail({
-      body: user,
-      headers: { host: buildHost("acme") },
+      body: { ...user, organizationSlug: "acme" },
+      headers: { host: buildHost("acme"), "x-organization-slug": "acme" },
     });
 
     await db
@@ -123,8 +126,8 @@ describe("join request hooks", () => {
     const user = buildTestUser();
 
     const signUpResult = await auth.api.signUpEmail({
-      body: user,
-      headers: { host: buildHost("acme") },
+      body: { ...user, organizationSlug: "acme" },
+      headers: { host: buildHost("acme"), "x-organization-slug": "acme" },
     });
 
     await auth.api.signInEmail({

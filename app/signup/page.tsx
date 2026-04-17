@@ -51,14 +51,18 @@ export default function SignupPage() {
       return;
     }
     try {
+      const organizationSlug =
+        org?.slug || getSlugFromHost(window.location.host);
       await authClient.signUp.email(
         {
           email,
           password,
           name: `${firstName} ${lastName}`,
+          organizationSlug,
           callbackURL: "/",
         },
         {
+          // Don't set headers here; `authClient` sets `x-organization-slug` automatically
           onSuccess: () => {
             router.push("/");
           },
@@ -94,19 +98,19 @@ export default function SignupPage() {
         background: `linear-gradient(75deg, ${primary_color} 0%, ${secondary_color} 100%)`,
       }}
     >
-      <div className="flex h-full w-[53%] flex-shrink-0 items-center justify-between px-[30px]">
+      <div className="flex h-full w-[53%] shrink-0 items-center justify-between px-7.5">
         <div
-          className="flex h-[94%] w-full flex-col justify-end rounded-[20px] pt-[90%] pb-[20px] pl-[20px] pr-[60%]"
+          className="flex h-[94%] w-full flex-col justify-end rounded-[20px] pt-[90%] pb-5 pl-5 pr-[60%]"
           style={{
             background: `linear-gradient(180deg, ${primary_color} 0%, #FFF 100%)`,
           }}
         >
-          <div className="h-[130px] w-[339px]">
+          <div className="h-32.5 w-84.75">
             {logo && (
               <img
                 src={`/images/${logo}`}
                 alt="Organization Logo"
-                className="h-[107px] w-[107px]"
+                className="h-26.75 w-26.75"
               />
             )}
           </div>
@@ -123,7 +127,7 @@ export default function SignupPage() {
             placeholder="John"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            className="self-stretch rounded-[4px] px-[12px] text-[18px] font-semibold leading-[24px] text-[#22070B]"
+            className="self-stretch rounded-sm px-3 text-[18px] font-semibold leading-6 text-[#22070B]"
           />
           <BogTextInput
             name="last_name"
@@ -132,7 +136,7 @@ export default function SignupPage() {
             placeholder="Smith"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            className="self-stretch rounded-[4px] px-[12px] text-[18px] font-semibold leading-[24px] text-[#22070B]"
+            className="self-stretch rounded-sm px-3 text-[18px] font-semibold leading-6 text-[#22070B]"
           />
           <BogTextInput
             name="email"
@@ -141,7 +145,7 @@ export default function SignupPage() {
             placeholder="example@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="self-stretch rounded-[4px] px-[12px] text-[18px] font-semibold leading-[24px] text-[#22070B]"
+            className="self-stretch rounded-sm px-3 text-[18px] font-semibold leading-6 text-[#22070B]"
           />
           <BogTextInput
             name="password"

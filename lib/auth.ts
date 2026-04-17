@@ -1,3 +1,5 @@
+import { createUserOverride } from "@/lib/authUtils";
+import { findUserByEmailOverride } from "@/lib/authUtils";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware, organization } from "better-auth/plugins";
@@ -5,10 +7,19 @@ import db from "@/lib/db";
 import { afterUserCreated } from "@/lib/authUtils";
 import { headers } from "next/headers";
 import { getSlugFromHost } from "./clientAuthUtils";
-import { eventRsvps, events, sessions, shiftRSVPs, shifts } from "./schema";
+import {
+  eventRsvps,
+  events,
+  sessions,
+  shiftRSVPs,
+  shifts,
+  // members
+} from "./schema";
+// import { UserService } from "@/lib/services/UserService";
 import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
 import { EmailService } from "@/lib/services/EmailService";
 import { getBaseUrl } from "./clientUtils";
+import { OrganizationsService } from "./services/OrganizationService";
 
 export const auth = betterAuth({
   plugins: [
@@ -122,6 +133,11 @@ export const auth = betterAuth({
         type: "string",
         required: false,
       },
+      organizationSlug: {
+        type: "string",
+        required: false,
+        input: true,
+      },
     },
   },
   baseURL: process.env.BETTER_AUTH_URL || getBaseUrl(),
@@ -152,40 +168,57 @@ export const auth = betterAuth({
         },
       },
     },
-    hooks: {
-      before: createAuthMiddleware(async (ctx) => {
-        if (ctx.path.startsWith("/login")) {
-          const session = ctx.context.session;
-          if (session?.user) {
-            const headers = ctx?.headers;
-            await afterUserCreated(session.user.id, headers);
-          }
+  },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      // --- Multi-tenant BetterAuth DB adapter override ---
+      // Get organizationId from headers or context
+      let organizationSlug = ctx.headers?.get("x-organization-slug");
+      if (!organizationSlug) {
+        const host = ctx.headers?.get("host") ?? undefined;
+        if (host) {
+          organizationSlug = getSlugFromHost(host);
         }
-      }),
-      after: createAuthMiddleware(async (ctx) => {
-        if (ctx.path.startsWith("/login")) {
-          const session = ctx.context.session;
-          if (session?.user) {
-            const theHeaders = ctx?.headers;
-            const host =
-              theHeaders?.get?.("host") ??
-              (theHeaders as Record<string, string> | undefined)?.host;
-            const slug = getSlugFromHost(host);
-            const [result] = await db
-              .select({ activeOrganizationId: sessions.activeOrganizationId })
-              .from(sessions)
-              .where(eq(sessions.id, session.session.id))
-              .limit(1);
-            await auth.api.setActiveOrganization({
-              body: {
-                organizationId: result?.activeOrganizationId,
-                organizationSlug: slug,
-              },
-              headers: await headers(),
-            });
-          }
+      }
+      if (!organizationSlug) return;
+      const organizationId = await OrganizationsService.findBySlug(
+        organizationSlug!,
+      ).then((org) => org?.id);
+
+      if (!organizationId) return;
+
+      ctx.context.organizationId = organizationId;
+      ctx.context.internalAdapter.createUser = createUserOverride(
+        ctx,
+      ) as unknown as typeof ctx.context.internalAdapter.createUser;
+      ctx.context.internalAdapter.findUserByEmail = findUserByEmailOverride(
+        ctx,
+        organizationId,
+      ) as unknown as typeof ctx.context.internalAdapter.findUserByEmail;
+    }),
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path.startsWith("/login")) {
+        const session = ctx.context.session;
+        if (session?.user) {
+          const theHeaders = ctx?.headers;
+          const host =
+            theHeaders?.get?.("host") ??
+            (theHeaders as Record<string, string> | undefined)?.host;
+          const slug = getSlugFromHost(host);
+          const [result] = await db
+            .select({ activeOrganizationId: sessions.activeOrganizationId })
+            .from(sessions)
+            .where(eq(sessions.id, session.session.id))
+            .limit(1);
+          await auth.api.setActiveOrganization({
+            body: {
+              organizationId: result?.activeOrganizationId,
+              organizationSlug: slug,
+            },
+            headers: await headers(),
+          });
         }
-      }),
-    },
+      }
+    }),
   },
 });

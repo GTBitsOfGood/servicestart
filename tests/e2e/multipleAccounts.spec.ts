@@ -1,0 +1,91 @@
+import { test, expect, type Page } from "@playwright/test";
+import { eq } from "drizzle-orm";
+import db from "@/lib/db";
+import { organizations, users } from "@/lib/schema";
+import { buildTestUser, createOrganization } from "../unit/testUtils";
+
+async function ensureOrganization(slug: string) {
+  const [existing] = await db
+    .select({ id: organizations.id, slug: organizations.slug })
+    .from(organizations)
+    .where(eq(organizations.slug, slug))
+    .limit(1);
+  if (existing) return existing;
+
+  try {
+    return await createOrganization(slug);
+  } catch {
+    const [again] = await db
+      .select({ id: organizations.id, slug: organizations.slug })
+      .from(organizations)
+      .where(eq(organizations.slug, slug))
+      .limit(1);
+    if (!again) {
+      throw new Error(`Failed to ensure organization ${slug}`);
+    }
+    return again;
+  }
+}
+
+function buildTenantUrl(subdomain: string) {
+  const base = new URL(process.env.BASE_URL || "http://localhost:3000");
+  // Use lvh.me for local subdomain logic compatibility
+  const domain = process.env.E2E_TENANT_DOMAIN || "lvh.me";
+  const port = base.port ? `:${base.port}` : "";
+  return `${base.protocol}//${subdomain}.${domain}${port}`;
+}
+
+async function signUpOnTenant(
+  page: Page,
+  baseUrl: string,
+  user: { name: string; email: string; password: string },
+) {
+  await page.goto(`${baseUrl}/signup`);
+  await page.getByPlaceholder("John").fill(user.name.substring(0, 8));
+  await page.getByPlaceholder("Smith").fill(user.name.substring(9));
+  await page.getByPlaceholder("example@email.com").fill(user.email);
+  await page.getByPlaceholder("Password").fill(user.password);
+  // Wait for navigation after clicking "Create Account"
+  await Promise.all([
+    page.waitForNavigation({ url: `${baseUrl}/` }),
+    page.getByRole("button", { name: "Create Account" }).click(),
+  ]);
+  // Optionally, wait for a dashboard element that only appears after login
+  // await page.waitForSelector('text=Dashboard');
+}
+
+test.describe("Multitenant signup", () => {
+  test("allows same email across org subdomains", async ({ browser }) => {
+    await ensureOrganization("a");
+    await ensureOrganization("b");
+
+    const credentials = buildTestUser();
+    const sharedUser = {
+      ...credentials,
+      email: `multi-${Date.now()}@example.com`,
+    };
+
+    const tenantA = buildTenantUrl("a");
+    const tenantB = buildTenantUrl("b");
+
+    const contextA = await browser.newContext();
+    const pageA = await contextA.newPage();
+    await signUpOnTenant(pageA, tenantA, sharedUser);
+    await contextA.close();
+
+    const contextB = await browser.newContext();
+    const pageB = await contextB.newPage();
+    await signUpOnTenant(pageB, tenantB, sharedUser);
+    await contextB.close();
+
+    const usersWithEmail = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, sharedUser.email));
+
+    expect(usersWithEmail.length).toBe(2);
+    expect(
+      new Set(usersWithEmail.map((user: { id: string }) => user.id)).size,
+    ).toBe(2);
+  });
+});

@@ -30,6 +30,18 @@ export const baseTestUser = {
   name: "Test User",
 };
 
+async function getOrgSlug() {
+  const org = await db
+    .select({ slug: organizations.slug })
+    .from(organizations)
+    .limit(1);
+  if (!org[0]) {
+    const org = await createOrganization(`org-${Date.now()}`);
+    return org.slug;
+  }
+  return org[0].slug;
+}
+
 /**
  * Builds a test user object with a unique email and name.
  * Does not create the user in the database.
@@ -72,8 +84,13 @@ export async function createOrganization(slug: string) {
 export async function signUpAndGetHeaders(
   user: ReturnType<typeof buildTestUser>,
 ) {
+  const slug = await getOrgSlug();
   const res = await auth.api.signUpEmail({
-    body: user,
+    body: {
+      ...user,
+      organizationSlug: slug,
+    },
+    headers: { "x-organization-slug": slug },
     returnHeaders: true,
   });
 
@@ -89,8 +106,13 @@ export async function signUpAndGetHeaders(
 export async function signUpAndGetSession(
   user: ReturnType<typeof buildTestUser>,
 ) {
+  const slug = await getOrgSlug();
   const res = await auth.api.signUpEmail({
-    body: user,
+    body: {
+      ...user,
+      organizationSlug: slug,
+    },
+    headers: { "x-organization-slug": slug },
     returnHeaders: true,
   });
 
@@ -301,9 +323,13 @@ export async function createTestUser() {
     email: `testuser${userNumber}@example.com`,
     name: `Test User ${userNumber}`,
   };
-
+  const slug = await getOrgSlug();
   const res = await auth.api.signUpEmail({
-    body: user,
+    body: {
+      ...user,
+      organizationSlug: slug,
+    },
+    headers: { "x-organization-slug": slug },
     returnHeaders: true,
   });
 

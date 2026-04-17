@@ -7,8 +7,9 @@ import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import { OrganizationConfigKey } from "@/lib/schema";
-import { getSlugFromHost } from "@/lib/clientAuthUtils";
+
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
+import { getSlugFromHost } from "@/lib/clientAuthUtils";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function LoginPage() {
           callbackURL: "/",
         },
         {
+          // Don't set headers here; `authClient` sets `x-organization-slug` automatically
           onSuccess: () => {
             router.push("/");
           },
