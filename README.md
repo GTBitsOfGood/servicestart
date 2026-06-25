@@ -1,5 +1,7 @@
 # ServiceStart
 
+**HEY! Are you the incoming Fall EM? If so, read [the architecture documentation](./docs/ARCHITECTURE.md) - Renato, Spring '26 EM**
+
 ServiceStart is a total rebuild of [Voluntrack](https://github.com/GTBitsOfGood/VolunTrack) - a volunteer and event management platform for nonprofits. See the Notion [here](https://www.notion.so/gtbitsofgood/ServiceStart-2efbd5d1ba1580568e70f31b65a81f28).
 
 [![Netlify Status](https://api.netlify.com/api/v1/badges/4c02de3a-8a0a-45e0-8282-349cc70f0705/deploy-status)](https://app.netlify.com/projects/servicestart/deploys)
