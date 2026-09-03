@@ -36,7 +36,6 @@ export default function SendEmailModal({
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>(
     initialRecipientIds ?? [],
   );
-  const [sendMessageToRecipient, setSendMessageToRecipient] = useState(false);
   const [recipientMenuOpen, setRecipientMenuOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -67,7 +66,6 @@ export default function SendEmailModal({
     setFooter("");
     setHasAttemptedSend(false);
     setSelectedRecipientIds(initialRecipientIds ?? []);
-    setSendMessageToRecipient(false);
     setSendError(null);
   };
 
@@ -297,17 +295,6 @@ export default function SendEmailModal({
             </p>
           )}
           <div className="mt-1 flex flex-col gap-3 mobile:flex-row mobile:items-center mobile:justify-end">
-            <label className="flex items-center gap-2 text-paragraph-2 text-grey-text-strong">
-              <input
-                type="checkbox"
-                checked={sendMessageToRecipient}
-                onChange={(event) =>
-                  setSendMessageToRecipient(event.target.checked)
-                }
-                className="h-4 w-4 accent-brand-text"
-              />
-              Send message to recipient
-            </label>
             <BogButton
               variant="primary"
               size="medium"
