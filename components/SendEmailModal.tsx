@@ -14,9 +14,11 @@ interface SendEmailModalProps {
   initialRecipientIds?: string[];
   onSend?: (values: {
     subject: string;
+    subtitle?: string;
     body: string;
+    footer?: string;
     recipientIds: string[];
-  }) => void;
+  }) => void | Promise<void>;
 }
 
 export default function SendEmailModal({
@@ -34,8 +36,9 @@ export default function SendEmailModal({
   const [selectedRecipientIds, setSelectedRecipientIds] = useState<string[]>(
     initialRecipientIds ?? [],
   );
-  const [sendMessageToRecipient, setSendMessageToRecipient] = useState(false);
   const [recipientMenuOpen, setRecipientMenuOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const isInvalid = !subject.trim() || !body.trim();
 
@@ -63,7 +66,7 @@ export default function SendEmailModal({
     setFooter("");
     setHasAttemptedSend(false);
     setSelectedRecipientIds(initialRecipientIds ?? []);
-    setSendMessageToRecipient(false);
+    setSendError(null);
   };
 
   const handleClose = () => {
@@ -71,14 +74,32 @@ export default function SendEmailModal({
     onClose();
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     setHasAttemptedSend(true);
-    if (isInvalid) return;
-    onSend?.({
-      subject: subject.trim(),
-      body: body.trim(),
-      recipientIds: selectedRecipientIds,
-    });
+    if (isInvalid || isSending) return;
+
+    const trimmedSubtitle = subtitle.trim();
+    const trimmedFooter = footer.trim();
+
+    setIsSending(true);
+    setSendError(null);
+    try {
+      await onSend?.({
+        subject: subject.trim(),
+        ...(trimmedSubtitle && { subtitle: trimmedSubtitle }),
+        body: body.trim(),
+        ...(trimmedFooter && { footer: trimmedFooter }),
+        recipientIds: selectedRecipientIds,
+      });
+    } catch (error) {
+      setSendError(
+        error instanceof Error ? error.message : "Failed to send email",
+      );
+      return;
+    } finally {
+      setIsSending(false);
+    }
+
     handleClose();
   };
 
@@ -268,26 +289,20 @@ export default function SendEmailModal({
             value={footer}
             onChange={(e) => setFooter(e.target.value)}
           />
+          {sendError && (
+            <p role="alert" className="text-paragraph-2 text-status-red-text">
+              {sendError}
+            </p>
+          )}
           <div className="mt-1 flex flex-col gap-3 mobile:flex-row mobile:items-center mobile:justify-end">
-            <label className="flex items-center gap-2 text-paragraph-2 text-grey-text-strong">
-              <input
-                type="checkbox"
-                checked={sendMessageToRecipient}
-                onChange={(event) =>
-                  setSendMessageToRecipient(event.target.checked)
-                }
-                className="h-4 w-4 accent-brand-text"
-              />
-              Send message to recipient
-            </label>
             <BogButton
               variant="primary"
               size="medium"
               onClick={handleSend}
-              disabled={isInvalid}
+              disabled={isInvalid || isSending}
               className="!rounded-md !px-4 !py-2"
             >
-              Send Email
+              {isSending ? "Sending..." : "Send Email"}
             </BogButton>
           </div>
         </div>
@@ -296,7 +311,7 @@ export default function SendEmailModal({
       secondaryLabel=""
       onPrimary={handleSend}
       onSecondary={handleClose}
-      primaryDisabled={isInvalid}
+      primaryDisabled={isInvalid || isSending}
       buttonsContainerClassName="!hidden"
       secondaryButtonClassName="!hidden"
       primaryButtonClassName="!hidden"
