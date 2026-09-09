@@ -10,6 +10,7 @@ import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import authClient from "@/lib/authClient";
 import XIcon from "@/components/XIcon";
 import LeftArrowIcon from "@/components/LeftArrowIcon";
+import { resolveBranding } from "@/lib/branding";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -19,11 +20,11 @@ export default function ResetPasswordPage() {
   const [isExpired, setIsExpired] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState(true);
 
-  const { primary_color = "#FFFFFF", secondary_color = "#FFFFFF" } =
-    useOrganizationConfig([
-      OrganizationConfigKey.PrimaryColor,
-      OrganizationConfigKey.SecondaryColor,
-    ]);
+  const config = useOrganizationConfig([
+    OrganizationConfigKey.PrimaryColor,
+    OrganizationConfigKey.SecondaryColor,
+  ]);
+  const { primary_color, secondary_color } = resolveBranding(config);
   const org = useActiveOrganization();
   const logo = org?.organization.data?.logo;
 

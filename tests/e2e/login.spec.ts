@@ -4,6 +4,24 @@ import {
   expectPageDoesNotRedirect,
 } from "./testUtils";
 import { buildTestUser, signUpAndGetSession } from "../unit/testUtils";
+import { DEFAULT_BRANDING } from "@/lib/branding";
+import { OrganizationConfigKey } from "@/lib/schema";
+
+function hexToRgb(hex: string): string {
+  const normalized = hex.replace("#", "");
+  const full =
+    normalized.length === 3
+      ? normalized
+          .split("")
+          .map((char) => char + char)
+          .join("")
+      : normalized;
+  const value = Number.parseInt(full, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgb(${r}, ${g}, ${b})`;
+}
 
 test.describe("Login Page", () => {
   test("login", async ({ page }) => {
@@ -30,15 +48,27 @@ test.describe("Login Page", () => {
     await expectPageDoesNotRedirect(page, "/logo.svg");
   });
 
-  test("login page background uses a linear gradient", async ({ page }) => {
+  test("login page background uses documented default branding", async ({
+    page,
+  }) => {
     await page.goto("/login");
 
     const loginPage = page.getByTestId("page");
-
     await expect(loginPage).toBeVisible();
+
     const background = await loginPage.evaluate(
       (e) => getComputedStyle(e).backgroundImage,
     );
+    const normalized = background.replace(/\s/g, "");
+    const primary = hexToRgb(
+      DEFAULT_BRANDING[OrganizationConfigKey.PrimaryColor],
+    ).replace(/\s/g, "");
+    const secondary = hexToRgb(
+      DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
+    ).replace(/\s/g, "");
+
     expect(background).toMatch(/linear-gradient\s*\(/i);
+    expect(normalized).toContain(primary);
+    expect(normalized).toContain(secondary);
   });
 });

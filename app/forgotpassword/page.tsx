@@ -9,16 +9,17 @@ import { OrganizationConfigKey } from "@/lib/schema";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import authClient from "@/lib/authClient";
 import LeftArrowIcon from "@/components/LeftArrowIcon";
+import { resolveBranding } from "@/lib/branding";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
 
-  const { primary_color = "#FFFFFF", secondary_color = "#FFFFFF" } =
-    useOrganizationConfig([
-      OrganizationConfigKey.PrimaryColor,
-      OrganizationConfigKey.SecondaryColor,
-    ]);
+  const config = useOrganizationConfig([
+    OrganizationConfigKey.PrimaryColor,
+    OrganizationConfigKey.SecondaryColor,
+  ]);
+  const { primary_color, secondary_color } = resolveBranding(config);
   const org = useActiveOrganization();
   const logo = org?.organization.data?.logo;
 
