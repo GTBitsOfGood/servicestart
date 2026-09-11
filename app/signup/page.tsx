@@ -21,12 +21,13 @@ export default function SignupPage() {
   const {
     primary_color = "#FFFFFF",
     secondary_color = "#FFFFFF",
-    tagline = "Welcome",
+    tagline: configuredTagline,
   } = useOrganizationConfig([
     OrganizationConfigKey.PrimaryColor,
     OrganizationConfigKey.SecondaryColor,
     OrganizationConfigKey.Tagline,
   ]);
+  const tagline = configuredTagline?.trim() || "Welcome";
   const org = useActiveOrganization();
   const logo = org?.organization.data?.logo;
 
@@ -119,7 +120,7 @@ export default function SignupPage() {
       <div className="flex h-full flex-1 flex-col items-center justify-between pt-[5%]">
         <div className="flex h-full w-[78%] bg-white flex-col items-center gap-[23px] rounded-[30px] border-[2px] border-[#FFF] p-[35px] pt-[12%] shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
           <h1 className="self-stretch">Sign Up</h1>
-          <p className="self-stretch text-[20px] text-white">{tagline}</p>
+          <p className="self-stretch text-[20px] text-[#22070B]">{tagline}</p>
           <BogTextInput
             name="first_name"
             type="text"

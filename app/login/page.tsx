@@ -20,12 +20,13 @@ export default function LoginPage() {
   const {
     primary_color = "#FFFFFF",
     secondary_color = "#FFFFFF",
-    tagline = "Welcome",
+    tagline: configuredTagline,
   } = useOrganizationConfig([
     OrganizationConfigKey.PrimaryColor,
     OrganizationConfigKey.SecondaryColor,
     OrganizationConfigKey.Tagline,
   ]);
+  const tagline = configuredTagline?.trim() || "Welcome";
   const org = useActiveOrganization();
   const logo = org?.organization.data?.logo;
 
@@ -97,7 +98,7 @@ export default function LoginPage() {
       <div className="flex h-full flex-1 flex-col items-center justify-between pt-[12%]">
         <div className="flex w-[78%] bg-white flex-col items-center gap-6 rounded-4xl border-[2px] border-[#FFF] p-9 pt-25 shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
           <h1 className="self-stretch">Login</h1>
-          <p className="self-stretch text-mobile-heading-2 text-white">
+          <p className="self-stretch text-mobile-heading-2 text-[#22070B]">
             {tagline}
           </p>
           <BogTextInput
