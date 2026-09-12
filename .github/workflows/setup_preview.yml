@@ -56,3 +56,4 @@ jobs:
           JUNO_FILE_BUCKET_PREFIX: ${{ vars.JUNO_FILE_BUCKET_PREFIX }}
           SETUP_ORGANIZATION_ID: ${{ vars.SETUP_ORGANIZATION_ID }}
           SENDGRID_KEY: ${{ secrets.SENDGRID_KEY }}
+          EMAIL_SENDER_DOMAIN: ${{ vars.EMAIL_SENDER_DOMAIN }}
