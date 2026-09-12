@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { parse } from "dotenv";
+import { validateSendGridKey } from "juno-sdk/lib/validators";
 import { getDbUrl, getEmailSenderDomain, requireEnv } from "../../lib/env";
 import { setupEmail } from "../../lib/emailSetup";
 import { EmailService } from "../../lib/services/EmailService";
@@ -22,7 +25,7 @@ vi.mock("@/lib/authClient", () => ({ default: {} }));
 
 beforeEach(() => {
   vi.stubEnv("JUNO_API_KEY", "test-key");
-  vi.stubEnv("SENDGRID_KEY", "test-key");
+  vi.stubEnv("SENDGRID_KEY", "SG.test-sendgrid-key");
   vi.stubEnv("EMAIL_SENDER_DOMAIN", "  Notifications.TEST  ");
   vi.stubEnv("NEXT_PUBLIC_BASE_URL", "");
   vi.clearAllMocks();
@@ -74,7 +77,7 @@ it("provisions email using the normalized domain without file credentials", asyn
   try {
     await setupEmail();
     expect(juno.email.setupEmail).toHaveBeenCalledWith({
-      sendgridKey: "test-key",
+      sendgridKey: "SG.test-sendgrid-key",
     });
     expect(juno.email.registerDomain).toHaveBeenCalledWith({
       domain: "notifications.test",
@@ -83,6 +86,14 @@ it("provisions email using the normalized domain without file credentials", asyn
   } finally {
     log.mockRestore();
   }
+});
+
+it("ships simulated SendGrid keys accepted by the actual Juno SDK", () => {
+  for (const file of [".env.template", ".env.test"]) {
+    const env = parse(readFileSync(new URL(`../../${file}`, import.meta.url)));
+    expect(() => validateSendGridKey(env.SENDGRID_KEY)).not.toThrow();
+  }
+  expect(() => validateSendGridKey("test-key")).toThrow();
 });
 
 const invitation = {

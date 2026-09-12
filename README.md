@@ -46,6 +46,8 @@ Use Node.js compatible with the installed Next.js version and pnpm 10.17.1 (`npm
 
    Put the generated value in `BETTER_AUTH_SECRET`. The other template defaults support local PostgreSQL, local file storage, and **simulated email**. `JUNO_API_KEY` is generated below. Each variable's comment explains when it is required; Azure/file-provider credentials are unnecessary for local storage.
 
+   For simulated email, use `SENDGRID_KEY=SG.test-sendgrid-key`. Juno's SDK requires the `SG` prefix even in simulation. If you already have a `.env`, replace a blank value or the old `test-key` placeholder manually; updating `.env.template` does not update `.env`.
+
 3. Create PostgreSQL and wait until it accepts connections:
 
    ```bash
@@ -55,14 +57,30 @@ Use Node.js compatible with the installed Next.js version and pnpm 10.17.1 (`npm
 
    Repeat the readiness check until it reports “accepting connections.” For an existing container, use `pnpm run db:start` instead of creating it again.
 
-4. Initialize and provision Juno:
+4. Initialize and seed Juno:
 
    ```bash
    git submodule update --init --recursive
+   RUN_MODE=reseed pnpm --dir juno start:dev:live-all
+   ```
+
+   Keep this command running in its own terminal. It installs Juno dependencies, starts its services, resets Juno's
+   separate internal database, and creates the test superadmin and seed project used by `juno:setup`.
+
+   On Windows, run the equivalent commands in WSL2, or use PowerShell:
+
+   ```powershell
+   $env:RUN_MODE = "reseed"
+   pnpm.cmd --dir juno start:dev:live-all
+   ```
+
+   In a second terminal, provision the Juno API key:
+
+   ```bash
    pnpm run juno:setup
    ```
 
-   This installs Juno dependencies, starts its services, and writes the generated API key to your local `.env`.
+   This writes the generated API key to your local `.env`.
 
 5. Apply the schema and create development data:
 
