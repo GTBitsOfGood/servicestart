@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { OrganizationConfigKey, NotificationType } from "@/lib/schema";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { DEFAULT_TEST_PASSWORD } from "@/tests/unit/testUtils";
+import { and, eq, isNull } from "drizzle-orm";
 
 const isTest = require.main !== module; // Check if the script is being run directly or imported in tests
 
@@ -131,36 +132,75 @@ export async function main() {
   ];
 
   const userIdsByEmail = new Map<string, string>();
+  const userIdsByOrganization = new Map<string, Map<string, string>>();
 
-  for (const userData of usersData) {
-    const res = await auth.api
-      .signUpEmail({
-        body: {
-          email: userData.email,
-          password: DEFAULT_TEST_PASSWORD,
-          name: userData.name,
-          phoneNumber: userData.phoneNumber,
-        },
-      })
-      .catch(() =>
-        // User already exists, sign in to get the user info
-        auth.api.signInEmail({
+  for (const org of ORGS) {
+    const orgUserIds = new Map<string, string>();
+    userIdsByOrganization.set(org.id, orgUserIds);
+    for (const userData of usersData) {
+      let [user] = await db
+        .select()
+        .from(schema.users)
+        .where(
+          and(
+            eq(schema.users.email, userData.email),
+            eq(schema.users.organizationId, org.id),
+          ),
+        );
+
+      // Preserve IDs, credentials, and related data from the old unscoped seed.
+      // Only adopt matching seed identities into the default organization.
+      if (!user && org.id === "org_servicestart") {
+        const legacy = await db
+          .select()
+          .from(schema.users)
+          .where(
+            and(
+              eq(schema.users.email, userData.email),
+              eq(schema.users.name, userData.name),
+              isNull(schema.users.organizationId),
+            ),
+          );
+        if (legacy.length > 1) {
+          throw new Error(
+            `Multiple unscoped seed accounts for ${userData.email}; resolve them before seeding.`,
+          );
+        }
+        if (legacy.length === 1) {
+          [user] = await db
+            .update(schema.users)
+            .set({ organizationId: org.id })
+            .where(eq(schema.users.id, legacy[0].id))
+            .returning();
+        }
+      }
+
+      let userId = user?.id;
+      if (!userId) {
+        const res = await auth.api.signUpEmail({
+          headers: new Headers({
+            "x-organization-slug": org.slug,
+            host: `${org.slug}.lvh.me:3000`,
+          }),
           body: {
             email: userData.email,
             password: DEFAULT_TEST_PASSWORD,
+            name: userData.name,
+            phoneNumber: userData.phoneNumber,
           },
-        }),
-      );
+        });
+        userId = res.user.id;
+      }
+      orgUserIds.set(userData.email, userId);
+      if (org.id === "org_servicestart")
+        userIdsByEmail.set(userData.email, userId);
 
-    userIdsByEmail.set(userData.email, res.user.id);
-
-    if (userData.role) {
-      for (const org of ORGS) {
+      if (userData.role) {
         await db
           .insert(schema.members)
           .values({
-            id: `member_${res.user.id}_${org.id}`,
-            userId: res.user.id,
+            id: `member_${userId}_${org.id}`,
+            userId,
             organizationId: org.id,
             role: userData.role,
           })
@@ -212,7 +252,7 @@ export async function main() {
 
   log("Join requests created for pending, approved, and denied states.");
   log(
-    "Navbar configs by org: servicestart (horizontal center, red), vertical-sidebar (vertical sidebar, red), vertical-icon (vertical icon, white), horizontal-left (horizontal left, red), horizontal-center (horizontal center, white). Sign in and switch active org to test different navbar configs.",
+    "Seed accounts use password123. Sign in at localhost:3000 for ServiceStart or <org-slug>.lvh.me:3000 for vertical-icon, horizontal-left, or horizontal-center. Each organization has separate accounts.",
   );
 
   const orgId = "org_servicestart";
@@ -310,13 +350,11 @@ export async function main() {
   ];
 
   for (const email of usersToRsvp) {
-    const res = await auth.api.signInEmail({
-      body: { email, password: DEFAULT_TEST_PASSWORD },
-    });
+    const userId = userIdsByEmail.get(email)!;
 
     await db
       .insert(schema.eventRsvps)
-      .values(eventsData.map((e) => ({ userId: res.user.id, eventId: e.id })))
+      .values(eventsData.map((e) => ({ userId, eventId: e.id })))
       .onConflictDoNothing();
   }
 
@@ -422,14 +460,10 @@ export async function main() {
   ];
 
   for (const email of memberEmails) {
-    const res = await auth.api.signInEmail({
-      body: { email, password: DEFAULT_TEST_PASSWORD },
-    });
-
     for (const org of ORGS) {
       const notificationValues = notificationTemplates.map((tmpl) => ({
         id: randomUUID(),
-        userId: res.user.id,
+        userId: userIdsByOrganization.get(org.id)!.get(email)!,
         organizationId: org.id,
         type: tmpl.type,
         text: tmpl.text,
