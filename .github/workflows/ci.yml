@@ -128,6 +128,21 @@ jobs:
 
   check-migrations:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: dev
+          POSTGRES_PASSWORD: root
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        # Wait for the final TCP server, not the initialization socket server.
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -p 5432 -U dev -d postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
     steps:
       - uses: actions/checkout@v6
 
@@ -139,9 +154,6 @@ jobs:
 
       - name: Check migrations
         run: pnpm run db:check
-
-      - name: Create database
-        run: pnpm run db:create
 
       - name: Migrate database
         run: DB_URL=postgres://dev:root@localhost:5432/postgres pnpm run db:migrate
