@@ -62,6 +62,19 @@ jobs:
       - name: Create test database
         run: pnpm run db:test:create
 
+      - name: Wait for test database
+        run: |
+          # TCP readiness excludes the socket-only initialization server.
+          for attempt in {1..30}; do
+            if docker exec servicestart-test-db \
+              pg_isready -h 127.0.0.1 -U test -d postgres; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs servicestart-test-db
+          exit 1
+
       - name: Migrate test database
         run: pnpm run db:test:migrate
 
