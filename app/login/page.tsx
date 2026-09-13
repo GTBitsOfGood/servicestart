@@ -6,6 +6,7 @@ import authClient from "@/lib/authClient";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
+import UnauthenticatedOrganizationLogo from "@/components/UnauthenticatedOrganizationLogo";
 import { OrganizationConfigKey } from "@/lib/schema";
 
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
@@ -21,14 +22,15 @@ export default function LoginPage() {
     primary_color = "#FFFFFF",
     secondary_color = "#FFFFFF",
     tagline: configuredTagline,
+    logo_url: logoUrl,
   } = useOrganizationConfig([
     OrganizationConfigKey.PrimaryColor,
     OrganizationConfigKey.SecondaryColor,
     OrganizationConfigKey.Tagline,
+    OrganizationConfigKey.LogoUrl,
   ]);
   const tagline = configuredTagline?.trim() || "Welcome";
   const org = useActiveOrganization();
-  const logo = org?.organization.data?.logo;
 
   const handleLogin = async () => {
     setLoading(true);
@@ -79,26 +81,21 @@ export default function LoginPage() {
     >
       <div className="flex h-full w-[53%] flex-shrink-0 items-center justify-between px-[30px]">
         <div
-          className="flex h-[94%] w-full flex-col justify-flex-end rounded-[20px] pt-[90%] pb-[20px] pl-[20px] pr-[60%]"
+          className="relative flex h-[94%] w-full flex-col justify-flex-end rounded-[20px] pt-[90%] pb-[20px] pl-[20px] pr-[60%]"
           style={{
             background: `linear-gradient(180deg, ${primary_color} 0%, #FFF 100%)`,
           }}
         >
-          <div className="h-[130px] w-[339px]">
-            {logo && (
-              <img
-                src={`/images/${logo}`}
-                alt="Organization Logo"
-                className="h-[107px] w-[107px]"
-              />
-            )}
-          </div>
+          <UnauthenticatedOrganizationLogo logoUrl={logoUrl} />
         </div>
       </div>
       <div className="flex h-full flex-1 flex-col items-center justify-between pt-[12%]">
         <div className="flex w-[78%] bg-white flex-col items-center gap-6 rounded-4xl border-[2px] border-[#FFF] p-9 pt-25 shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
           <h1 className="self-stretch">Login</h1>
-          <p className="self-stretch text-mobile-heading-2 text-[#22070B]">
+          <p
+            className="self-stretch text-mobile-heading-2 text-grey-text-strong"
+            data-testid="organization-tagline"
+          >
             {tagline}
           </p>
           <BogTextInput

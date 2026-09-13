@@ -6,10 +6,10 @@ import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import { OrganizationConfigKey } from "@/lib/schema";
-import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import authClient from "@/lib/authClient";
 import XIcon from "@/components/XIcon";
 import LeftArrowIcon from "@/components/LeftArrowIcon";
+import UnauthenticatedOrganizationLogo from "@/components/UnauthenticatedOrganizationLogo";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -19,13 +19,15 @@ export default function ResetPasswordPage() {
   const [isExpired, setIsExpired] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState(true);
 
-  const { primary_color = "#FFFFFF", secondary_color = "#FFFFFF" } =
-    useOrganizationConfig([
-      OrganizationConfigKey.PrimaryColor,
-      OrganizationConfigKey.SecondaryColor,
-    ]);
-  const org = useActiveOrganization();
-  const logo = org?.organization.data?.logo;
+  const {
+    primary_color = "#FFFFFF",
+    secondary_color = "#FFFFFF",
+    logo_url: logoUrl,
+  } = useOrganizationConfig([
+    OrganizationConfigKey.PrimaryColor,
+    OrganizationConfigKey.SecondaryColor,
+    OrganizationConfigKey.LogoUrl,
+  ]);
 
   const handleResetPassword = async () => {
     const token = new URLSearchParams(window.location.search).get("token");
@@ -88,20 +90,12 @@ export default function ResetPasswordPage() {
     >
       <div className="flex h-full w-1/2 flex-shrink-0 items-center justify-between px-8">
         <div
-          className="flex h-[95%] w-full flex-col justify-flex-end rounded-3xl pb-5 pl-5 pr-1/2"
+          className="relative flex h-[95%] w-full flex-col justify-flex-end rounded-3xl pb-5 pl-5 pr-1/2"
           style={{
             background: `linear-gradient(180deg, ${primary_color} 0%, #FFF 100%)`,
           }}
         >
-          <div className="h-full w-1/3">
-            {logo && (
-              <img
-                src={`/images/${logo}`}
-                alt="Organization Logo"
-                className="h-[80%]"
-              />
-            )}
-          </div>
+          <UnauthenticatedOrganizationLogo logoUrl={logoUrl} />
         </div>
       </div>
       {isExpired ? (

@@ -3,7 +3,12 @@ import { describe, it, expect } from "vitest";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import db from "@/lib/db";
-import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
+import {
+  organizationConfig,
+  OrganizationConfigKey,
+  organizations,
+} from "@/lib/schema";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import {
   addMember,
   buildTestUser,
@@ -14,6 +19,81 @@ import {
 } from "@/tests/unit/testUtils";
 
 describe("GET /api/organizationConfig", () => {
+  it("publicly returns the admin-configured logo and tagline for the requested tenant", async () => {
+    const org = await createOrganization("cfg-branding");
+    const otherOrg = await createOrganization("cfg-other-branding");
+    await OrganizationConfigService.setConfig(
+      otherOrg.id,
+      OrganizationConfigKey.LogoUrl,
+      "/sunset.svg",
+    );
+    const { user, session, headers } =
+      await signUpAndGetSession(buildTestUser());
+    await setActiveOrganization(session.id, org.id);
+    await addMember(user.id, org.id, "admin");
+
+    // The BetterAuth record deliberately disagrees with the branding config.
+    await db
+      .update(organizations)
+      .set({ logo: "/wrong-logo.svg" })
+      .where(eq(organizations.id, org.id));
+
+    for (const [key, value] of [
+      [OrganizationConfigKey.LogoUrl, "/bog.svg"],
+      [OrganizationConfigKey.Tagline, "Configured organization tagline"],
+    ] as const) {
+      const saved = await testApi.organizationConfig.$put(
+        { json: { key, value } },
+        { headers },
+      );
+      expect(saved.status).toBe(200);
+    }
+
+    // No auth headers: this is how the signed-out pages retrieve branding.
+    const response = await testApi.organizationConfig.$get({
+      query: {
+        keys: [OrganizationConfigKey.LogoUrl, OrganizationConfigKey.Tagline],
+        organizationSlug: org.slug,
+      },
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      logo_url: "/bog.svg",
+      tagline: "Configured organization tagline",
+    });
+
+    const hostResponse = await testApi.organizationConfig.$get(
+      { query: { keys: [OrganizationConfigKey.LogoUrl] } },
+      { headers: { host: `${org.slug}.servicestart.com` } },
+    );
+    expect(hostResponse.status).toBe(200);
+    expect(await hostResponse.json()).toEqual({ logo_url: "/bog.svg" });
+
+    const otherResponse = await testApi.organizationConfig.$get({
+      query: {
+        keys: [OrganizationConfigKey.LogoUrl, OrganizationConfigKey.Tagline],
+        organizationSlug: otherOrg.slug,
+      },
+    });
+    expect(otherResponse.status).toBe(200);
+    expect(await otherResponse.json()).toEqual({
+      logo_url: "/sunset.svg",
+      tagline: "",
+    });
+  });
+
+  it("returns null publicly when no logo is configured", async () => {
+    const org = await createOrganization("cfg-no-logo");
+    const response = await testApi.organizationConfig.$get({
+      query: {
+        keys: [OrganizationConfigKey.LogoUrl],
+        organizationSlug: org.slug,
+      },
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ logo_url: null });
+  });
+
   it("returns 200 and empty object when keys is []", async () => {
     const response = await testApi.organizationConfig.$get({
       query: {
