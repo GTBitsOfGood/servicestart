@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, mkdtempSync, rmSync, readdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { parse } from "dotenv";
 import { validateSendGridKey } from "juno-sdk/lib/validators";
 import { getDbUrl, getEmailSenderDomain, requireEnv } from "../../lib/env";
@@ -23,14 +25,19 @@ vi.mock("@/lib/services/OrganizationService", () => ({
 vi.mock("@/lib/services/MemberService", () => ({ MembersService: {} }));
 vi.mock("@/lib/authClient", () => ({ default: {} }));
 
+let recordsDirectory: string;
 beforeEach(() => {
+  recordsDirectory = mkdtempSync(join(tmpdir(), "email-dns-"));
   vi.stubEnv("JUNO_API_KEY", "test-key");
   vi.stubEnv("SENDGRID_KEY", "SG.test-sendgrid-key");
   vi.stubEnv("EMAIL_SENDER_DOMAIN", "  Notifications.TEST  ");
   vi.stubEnv("NEXT_PUBLIC_BASE_URL", "");
   vi.clearAllMocks();
 });
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  rmSync(recordsDirectory, { recursive: true, force: true });
+});
 
 describe("configuration errors", () => {
   it.each([undefined, "", "   "])(
@@ -59,7 +66,9 @@ describe("configuration errors", () => {
     "fails setup before external calls when %s is missing",
     async (name) => {
       vi.stubEnv(name, " ");
-      await expect(setupEmail()).rejects.toThrow(`${name} is required`);
+      await expect(setupEmail({ recordsDirectory })).rejects.toThrow(
+        `${name} is required`,
+      );
       expect(juno.email.setupEmail).not.toHaveBeenCalled();
       expect(juno.email.registerDomain).not.toHaveBeenCalled();
     },
@@ -75,7 +84,7 @@ it("provisions email using the normalized domain without file credentials", asyn
   } as never);
   const log = vi.spyOn(console, "log").mockImplementation(() => {});
   try {
-    await setupEmail();
+    await setupEmail({ recordsDirectory });
     expect(juno.email.setupEmail).toHaveBeenCalledWith({
       sendgridKey: "SG.test-sendgrid-key",
     });
@@ -123,4 +132,78 @@ it("uses the default application URL and normalized domain for invitations", asy
   expect(payload.contents[0].value).toContain(
     "http://localhost:3000/accept-invitation/invite-1",
   );
+});
+
+it("persists the provider DNS response without credentials", async () => {
+  const records = {
+    mailCname: {
+      valid: false,
+      type: "cname",
+      host: "mail.notifications.test",
+      data: "provider.example.test",
+    },
+    dkim1: {
+      valid: false,
+      type: "cname",
+      host: "s1._domainkey.notifications.test",
+      data: "s1.provider.example.test",
+    },
+    dkim2: {
+      valid: false,
+      type: "cname",
+      host: "s2._domainkey.notifications.test",
+      data: "s2.provider.example.test",
+    },
+  };
+  vi.mocked(juno.email.registerDomain).mockResolvedValue({
+    id: 42,
+    records,
+  } as never);
+  await setupEmail({ recordsDirectory });
+  const saved = readFileSync(
+    join(recordsDirectory, readdirSync(recordsDirectory)[0]),
+    "utf8",
+  );
+  expect(JSON.parse(saved)).toMatchObject({
+    domain: "notifications.test",
+    subdomain: "mail",
+    id: 42,
+    records,
+  });
+  expect(saved).not.toContain("SG.test-sendgrid-key");
+  expect(saved).not.toContain("test-key");
+});
+
+it("reports a DNS record write failure instead of reporting successful setup", async () => {
+  vi.mocked(juno.email.registerDomain).mockResolvedValue({
+    id: 42,
+    records: {},
+  } as never);
+  await expect(
+    setupEmail({
+      recordsDirectory: join(
+        import.meta.dirname,
+        "email.test.ts",
+        "not-a-directory",
+      ),
+    }),
+  ).rejects.toThrow();
+});
+
+it("preserves earlier DNS snapshots when setup later returns simulated records", async () => {
+  vi.mocked(juno.email.registerDomain).mockResolvedValueOnce({
+    id: 42,
+    records: {},
+  } as never);
+  await setupEmail({ recordsDirectory });
+  vi.mocked(juno.email.registerDomain).mockResolvedValueOnce({
+    id: 0,
+    records: {},
+  } as never);
+  await setupEmail({ recordsDirectory });
+  const snapshots = readdirSync(recordsDirectory).map((file) =>
+    JSON.parse(readFileSync(join(recordsDirectory, file), "utf8")),
+  );
+  expect(snapshots).toHaveLength(2);
+  expect(snapshots.map((snapshot) => snapshot.id).sort()).toEqual([0, 42]);
 });
