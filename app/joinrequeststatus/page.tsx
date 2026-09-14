@@ -15,7 +15,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import {
   createJoinRequestIfNeeded,
-  getActiveOrganizationIdFromHeaders,
+  requireOrganizationOrRedirect,
 } from "@/lib/authUtils";
 import { JoinRequestStatus } from "@/lib/schema";
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
@@ -194,9 +194,7 @@ export default async function JoinRequestStatusPage() {
   if (!session?.user) redirect("/login");
 
   const userId = session.user.id;
-  const organizationId =
-    await getActiveOrganizationIdFromHeaders(requestHeaders);
-  if (!organizationId) redirect("/");
+  const organizationId = await requireOrganizationOrRedirect(requestHeaders);
   const activeOrgId = organizationId;
 
   const membership = await MembersService.findByUserAndOrganization(

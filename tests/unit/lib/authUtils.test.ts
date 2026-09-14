@@ -1,3 +1,9 @@
+// @vitest-environment node
+import OrganizationNotFoundPage from "@/app/organization-not-found/page";
+import { renderToStaticMarkup } from "react-dom/server";
+import DashboardPage from "@/app/page";
+import EventsPage from "@/app/events/page";
+import JoinRequestStatusPage from "@/app/joinrequeststatus/page";
 import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -342,4 +348,70 @@ describe("auth guard helpers", () => {
     expect(result.user.id).toBe(signedInUser.id);
     expect(mockRedirect).not.toHaveBeenCalled();
   });
+});
+
+describe("pages with no resolvable organization", () => {
+  it.each([
+    ["/", () => DashboardPage()],
+    ["/events", () => EventsPage({ searchParams: Promise.resolve({}) })],
+    ["/joinrequeststatus", () => JoinRequestStatusPage()],
+  ] as const)(
+    "%s reaches a terminal destination",
+    async (_path, renderPage) => {
+      const { headers } = await signUpAndGetSession(buildTestUser());
+      mockHeaders.mockReturnValue(
+        new Headers({ cookie: headers.Cookie, host: buildHost("missing") }),
+      );
+      await expect(renderPage()).rejects.toThrow(
+        "NEXT_REDIRECT:/organization-not-found",
+      );
+    },
+  );
+});
+
+describe("organization resolution regressions", () => {
+  it("renders the terminal page without a session or redirect", () => {
+    mockHeaders.mockReset();
+    mockRedirect.mockClear();
+    const markup = renderToStaticMarkup(OrganizationNotFoundPage());
+    expect(markup).toContain("Check the spelling");
+    expect(mockHeaders).not.toHaveBeenCalled();
+    expect(mockRedirect).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["/", () => DashboardPage()],
+    ["/events", () => EventsPage({ searchParams: Promise.resolve({}) })],
+  ] as const)(
+    "%s still admits members through the host fallback",
+    async (_path, renderPage) => {
+      const org = await createOrganization("member-org");
+      const { user, headers } = await signUpAndGetSession(buildTestUser());
+      await addMember(user.id, org.id, "member");
+      mockHeaders.mockReturnValue(
+        new Headers({ cookie: headers.Cookie, host: buildHost("member-org") }),
+      );
+      await expect(renderPage()).resolves.toBeDefined();
+    },
+  );
+
+  it.each([
+    ["/", () => DashboardPage()],
+    ["/events", () => EventsPage({ searchParams: Promise.resolve({}) })],
+  ] as const)(
+    "%s still sends nonmembers to join request status",
+    async (_path, renderPage) => {
+      await createOrganization("nonmember-org");
+      const { headers } = await signUpAndGetSession(buildTestUser());
+      mockHeaders.mockReturnValue(
+        new Headers({
+          cookie: headers.Cookie,
+          host: buildHost("nonmember-org"),
+        }),
+      );
+      await expect(renderPage()).rejects.toThrow(
+        "NEXT_REDIRECT:/joinrequeststatus",
+      );
+    },
+  );
 });

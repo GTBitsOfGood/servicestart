@@ -1,3 +1,4 @@
+import { ORGANIZATION_NOT_FOUND_PATH } from "@/lib/organizationRoutes";
 import type { Context } from "hono";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -217,6 +218,13 @@ export async function getActiveOrganizationIdFromHeaders(
   return organization.id;
 }
 
+/** Resolves a real organization or stops at the unguarded missing-org page. */
+export async function requireOrganizationOrRedirect(headerList: Headers) {
+  const organizationId = await getActiveOrganizationIdFromHeaders(headerList);
+  if (!organizationId) redirect(ORGANIZATION_NOT_FOUND_PATH);
+  return organizationId;
+}
+
 /**
  * Loads the Better Auth session for a Next.js server request. Redirects to
  * `/login` when there is no signed-in user.
@@ -241,12 +249,7 @@ export async function redirectIfNotMember() {
   const requestHeaders = await headers();
   const session = await requireSessionOrRedirect(requestHeaders);
 
-  const organizationId =
-    await getActiveOrganizationIdFromHeaders(requestHeaders);
-
-  if (!organizationId) {
-    redirect("/");
-  }
+  const organizationId = await requireOrganizationOrRedirect(requestHeaders);
 
   const membership = await MembersService.findByUserAndOrganization(
     session.user.id,

@@ -1,9 +1,6 @@
-import { redirect } from "next/navigation";
 import { redirectIfNotMember } from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
-import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { JoinRequestStatus } from "@/lib/schema";
 import DashboardGrid from "@/components/dashboard/DashboardGrid";
 
 export const metadata = {
@@ -18,16 +15,6 @@ export default async function Page() {
     session.user.id,
     organizationId,
   );
-  if (!membership) {
-    const joinRequest = await JoinRequestsService.findByUserAndOrganization(
-      session.user.id,
-      organizationId,
-    );
-    if (joinRequest?.status === JoinRequestStatus.Pending) {
-      redirect("/joinrequeststatus");
-    }
-  }
-
   const isAdmin = MembersService.isAdminOrOwner(membership?.role) ?? false;
   const layout = isAdmin
     ? await OrganizationConfigService.getAdminDashboardLayout(organizationId)
