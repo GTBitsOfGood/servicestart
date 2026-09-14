@@ -302,67 +302,77 @@ describe("useOrganizationConfig", () => {
       "#FB3552",
     );
   });
-});
 
-it("resolves to documented defaults when the hook has not loaded branding yet", () => {
-  const branding = resolveBranding({});
+  it("resolves to documented defaults when the hook has not loaded branding yet", () => {
+    const branding = resolveBranding({});
 
-  expect(branding[OrganizationConfigKey.PrimaryColor]).toBe(
-    DEFAULT_BRANDING[OrganizationConfigKey.PrimaryColor],
-  );
-  expect(branding[OrganizationConfigKey.SecondaryColor]).toBe(
-    DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
-  );
-});
-
-it("resolves hook results the same way as server defaults for missing branding", async () => {
-  mockGet.mockImplementation(() =>
-    Promise.resolve({
-      json: () => Promise.resolve({}),
-    }),
-  );
-
-  const keys = [
-    OrganizationConfigKey.PrimaryColor,
-    OrganizationConfigKey.SecondaryColor,
-  ] as const;
-  const { result } = renderHook(() => useOrganizationConfig(keys));
-
-  await waitFor(() => {
-    expect(mockGet).toHaveBeenCalled();
-  });
-
-  expect(resolveBranding(result.current)).toEqual({
-    [OrganizationConfigKey.PrimaryColor]:
+    expect(branding[OrganizationConfigKey.PrimaryColor]).toBe(
       DEFAULT_BRANDING[OrganizationConfigKey.PrimaryColor],
-    [OrganizationConfigKey.SecondaryColor]:
+    );
+    expect(branding[OrganizationConfigKey.SecondaryColor]).toBe(
       DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
-  });
-});
-
-it("keeps a configured primary color from the hook and defaults the secondary", async () => {
-  mockGet.mockImplementation(() =>
-    Promise.resolve({
-      json: () =>
-        Promise.resolve({
-          [OrganizationConfigKey.PrimaryColor]: "#000000",
-        }),
-    }),
-  );
-
-  const keys = [
-    OrganizationConfigKey.PrimaryColor,
-    OrganizationConfigKey.SecondaryColor,
-  ] as const;
-  const { result } = renderHook(() => useOrganizationConfig(keys));
-
-  await waitFor(() => {
-    expect(result.current[OrganizationConfigKey.PrimaryColor]).toBe("#000000");
+    );
   });
 
-  expect(resolveBranding(result.current)).toEqual({
-    [OrganizationConfigKey.PrimaryColor]: "#000000",
-    [OrganizationConfigKey.SecondaryColor]:
-      DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
+  it("resolves hook results the same way as server defaults for missing branding", async () => {
+    mockGet.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({ primary_color: null, secondary_color: null }),
+      }),
+    );
+
+    const keys = [
+      OrganizationConfigKey.PrimaryColor,
+      OrganizationConfigKey.SecondaryColor,
+    ] as const;
+    const { result } = renderHook(() => useOrganizationConfig(keys));
+
+    await waitFor(() => {
+      expect(result.current[OrganizationConfigKey.PrimaryColor]).toBeNull();
+      expect(result.current[OrganizationConfigKey.SecondaryColor]).toBeNull();
+      expect(result.current.status).toBe("ok");
+    });
+
+    expect(resolveBranding(result.current)).toEqual({
+      [OrganizationConfigKey.PrimaryColor]:
+        DEFAULT_BRANDING[OrganizationConfigKey.PrimaryColor],
+      [OrganizationConfigKey.SecondaryColor]:
+        DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
+    });
+  });
+
+  it("keeps a configured primary color from the hook and defaults the secondary", async () => {
+    mockGet.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            [OrganizationConfigKey.PrimaryColor]: "#000000",
+          }),
+      }),
+    );
+
+    const keys = [
+      OrganizationConfigKey.PrimaryColor,
+      OrganizationConfigKey.SecondaryColor,
+    ] as const;
+    const { result } = renderHook(() => useOrganizationConfig(keys));
+
+    await waitFor(() => {
+      expect(result.current[OrganizationConfigKey.PrimaryColor]).toBe(
+        "#000000",
+      );
+      expect(result.current.status).toBe("ok");
+    });
+
+    expect(resolveBranding(result.current)).toEqual({
+      [OrganizationConfigKey.PrimaryColor]: "#000000",
+      [OrganizationConfigKey.SecondaryColor]:
+        DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
+    });
   });
 });

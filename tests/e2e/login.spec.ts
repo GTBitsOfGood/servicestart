@@ -78,11 +78,4 @@ test.describe("Login Page", () => {
     expect(normalized).toContain(primary);
     expect(normalized).toContain(secondary);
   });
-
-  // No e2e coverage for the not-found state: `lib/api.ts` builds the RPC client
-  // against getBaseUrl() (NEXT_PUBLIC_BASE_URL), so every tenant's API calls go to
-  // one fixed origin. Loading a page on any other host makes that call cross-origin
-  // and the browser blocks it before the 404 is readable, so the hook sees a network
-  // error rather than "not-found". Covered by the unit tests on useOrganizationConfig
-  // until the API client resolves per-tenant origins.
 });
