@@ -12,14 +12,6 @@ const sendEmailSchema = z.object({
   recipientIds: z.array(z.string()),
 });
 
-/**
- * Joins the optional message sections into a single plain-text body.
- *
- * Juno's `contents` array holds alternative representations of the same
- * message (text/plain vs text/html), not stacked sections, so every section
- * has to be composed into one entry. Blank sections are dropped so an unused
- * subtitle or footer leaves no empty gap in the delivered email.
- */
 function composeEmailBody({
   subtitle,
   body,
