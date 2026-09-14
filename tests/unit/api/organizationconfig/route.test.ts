@@ -168,19 +168,18 @@ describe("GET /api/organizationConfig", () => {
     expect(data).toEqual({ description: "No description has been set" });
   });
 
-  it("returns 400 for non-existent organizationSlug", async () => {
+  // A missing org is 404, a malformed request stays 400, so the client can tell
+  // "no such nonprofit" apart from "bad request" and "server error" by status alone.
+  it("returns 404 for non-existent organizationSlug", async () => {
     const response = await testApi.organizationConfig.$get({
       query: {
         keys: ["description"],
         organizationSlug: "does-not-exist",
       },
     });
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(404);
     const data = await response.json();
-    expect(data).toHaveProperty(
-      "error",
-      "Requested organization does not exist",
-    );
+    expect(data).toHaveProperty("error", "Organization not found");
   });
 
   it("returns 400 when no organizationSlug and no active organization", async () => {

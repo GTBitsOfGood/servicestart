@@ -5,6 +5,7 @@ import { resolveBranding } from "@/lib/branding";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
+import OrganizationNotFound from "@/components/OrganizationNotFound";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import { OrganizationConfigKey } from "@/lib/schema";
@@ -37,6 +38,8 @@ export default function ForgotPasswordPage() {
       router.push("/login");
     }
   };
+
+  if (config.status === "not-found") return <OrganizationNotFound />;
 
   return (
     <div

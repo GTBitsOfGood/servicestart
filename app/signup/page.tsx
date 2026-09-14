@@ -9,6 +9,7 @@ import BogButton from "@/components/bog/BogButton/BogButton";
 import authClient from "@/lib/authClient";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import UnauthenticatedOrganizationLogo from "@/components/UnauthenticatedOrganizationLogo";
+import OrganizationNotFound from "@/components/OrganizationNotFound";
 import { OrganizationConfigKey } from "@/lib/schema";
 import { getSlugFromHost } from "@/lib/clientAuthUtils";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
@@ -92,6 +93,8 @@ export default function SignupPage() {
 
     void checkLoggedIn();
   }, [org?.slug, router]);
+
+  if (config.status === "not-found") return <OrganizationNotFound />;
 
   return (
     <div

@@ -5,6 +5,7 @@ import { resolveBranding } from "@/lib/branding";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
+import OrganizationNotFound from "@/components/OrganizationNotFound";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import { OrganizationConfigKey } from "@/lib/schema";
@@ -79,6 +80,8 @@ export default function ResetPasswordPage() {
       setPasswordsMatch(password === passwordConfirm);
     }
   }, [password, passwordConfirm]);
+
+  if (config.status === "not-found") return <OrganizationNotFound />;
 
   return (
     <div

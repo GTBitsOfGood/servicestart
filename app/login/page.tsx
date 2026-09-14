@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import authClient from "@/lib/authClient";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
+import OrganizationNotFound from "@/components/OrganizationNotFound";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import UnauthenticatedOrganizationLogo from "@/components/UnauthenticatedOrganizationLogo";
@@ -69,6 +70,8 @@ export default function LoginPage() {
 
     void checkLoggedIn();
   }, [org?.slug, router]);
+
+  if (config.status === "not-found") return <OrganizationNotFound />;
 
   return (
     <div

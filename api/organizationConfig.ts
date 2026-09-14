@@ -47,10 +47,7 @@ const app = new Hono()
         );
 
         if (!organization) {
-          return c.json(
-            { error: "Requested organization does not exist" },
-            400,
-          );
+          return c.json({ error: "Organization not found" }, 404);
         }
 
         organizationId = organization.id;
