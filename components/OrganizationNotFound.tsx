@@ -1,9 +1,6 @@
 "use client";
 
 /**
- * Shown on the unauthenticated pages when the requested subdomain has no
- * matching organization (issue #252).
- *
  * Deliberately unbranded: a missing organization has no branding, and rendering
  * placeholder colors is the failure this fixes. No sign-in form either — if
  * there is a box, people type in it, and they are back at the dead end.
