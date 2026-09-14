@@ -9,6 +9,7 @@ import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import { OrganizationConfigKey } from "@/lib/schema";
 import { getSlugFromHost } from "@/lib/clientAuthUtils";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
+import { resolveBranding } from "@/lib/branding";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -18,15 +19,13 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const {
-    primary_color = "#FFFFFF",
-    secondary_color = "#FFFFFF",
-    tagline = "Welcome",
-  } = useOrganizationConfig([
+  const config = useOrganizationConfig([
     OrganizationConfigKey.PrimaryColor,
     OrganizationConfigKey.SecondaryColor,
     OrganizationConfigKey.Tagline,
   ]);
+  const { primary_color, secondary_color } = resolveBranding(config);
+  const { tagline = "Welcome" } = config;
   const org = useActiveOrganization();
   const logo = org?.organization.data?.logo;
 

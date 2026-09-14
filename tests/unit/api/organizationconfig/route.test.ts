@@ -12,6 +12,7 @@ import {
   signUpAndGetSession,
   testApi,
 } from "@/tests/unit/testUtils";
+import { DEFAULT_BRANDING } from "@/lib/branding";
 
 describe("GET /api/organizationConfig", () => {
   it("returns 200 and empty object when keys is []", async () => {
@@ -385,5 +386,81 @@ describe("PUT /api/organizationConfig", () => {
     expect(response.status).toBe(200);
     const data = (await response.json()) as Record<string, unknown>;
     expect(data[OrganizationConfigKey.DashboardLayout]).toEqual(layout);
+  });
+});
+
+describe("GET /api/organizationConfig branding", () => {
+  it("returns documented defaults when no branding rows exist", async () => {
+    await createOrganization("cfg-api-brand-default");
+
+    const response = await testApi.organizationConfig.$get({
+      query: {
+        keys: ["primary_color", "secondary_color"],
+        organizationSlug: "cfg-api-brand-default",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data).toEqual({
+      primary_color: DEFAULT_BRANDING[OrganizationConfigKey.PrimaryColor],
+      secondary_color: DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
+    });
+  });
+
+  it("returns a configured primary color with the default secondary", async () => {
+    const org = await createOrganization("cfg-api-brand-partial");
+    await db.insert(organizationConfig).values({
+      id: randomUUID(),
+      organizationId: org.id,
+      key: OrganizationConfigKey.PrimaryColor,
+      value: "#000000",
+    });
+
+    const response = await testApi.organizationConfig.$get({
+      query: {
+        keys: ["primary_color", "secondary_color"],
+        organizationSlug: "cfg-api-brand-partial",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data).toEqual({
+      primary_color: "#000000",
+      secondary_color: DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
+    });
+  });
+
+  it("does not override a fully configured organization", async () => {
+    const org = await createOrganization("cfg-api-brand-full");
+    await db.insert(organizationConfig).values([
+      {
+        id: randomUUID(),
+        organizationId: org.id,
+        key: OrganizationConfigKey.PrimaryColor,
+        value: "#123456",
+      },
+      {
+        id: randomUUID(),
+        organizationId: org.id,
+        key: OrganizationConfigKey.SecondaryColor,
+        value: "#654321",
+      },
+    ]);
+
+    const response = await testApi.organizationConfig.$get({
+      query: {
+        keys: ["primary_color", "secondary_color"],
+        organizationSlug: "cfg-api-brand-full",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data).toEqual({
+      primary_color: "#123456",
+      secondary_color: "#654321",
+    });
   });
 });

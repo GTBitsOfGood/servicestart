@@ -7,7 +7,7 @@ import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import { OrganizationConfigKey } from "@/lib/schema";
-
+import { resolveBranding } from "@/lib/branding";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import { getSlugFromHost } from "@/lib/clientAuthUtils";
 
@@ -17,15 +17,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const {
-    primary_color = "#FFFFFF",
-    secondary_color = "#FFFFFF",
-    tagline = "Welcome",
-  } = useOrganizationConfig([
+  const config = useOrganizationConfig([
     OrganizationConfigKey.PrimaryColor,
     OrganizationConfigKey.SecondaryColor,
     OrganizationConfigKey.Tagline,
   ]);
+  const { primary_color, secondary_color } = resolveBranding(config);
+  const { tagline = "Welcome" } = config;
   const org = useActiveOrganization();
   const logo = org?.organization.data?.logo;
 

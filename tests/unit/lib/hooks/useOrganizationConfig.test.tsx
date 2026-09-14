@@ -3,6 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OrganizationConfigKey } from "@/lib/schema";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
+import { DEFAULT_BRANDING, resolveBranding } from "@/lib/branding";
 
 const mockSetActive = vi.fn();
 const mockUseSession = vi.fn();
@@ -179,5 +180,68 @@ describe("useOrganizationConfig", () => {
     });
 
     expect(mockGet).toHaveBeenCalledTimes(1);
+  });
+});
+
+it("resolves to documented defaults when the hook has not loaded branding yet", () => {
+  const branding = resolveBranding({});
+
+  expect(branding[OrganizationConfigKey.PrimaryColor]).toBe(
+    DEFAULT_BRANDING[OrganizationConfigKey.PrimaryColor],
+  );
+  expect(branding[OrganizationConfigKey.SecondaryColor]).toBe(
+    DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
+  );
+});
+
+it("resolves hook results the same way as server defaults for missing branding", async () => {
+  mockGet.mockImplementation(() =>
+    Promise.resolve({
+      json: () => Promise.resolve({}),
+    }),
+  );
+
+  const keys = [
+    OrganizationConfigKey.PrimaryColor,
+    OrganizationConfigKey.SecondaryColor,
+  ] as const;
+  const { result } = renderHook(() => useOrganizationConfig(keys));
+
+  await waitFor(() => {
+    expect(mockGet).toHaveBeenCalled();
+  });
+
+  expect(resolveBranding(result.current)).toEqual({
+    [OrganizationConfigKey.PrimaryColor]:
+      DEFAULT_BRANDING[OrganizationConfigKey.PrimaryColor],
+    [OrganizationConfigKey.SecondaryColor]:
+      DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
+  });
+});
+
+it("keeps a configured primary color from the hook and defaults the secondary", async () => {
+  mockGet.mockImplementation(() =>
+    Promise.resolve({
+      json: () =>
+        Promise.resolve({
+          [OrganizationConfigKey.PrimaryColor]: "#000000",
+        }),
+    }),
+  );
+
+  const keys = [
+    OrganizationConfigKey.PrimaryColor,
+    OrganizationConfigKey.SecondaryColor,
+  ] as const;
+  const { result } = renderHook(() => useOrganizationConfig(keys));
+
+  await waitFor(() => {
+    expect(result.current[OrganizationConfigKey.PrimaryColor]).toBe("#000000");
+  });
+
+  expect(resolveBranding(result.current)).toEqual({
+    [OrganizationConfigKey.PrimaryColor]: "#000000",
+    [OrganizationConfigKey.SecondaryColor]:
+      DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
   });
 });
