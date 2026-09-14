@@ -19,9 +19,11 @@ import {
 import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
 import { EmailService } from "@/lib/services/EmailService";
 import { getBaseUrl } from "./clientUtils";
+import { requireEnv } from "./env";
 import { OrganizationsService } from "./services/OrganizationService";
 
 export const auth = betterAuth({
+  secret: requireEnv("BETTER_AUTH_SECRET"),
   plugins: [
     organization({
       async sendInvitationEmail(data) {
