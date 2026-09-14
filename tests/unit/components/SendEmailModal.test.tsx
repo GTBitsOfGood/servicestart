@@ -189,9 +189,10 @@ describe("SendEmailModal", () => {
       ),
     );
     expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByText("Email sent")).toBeNull();
   });
 
-  it("closes the modal after a successful send", async () => {
+  it("closes the modal and shows a success toast after a successful send", async () => {
     const onSend = vi.fn().mockResolvedValue(undefined);
     const onClose = vi.fn();
     renderModal({ onSend, onClose });
@@ -202,6 +203,7 @@ describe("SendEmailModal", () => {
 
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
     expect(screen.queryByRole("alert")).toBeNull();
+    expect(await screen.findByText("Email sent")).toBeTruthy();
   });
 
   it("does not render the unwired send-message-to-recipient checkbox", () => {
