@@ -9,12 +9,18 @@ type ConfigResult<K extends readonly string[]> = Partial<
   Record<K[number], string>
 >;
 
+export type ConfigStatus = "ok" | "not-found" | "error";
+
 type ConfigState<K extends readonly string[]> = {
   stateKey: string;
   data: ConfigResult<K>;
+  status: ConfigStatus;
 };
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
+// Bumped from "org-config" so entries poisoned by the pre-#252 bug (error bodies
+// cached as config values, 5 minute TTL) are never read again.
+const CACHE_PREFIX = "org-config:v2";
 function isCacheDisabled() {
   return (
     process.env.NEXT_PUBLIC_ORG_CONFIG_CACHE_DISABLED === "true" ||
@@ -24,11 +30,11 @@ function isCacheDisabled() {
 
 function buildStateKey(keys: readonly string[], slug?: string) {
   const normalizedKeys = [...keys].sort().join(",");
-  return `org-config:${slug ?? "unknown"}:${normalizedKeys}`;
+  return `${CACHE_PREFIX}:${slug ?? "unknown"}:${normalizedKeys}`;
 }
 
 function buildCacheKey(key: string, slug?: string) {
-  return `org-config:${slug ?? "unknown"}:${key}`;
+  return `${CACHE_PREFIX}:${slug ?? "unknown"}:${key}`;
 }
 
 function readCache(
@@ -61,10 +67,11 @@ function writeCache(cacheKey: string, value: string) {
 
 export default function useOrganizationConfig<K extends readonly string[]>(
   keys: K,
-): ConfigResult<K> {
+): ConfigResult<K> & { status: ConfigStatus } {
   const [state, setState] = useState<ConfigState<K>>(() => ({
     stateKey: "",
     data: {},
+    status: "ok",
   }));
   const { organization } = useActiveOrganization();
 
@@ -95,7 +102,7 @@ export default function useOrganizationConfig<K extends readonly string[]>(
 
     Promise.resolve().then(() => {
       if (cancelled) return;
-      setState({ stateKey, data: cachedData });
+      setState({ stateKey, data: cachedData, status: "ok" });
     });
 
     if (missingKeys.size === 0)
@@ -112,11 +119,23 @@ export default function useOrganizationConfig<K extends readonly string[]>(
           organizationSlug: slug,
         },
       })
-      .then((res: Response) => res.json() as Promise<ConfigResult<K>>)
-      .then((responseData: ConfigResult<K>) => {
+      .then(async (res: Response) => {
+        if (cancelled) return;
+
+        // Check before parsing: a non-ok body is an error payload, not config.
+        if (!res.ok) {
+          setState({
+            stateKey,
+            data: cachedData,
+            status: res.status === 404 ? "not-found" : "error",
+          });
+          return;
+        }
+
+        const responseData = (await res.json()) as ConfigResult<K>;
         if (cancelled) return;
         const mergedData = { ...cachedData, ...responseData };
-        setState({ stateKey, data: mergedData });
+        setState({ stateKey, data: mergedData, status: "ok" });
         if (isCacheDisabled()) return;
         Object.entries(responseData).forEach(([key, value]) => {
           if (typeof value !== "string") return;
@@ -126,7 +145,7 @@ export default function useOrganizationConfig<K extends readonly string[]>(
       })
       .catch(() => {
         if (cancelled) return;
-        setState({ stateKey, data: cachedData });
+        setState({ stateKey, data: cachedData, status: "error" });
       });
 
     return () => {
@@ -138,7 +157,8 @@ export default function useOrganizationConfig<K extends readonly string[]>(
   const slug = organization?.data?.slug ?? getSlugFromHost(host ?? undefined);
   const stateKey = buildStateKey(keys, slug);
 
-  if (state.stateKey !== stateKey) return {} as ConfigResult<K>;
+  if (state.stateKey !== stateKey)
+    return { status: "ok" } as ConfigResult<K> & { status: ConfigStatus };
 
-  return state.data;
+  return { ...state.data, status: state.status };
 }
