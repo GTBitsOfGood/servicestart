@@ -1,11 +1,18 @@
 import { test, expect } from "@playwright/test";
 import {
   createTestUserAndSignIn,
+  ensureServicestartOrganization,
   expectPageDoesNotRedirect,
 } from "./testUtils";
 import { buildTestUser, signUpAndGetSession } from "../unit/testUtils";
 
 test.describe("Login Page", () => {
+  // localhost resolves to the `servicestart` tenant; without it the config
+  // request 404s and the page correctly renders the not-found state instead.
+  test.beforeAll(async () => {
+    await ensureServicestartOrganization();
+  });
+
   test("login", async ({ page }) => {
     const user = await buildTestUser();
     await signUpAndGetSession(user);
@@ -41,4 +48,11 @@ test.describe("Login Page", () => {
     );
     expect(background).toMatch(/linear-gradient\s*\(/i);
   });
+
+  // No e2e coverage for the not-found state: `lib/api.ts` builds the RPC client
+  // against getBaseUrl() (NEXT_PUBLIC_BASE_URL), so every tenant's API calls go to
+  // one fixed origin. Loading a page on any other host makes that call cross-origin
+  // and the browser blocks it before the 404 is readable, so the hook sees a network
+  // error rather than "not-found". Covered by the unit tests on useOrganizationConfig
+  // until the API client resolves per-tenant origins.
 });

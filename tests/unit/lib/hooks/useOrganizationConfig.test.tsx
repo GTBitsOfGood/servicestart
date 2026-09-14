@@ -73,6 +73,8 @@ describe("useOrganizationConfig", () => {
       }
 
       return Promise.resolve({
+        ok: true,
+        status: 200,
         json: () =>
           Promise.resolve({
             [OrganizationConfigKey.Description]: "value1",
@@ -90,7 +92,7 @@ describe("useOrganizationConfig", () => {
   });
 
   it("returns cached values when fresh", async () => {
-    const cacheKey = "org-config:acme:description";
+    const cacheKey = "org-config:v2:acme:description";
     window.localStorage.setItem(
       cacheKey,
       JSON.stringify({
@@ -112,7 +114,7 @@ describe("useOrganizationConfig", () => {
 
   it("bypasses cache when disabled", async () => {
     process.env.NEXT_PUBLIC_ORG_CONFIG_CACHE_DISABLED = "true";
-    const cacheKey = "org-config:acme:description";
+    const cacheKey = "org-config:v2:acme:description";
     window.localStorage.setItem(
       cacheKey,
       JSON.stringify({
@@ -123,6 +125,8 @@ describe("useOrganizationConfig", () => {
 
     mockGet.mockImplementation(() =>
       Promise.resolve({
+        ok: true,
+        status: 200,
         json: () =>
           Promise.resolve({
             [OrganizationConfigKey.Description]: "fresh",
@@ -142,7 +146,7 @@ describe("useOrganizationConfig", () => {
   });
 
   it("fetches only missing keys when some are cached", async () => {
-    const descriptionKey = "org-config:acme:description";
+    const descriptionKey = "org-config:v2:acme:description";
     window.localStorage.setItem(
       descriptionKey,
       JSON.stringify({
@@ -156,6 +160,8 @@ describe("useOrganizationConfig", () => {
       expect(args.query.keys).toEqual([OrganizationConfigKey.Tagline]);
 
       return Promise.resolve({
+        ok: true,
+        status: 200,
         json: () =>
           Promise.resolve({
             [OrganizationConfigKey.Tagline]: "fresh-tagline",
@@ -179,5 +185,120 @@ describe("useOrganizationConfig", () => {
     });
 
     expect(mockGet).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports not-found and caches nothing when the org does not exist", async () => {
+    mockGet.mockImplementation(() =>
+      Promise.resolve({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ error: "Organization not found" }),
+      }),
+    );
+
+    const { result } = renderHook(() =>
+      useOrganizationConfig([OrganizationConfigKey.PrimaryColor]),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("not-found");
+    });
+
+    expect(result.current[OrganizationConfigKey.PrimaryColor]).toBeUndefined();
+    expect(window.localStorage.length).toBe(0);
+  });
+
+  it("reports error and caches nothing on a server error", async () => {
+    mockGet.mockImplementation(() =>
+      Promise.resolve({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ error: "boom" }),
+      }),
+    );
+
+    const { result } = renderHook(() =>
+      useOrganizationConfig([OrganizationConfigKey.PrimaryColor]),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
+    });
+
+    expect(result.current[OrganizationConfigKey.PrimaryColor]).toBeUndefined();
+    expect(window.localStorage.length).toBe(0);
+  });
+
+  it("reports error and caches nothing on a network failure", async () => {
+    mockGet.mockImplementation(() => Promise.reject(new Error("network down")));
+
+    const { result } = renderHook(() =>
+      useOrganizationConfig([OrganizationConfigKey.PrimaryColor]),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("error");
+    });
+
+    expect(window.localStorage.length).toBe(0);
+  });
+
+  it("reports ok and caches the value on success", async () => {
+    mockGet.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            [OrganizationConfigKey.Description]: "value1",
+          }),
+      }),
+    );
+
+    const { result } = renderHook(() =>
+      useOrganizationConfig([OrganizationConfigKey.Description]),
+    );
+
+    await waitFor(() => {
+      expect(result.current.status).toBe("ok");
+    });
+
+    expect(
+      window.localStorage.getItem("org-config:v2:acme:description"),
+    ).toContain("value1");
+  });
+
+  // An org that exists but has no branding rows is NOT missing: the server
+  // supplies defaults (OrganizationConfigService.getPrimaryColor), so the page
+  // must render normally rather than showing the not-found state.
+  it("treats an existing org with server-default branding as ok", async () => {
+    mockGet.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            [OrganizationConfigKey.PrimaryColor]: "#FD8033",
+            [OrganizationConfigKey.SecondaryColor]: "#FB3552",
+          }),
+      }),
+    );
+
+    const keys = [
+      OrganizationConfigKey.PrimaryColor,
+      OrganizationConfigKey.SecondaryColor,
+    ] as const;
+    const { result } = renderHook(() => useOrganizationConfig(keys));
+
+    await waitFor(() => {
+      expect(result.current[OrganizationConfigKey.PrimaryColor]).toBe(
+        "#FD8033",
+      );
+    });
+
+    expect(result.current.status).toBe("ok");
+    expect(result.current[OrganizationConfigKey.SecondaryColor]).toBe(
+      "#FB3552",
+    );
   });
 });

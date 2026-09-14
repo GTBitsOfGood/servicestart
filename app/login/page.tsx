@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import authClient from "@/lib/authClient";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
+import OrganizationNotFound from "@/components/OrganizationNotFound";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import { OrganizationConfigKey } from "@/lib/schema";
@@ -17,15 +18,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const {
-    primary_color = "#FFFFFF",
-    secondary_color = "#FFFFFF",
-    tagline = "Welcome",
-  } = useOrganizationConfig([
+  const config = useOrganizationConfig([
     OrganizationConfigKey.PrimaryColor,
     OrganizationConfigKey.SecondaryColor,
     OrganizationConfigKey.Tagline,
   ]);
+  const {
+    primary_color = "#FFFFFF",
+    secondary_color = "#FFFFFF",
+    tagline = "Welcome",
+  } = config;
   const org = useActiveOrganization();
   const logo = org?.organization.data?.logo;
 
@@ -67,6 +69,8 @@ export default function LoginPage() {
 
     void checkLoggedIn();
   }, [org?.slug, router]);
+
+  if (config.status === "not-found") return <OrganizationNotFound />;
 
   return (
     <div
