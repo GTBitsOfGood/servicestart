@@ -1,3 +1,4 @@
+import { ORGANIZATION_NOT_FOUND_PATH } from "@/lib/organizationRoutes";
 import type { IconName } from "@/components/bog/BogIcon/BogIcon";
 import { OrganizationConfigKey, ToggleableOrganizationFeature } from "./schema";
 
@@ -47,6 +48,7 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
 ];
 
 export const NO_NAVBAR_PAGES = [
+  ORGANIZATION_NOT_FOUND_PATH,
   "/login",
   "/signup",
   "/joinrequeststatus",

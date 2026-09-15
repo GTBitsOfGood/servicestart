@@ -1,7 +1,5 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import EventsPageClient from "@/components/events/EventsPageClient";
-import { auth } from "@/lib/auth";
+import { redirectIfNotMember } from "@/lib/authUtils";
 import EventService from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/MemberService";
 
@@ -15,28 +13,15 @@ interface EventsPageProps {
 }
 
 export default async function EventsPage({ searchParams }: EventsPageProps) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user) {
-    redirect("/login");
-  }
-
-  const organizationId = session.session.activeOrganizationId;
-  if (!organizationId) {
-    redirect("/");
-  }
+  const session = await redirectIfNotMember();
+  const { organizationId } = session;
 
   const membership = await MembersService.findByUserAndOrganization(
     session.user.id,
     organizationId,
   );
-  if (!membership) {
-    redirect("/");
-  }
 
-  const isAdmin = MembersService.isAdminOrOwner(membership.role);
+  const isAdmin = MembersService.isAdminOrOwner(membership?.role);
   const search = await searchParams;
   const query = Array.isArray(search?.query) ? search.query[0] : search?.query;
   const filterParam = Array.isArray(search?.filter)
