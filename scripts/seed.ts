@@ -26,12 +26,25 @@ const ORGS: Array<{
   name: string;
   slug: string;
   navbar: NavbarConfig;
+  config?: Partial<Record<OrganizationConfigKey, string>>;
 }> = [
   {
     id: "org_servicestart",
     name: "ServiceStart",
     slug: "servicestart",
     navbar: { variant: "horizontal-center", color: "red" },
+  },
+  {
+    id: "org_visionariesforthethrone",
+    name: "Visionaries to the Throne",
+    slug: "visionariesforthethrone",
+    navbar: { variant: "horizontal-center", color: "white" },
+    // Development defaults from the Figma style guide, not final page designs.
+    config: {
+      [OrganizationConfigKey.PrimaryColor]: "#5C218C",
+      [OrganizationConfigKey.SecondaryColor]: "#C29BDC",
+      [OrganizationConfigKey.Tagline]: "Visionaries to the Throne",
+    },
   },
   {
     id: "org_vertical_icon",
@@ -76,6 +89,14 @@ export async function main() {
       OrganizationConfigKey.NavbarColor,
       org.navbar.color,
     );
+
+    for (const [key, value] of Object.entries(org.config ?? {})) {
+      await OrganizationConfigService.setConfig(
+        org.id,
+        key as OrganizationConfigKey,
+        value,
+      );
+    }
   }
 
   log("Organizations created with navbar configs.");
