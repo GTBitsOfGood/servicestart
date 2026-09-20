@@ -3,10 +3,11 @@
 import { useState, useTransition } from "react";
 import BogButton from "@/components/bog/BogButton/BogButton";
 
-type RegisterState = {
+export type RegisterState = {
   registered: boolean;
   isFull: boolean;
   isDeadlinePassed: boolean;
+  message?: string;
 };
 
 type RegisterButtonProps = {
@@ -31,23 +32,31 @@ export default function RegisterButton({
 
   const isDisabled =
     (!state.registered && (state.isFull || state.isDeadlinePassed)) ||
+    (state.registered && state.isDeadlinePassed) ||
     isPending;
 
   return (
-    <BogButton
-      type="button"
-      variant="primary"
-      size="small"
-      className="px-10 py-3 text-xl bg-brand-text text-white"
-      disabled={isDisabled}
-      onClick={() => {
-        startTransition(async () => {
-          const nextState = await onRegister();
-          setState(nextState);
-        });
-      }}
-    >
-      {label}
-    </BogButton>
+    <div className="flex flex-col items-end gap-2">
+      <BogButton
+        type="button"
+        variant="primary"
+        size="small"
+        className="px-10 py-3 text-xl bg-brand-text text-white"
+        disabled={isDisabled}
+        onClick={() => {
+          startTransition(async () => {
+            const nextState = await onRegister();
+            setState(nextState);
+          });
+        }}
+      >
+        {isPending ? "Saving…" : label}
+      </BogButton>
+      {state.message && (
+        <p role="alert" className="text-small text-status-red-text">
+          {state.message}
+        </p>
+      )}
+    </div>
   );
 }

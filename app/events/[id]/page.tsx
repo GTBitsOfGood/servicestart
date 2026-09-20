@@ -2,59 +2,76 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
-import RegisterButton from "@/components/events/RegisterButton";
+import RegisterButton, {
+  type RegisterState,
+} from "@/components/events/RegisterButton";
+import EventAdminActions from "@/components/events/EventAdminActions";
+import DraftChip from "@/components/events/DraftChip";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
 import EventService from "@/lib/services/EventService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
 import { UserService } from "@/lib/services/UserService";
 import { formatDateTime, formatRsvpDeadline } from "@/lib/clientUtils";
+import {
+  canManageEvent,
+  canViewEvent,
+  registrationBlockMessages,
+  validateReadyToPublish,
+  type Viewer,
+} from "@/lib/events";
 
 interface EventDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+async function resolveViewer(): Promise<{
+  userId: string | null;
+  viewer: Viewer;
+}> {
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (!session?.user) {
+    return {
+      userId: null,
+      viewer: { organizationId: null, isMember: false, isAdmin: false },
+    };
+  }
+
+  const organizationId = session.session.activeOrganizationId ?? null;
+  const membership = organizationId
+    ? await MembersService.findByUserAndOrganization(
+        session.user.id,
+        organizationId,
+      )
+    : null;
+
+  return {
+    userId: session.user.id,
+    viewer: {
+      organizationId,
+      isMember: membership != null,
+      isAdmin: MembersService.isAdminOrOwner(membership?.role),
+    },
+  };
+}
+
 export default async function EventDetailPage({
   params,
 }: EventDetailPageProps) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
   const { id } = await params;
+  const { userId, viewer } = await resolveViewer();
   const event = await EventService.findById(id);
 
-  if (!event) {
-    redirect("/");
+  if (!event || !canViewEvent(event, viewer)) {
+    redirect(userId ? "/events" : "/login");
   }
 
-  const eventVisibility = (event as { visibility?: string | null }).visibility;
-  const isPublicEvent = eventVisibility === "public";
-
-  if (!isPublicEvent) {
-    if (!session?.user) {
-      redirect("/login");
-    }
-
-    const activeOrganizationId = session.session.activeOrganizationId;
-    if (!activeOrganizationId) {
-      redirect("/");
-    }
-
-    if (event.organizationId !== activeOrganizationId) {
-      redirect("/");
-    }
-
-    const membership = await MembersService.findByUserAndOrganization(
-      session.user.id,
-      activeOrganizationId,
-    );
-
-    if (!membership) {
-      redirect("/");
-    }
-  }
+  const isAdminForEvent = canManageEvent(event, viewer);
+  const isDraft = event.publishedAt == null;
 
   const { date, time, endTime } = formatDateTime(
     event.startTimestamp ?? null,
@@ -63,8 +80,8 @@ export default async function EventDetailPage({
   const organization = await OrganizationsService.findById(
     event.organizationId,
   );
-  const hostRecord = await EventService.getEventHosts(event.id);
-  const hostIds = hostRecord ? [hostRecord.userId] : [];
+  const hostRecords = await EventService.listEventHosts(event.id);
+  const hostIds = hostRecords.map((host) => host.userId);
   const hostUsers = await Promise.all(hostIds.map(UserService.findById));
   const organizerProfiles = hostUsers.flatMap(
     (
@@ -90,118 +107,115 @@ export default async function EventDetailPage({
       ? [{ name: organization.name, image: null }]
       : [{ name: "Organizer Name", image: null }];
 
-  const eventMeta = event as {
-    rsvpLimit?: number | null;
-    rsvpDeadline?: Date | null;
-    accessibilityNotes?: string | null;
-    links?: string[] | null;
-    tags?: { tagId: string; tag: string }[] | null;
-  };
-  const rsvpLimit = eventMeta.rsvpLimit ?? null;
-  const rsvpDeadline = eventMeta.rsvpDeadline ?? null;
-  const accessibilityNotes = eventMeta.accessibilityNotes ?? null;
-  const links = eventMeta.links ?? [];
-  const tagList = eventMeta.tags ?? [];
-  const rsvps = await EventService.listRSVPsByEvent(event.id);
-  const rsvpCount = rsvps.length;
-  const userHasRsvped = session?.user
-    ? rsvps.some((rsvp: { userId: string }) => rsvp.userId === session.user.id)
+  const rsvpLimit = event.rsvpLimit;
+  const rsvpDeadline = event.rsvpDeadline;
+  const accessibilityNotes = event.accessibilityNotes;
+  const links = event.links ?? [];
+  const tagList = event.tags ?? [];
+  const rsvpCount = await EventService.countRSVPs(event.id);
+  const userHasRsvped = userId
+    ? await EventService.hasRSVP(event.id, userId)
     : false;
   const isFull = rsvpLimit !== null && rsvpCount >= rsvpLimit;
   const isDeadlinePassed = rsvpDeadline ? new Date() > rsvpDeadline : false;
-  const initialRegisterState = {
+  const initialRegisterState: RegisterState = {
     registered: userHasRsvped,
     isFull,
     isDeadlinePassed,
   };
 
-  async function registerForEvent() {
+  // Rules come from lib/events so this stays in step with the RSVP route.
+  async function registerForEvent(): Promise<RegisterState> {
     "use server";
 
-    const authSession = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const { userId: actorId, viewer: actor } = await resolveViewer();
 
-    if (!authSession?.user) {
+    if (!actorId) {
       redirect("/login");
     }
 
-    const activeOrganizationId = authSession.session.activeOrganizationId;
-    if (!activeOrganizationId) {
-      redirect("/");
-    }
-
-    const membership = await MembersService.findByUserAndOrganization(
-      authSession.user.id,
-      activeOrganizationId,
-    );
-
-    if (!membership) {
-      redirect("/");
-    }
-
     const eventRecord = await EventService.findById(id);
-    if (!eventRecord || eventRecord.organizationId !== activeOrganizationId) {
-      redirect("/");
+    if (!eventRecord || !canViewEvent(eventRecord, actor)) {
+      redirect("/events");
     }
 
-    const recordMeta = eventRecord as {
-      rsvpLimit?: number | null;
-      rsvpDeadline?: Date | null;
-    };
-    const recordRsvpLimit = recordMeta.rsvpLimit ?? null;
-    const recordRsvpDeadline = recordMeta.rsvpDeadline ?? null;
-    const currentRsvps = await EventService.listRSVPsByEvent(eventRecord.id);
-    const recordIsFull =
-      recordRsvpLimit !== null && currentRsvps.length >= recordRsvpLimit;
-    const recordDeadlinePassed = recordRsvpDeadline
-      ? new Date() > recordRsvpDeadline
-      : false;
+    const organizationId = eventRecord.organizationId;
 
-    const alreadyRsvped = currentRsvps.some(
-      (rsvp: { userId: string }) => rsvp.userId === authSession.user.id,
+    async function stateAfter(message?: string): Promise<RegisterState> {
+      const count = await EventService.countRSVPs(eventRecord!.id);
+      return {
+        registered: await EventService.hasRSVP(eventRecord!.id, actorId!),
+        isFull:
+          eventRecord!.rsvpLimit !== null && count >= eventRecord!.rsvpLimit,
+        isDeadlinePassed: eventRecord!.rsvpDeadline
+          ? new Date() > eventRecord!.rsvpDeadline
+          : false,
+        message,
+      };
+    }
+
+    if (actor.organizationId !== organizationId) {
+      return await stateAfter(registrationBlockMessages["not-a-member"]);
+    }
+
+    const registered = await EventService.hasRSVP(eventRecord.id, actorId);
+    const result = registered
+      ? await EventService.withdraw(eventRecord.id, organizationId, actorId)
+      : await EventService.register(eventRecord.id, organizationId, actorId);
+
+    revalidatePath(`/events/${eventRecord.id}`);
+
+    const succeeded =
+      result === "added" ||
+      result === "already-registered" ||
+      result === "removed";
+
+    return await stateAfter(
+      succeeded ? undefined : registrationBlockMessages[result],
     );
+  }
 
-    if (alreadyRsvped) {
-      await EventService.deleteRSVP(eventRecord.id, authSession.user.id);
-      const remainingRsvps = await EventService.listRSVPsByEvent(
-        eventRecord.id,
-      );
-      const remainingCount = remainingRsvps.length;
-      const remainingIsFull =
-        recordRsvpLimit !== null && remainingCount >= recordRsvpLimit;
-      const remainingDeadlinePassed = recordRsvpDeadline
-        ? new Date() > recordRsvpDeadline
-        : false;
-      return {
-        registered: false,
-        isFull: remainingIsFull,
-        isDeadlinePassed: remainingDeadlinePassed,
-      };
+  async function setPublished(publish: boolean) {
+    "use server";
+
+    const { userId: actorId, viewer: actor } = await resolveViewer();
+    const eventRecord = await EventService.findById(id);
+
+    if (!actorId || !eventRecord || !canManageEvent(eventRecord, actor)) {
+      return { ok: false, error: "You cannot change this event." };
     }
 
-    if (recordIsFull || recordDeadlinePassed) {
-      return {
-        registered: false,
-        isFull: recordIsFull,
-        isDeadlinePassed: recordDeadlinePassed,
-      };
+    if (publish) {
+      const publishError = validateReadyToPublish(eventRecord);
+      if (publishError) {
+        return { ok: false, error: publishError };
+      }
     }
 
-    await EventService.addRSVP(eventRecord.id, authSession.user.id);
+    await EventService.updateEvent(eventRecord.id, eventRecord.organizationId, {
+      publishedAt: publish ? new Date() : null,
+      publishedById: publish ? actorId : null,
+    });
 
-    const updatedRsvps = await EventService.listRSVPsByEvent(eventRecord.id);
-    const updatedCount = updatedRsvps.length;
-    const updatedIsFull =
-      recordRsvpLimit !== null && updatedCount >= recordRsvpLimit;
-    const updatedDeadlinePassed = recordRsvpDeadline
-      ? new Date() > recordRsvpDeadline
-      : false;
-    return {
-      registered: true,
-      isFull: updatedIsFull,
-      isDeadlinePassed: updatedDeadlinePassed,
-    };
+    revalidatePath("/events");
+    revalidatePath(`/events/${eventRecord.id}`);
+
+    return { ok: true };
+  }
+
+  async function deleteEvent() {
+    "use server";
+
+    const { userId: actorId, viewer: actor } = await resolveViewer();
+    const eventRecord = await EventService.findById(id);
+
+    if (!actorId || !eventRecord || !canManageEvent(eventRecord, actor)) {
+      return { ok: false, error: "You cannot delete this event." };
+    }
+
+    await EventService.deleteById(eventRecord.id, eventRecord.organizationId);
+    revalidatePath("/events");
+    redirect("/events");
   }
 
   return (
@@ -227,14 +241,31 @@ export default async function EventDetailPage({
           )}
         </div>
 
-        <div className="flex items-center justify-between my-16">
-          <h1 className="text-heading-1 font-paragraph font-bold text-grey-text-strong">
-            {event.name}
-          </h1>
-          <RegisterButton
-            initialState={initialRegisterState}
-            onRegister={registerForEvent}
-          />
+        <div className="flex flex-wrap items-center justify-between gap-6 my-16">
+          <div className="flex items-center gap-4">
+            <h1 className="text-heading-1 font-paragraph font-bold text-grey-text-strong">
+              {event.name}
+            </h1>
+            {isDraft && <DraftChip />}
+          </div>
+          <div className="flex flex-wrap items-center gap-6">
+            {isAdminForEvent && (
+              <EventAdminActions
+                eventId={event.id}
+                isPublished={!isDraft}
+                onTogglePublish={setPublished}
+                onDelete={deleteEvent}
+              />
+            )}
+            {viewer.isMember &&
+              viewer.organizationId === event.organizationId &&
+              !isDraft && (
+                <RegisterButton
+                  initialState={initialRegisterState}
+                  onRegister={registerForEvent}
+                />
+              )}
+          </div>
         </div>
 
         <div className="mt-4 flex flex-wrap items-stretch gap-30 text-paragraph-1 text-grey-text-weak">

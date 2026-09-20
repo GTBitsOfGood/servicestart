@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { auth } from "@/lib/auth";
@@ -6,10 +7,19 @@ import { EventService } from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
 import { TagService } from "@/lib/services/TagService";
-import { UserService } from "@/lib/services/UserService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 import { ForbiddenError } from "@/lib/errors";
 import { EventVisibility } from "@/lib/schema";
+import {
+  canViewEvent,
+  eventCreateSchema,
+  eventUpdateSchema,
+  registrationBlockMessages,
+  validateEventDates,
+  validateReadyToPublish,
+  type RegistrationBlock,
+  type Viewer,
+} from "@/lib/events";
 
 export const eventsQuerySchema = paginationQuerySchema.extend({
   published: z
@@ -22,188 +32,165 @@ export const eventsQuerySchema = paginationQuerySchema.extend({
     }),
 });
 
-const app = new Hono()
-  .post(
-    "/",
-    zValidator(
-      "json",
-      z.object({
-        name: z.string().min(1, "Name is required"),
-        location: z.string().min(1, "Location is required"),
-        startTimestamp: z.string().nullable().optional(),
-        duration: z.string().nullable().optional(),
-        description: z.string().nullable().optional(),
-        rsvpLimit: z.number().optional(),
-        rsvpDeadline: z.string().nullable().optional(),
-        visibility: z.enum(EventVisibility),
-        accessibilityNotes: z.string().optional(),
-        links: z.array(z.string()).optional(),
-        coverImageUrl: z.string().nullable().optional(),
-        published: z.boolean().default(false),
-        hosts: z.array(z.string()).optional(),
-        tagIds: z.array(z.string()).optional(),
-      }),
-    ),
-    async (c) => {
-      const session = await auth.api.getSession({
-        headers: c.req.header(),
-      });
+const NOT_FOUND_BLOCKS: RegistrationBlock[] = ["not-visible", "not-a-member"];
 
-      if (!session?.user) {
-        return c.json({ error: "Unauthorized" }, { status: 401 });
-      }
+const rsvpQuerySchema = z.object({
+  userId: z.string().optional(),
+});
 
-      const activeOrganizationId = session.session.activeOrganizationId;
-      if (!activeOrganizationId) {
-        return c.json({ error: "No active organization" }, { status: 403 });
-      }
-      const membership = await MembersService.findByUserAndOrganization(
+async function getViewer(c: Context) {
+  const session = await auth.api.getSession({ headers: c.req.header() });
+
+  if (!session?.user) {
+    return null;
+  }
+
+  const organizationId = session.session.activeOrganizationId ?? null;
+  const membership = organizationId
+    ? await MembersService.findByUserAndOrganization(
         session.user.id,
-        activeOrganizationId,
-      );
+        organizationId,
+      )
+    : null;
 
-      if (!MembersService.isAdminOrOwner(membership?.role)) {
-        throw new ForbiddenError();
-      }
+  const viewer: Viewer = {
+    organizationId,
+    isMember: membership != null,
+    isAdmin: MembersService.isAdminOrOwner(membership?.role),
+  };
 
-      const data = c.req.valid("json");
-      const publishedAt = data.published ? new Date() : null;
-      const publishedById = data.published ? session.user.id : null;
-      let ids: string[] = [];
+  return { session, viewer };
+}
 
-      const hosts = data.hosts ?? [];
-      try {
-        ids = await Promise.all(
-          hosts.map((email) =>
-            UserService.findByEmailAndOrganization(
-              email,
-              activeOrganizationId,
-            ).then((user) => user.id),
-          ),
-        );
-      } catch {
-        return c.json({ error: "Failed to find host(s)" }, { status: 404 });
-      }
+async function resolveHostIds(emails: string[], organizationId: string) {
+  const contacts = await MembersService.listMemberContacts(organizationId);
+  const idsByEmail = new Map(contacts.map((c) => [c.email, c.userId]));
+  const ids: string[] = [];
 
-      const memberships = await Promise.all(
-        ids.map((id) =>
-          MembersService.findByUserAndOrganization(id, activeOrganizationId),
-        ),
-      );
+  for (const email of emails) {
+    const userId = idsByEmail.get(email.trim().toLowerCase());
 
-      const invalidIndex = memberships.findIndex((m) => !m);
-      if (invalidIndex !== -1) {
-        return c.json(
-          { error: "At least one host not in organization" },
-          { status: 404 },
-        );
-      }
+    if (!userId) {
+      return { error: `${email} is not a member of this organization` };
+    }
 
-      if (data.tagIds && data.tagIds.length > 0) {
-        const valid = await TagService.allBelongToOrg(
-          data.tagIds,
-          activeOrganizationId,
-        );
-        if (!valid) {
-          return c.json(
-            { error: "At least one tag not in organization" },
-            { status: 404 },
-          );
-        }
-      }
+    ids.push(userId);
+  }
 
-      const event = await EventService.create(
-        activeOrganizationId,
-        data.name,
-        data.location,
-        data.startTimestamp ? new Date(data.startTimestamp) : null,
-        data.duration ?? null,
-        data.description ?? null,
-        data.coverImageUrl ?? null,
-        data.rsvpLimit ?? null,
-        data.rsvpDeadline ? new Date(data.rsvpDeadline) : null,
-        data.visibility,
-        data.accessibilityNotes ?? null,
-        data.links ?? null,
-        publishedAt,
-        publishedById,
-        data.tagIds,
-      );
+  return { ids };
+}
 
-      if (!event) {
-        return c.json({ error: "Failed to create event" }, { status: 500 });
-      }
-
-      if (hosts.length > 0) {
-        await EventService.addEventHosts(event.id, ids);
-      }
-
-      return c.json(event);
-    },
-  )
-  .get("/", zValidator("query", eventsQuerySchema), async (c) => {
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
-
-    if (!session?.user) {
+const app = new Hono()
+  .post("/", zValidator("json", eventCreateSchema), async (c) => {
+    const resolved = await getViewer(c);
+    if (!resolved) {
       return c.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const activeOrganizationId = session.session.activeOrganizationId;
+    const { session, viewer } = resolved;
+    const activeOrganizationId = viewer.organizationId;
     if (!activeOrganizationId) {
-      const { page, pageSize } = c.req.valid("query");
-      const eventsList = await EventService.listByPublic({
-        limit: pageSize,
-        offset: (page - 1) * pageSize,
-      });
-
-      return c.json({
-        data: eventsList,
-        page,
-        pageSize,
-      });
+      return c.json({ error: "No active organization" }, { status: 403 });
     }
 
-    const membership = await MembersService.findByUserAndOrganization(
-      session.user.id,
+    if (!viewer.isAdmin) {
+      throw new ForbiddenError();
+    }
+
+    const data = c.req.valid("json");
+
+    const dateError = validateEventDates(data);
+    if (dateError) {
+      return c.json({ error: dateError }, { status: 400 });
+    }
+
+    if (data.published) {
+      const publishError = validateReadyToPublish({
+        startTimestamp: data.startTimestamp
+          ? new Date(data.startTimestamp)
+          : null,
+        duration: data.duration ?? null,
+        description: data.description ?? null,
+        location: data.location,
+      });
+
+      if (publishError) {
+        return c.json({ error: publishError }, { status: 400 });
+      }
+    }
+
+    const hosts = data.hosts ?? [];
+    const resolvedHosts = await resolveHostIds(hosts, activeOrganizationId);
+    if (resolvedHosts.error) {
+      return c.json({ error: resolvedHosts.error }, { status: 404 });
+    }
+
+    if (data.tagIds && data.tagIds.length > 0) {
+      const valid = await TagService.allBelongToOrg(
+        data.tagIds,
+        activeOrganizationId,
+      );
+      if (!valid) {
+        return c.json(
+          { error: "At least one tag not in organization" },
+          { status: 404 },
+        );
+      }
+    }
+
+    const publishedAt = data.published ? new Date() : null;
+    const publishedById = data.published ? session.user.id : null;
+
+    const event = await EventService.create(
       activeOrganizationId,
+      data.name,
+      data.location,
+      data.startTimestamp ? new Date(data.startTimestamp) : null,
+      data.duration ?? null,
+      data.description ?? null,
+      data.coverImageUrl ?? null,
+      data.rsvpLimit ?? null,
+      data.rsvpDeadline ? new Date(data.rsvpDeadline) : null,
+      data.visibility,
+      data.accessibilityNotes ?? null,
+      data.links ?? null,
+      publishedAt,
+      publishedById,
+      data.tagIds,
     );
 
-    if (!MembersService.isAdminOrOwner(membership?.role)) {
-      const { page, pageSize } = c.req.valid("query");
-      const eventsList = await EventService.listByOrganization(
-        activeOrganizationId,
-        { limit: pageSize, offset: (page - 1) * pageSize },
-        { published: true },
-      );
-
-      return c.json({
-        data: eventsList,
-        page,
-        pageSize,
-      });
+    if (!event) {
+      return c.json({ error: "Failed to create event" }, { status: 500 });
     }
 
-    const { page, pageSize, published } = c.req.valid("query");
-    if (published !== undefined) {
-      const eventsList = await EventService.listByOrganization(
-        activeOrganizationId,
-        { limit: pageSize, offset: (page - 1) * pageSize },
-        { published },
-      );
+    if (resolvedHosts.ids && resolvedHosts.ids.length > 0) {
+      await EventService.addEventHosts(event.id, resolvedHosts.ids);
+    }
 
+    return c.json(event);
+  })
+  .get("/", zValidator("query", eventsQuerySchema), async (c) => {
+    const resolved = await getViewer(c);
+    if (!resolved) {
+      return c.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { viewer } = resolved;
+    const { page, pageSize, published } = c.req.valid("query");
+    const pagination = { limit: pageSize, offset: (page - 1) * pageSize };
+
+    if (!viewer.organizationId) {
       return c.json({
-        data: eventsList,
+        data: await EventService.listByPublic(pagination),
         page,
         pageSize,
       });
     }
 
     const eventsList = await EventService.listByOrganization(
-      activeOrganizationId,
-      { limit: pageSize, offset: (page - 1) * pageSize },
-      {},
+      viewer.organizationId,
+      pagination,
+      { published: viewer.isAdmin ? published : true },
     );
 
     return c.json({
@@ -214,41 +201,13 @@ const app = new Hono()
   })
   .get("/:eventId", async (c) => {
     const { eventId } = c.req.param();
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
-
-    if (!session?.user) {
+    const resolved = await getViewer(c);
+    if (!resolved) {
       return c.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const event = await EventService.findById(eventId);
-    if (!event) {
-      return c.json({ error: "Event not found" }, { status: 404 });
-    }
-
-    if (event.publishedAt && event.visibility === EventVisibility.Public) {
-      return c.json(event);
-    }
-
-    const activeOrganizationId = session.session.activeOrganizationId;
-    if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
-    }
-
-    if (event.organizationId !== activeOrganizationId) {
-      return c.json({ error: "Event not found" }, { status: 404 });
-    }
-
-    const membership = await MembersService.findByUserAndOrganization(
-      session.user.id,
-      activeOrganizationId,
-    );
-
-    if (
-      event.publishedAt == null &&
-      !MembersService.isAdminOrOwner(membership?.role)
-    ) {
+    if (!event || !canViewEvent(event, resolved.viewer)) {
       return c.json({ error: "Event not found" }, { status: 404 });
     }
 
@@ -259,32 +218,22 @@ const app = new Hono()
     zValidator("query", paginationQuerySchema),
     async (c) => {
       const { eventId } = c.req.param();
-      const session = await auth.api.getSession({
-        headers: c.req.header(),
-      });
-
-      if (!session?.user) {
+      const resolved = await getViewer(c);
+      if (!resolved) {
         return c.json({ error: "Unauthorized" }, { status: 401 });
       }
 
-      const activeOrganizationId = session.session.activeOrganizationId;
+      const { viewer } = resolved;
+      const activeOrganizationId = viewer.organizationId;
       if (!activeOrganizationId) {
         return c.json({ error: "Event not found" }, { status: 404 });
       }
 
       const event = await EventService.findById(eventId);
-      if (!event || event.organizationId !== activeOrganizationId) {
-        return c.json({ error: "Event not found" }, { status: 404 });
-      }
-
-      const membership = await MembersService.findByUserAndOrganization(
-        session.user.id,
-        activeOrganizationId,
-      );
-
       if (
-        event.publishedAt == null &&
-        !MembersService.isAdminOrOwner(membership?.role)
+        !event ||
+        event.organizationId !== activeOrganizationId ||
+        !canViewEvent(event, viewer)
       ) {
         return c.json({ error: "Event not found" }, { status: 404 });
       }
@@ -306,125 +255,165 @@ const app = new Hono()
       });
     },
   )
-  .patch(
-    "/:eventId",
-    zValidator(
-      "json",
-      z.object({
-        name: z.string().min(1).optional(),
-        location: z.string().min(1).optional(),
-        description: z.string().nullable().optional(),
-        startTimestamp: z.string().nullable().optional(),
-        duration: z.string().nullable().optional(),
-        coverImageUrl: z.string().nullable().optional(),
-        published: z.boolean().optional(),
-      }),
-    ),
-    async (c) => {
-      const { eventId } = c.req.param();
-      const session = await auth.api.getSession({
-        headers: c.req.header(),
-      });
-
-      if (!session?.user) {
-        return c.json({ error: "Unauthorized" }, { status: 401 });
-      }
-
-      const activeOrganizationId = session.session.activeOrganizationId;
-      if (!activeOrganizationId) {
-        return c.json({ error: "No active organization" }, { status: 403 });
-      }
-
-      const membership = await MembersService.findByUserAndOrganization(
-        session.user.id,
-        activeOrganizationId,
-      );
-
-      if (!MembersService.isAdminOrOwner(membership?.role)) {
-        throw new ForbiddenError();
-      }
-
-      const event = await EventService.findById(eventId);
-      if (!event || event.organizationId !== activeOrganizationId) {
-        return c.json({ error: "Event not found" }, { status: 404 });
-      }
-
-      const data = c.req.valid("json");
-      const updates: {
-        name?: string;
-        location?: string;
-        description?: string | null;
-        startTimestamp?: Date | null;
-        duration?: string | null;
-        coverImageUrl?: string | null;
-        publishedAt?: Date | null;
-        publishedById?: string | null;
-      } = {};
-
-      if (data.name !== undefined) updates.name = data.name;
-      if (data.location !== undefined) updates.location = data.location;
-      if (data.description !== undefined) {
-        updates.description = data.description;
-      }
-      if (data.startTimestamp !== undefined) {
-        updates.startTimestamp = data.startTimestamp
-          ? new Date(data.startTimestamp)
-          : null;
-      }
-      if (data.duration !== undefined) {
-        updates.duration = data.duration;
-      }
-      if (data.coverImageUrl !== undefined) {
-        updates.coverImageUrl = data.coverImageUrl;
-      }
-      if (data.published !== undefined) {
-        if (event.publishedAt == null) {
-          if (data.published) {
-            updates.publishedAt = new Date();
-            updates.publishedById = session.user.id;
-          }
-        } else {
-          if (!data.published) {
-            updates.publishedAt = null;
-            updates.publishedById = null;
-          }
-        }
-      }
-
-      const updated = await EventService.updateEvent(
-        eventId,
-        activeOrganizationId,
-        updates,
-      );
-
-      if (!updated) {
-        return c.json({ error: "Failed to update event" }, { status: 500 });
-      }
-
-      return c.json(updated);
-    },
-  )
-  .delete("/:eventId", async (c) => {
+  .patch("/:eventId", zValidator("json", eventUpdateSchema), async (c) => {
     const { eventId } = c.req.param();
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
-
-    if (!session?.user) {
+    const resolved = await getViewer(c);
+    if (!resolved) {
       return c.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const activeOrganizationId = session.session.activeOrganizationId;
+    const { session, viewer } = resolved;
+    const activeOrganizationId = viewer.organizationId;
     if (!activeOrganizationId) {
       return c.json({ error: "No active organization" }, { status: 403 });
     }
 
-    const membership = await MembersService.findByUserAndOrganization(
-      session.user.id,
-      activeOrganizationId,
-    );
+    if (!viewer.isAdmin) {
+      throw new ForbiddenError();
+    }
 
-    if (!MembersService.isAdminOrOwner(membership?.role)) {
+    const event = await EventService.findById(eventId);
+    if (!event || event.organizationId !== activeOrganizationId) {
+      return c.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    const data = c.req.valid("json");
+
+    const dateError = validateEventDates(data, event);
+    if (dateError) {
+      return c.json({ error: dateError }, { status: 400 });
+    }
+
+    const updates: {
+      name?: string;
+      location?: string;
+      description?: string | null;
+      startTimestamp?: Date | null;
+      duration?: string | null;
+      coverImageUrl?: string | null;
+      publishedAt?: Date | null;
+      publishedById?: string | null;
+      rsvpLimit?: number | null;
+      rsvpDeadline?: Date | null;
+      visibility?: EventVisibility;
+      accessibilityNotes?: string | null;
+      links?: string[] | null;
+    } = {};
+
+    if (data.name !== undefined) updates.name = data.name;
+    if (data.location !== undefined) updates.location = data.location;
+    if (data.description !== undefined) updates.description = data.description;
+    if (data.duration !== undefined) updates.duration = data.duration;
+    if (data.coverImageUrl !== undefined) {
+      updates.coverImageUrl = data.coverImageUrl;
+    }
+    if (data.rsvpLimit !== undefined) updates.rsvpLimit = data.rsvpLimit;
+    if (data.visibility !== undefined) updates.visibility = data.visibility;
+    if (data.accessibilityNotes !== undefined) {
+      updates.accessibilityNotes = data.accessibilityNotes;
+    }
+    if (data.links !== undefined) updates.links = data.links;
+    if (data.startTimestamp !== undefined) {
+      updates.startTimestamp = data.startTimestamp
+        ? new Date(data.startTimestamp)
+        : null;
+    }
+    if (data.rsvpDeadline !== undefined) {
+      updates.rsvpDeadline = data.rsvpDeadline
+        ? new Date(data.rsvpDeadline)
+        : null;
+    }
+
+    if (data.published !== undefined) {
+      const isPublished = event.publishedAt != null;
+
+      if (data.published && !isPublished) {
+        const publishError = validateReadyToPublish({
+          startTimestamp:
+            updates.startTimestamp !== undefined
+              ? updates.startTimestamp
+              : event.startTimestamp,
+          duration:
+            updates.duration !== undefined ? updates.duration : event.duration,
+          description:
+            updates.description !== undefined
+              ? updates.description
+              : event.description,
+          location:
+            updates.location !== undefined ? updates.location : event.location,
+        });
+
+        if (publishError) {
+          return c.json({ error: publishError }, { status: 400 });
+        }
+
+        updates.publishedAt = new Date();
+        updates.publishedById = session.user.id;
+      } else if (!data.published && isPublished) {
+        updates.publishedAt = null;
+        updates.publishedById = null;
+      }
+    }
+
+    if (data.tagIds !== undefined && data.tagIds.length > 0) {
+      const valid = await TagService.allBelongToOrg(
+        data.tagIds,
+        activeOrganizationId,
+      );
+      if (!valid) {
+        return c.json(
+          { error: "At least one tag not in organization" },
+          { status: 404 },
+        );
+      }
+    }
+
+    let hostIds: string[] | undefined;
+    if (data.hosts !== undefined) {
+      const resolvedHosts = await resolveHostIds(
+        data.hosts,
+        activeOrganizationId,
+      );
+      if (resolvedHosts.error) {
+        return c.json({ error: resolvedHosts.error }, { status: 404 });
+      }
+      hostIds = resolvedHosts.ids;
+    }
+
+    // Postgres cannot update zero columns.
+    const updated =
+      Object.keys(updates).length > 0
+        ? await EventService.updateEvent(eventId, activeOrganizationId, updates)
+        : await EventService.findEventRow(eventId, activeOrganizationId);
+
+    if (!updated) {
+      return c.json({ error: "Failed to update event" }, { status: 500 });
+    }
+
+    if (data.tagIds !== undefined) {
+      await EventService.setEventTags(eventId, data.tagIds);
+    }
+
+    if (hostIds !== undefined) {
+      await EventService.setEventHosts(eventId, hostIds);
+    }
+
+    return c.json(updated);
+  })
+  .delete("/:eventId", async (c) => {
+    const { eventId } = c.req.param();
+    const resolved = await getViewer(c);
+    if (!resolved) {
+      return c.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { viewer } = resolved;
+    const activeOrganizationId = viewer.organizationId;
+    if (!activeOrganizationId) {
+      return c.json({ error: "No active organization" }, { status: 403 });
+    }
+
+    if (!viewer.isAdmin) {
       throw new ForbiddenError();
     }
 
@@ -439,131 +428,75 @@ const app = new Hono()
 
     return c.json({ success: true });
   })
-  .post(
-    "/:eventId/rsvps",
-    zValidator(
-      "query",
-      z.object({
-        userId: z.string().optional(),
-      }),
-    ),
-    async (c) => {
-      const { eventId } = c.req.param();
-      const session = await auth.api.getSession({
-        headers: c.req.header(),
-      });
+  .post("/:eventId/rsvps", zValidator("query", rsvpQuerySchema), async (c) => {
+    const { eventId } = c.req.param();
+    const resolved = await getViewer(c);
+    if (!resolved) {
+      return c.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-      if (!session?.user) {
-        return c.json({ error: "Unauthorized" }, { status: 401 });
-      }
+    const { session, viewer } = resolved;
+    const activeOrganizationId = viewer.organizationId;
+    if (!activeOrganizationId) {
+      return c.json({ error: "No active organization" }, { status: 403 });
+    }
 
-      const activeOrganizationId = session.session.activeOrganizationId;
-      if (!activeOrganizationId) {
-        return c.json({ error: "No active organization" }, { status: 403 });
-      }
+    const event = await EventService.findById(eventId);
+    if (
+      !event ||
+      event.organizationId !== activeOrganizationId ||
+      !canViewEvent(event, viewer)
+    ) {
+      return c.json({ error: "Event not found" }, { status: 404 });
+    }
 
-      const event = await EventService.findById(eventId);
-      if (!event || event.organizationId !== activeOrganizationId) {
-        return c.json({ error: "Event not found" }, { status: 404 });
-      }
+    const { userId } = c.req.valid("query");
+    const targetUserId = userId ?? session.user.id;
 
-      const membership = await MembersService.findByUserAndOrganization(
-        session.user.id,
-        activeOrganizationId,
+    if (targetUserId !== session.user.id && !viewer.isAdmin) {
+      throw new ForbiddenError();
+    }
+
+    const result = await EventService.register(
+      eventId,
+      activeOrganizationId,
+      targetUserId,
+    );
+
+    if (result !== "added" && result !== "already-registered") {
+      return c.json(
+        { error: registrationBlockMessages[result] },
+        { status: NOT_FOUND_BLOCKS.includes(result) ? 404 : 400 },
       );
+    }
 
-      if (
-        event.publishedAt == null &&
-        !MembersService.isAdminOrOwner(membership?.role)
-      ) {
-        return c.json({ error: "Event not found" }, { status: 404 });
-      }
-
-      const { userId } = c.req.valid("query");
-      const targetUserId = userId ?? session.user.id;
-
-      if (userId && userId !== session.user.id) {
-        if (!MembersService.isAdminOrOwner(membership?.role)) {
-          throw new ForbiddenError();
-        }
-      }
-
-      const targetMembership = await MembersService.findByUserAndOrganization(
-        targetUserId,
-        activeOrganizationId,
-      );
-
-      if (!targetMembership) {
-        return c.json(
-          { error: "User is not a member of this organization" },
-          { status: 404 },
-        );
-      }
-
-      if (event.rsvpLimit !== null) {
-        const rsvps = await EventService.listRSVPsByEvent(eventId);
-
-        if (!rsvps || rsvps.length >= event.rsvpLimit) {
-          return c.json(
-            { error: "RSVP limit has been reached" },
-            { status: 400 },
-          );
-        }
-      }
-
-      if (event.rsvpDeadline) {
-        const deadline = new Date(event.rsvpDeadline).getTime();
-
-        if (deadline <= Date.now()) {
-          return c.json({ error: "RSVP deadline has passed" }, { status: 400 });
-        }
-      }
-
-      await EventService.addRSVP(eventId, targetUserId);
-
-      return c.json({
-        eventId,
-        userId: targetUserId,
-        status: "added",
-      });
-    },
-  )
+    return c.json({
+      eventId,
+      userId: targetUserId,
+      status: result,
+    });
+  })
   .delete(
     "/:eventId/rsvps",
-    zValidator(
-      "query",
-      z.object({
-        userId: z.string().optional(),
-      }),
-    ),
+    zValidator("query", rsvpQuerySchema),
     async (c) => {
       const { eventId } = c.req.param();
-      const session = await auth.api.getSession({
-        headers: c.req.header(),
-      });
-
-      if (!session?.user) {
+      const resolved = await getViewer(c);
+      if (!resolved) {
         return c.json({ error: "Unauthorized" }, { status: 401 });
       }
 
-      const activeOrganizationId = session.session.activeOrganizationId;
+      const { session, viewer } = resolved;
+      const activeOrganizationId = viewer.organizationId;
       if (!activeOrganizationId) {
         return c.json({ error: "No active organization" }, { status: 403 });
       }
 
       const event = await EventService.findById(eventId);
-      if (!event || event.organizationId !== activeOrganizationId) {
-        return c.json({ error: "Event not found" }, { status: 404 });
-      }
-
-      const membership = await MembersService.findByUserAndOrganization(
-        session.user.id,
-        activeOrganizationId,
-      );
-
       if (
-        event.publishedAt == null &&
-        !MembersService.isAdminOrOwner(membership?.role)
+        !event ||
+        event.organizationId !== activeOrganizationId ||
+        !canViewEvent(event, viewer)
       ) {
         return c.json({ error: "Event not found" }, { status: 404 });
       }
@@ -571,43 +504,27 @@ const app = new Hono()
       const { userId } = c.req.valid("query");
       const targetUserId = userId ?? session.user.id;
 
-      if (userId && userId !== session.user.id) {
-        if (!MembersService.isAdminOrOwner(membership?.role)) {
-          throw new ForbiddenError();
-        }
+      if (targetUserId !== session.user.id && !viewer.isAdmin) {
+        throw new ForbiddenError();
       }
 
-      const targetMembership = await MembersService.findByUserAndOrganization(
-        targetUserId,
+      const result = await EventService.withdraw(
+        eventId,
         activeOrganizationId,
+        targetUserId,
       );
 
-      if (!targetMembership) {
+      if (result !== "removed") {
         return c.json(
-          { error: "User is not a member of this organization" },
-          { status: 404 },
+          { error: registrationBlockMessages[result] },
+          { status: NOT_FOUND_BLOCKS.includes(result) ? 404 : 400 },
         );
       }
-
-      let canUnRSVP = true;
-      if (event.rsvpDeadline) {
-        const deadline = new Date(event.rsvpDeadline);
-
-        if (new Date() >= deadline) {
-          canUnRSVP = false;
-        }
-      }
-
-      if (!canUnRSVP) {
-        return c.json({ error: "Cannot un-RSVP" }, { status: 400 });
-      }
-
-      await EventService.deleteRSVP(eventId, targetUserId);
 
       return c.json({
         eventId,
         userId: targetUserId,
-        status: "removed",
+        status: result,
       });
     },
   );
