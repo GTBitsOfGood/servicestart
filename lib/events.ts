@@ -185,8 +185,26 @@ export const registrationBlockMessages: Record<RegistrationBlock, string> = {
 };
 
 /**
- * Whether the viewer may register for the event. `rsvpCount` is advisory —
- * capacity is enforced atomically in `EventService.addRSVP`.
+ * Whether the event itself is open for registration, independent of who is
+ * asking. `rsvpCount` is advisory — capacity is enforced atomically in
+ * `EventService.addRSVP`.
+ */
+export function registrationWindowBlock(
+  event: EventLike,
+  rsvpCount: number,
+  now: Date = new Date(),
+): RegistrationBlock | null {
+  if (event.publishedAt == null) return "unpublished";
+  if (event.rsvpDeadline && now.getTime() >= event.rsvpDeadline.getTime()) {
+    return "deadline-passed";
+  }
+  if (event.rsvpLimit !== null && rsvpCount >= event.rsvpLimit) return "full";
+
+  return null;
+}
+
+/**
+ * Whether the viewer may register for the event.
  */
 export function registrationBlockFor(
   event: EventLike,
@@ -198,13 +216,8 @@ export function registrationBlockFor(
   if (viewer.organizationId !== event.organizationId || !viewer.isMember) {
     return "not-a-member";
   }
-  if (event.publishedAt == null) return "unpublished";
-  if (event.rsvpDeadline && now.getTime() >= event.rsvpDeadline.getTime()) {
-    return "deadline-passed";
-  }
-  if (event.rsvpLimit !== null && rsvpCount >= event.rsvpLimit) return "full";
 
-  return null;
+  return registrationWindowBlock(event, rsvpCount, now);
 }
 
 /**
@@ -220,6 +233,15 @@ export function withdrawalBlockFor(
   if (viewer.organizationId !== event.organizationId || !viewer.isMember) {
     return "not-a-member";
   }
+
+  return withdrawalWindowBlock(event, now);
+}
+
+/** The withdrawal half of {@link registrationWindowBlock}. */
+export function withdrawalWindowBlock(
+  event: EventLike,
+  now: Date = new Date(),
+): RegistrationBlock | null {
   if (event.rsvpDeadline && now.getTime() >= event.rsvpDeadline.getTime()) {
     return "deadline-passed";
   }
