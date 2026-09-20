@@ -63,8 +63,8 @@ export default async function EventDetailPage({
   const organization = await OrganizationsService.findById(
     event.organizationId,
   );
-  const hostRecord = await EventService.getEventHosts(event.id);
-  const hostIds = hostRecord ? [hostRecord.userId] : [];
+  const hostRecords = await EventService.listEventHosts(event.id);
+  const hostIds = hostRecords.map((host) => host.userId);
   const hostUsers = await Promise.all(hostIds.map(UserService.findById));
   const organizerProfiles = hostUsers.flatMap(
     (

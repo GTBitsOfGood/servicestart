@@ -1,4 +1,14 @@
-import { and, eq, gt, lt, isNull, isNotNull, ilike, or } from "drizzle-orm";
+import {
+  and,
+  count,
+  eq,
+  gt,
+  lt,
+  isNull,
+  isNotNull,
+  ilike,
+  or,
+} from "drizzle-orm";
 import db from "@/lib/db";
 import {
   events,
@@ -9,6 +19,12 @@ import {
   tags,
 } from "@/lib/schema";
 import { randomUUID } from "node:crypto";
+
+export type AddRSVPResult =
+  | "added"
+  | "already-registered"
+  | "full"
+  | "not-found";
 
 async function create(
   organizationId: string,
@@ -238,18 +254,54 @@ async function updateEvent(
   return updated.length > 0 ? updated[0] : null;
 }
 
-async function addRSVP(eventId: string, userId: string) {
-  const [existing] = await db
-    .select()
-    .from(eventRsvps)
-    .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)))
-    .limit(1);
-  if (existing) {
-    return;
-  }
-  await db.insert(eventRsvps).values({
-    eventId,
-    userId,
+/**
+ * Registers a user for an event, enforcing the capacity limit atomically.
+ *
+ * The event row is locked for the duration of the transaction so two
+ * simultaneous registrations can never push the event past its RSVP limit.
+ */
+async function addRSVP(
+  eventId: string,
+  userId: string,
+): Promise<AddRSVPResult> {
+  return await db.transaction(async (tx) => {
+    const [event] = await tx
+      .select({ rsvpLimit: events.rsvpLimit })
+      .from(events)
+      .where(eq(events.id, eventId))
+      .for("update")
+      .limit(1);
+
+    if (!event) {
+      return "not-found";
+    }
+
+    const [existing] = await tx
+      .select({ userId: eventRsvps.userId })
+      .from(eventRsvps)
+      .where(
+        and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)),
+      )
+      .limit(1);
+
+    if (existing) {
+      return "already-registered";
+    }
+
+    if (event.rsvpLimit !== null) {
+      const [{ value: rsvpCount }] = await tx
+        .select({ value: count() })
+        .from(eventRsvps)
+        .where(eq(eventRsvps.eventId, eventId));
+
+      if (rsvpCount >= event.rsvpLimit) {
+        return "full";
+      }
+    }
+
+    await tx.insert(eventRsvps).values({ eventId, userId });
+
+    return "added";
   });
 }
 
@@ -302,13 +354,58 @@ async function addEventHosts(eventId: string, userIds: string[]) {
   await db.insert(eventHosts).values(additions);
 }
 
-async function getEventHosts(eventId: string) {
-  const [hosts] = await db
-    .select()
+async function listEventHosts(eventId: string) {
+  return await db
+    .select({ eventId: eventHosts.eventId, userId: eventHosts.userId })
     .from(eventHosts)
     .where(eq(eventHosts.eventId, eventId));
+}
 
-  return hosts ?? null;
+/**
+ * Replaces the event's hosts with exactly the given users.
+ */
+async function setEventHosts(eventId: string, userIds: string[]) {
+  await db.transaction(async (tx) => {
+    await tx.delete(eventHosts).where(eq(eventHosts.eventId, eventId));
+    if (userIds.length === 0) return;
+    const unique = Array.from(new Set(userIds));
+    await tx
+      .insert(eventHosts)
+      .values(unique.map((userId) => ({ eventId, userId })));
+  });
+}
+
+/**
+ * Replaces the event's tags with exactly the given tags.
+ */
+async function setEventTags(eventId: string, tagIds: string[]) {
+  await db.transaction(async (tx) => {
+    await tx.delete(eventTags).where(eq(eventTags.eventId, eventId));
+    if (tagIds.length === 0) return;
+    const unique = Array.from(new Set(tagIds));
+    await tx
+      .insert(eventTags)
+      .values(unique.map((tagId) => ({ eventId, tagId })));
+  });
+}
+
+async function countRSVPs(eventId: string) {
+  const [{ value }] = await db
+    .select({ value: count() })
+    .from(eventRsvps)
+    .where(eq(eventRsvps.eventId, eventId));
+
+  return value;
+}
+
+async function hasRSVP(eventId: string, userId: string) {
+  const [existing] = await db
+    .select({ userId: eventRsvps.userId })
+    .from(eventRsvps)
+    .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)))
+    .limit(1);
+
+  return existing !== undefined;
 }
 
 export const EventService = {
@@ -323,7 +420,11 @@ export const EventService = {
   findByUser,
   listRSVPsByEvent,
   addEventHosts,
-  getEventHosts,
+  listEventHosts,
+  setEventHosts,
+  setEventTags,
+  countRSVPs,
+  hasRSVP,
 };
 
 export default EventService;
