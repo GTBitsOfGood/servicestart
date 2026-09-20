@@ -15,10 +15,9 @@ import {
   eventCreateSchema,
   eventUpdateSchema,
   registrationBlockMessages,
-  registrationWindowBlock,
   validateEventDates,
   validateReadyToPublish,
-  withdrawalWindowBlock,
+  type RegistrationBlock,
   type Viewer,
 } from "@/lib/events";
 
@@ -32,6 +31,8 @@ export const eventsQuerySchema = paginationQuerySchema.extend({
       return undefined;
     }),
 });
+
+const NOT_FOUND_BLOCKS: RegistrationBlock[] = ["not-visible", "not-a-member"];
 
 const rsvpQuerySchema = z.object({
   userId: z.string().optional(),
@@ -456,41 +457,23 @@ const app = new Hono()
       throw new ForbiddenError();
     }
 
-    const targetMembership = await MembersService.findByUserAndOrganization(
-      targetUserId,
+    const result = await EventService.register(
+      eventId,
       activeOrganizationId,
+      targetUserId,
     );
 
-    if (!targetMembership) {
+    if (result !== "added" && result !== "already-registered") {
       return c.json(
-        { error: registrationBlockMessages["not-a-member"] },
-        { status: 404 },
+        { error: registrationBlockMessages[result] },
+        { status: NOT_FOUND_BLOCKS.includes(result) ? 404 : 400 },
       );
-    }
-
-    const rsvpCount = await EventService.countRSVPs(eventId);
-    const block = registrationWindowBlock(event, rsvpCount);
-    if (block) {
-      return c.json(
-        { error: registrationBlockMessages[block] },
-        { status: 400 },
-      );
-    }
-
-    const result = await EventService.addRSVP(eventId, targetUserId);
-
-    if (result === "full") {
-      return c.json({ error: registrationBlockMessages.full }, { status: 400 });
-    }
-
-    if (result === "not-found") {
-      return c.json({ error: "Event not found" }, { status: 404 });
     }
 
     return c.json({
       eventId,
       userId: targetUserId,
-      status: result === "already-registered" ? "already-registered" : "added",
+      status: result,
     });
   })
   .delete(
@@ -525,32 +508,23 @@ const app = new Hono()
         throw new ForbiddenError();
       }
 
-      const targetMembership = await MembersService.findByUserAndOrganization(
-        targetUserId,
+      const result = await EventService.withdraw(
+        eventId,
         activeOrganizationId,
+        targetUserId,
       );
 
-      if (!targetMembership) {
+      if (result !== "removed") {
         return c.json(
-          { error: registrationBlockMessages["not-a-member"] },
-          { status: 404 },
+          { error: registrationBlockMessages[result] },
+          { status: NOT_FOUND_BLOCKS.includes(result) ? 404 : 400 },
         );
       }
-
-      const block = withdrawalWindowBlock(event);
-      if (block) {
-        return c.json(
-          { error: registrationBlockMessages[block] },
-          { status: 400 },
-        );
-      }
-
-      await EventService.deleteRSVP(eventId, targetUserId);
 
       return c.json({
         eventId,
         userId: targetUserId,
-        status: "removed",
+        status: result,
       });
     },
   );

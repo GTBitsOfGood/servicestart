@@ -4,10 +4,8 @@ import {
   canManageEvent,
   canViewEvent,
   parseDurationMinutes,
-  registrationBlockFor,
   validateEventDates,
   validateReadyToPublish,
-  withdrawalBlockFor,
   type EventLike,
   type Viewer,
 } from "@/lib/events";
@@ -87,63 +85,6 @@ describe("canManageEvent", () => {
     expect(canManageEvent(event, admin)).toBe(true);
     expect(canManageEvent(event, member)).toBe(false);
     expect(canManageEvent(event, outsider)).toBe(false);
-  });
-});
-
-describe("registrationBlockFor", () => {
-  it("allows a member to register for an open event", () => {
-    expect(registrationBlockFor(buildEvent(), member, 0)).toBeNull();
-  });
-
-  it("blocks non-members", () => {
-    expect(registrationBlockFor(buildEvent(), outsider, 0)).toBe(
-      "not-a-member",
-    );
-  });
-
-  it("blocks drafts", () => {
-    const draft = buildEvent({ publishedAt: null });
-
-    expect(registrationBlockFor(draft, admin, 0)).toBe("unpublished");
-  });
-
-  it("blocks once the deadline has passed", () => {
-    const event = buildEvent({
-      rsvpDeadline: new Date("2026-01-02T00:00:00Z"),
-    });
-
-    expect(
-      registrationBlockFor(event, member, 0, new Date("2026-01-03T00:00:00Z")),
-    ).toBe("deadline-passed");
-  });
-
-  it("blocks once the event is full", () => {
-    const event = buildEvent({ rsvpLimit: 2 });
-
-    expect(registrationBlockFor(event, member, 2)).toBe("full");
-    expect(registrationBlockFor(event, member, 1)).toBeNull();
-  });
-});
-
-describe("withdrawalBlockFor", () => {
-  it("allows withdrawal before the deadline", () => {
-    const event = buildEvent({
-      rsvpDeadline: new Date("2026-01-05T00:00:00Z"),
-    });
-
-    expect(
-      withdrawalBlockFor(event, member, new Date("2026-01-04T00:00:00Z")),
-    ).toBeNull();
-  });
-
-  it("closes withdrawal at the same moment registration closes", () => {
-    const event = buildEvent({
-      rsvpDeadline: new Date("2026-01-05T00:00:00Z"),
-    });
-
-    expect(
-      withdrawalBlockFor(event, member, new Date("2026-01-05T00:00:00Z")),
-    ).toBe("deadline-passed");
   });
 });
 

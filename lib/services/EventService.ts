@@ -16,15 +16,15 @@ import {
   eventTags,
   eventHosts,
   EventVisibility,
+  members,
   tags,
 } from "@/lib/schema";
+import type { RegistrationBlock } from "@/lib/events";
 import { randomUUID } from "node:crypto";
 
-export type AddRSVPResult =
-  | "added"
-  | "already-registered"
-  | "full"
-  | "not-found";
+export type RegisterResult = "added" | "already-registered" | RegistrationBlock;
+
+export type WithdrawResult = "removed" | RegistrationBlock;
 
 async function create(
   organizationId: string,
@@ -285,22 +285,43 @@ async function updateEvent(
   return updated.length > 0 ? updated[0] : null;
 }
 
-// Locks the event row so concurrent registrations cannot exceed the limit.
-async function addRSVP(
+// Every registration rule lives here so the API route and the page action
+// cannot disagree. The event row is locked so capacity holds under concurrency.
+async function register(
   eventId: string,
+  organizationId: string,
   userId: string,
-): Promise<AddRSVPResult> {
+  now: Date = new Date(),
+): Promise<RegisterResult> {
   return await db.transaction(async (tx) => {
     const [event] = await tx
-      .select({ rsvpLimit: events.rsvpLimit })
+      .select({
+        publishedAt: events.publishedAt,
+        rsvpLimit: events.rsvpLimit,
+        rsvpDeadline: events.rsvpDeadline,
+      })
       .from(events)
-      .where(eq(events.id, eventId))
+      .where(
+        and(eq(events.id, eventId), eq(events.organizationId, organizationId)),
+      )
       .for("update")
       .limit(1);
 
-    if (!event) {
-      return "not-found";
-    }
+    if (!event) return "not-visible";
+
+    const [membership] = await tx
+      .select({ id: members.id })
+      .from(members)
+      .where(
+        and(
+          eq(members.userId, userId),
+          eq(members.organizationId, organizationId),
+        ),
+      )
+      .limit(1);
+
+    if (!membership) return "not-a-member";
+    if (event.publishedAt == null) return "unpublished";
 
     const [existing] = await tx
       .select({ userId: eventRsvps.userId })
@@ -310,8 +331,10 @@ async function addRSVP(
       )
       .limit(1);
 
-    if (existing) {
-      return "already-registered";
+    if (existing) return "already-registered";
+
+    if (event.rsvpDeadline && now.getTime() >= event.rsvpDeadline.getTime()) {
+      return "deadline-passed";
     }
 
     if (event.rsvpLimit !== null) {
@@ -320,9 +343,7 @@ async function addRSVP(
         .from(eventRsvps)
         .where(eq(eventRsvps.eventId, eventId));
 
-      if (rsvpCount >= event.rsvpLimit) {
-        return "full";
-      }
+      if (rsvpCount >= event.rsvpLimit) return "full";
     }
 
     await tx.insert(eventRsvps).values({ eventId, userId });
@@ -331,10 +352,45 @@ async function addRSVP(
   });
 }
 
-async function deleteRSVP(eventId: string, userId: string) {
+// Withdrawal closes at the deadline, the same moment registration closes.
+async function withdraw(
+  eventId: string,
+  organizationId: string,
+  userId: string,
+  now: Date = new Date(),
+): Promise<WithdrawResult> {
+  const [event] = await db
+    .select({ rsvpDeadline: events.rsvpDeadline })
+    .from(events)
+    .where(
+      and(eq(events.id, eventId), eq(events.organizationId, organizationId)),
+    )
+    .limit(1);
+
+  if (!event) return "not-visible";
+
+  const [membership] = await db
+    .select({ id: members.id })
+    .from(members)
+    .where(
+      and(
+        eq(members.userId, userId),
+        eq(members.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+
+  if (!membership) return "not-a-member";
+
+  if (event.rsvpDeadline && now.getTime() >= event.rsvpDeadline.getTime()) {
+    return "deadline-passed";
+  }
+
   await db
     .delete(eventRsvps)
     .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)));
+
+  return "removed";
 }
 
 async function findByUser(userId: string) {
@@ -436,8 +492,8 @@ export const EventService = {
   listByPublic,
   updateEvent,
   findEventRow,
-  addRSVP,
-  deleteRSVP,
+  register,
+  withdraw,
   findByUser,
   listRSVPsByEvent,
   addEventHosts,

@@ -18,10 +18,8 @@ import { formatDateTime, formatRsvpDeadline } from "@/lib/clientUtils";
 import {
   canManageEvent,
   canViewEvent,
-  registrationBlockFor,
   registrationBlockMessages,
   validateReadyToPublish,
-  withdrawalBlockFor,
   type Viewer,
 } from "@/lib/events";
 
@@ -140,8 +138,7 @@ export default async function EventDetailPage({
       redirect("/events");
     }
 
-    const currentCount = await EventService.countRSVPs(eventRecord.id);
-    const registered = await EventService.hasRSVP(eventRecord.id, actorId);
+    const organizationId = eventRecord.organizationId;
 
     async function stateAfter(message?: string): Promise<RegisterState> {
       const count = await EventService.countRSVPs(eventRecord!.id);
@@ -156,27 +153,24 @@ export default async function EventDetailPage({
       };
     }
 
-    if (registered) {
-      const block = withdrawalBlockFor(eventRecord, actor);
-      if (block) {
-        return await stateAfter(registrationBlockMessages[block]);
-      }
-
-      await EventService.deleteRSVP(eventRecord.id, actorId);
-      revalidatePath(`/events/${eventRecord.id}`);
-      return await stateAfter();
+    if (actor.organizationId !== organizationId) {
+      return await stateAfter(registrationBlockMessages["not-a-member"]);
     }
 
-    const block = registrationBlockFor(eventRecord, actor, currentCount);
-    if (block) {
-      return await stateAfter(registrationBlockMessages[block]);
-    }
+    const registered = await EventService.hasRSVP(eventRecord.id, actorId);
+    const result = registered
+      ? await EventService.withdraw(eventRecord.id, organizationId, actorId)
+      : await EventService.register(eventRecord.id, organizationId, actorId);
 
-    const result = await EventService.addRSVP(eventRecord.id, actorId);
     revalidatePath(`/events/${eventRecord.id}`);
 
+    const succeeded =
+      result === "added" ||
+      result === "already-registered" ||
+      result === "removed";
+
     return await stateAfter(
-      result === "full" ? registrationBlockMessages.full : undefined,
+      succeeded ? undefined : registrationBlockMessages[result],
     );
   }
 
