@@ -41,12 +41,13 @@ export default function EventAdminActions({
       <div className="flex items-center gap-3">
         <Link
           href={`/events/${eventId}/edit`}
-          className="inline-flex items-center rounded border border-grey-stroke-weak px-4 py-2 text-paragraph-2 font-semibold text-grey-text-strong"
+          className="inline-flex items-center rounded border border-brand-stroke-strong bg-white px-4 py-2 text-paragraph-2 font-semibold text-brand-text"
         >
           Edit
         </Link>
         <BogButton
           type="button"
+          variant={isPublished ? "secondary" : "primary"}
           disabled={isPending}
           onClick={() => run(() => onTogglePublish(!isPublished))}
           className="rounded px-4 py-2 text-paragraph-2 font-semibold"
@@ -61,9 +62,10 @@ export default function EventAdminActions({
         </BogButton>
         <BogButton
           type="button"
+          variant="tertiary"
           disabled={isPending}
           onClick={() => setShowConfirmDelete(true)}
-          className="rounded bg-transparent px-4 py-2 text-paragraph-2 font-semibold text-status-red-text"
+          className="px-4 py-2 text-paragraph-2 font-semibold text-status-red-text"
         >
           Delete
         </BogButton>
@@ -95,8 +97,8 @@ export default function EventAdminActions({
             </p>
             <div className="flex items-start gap-5 self-end">
               <BogButton
+                variant="tertiary"
                 onClick={() => setShowConfirmDelete(false)}
-                className="bg-transparent text-brand-text"
               >
                 Cancel
               </BogButton>

@@ -9,6 +9,7 @@ import RegisterButton, {
   type RegisterState,
 } from "@/components/events/RegisterButton";
 import EventAdminActions from "@/components/events/EventAdminActions";
+import DraftChip from "@/components/events/DraftChip";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
 import EventService from "@/lib/services/EventService";
@@ -245,11 +246,7 @@ export default async function EventDetailPage({
             <h1 className="text-heading-1 font-paragraph font-bold text-grey-text-strong">
               {event.name}
             </h1>
-            {isDraft && (
-              <span className="rounded-lg bg-grey-fill-weak px-3 py-1 text-paragraph-2 font-semibold text-grey-text-strong">
-                Draft
-              </span>
-            )}
+            {isDraft && <DraftChip />}
           </div>
           <div className="flex flex-wrap items-center gap-6">
             {isAdminForEvent && (

@@ -374,7 +374,7 @@ export default function EventForm({
         {submitError && (
           <div
             role="alert"
-            className="w-full flex flex-row items-center p-4 gap-2 self-stretch rounded bg-status-red-bg min-h-[40px]"
+            className="w-full flex flex-row items-center p-4 gap-2 self-stretch rounded bg-status-red-fill text-status-red-text min-h-[40px]"
           >
             <WarningIcon />
             <p>{submitError}</p>
@@ -382,9 +382,10 @@ export default function EventForm({
         )}
         <div className="flex flex-end items-start gap-5">
           <BogButton
+            variant="tertiary"
             onClick={() => setShowDiscard(true)}
             disabled={isSubmitting}
-            className="flex py-3 px-4 items-center -space-x-1 rounded bg-transparent text-brand-text"
+            className="flex py-3 px-4 items-center"
           >
             Cancel
           </BogButton>
@@ -392,23 +393,24 @@ export default function EventForm({
             <BogButton
               onClick={() => handleSubmit("publish")}
               disabled={isSubmitting}
-              className="flex py-3 px-4 items-center -space-x-1 rounded"
+              className="flex py-3 px-4 items-center"
             >
               {pendingIntent === "publish" ? "Saving…" : "Save changes"}
             </BogButton>
           ) : (
             <>
               <BogButton
+                variant="secondary"
                 onClick={() => handleSubmit("draft")}
                 disabled={isSubmitting}
-                className="flex py-3 px-4 items-center -space-x-1 rounded bg-solid-bg-base text-brand-text"
+                className="flex py-3 px-4 items-center"
               >
                 {pendingIntent === "draft" ? "Saving…" : "Save draft"}
               </BogButton>
               <BogButton
                 onClick={() => handleSubmit("publish")}
                 disabled={isSubmitting}
-                className="flex py-3 px-4 items-center -space-x-1 rounded"
+                className="flex py-3 px-4 items-center"
               >
                 {pendingIntent === "publish" ? "Publishing…" : "Publish"}
               </BogButton>
@@ -442,14 +444,14 @@ export default function EventForm({
               </div>
               <div className="flex items-start gap-5">
                 <BogButton
+                  variant="tertiary"
                   onClick={() => setShowDiscard(false)}
-                  className="bg-transparent text-brand-text"
                 >
                   Cancel
                 </BogButton>
                 <BogButton
                   onClick={onCancel}
-                  className="flex py-2 px-3 items-center -gap-1"
+                  className="flex py-2 px-3 items-center"
                 >
                   Discard
                 </BogButton>
