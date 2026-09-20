@@ -11,6 +11,12 @@ function futureDate(): string {
   return date.toISOString().slice(0, 10);
 }
 
+// Server-rendered buttons ignore clicks until React hydrates.
+async function gotoHydrated(page: Page, url: string) {
+  await page.goto(url);
+  await page.waitForLoadState("networkidle");
+}
+
 async function fillPublishableDetails(page: Page) {
   await page.locator('input[name="date"]').fill(futureDate());
   await page.locator('input[name="start"]').fill("14:00");
@@ -33,7 +39,7 @@ test.describe("Event lifecycle", () => {
     const eventName = `Community Picnic ${Date.now()}`;
 
     // The admin saves a draft that only has a title.
-    await page.goto("/events/create");
+    await gotoHydrated(page, "/events/create");
     await page.locator('input[name="title"]').fill(eventName);
     await page.getByRole("button", { name: "Save draft", exact: true }).click();
 
@@ -53,7 +59,7 @@ test.describe("Event lifecycle", () => {
     await expect(memberPage).not.toHaveURL(eventUrl);
 
     // The admin fills in the rest and publishes.
-    await page.goto(`${eventUrl}/edit`);
+    await gotoHydrated(page, `${eventUrl}/edit`);
     await fillPublishableDetails(page);
     await page.getByRole("button", { name: "Publish", exact: true }).click();
 
@@ -64,7 +70,7 @@ test.describe("Event lifecycle", () => {
     await memberPage.goto("/events");
     await expect(memberPage.getByText(eventName).first()).toBeVisible();
 
-    await memberPage.goto(eventUrl);
+    await gotoHydrated(memberPage, eventUrl);
     await memberPage
       .getByRole("button", { name: "Register", exact: true })
       .click();
@@ -74,7 +80,7 @@ test.describe("Event lifecycle", () => {
 
     // An admin edit shows up for the member.
     const updatedName = `${eventName} (updated)`;
-    await page.goto(`${eventUrl}/edit`);
+    await gotoHydrated(page, `${eventUrl}/edit`);
     await page.locator('input[name="title"]').fill(updatedName);
     await page
       .getByRole("button", { name: "Save changes", exact: true })
@@ -87,7 +93,7 @@ test.describe("Event lifecycle", () => {
     ).toBeVisible();
 
     // Unpublishing hides the event from the member again.
-    await page.goto(eventUrl);
+    await gotoHydrated(page, eventUrl);
     await page.getByRole("button", { name: "Unpublish", exact: true }).click();
     await expect(page.getByText("Draft", { exact: true })).toBeVisible();
 
@@ -101,11 +107,12 @@ test.describe("Event lifecycle", () => {
     await createTestAdminAndSignIn(page);
     const eventName = `Cleanup Day ${Date.now()}`;
 
-    await page.goto("/events/create");
+    await gotoHydrated(page, "/events/create");
     await page.locator('input[name="title"]').fill(eventName);
     await fillPublishableDetails(page);
     await page.getByRole("button", { name: "Publish", exact: true }).click();
     await expect(page).toHaveURL(/\/events\/[0-9a-f-]+$/);
+    await page.waitForLoadState("networkidle");
 
     await page.getByRole("button", { name: "Delete", exact: true }).click();
     await page.getByRole("button", { name: "Delete event" }).click();
@@ -119,7 +126,7 @@ test.describe("Event lifecycle", () => {
   }) => {
     await createTestAdminAndSignIn(page);
 
-    await page.goto("/events/create");
+    await gotoHydrated(page, "/events/create");
     await page.locator('input[name="title"]').fill("Half-finished idea");
     await page.getByRole("button", { name: "Publish", exact: true }).click();
 
@@ -135,7 +142,7 @@ test.describe("Event lifecycle", () => {
     const { org } = await createTestAdminAndSignIn(page);
     const eventName = `Members Cannot Edit ${Date.now()}`;
 
-    await page.goto("/events/create");
+    await gotoHydrated(page, "/events/create");
     await page.locator('input[name="title"]').fill(eventName);
     await fillPublishableDetails(page);
     await page.getByRole("button", { name: "Publish", exact: true }).click();
@@ -145,10 +152,10 @@ test.describe("Event lifecycle", () => {
     await page.context().clearCookies();
     await createTestMemberAndSignIn(page, { organizationId: org.id });
 
-    await page.goto(`${eventUrl}/edit`);
+    await gotoHydrated(page, `${eventUrl}/edit`);
     await expect(page).not.toHaveURL(new RegExp(`${eventUrl}/edit$`));
 
-    await page.goto("/events/create");
+    await gotoHydrated(page, "/events/create");
     await expect(page).not.toHaveURL(/\/events\/create$/);
   });
 });
