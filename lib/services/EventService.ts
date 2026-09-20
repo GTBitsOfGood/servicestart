@@ -208,6 +208,40 @@ async function listByPublic(options: { limit: number; offset: number }) {
     .offset(options.offset);
 }
 
+const eventColumns = {
+  id: events.id,
+  organizationId: events.organizationId,
+  name: events.name,
+  location: events.location,
+  description: events.description,
+  startTimestamp: events.startTimestamp,
+  duration: events.duration,
+  rsvpLimit: events.rsvpLimit,
+  rsvpDeadline: events.rsvpDeadline,
+  visibility: events.visibility,
+  accessibilityNotes: events.accessibilityNotes,
+  links: events.links,
+  coverImageUrl: events.coverImageUrl,
+  publishedAt: events.publishedAt,
+  publishedById: events.publishedById,
+};
+
+/**
+ * Fetches an event scoped to its organization, in the same shape
+ * `updateEvent` returns, so a no-op update can answer with the stored row.
+ */
+async function findEventRow(eventId: string, organizationId: string) {
+  const [row] = await db
+    .select(eventColumns)
+    .from(events)
+    .where(
+      and(eq(events.id, eventId), eq(events.organizationId, organizationId)),
+    )
+    .limit(1);
+
+  return row ?? null;
+}
+
 async function updateEvent(
   eventId: string,
   organizationId: string,
@@ -415,6 +449,7 @@ export const EventService = {
   listByOrganization,
   listByPublic,
   updateEvent,
+  findEventRow,
   addRSVP,
   deleteRSVP,
   findByUser,

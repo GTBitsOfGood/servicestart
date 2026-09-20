@@ -398,11 +398,12 @@ const app = new Hono()
       hostIds = resolvedHosts.ids;
     }
 
-    const updated = await EventService.updateEvent(
-      eventId,
-      activeOrganizationId,
-      updates,
-    );
+    // Postgres cannot update zero columns, so a metadata-only edit (hosts or
+    // tags) skips the row update and reads the event back instead.
+    const updated =
+      Object.keys(updates).length > 0
+        ? await EventService.updateEvent(eventId, activeOrganizationId, updates)
+        : await EventService.findEventRow(eventId, activeOrganizationId);
 
     if (!updated) {
       return c.json({ error: "Failed to update event" }, { status: 500 });
