@@ -129,6 +129,7 @@ const app = new Hono()
           : null,
         duration: data.duration ?? null,
         description: data.description ?? null,
+        location: data.location,
       });
 
       if (publishError) {
@@ -356,6 +357,8 @@ const app = new Hono()
             updates.description !== undefined
               ? updates.description
               : event.description,
+          location:
+            updates.location !== undefined ? updates.location : event.location,
         });
 
         if (publishError) {

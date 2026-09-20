@@ -72,7 +72,7 @@ const rsvpLimitSchema = z
 
 export const eventCreateSchema = z.object({
   name: z.string().trim().min(1, "Name is required"),
-  location: z.string().trim().min(1, "Location is required"),
+  location: z.string().trim(),
   startTimestamp: timestampSchema.nullable().optional(),
   duration: durationSchema.nullable().optional(),
   description: z.string().nullable().optional(),
@@ -135,7 +135,11 @@ export function validateReadyToPublish(event: {
   startTimestamp: Date | null;
   duration: string | null;
   description: string | null;
+  location: string;
 }): string | null {
+  if (event.location.trim() === "") {
+    return "Add a location before publishing";
+  }
   if (!event.startTimestamp) {
     return "Add a start date and time before publishing";
   }
