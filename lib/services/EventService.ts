@@ -81,7 +81,7 @@ async function create(
       publishedAt: events.publishedAt,
       publishedById: events.publishedById,
     });
-  if (tagIds) {
+  if (tagIds && tagIds.length > 0) {
     await db
       .insert(eventTags)
       .values(tagIds.map((tagId) => ({ eventId: event.id, tagId })));
@@ -226,10 +226,7 @@ const eventColumns = {
   publishedById: events.publishedById,
 };
 
-/**
- * Fetches an event scoped to its organization, in the same shape
- * `updateEvent` returns, so a no-op update can answer with the stored row.
- */
+// Same shape as updateEvent, so a no-op update can answer with the stored row.
 async function findEventRow(eventId: string, organizationId: string) {
   const [row] = await db
     .select(eventColumns)
@@ -288,12 +285,7 @@ async function updateEvent(
   return updated.length > 0 ? updated[0] : null;
 }
 
-/**
- * Registers a user for an event, enforcing the capacity limit atomically.
- *
- * The event row is locked for the duration of the transaction so two
- * simultaneous registrations can never push the event past its RSVP limit.
- */
+// Locks the event row so concurrent registrations cannot exceed the limit.
 async function addRSVP(
   eventId: string,
   userId: string,
@@ -395,9 +387,6 @@ async function listEventHosts(eventId: string) {
     .where(eq(eventHosts.eventId, eventId));
 }
 
-/**
- * Replaces the event's hosts with exactly the given users.
- */
 async function setEventHosts(eventId: string, userIds: string[]) {
   await db.transaction(async (tx) => {
     await tx.delete(eventHosts).where(eq(eventHosts.eventId, eventId));
@@ -409,9 +398,6 @@ async function setEventHosts(eventId: string, userIds: string[]) {
   });
 }
 
-/**
- * Replaces the event's tags with exactly the given tags.
- */
 async function setEventTags(eventId: string, tagIds: string[]) {
   await db.transaction(async (tx) => {
     await tx.delete(eventTags).where(eq(eventTags.eventId, eventId));

@@ -7,7 +7,6 @@ import { EventService } from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
 import { TagService } from "@/lib/services/TagService";
-import { UserService } from "@/lib/services/UserService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 import { ForbiddenError } from "@/lib/errors";
 import { EventVisibility } from "@/lib/schema";
@@ -38,10 +37,6 @@ const rsvpQuerySchema = z.object({
   userId: z.string().optional(),
 });
 
-/**
- * Resolves the caller's session together with the membership facts the event
- * rules need. Returns null when the caller is not signed in.
- */
 async function getViewer(c: Context) {
   const session = await auth.api.getSession({ headers: c.req.header() });
 
@@ -66,33 +61,19 @@ async function getViewer(c: Context) {
   return { session, viewer };
 }
 
-/**
- * Turns host emails into user IDs, rejecting anyone who is not a member of the
- * organization.
- */
 async function resolveHostIds(emails: string[], organizationId: string) {
+  const contacts = await MembersService.listMemberContacts(organizationId);
+  const idsByEmail = new Map(contacts.map((c) => [c.email, c.userId]));
   const ids: string[] = [];
 
   for (const email of emails) {
-    const user = await UserService.findByEmailAndOrganization(
-      email,
-      organizationId,
-    );
+    const userId = idsByEmail.get(email.trim().toLowerCase());
 
-    if (!user) {
-      return { error: `No user found with email ${email}` };
-    }
-
-    const membership = await MembersService.findByUserAndOrganization(
-      user.id,
-      organizationId,
-    );
-
-    if (!membership) {
+    if (!userId) {
       return { error: `${email} is not a member of this organization` };
     }
 
-    ids.push(user.id);
+    ids.push(userId);
   }
 
   return { ids };
@@ -398,8 +379,7 @@ const app = new Hono()
       hostIds = resolvedHosts.ids;
     }
 
-    // Postgres cannot update zero columns, so a metadata-only edit (hosts or
-    // tags) skips the row update and reads the event back instead.
+    // Postgres cannot update zero columns.
     const updated =
       Object.keys(updates).length > 0
         ? await EventService.updateEvent(eventId, activeOrganizationId, updates)

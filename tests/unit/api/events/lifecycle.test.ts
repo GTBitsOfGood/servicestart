@@ -92,6 +92,19 @@ describe("creating drafts and published events", () => {
     expect(data.organizationId).toBe(organization.id);
   });
 
+  it("accepts the empty arrays the form sends", async () => {
+    const { headers } = await setupOrgAndUser("admin");
+
+    const response = await testApi.events.$post(
+      {
+        json: publishablePayload({ tagIds: [], links: [], hosts: [] }),
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(200);
+  });
+
   it("publishes on creation when asked to", async () => {
     const { user, headers } = await setupOrgAndUser("admin");
 

@@ -7,7 +7,6 @@ export type RegisterState = {
   registered: boolean;
   isFull: boolean;
   isDeadlinePassed: boolean;
-  /** Set when the last attempt was refused, e.g. the event filled up. */
   message?: string;
 };
 

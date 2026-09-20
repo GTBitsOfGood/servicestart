@@ -1,13 +1,8 @@
 import { z } from "zod";
 import { EventVisibility } from "@/lib/schema";
 
-/**
- * Shared event rules.
- *
- * The API routes, the server pages, and the registration server actions all
- * read their publication, visibility, and registration rules from here so the
- * three never drift apart.
- */
+// Publication, visibility, and registration rules shared by the API routes,
+// the server pages, and the registration server actions.
 
 export type EventLike = {
   organizationId: string;
@@ -18,7 +13,6 @@ export type EventLike = {
 };
 
 export type Viewer = {
-  /** The organization the request is scoped to, if any. */
   organizationId: string | null;
   isMember: boolean;
   isAdmin: boolean;
@@ -27,10 +21,6 @@ export type Viewer = {
 const HH_MM_SS = /^(\d+):([0-5]\d):([0-5]\d)$/;
 const UNIT_DURATION = /^(\d+(?:\.\d+)?)\s*(minute|minutes|hour|hours)$/i;
 
-/**
- * Parses the interval strings the app writes (`"90 minutes"`, `"01:30:00"`)
- * into whole minutes. Returns null when the string is not one of those forms.
- */
 export function parseDurationMinutes(duration: string): number | null {
   const trimmed = duration.trim();
 
@@ -95,11 +85,7 @@ export const eventUpdateSchema = eventCreateSchema
 export type EventCreateInput = z.infer<typeof eventCreateSchema>;
 export type EventUpdateInput = z.infer<typeof eventUpdateSchema>;
 
-/**
- * Cross-field checks that a per-field schema cannot express. `current` carries
- * the values already stored on the event so a partial update is validated
- * against the event it is being applied to.
- */
+// `current` lets a partial update be checked against the stored event.
 export function validateEventDates(
   input: { startTimestamp?: string | null; rsvpDeadline?: string | null },
   current: {
@@ -127,10 +113,6 @@ export function validateEventDates(
   return null;
 }
 
-/**
- * A published event needs enough detail for members to act on it, so
- * publishing is only allowed once the scheduling fields are filled in.
- */
 export function validateReadyToPublish(event: {
   startTimestamp: Date | null;
   duration: string | null;
@@ -153,7 +135,6 @@ export function validateReadyToPublish(event: {
   return null;
 }
 
-/** Whether the event is visible to the viewer, ignoring registration. */
 export function canViewEvent(event: EventLike, viewer: Viewer): boolean {
   const sameOrganization = viewer.organizationId === event.organizationId;
 
@@ -168,7 +149,6 @@ export function canViewEvent(event: EventLike, viewer: Viewer): boolean {
   return sameOrganization && viewer.isMember;
 }
 
-/** Only admins and owners of the owning organization may manage an event. */
 export function canManageEvent(event: EventLike, viewer: Viewer): boolean {
   return viewer.organizationId === event.organizationId && viewer.isAdmin;
 }
@@ -188,11 +168,7 @@ export const registrationBlockMessages: Record<RegistrationBlock, string> = {
   full: "This event has reached its capacity",
 };
 
-/**
- * Whether the event itself is open for registration, independent of who is
- * asking. `rsvpCount` is advisory — capacity is enforced atomically in
- * `EventService.addRSVP`.
- */
+// `rsvpCount` is advisory; capacity is enforced in EventService.addRSVP.
 export function registrationWindowBlock(
   event: EventLike,
   rsvpCount: number,
@@ -207,9 +183,6 @@ export function registrationWindowBlock(
   return null;
 }
 
-/**
- * Whether the viewer may register for the event.
- */
 export function registrationBlockFor(
   event: EventLike,
   viewer: Viewer,
@@ -224,10 +197,7 @@ export function registrationBlockFor(
   return registrationWindowBlock(event, rsvpCount, now);
 }
 
-/**
- * Whether the viewer may withdraw an existing registration. Withdrawal closes
- * at the registration deadline, the same moment registration closes.
- */
+// Withdrawal closes at the deadline, the same moment registration closes.
 export function withdrawalBlockFor(
   event: EventLike,
   viewer: Viewer,
@@ -241,7 +211,6 @@ export function withdrawalBlockFor(
   return withdrawalWindowBlock(event, now);
 }
 
-/** The withdrawal half of {@link registrationWindowBlock}. */
 export function withdrawalWindowBlock(
   event: EventLike,
   now: Date = new Date(),

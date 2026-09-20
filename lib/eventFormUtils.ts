@@ -1,11 +1,6 @@
 import { EventVisibility } from "@/lib/schema";
 import { parseDurationMinutes } from "@/lib/events";
 
-/**
- * Shape of the event creation/editing form. Kept separate from the API payload
- * so the form can hold the split-out location and date/time fields the design
- * asks for while the API keeps storing a single location string and timestamp.
- */
 export type EventFormValues = {
   title: string;
   date: string;
@@ -44,10 +39,7 @@ export const emptyEventFormValues: EventFormValues = {
   visibility: EventVisibility.Public,
 };
 
-/**
- * Splits the stored `"address, city, state, zip"` string back into its parts.
- * Anything that does not follow that shape stays in the address field.
- */
+// Anything that is not "address, city, state, zip" stays in the address field.
 export function parseLocation(location: string): {
   address: string;
   city: string;
@@ -111,7 +103,6 @@ export type EventFormSource = {
   hosts: string[];
 };
 
-/** Fills the form from an existing event so editing starts from its values. */
 export function formValuesFromEvent(event: EventFormSource): EventFormValues {
   const start = event.startTimestamp ? new Date(event.startTimestamp) : null;
   const durationMinutes = event.duration
@@ -191,12 +182,7 @@ export type BuildPayloadResult =
   | { ok: true; payload: EventPayload }
   | { ok: false; missing: EventFormField[]; message: string };
 
-/**
- * Validates the form and turns it into an API payload.
- *
- * Drafts only need a title — the point of a draft is that it can be
- * incomplete. Publishing requires everything a member needs to attend.
- */
+// Drafts only need a title; publishing requires the full details.
 export function buildEventPayload(
   values: EventFormValues,
   intent: "draft" | "publish",

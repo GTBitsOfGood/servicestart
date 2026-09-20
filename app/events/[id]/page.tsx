@@ -29,10 +29,6 @@ interface EventDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-/**
- * Resolves the viewer facts the shared event rules need for the signed-in
- * user, if there is one.
- */
 async function resolveViewer(): Promise<{
   userId: string | null;
   viewer: Viewer;
@@ -129,10 +125,7 @@ export default async function EventDetailPage({
     isDeadlinePassed,
   };
 
-  /**
-   * Toggles the viewer's registration. The rules come from `lib/events` so
-   * this action and `POST /api/events/:eventId/rsvps` stay in step.
-   */
+  // Rules come from lib/events so this stays in step with the RSVP route.
   async function registerForEvent(): Promise<RegisterState> {
     "use server";
 
@@ -187,7 +180,6 @@ export default async function EventDetailPage({
     );
   }
 
-  /** Publishes or unpublishes the event on behalf of an admin. */
   async function setPublished(publish: boolean) {
     "use server";
 
@@ -216,7 +208,6 @@ export default async function EventDetailPage({
     return { ok: true };
   }
 
-  /** Deletes the event on behalf of an admin and returns to the list. */
   async function deleteEvent() {
     "use server";
 

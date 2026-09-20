@@ -24,7 +24,6 @@ export type EventFormSubmitResult = { ok: boolean; error?: string };
 type EventFormProps = {
   heading: string;
   initialValues: EventFormValues;
-  /** A published event is saved in place; a draft can be saved or published. */
   isPublished: boolean;
   onSubmit: (
     payload: EventPayload,
@@ -69,7 +68,7 @@ export default function EventForm({
   }
 
   async function handleSubmit(intent: SubmitIntent) {
-    // A second click while a save is in flight would create a duplicate event.
+    // A second click in flight would create a duplicate event.
     if (isSubmitting) return;
 
     const built = buildEventPayload(values, intent);

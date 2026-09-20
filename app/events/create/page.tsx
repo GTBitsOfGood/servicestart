@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import authClient from "@/lib/authClient";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
@@ -15,16 +15,7 @@ export default function EventsCreationPage() {
   const { organization } = useActiveOrganization();
   const currentEmail = session?.data?.user?.email;
 
-  const initialValues = useMemo(
-    () => ({
-      ...emptyEventFormValues,
-      hosts: currentEmail ? [currentEmail] : [""],
-    }),
-    [currentEmail],
-  );
-
   async function handleSubmit(payload: EventPayload, intent: SubmitIntent) {
-    // The creating admin is always a host of their own event.
     const hosts =
       currentEmail && !payload.hosts.includes(currentEmail)
         ? [currentEmail, ...payload.hosts]
@@ -69,9 +60,8 @@ export default function EventsCreationPage() {
 
   return (
     <EventForm
-      key={currentEmail ?? "anonymous"}
       heading="Event Creation Form"
-      initialValues={initialValues}
+      initialValues={emptyEventFormValues}
       isPublished={false}
       onSubmit={handleSubmit}
       onCancel={() => router.push("/events")}
