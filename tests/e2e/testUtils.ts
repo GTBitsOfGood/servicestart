@@ -15,6 +15,7 @@ import {
 
 type SignInOptions = {
   baseUrl?: string;
+  role?: "admin" | "owner";
 };
 
 function getCookieParts(cookieHeader: string) {
@@ -71,7 +72,7 @@ export async function createTestAdminAndSignIn(
   const { session, headers } = await signUpAndGetSession(user);
   const slug = `e2e-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
   const org = await createOrganization(slug);
-  await addMember(session.userId, org.id, "admin");
+  await addMember(session.userId, org.id, options.role ?? "admin");
   await setActiveOrganization(session.id, org.id);
 
   const cookieHeader = headers["Cookie"];

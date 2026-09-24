@@ -47,7 +47,7 @@ async function addMember(userId: string, organizationId: string) {
 
 beforeEach(() => {
   mockEmailMembers.mockReset();
-  mockEmailMembers.mockResolvedValue(undefined);
+  mockEmailMembers.mockResolvedValue(true);
   mockGetUserIds.mockReset();
   mockGetUserIds.mockResolvedValue([]);
 });
