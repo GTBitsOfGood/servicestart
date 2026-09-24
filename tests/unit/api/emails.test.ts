@@ -12,7 +12,7 @@ import {
 
 vi.mock("@/lib/services/EmailService", () => ({
   EmailService: {
-    emailMembers: vi.fn(async () => {}),
+    emailMembers: vi.fn(async () => true),
     registerOrganizationSender: vi.fn(async () => {}),
   },
 }));
@@ -21,7 +21,7 @@ const mockEmailMembers = vi.mocked(EmailService.emailMembers);
 
 beforeEach(() => {
   mockEmailMembers.mockReset();
-  mockEmailMembers.mockResolvedValue(undefined);
+  mockEmailMembers.mockResolvedValue(true);
 });
 
 async function setupOrgAndUser(role: "owner" | "admin" | "member") {
@@ -44,7 +44,7 @@ function sentBody() {
 describe("POST /api/emails", () => {
   it("returns 401 when not logged in", async () => {
     const response = await testApi.emails.$post({
-      json: { subject: "Hi", body: "Hello", recipientIds: [] },
+      json: { subject: "Hi", body: "Hello", recipientIds: ["user-1"] },
     });
 
     expect(response.status).toBe(401);
@@ -55,7 +55,7 @@ describe("POST /api/emails", () => {
     const { headers } = await setupOrgAndUser("member");
 
     const response = await testApi.emails.$post(
-      { json: { subject: "Hi", body: "Hello", recipientIds: [] } },
+      { json: { subject: "Hi", body: "Hello", recipientIds: ["user-1"] } },
       { headers },
     );
 
@@ -73,7 +73,7 @@ describe("POST /api/emails", () => {
           subtitle: "A note from our director",
           body: "Thanks for volunteering with us this season.",
           footer: "Unsubscribe by replying to this email.",
-          recipientIds: [],
+          recipientIds: ["user-1"],
         },
       },
       { headers },
@@ -102,7 +102,7 @@ describe("POST /api/emails", () => {
           subtitle: "SUBTITLE",
           body: "BODY",
           footer: "FOOTER",
-          recipientIds: [],
+          recipientIds: ["user-1"],
         },
       },
       { headers },
@@ -119,7 +119,7 @@ describe("POST /api/emails", () => {
         json: {
           subject: "Headline",
           body: "Just the body.",
-          recipientIds: [],
+          recipientIds: ["user-1"],
         },
       },
       { headers },
@@ -141,7 +141,7 @@ describe("POST /api/emails", () => {
           subtitle: "   ",
           body: "Just the body.",
           footer: "\n  \n",
-          recipientIds: [],
+          recipientIds: ["user-1"],
         },
       },
       { headers },
@@ -181,7 +181,7 @@ describe("POST /api/emails", () => {
           subtitle: "Subtitle",
           body: "Body",
           footer: "Footer",
-          recipientIds: [],
+          recipientIds: ["user-1"],
         },
       },
       { headers },

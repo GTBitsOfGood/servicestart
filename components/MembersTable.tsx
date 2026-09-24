@@ -13,9 +13,15 @@ import BogTable, {
   type TableRow,
 } from "@/components/bog/BogTable/BogTable";
 import BogModal from "@/components/bog/BogModal/BogModal";
+import BogBanner from "@/components/bog/BogBanner/BogBanner";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
+import { useEmailRecipients } from "@/lib/hooks/useEmailRecipients";
 import SendEmailModal from "@/components/SendEmailModal";
+import {
+  EMAIL_SENT_MESSAGE,
+  postOrganizationEmail,
+} from "@/lib/organizationEmail";
 import AddMemberModal from "@/components/AddMemberModal";
 import { Dialog } from "radix-ui";
 import RequestsPanel from "@/components/RequestsPanel";
@@ -99,6 +105,9 @@ export default function MembersTable({
   const [confirmTarget, setConfirmTarget] = useState<MemberRow | null>(null);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [emailRecipientIds, setEmailRecipientIds] = useState<string[]>([]);
+  const [emailSent, setEmailSent] = useState(false);
+  const { recipients, recipientsLoading, recipientsError, retryRecipients } =
+    useEmailRecipients(organizationId, emailModalOpen);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [requestsPanelOpen, setRequestsPanelOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -175,12 +184,8 @@ export default function MembersTable({
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-  const recipients = useMemo(
-    () => members.map((member) => ({ id: member.userId, name: member.name })),
-    [members],
-  );
-
   const openEmailModal = useCallback((recipientIds: string[]) => {
+    setEmailSent(false);
     setEmailRecipientIds(recipientIds);
     setEmailModalOpen(true);
   }, []);
@@ -294,7 +299,7 @@ export default function MembersTable({
           {
             content: (
               <div className="flex items-center gap-4">
-                <div className="shrink-0 w-[39px] h-[39px] rounded-full bg-grey-off-state" />
+                <div className="shrink-0 w-9.75 h-9.75 rounded-full bg-grey-off-state" />
                 <span className="text-grey-text-weak">{member.name}</span>
               </div>
             ),
@@ -433,12 +438,12 @@ export default function MembersTable({
         }}
         trigger={<span />}
         title={
-          <p className="!text-desktop-paragraph-2 !leading-[22px] !font-bold !font-paragraph text-grey-text-strong">
+          <p className="text-desktop-paragraph-2! leading-5.5! font-bold! font-paragraph! text-grey-text-strong">
             Please Confirm Deletion
           </p>
         }
         description={
-          <p className="!text-mobile-paragraph-2 !leading-[20px] !font-paragraph text-grey-text-weak">
+          <p className="text-mobile-paragraph-2! leading-5! font-paragraph! text-grey-text-weak">
             Deleted members can&apos;t be restored. If you want to keep this
             member&apos;s record, set their status to <strong>Inactive</strong>{" "}
             instead.
@@ -484,13 +489,13 @@ export default function MembersTable({
         }}
         trigger={<span />}
         title={
-          <p className="!text-desktop-paragraph-2 !leading-[22px] !font-bold !font-paragraph text-grey-text-strong">
+          <p className="text-desktop-paragraph-2! leading-5.5! font-bold! font-paragraph! text-grey-text-strong">
             Delete {selectedRows.size} Member
             {selectedRows.size !== 1 ? "s" : ""}?
           </p>
         }
         description={
-          <p className="!text-mobile-paragraph-2 !leading-[20px] !font-paragraph text-grey-text-weak">
+          <p className="text-mobile-paragraph-2! leading-5! font-paragraph! text-grey-text-weak">
             {batchRemoving
               ? `Deleting ${batchProgress.done} of ${batchProgress.total}...`
               : `Are you sure you want to delete ${selectedRows.size} selected member${selectedRows.size !== 1 ? "s" : ""}? This action cannot be undone.`}
@@ -506,24 +511,31 @@ export default function MembersTable({
       />
 
       <SendEmailModal
-        key={emailRecipientIds.join(",")}
+        key={`${organizationId}-${emailModalOpen}-${emailRecipientIds.join(",")}`}
         isOpen={emailModalOpen}
         onClose={() => setEmailModalOpen(false)}
         recipients={recipients}
+        recipientsLoading={recipientsLoading}
+        recipientsError={recipientsError}
+        onRetryRecipients={retryRecipients}
         initialRecipientIds={emailRecipientIds}
-        onSend={async ({ subject, subtitle, body, footer, recipientIds }) => {
-          if (!organizationId) return;
-          const res = await api.emails.$post({
-            json: { subject, subtitle, body, footer, recipientIds },
-          });
-          if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(
-              (data as { error?: string }).error ?? "Failed to send email",
-            );
+        onSend={async (values) => {
+          if (!organizationId) {
+            throw new Error("Failed to send email");
           }
+          await postOrganizationEmail(values);
+          setEmailSent(true);
         }}
       />
+
+      {emailSent && (
+        <BogBanner
+          type="success"
+          variant="surface"
+          role="status"
+          content={<span>{EMAIL_SENT_MESSAGE}</span>}
+        />
+      )}
 
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -560,7 +572,7 @@ export default function MembersTable({
 
       {/* Search bar + Settings button */}
       <div className="flex items-center gap-3">
-        <div className="flex flex-1 items-center overflow-hidden h-[42px] border border-grey-stroke-weak rounded-[6px]">
+        <div className="flex flex-1 items-center overflow-hidden h-10.5 border border-grey-stroke-weak rounded-md">
           <input
             type="text"
             placeholder="Enter text to search"
@@ -583,7 +595,7 @@ export default function MembersTable({
               setSettingsOpen(opening);
               if (opening) setPendingVisibility(new Set(visibleColumns));
             }}
-            className="flex items-center shrink-0 cursor-pointer h-[42px] border border-brand-stroke-strong rounded px-2 gap-1 shadow-inner"
+            className="flex items-center shrink-0 cursor-pointer h-10.5 border border-brand-stroke-strong rounded px-2 gap-1 shadow-inner"
           >
             <span className="font-semibold text-desktop-paragraph-2 text-brand-text whitespace-nowrap px-1">
               Settings
@@ -595,20 +607,20 @@ export default function MembersTable({
             />
           </button>
           {settingsOpen && (
-            <div className="absolute right-0 top-[calc(100%+8px)] w-[431px] bg-white border border-grey-stroke-weak rounded-[8px] p-[24px] flex flex-col gap-[12px] shadow-[0px_8px_8px_-4px_rgba(0,0,0,0.04),0px_20px_24px_-4px_rgba(0,0,0,0.08)] z-50">
+            <div className="absolute right-0 top-[calc(100%+8px)] w-107.75 bg-white border border-grey-stroke-weak rounded-lg p-6 flex flex-col gap-3 shadow-[0px_8px_8px_-4px_rgba(0,0,0,0.04),0px_20px_24px_-4px_rgba(0,0,0,0.08)] z-50">
               <p
-                className="font-paragraph text-[20px] leading-[28px] text-black"
+                className="font-paragraph text-[20px] leading-7 text-black"
                 style={{ fontWeight: 700 }}
               >
                 Information Visibility
               </p>
-              <div className="bg-[#f9f9f9] border border-grey-stroke-weak rounded-[4px] p-[4px] flex flex-col">
+              <div className="bg-solid-bg-sunken border border-grey-stroke-weak rounded-sm p-1 flex flex-col">
                 {ALL_TOGGLEABLE_KEYS.map((key) => {
                   const col = COLUMNS.find((c) => c.key === key)!;
                   const isContact = key === "contact";
                   return (
                     <div key={key}>
-                      <div className="h-[44px] flex items-center px-[8px] py-[12px] rounded-[4px] gap-[8px]">
+                      <div className="h-11 flex items-center px-2 py-3 rounded-sm gap-2">
                         <BogCheckbox
                           name={`visibility-${key}`}
                           label={col.label}
@@ -638,7 +650,7 @@ export default function MembersTable({
                         CONTACT_SUB_KEYS.map((sub) => (
                           <div
                             key={sub}
-                            className="h-[44px] flex items-center px-[24px] py-[12px] rounded-[4px] gap-[8px]"
+                            className="h-11 flex items-center px-6 py-3 rounded-sm gap-2"
                           >
                             <BogCheckbox
                               name={`visibility-${sub}`}
@@ -672,7 +684,7 @@ export default function MembersTable({
                 <BogButton
                   variant="secondary"
                   size="medium"
-                  className="px-[16px]"
+                  className="px-4"
                   onClick={() => {
                     setPendingVisibility(new Set(visibleColumns));
                     setSettingsOpen(false);
@@ -683,7 +695,7 @@ export default function MembersTable({
                 <BogButton
                   variant="primary"
                   size="medium"
-                  className="px-[24px]"
+                  className="px-6"
                   onClick={() => {
                     setVisibleColumns(new Set(pendingVisibility));
                     setSettingsOpen(false);
@@ -699,7 +711,7 @@ export default function MembersTable({
 
       {/* Toolbar: select-all checkbox + bulk/add actions */}
       <div className="flex items-center h-6 pl-4 gap-4">
-        <div className="flex items-center gap-[5px]">
+        <div className="flex items-center gap-1.25">
           <BogCheckbox
             name="select-all"
             checked={
@@ -783,7 +795,7 @@ export default function MembersTable({
       <BogTable
         columnHeaders={filteredColumnHeaders}
         rows={rows}
-        className="w-full [&_.rt-TableRootTable]:table-fixed [&_tbody_span]:!text-[13px] [&_tbody_span]:!leading-[20px] [&_tbody_p]:!text-[13px] [&_tbody_p]:!leading-[20px]"
+        className="w-full [&_.rt-TableRootTable]:table-fixed [&_tbody_span]:text-[13px]! [&_tbody_span]:leading-5! [&_tbody_p]:text-[13px]! [&_tbody_p]:leading-5!"
         columnHeaderCellStyle={{
           fontSize: 16,
           fontWeight: 700,

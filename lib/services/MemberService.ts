@@ -93,6 +93,7 @@ async function listMembers(
     .from(members)
     .innerJoin(users, eq(users.id, members.userId))
     .where(eq(members.organizationId, organizationId))
+    .orderBy(members.id)
     .limit(limit)
     .offset(offset);
 }

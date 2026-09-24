@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import db from "@/lib/db";
@@ -9,7 +10,7 @@ import { createOrganization } from "@/tests/unit/testUtils";
 vi.mock("@/lib/junoClient", () => ({
   juno: {
     email: {
-      sendEmail: vi.fn(async () => ({ statusCode: 202 })),
+      sendEmail: vi.fn(async () => ({ success: true })),
       registerSenderAddress: vi.fn(async () => ({ statusCode: 201 })),
     },
   },
@@ -34,11 +35,15 @@ describe("EmailService", () => {
   beforeEach(() => {
     process.env.EMAIL_SENDER_DOMAIN = "notifications.test";
     mockSendEmail.mockReset();
-    mockSendEmail.mockResolvedValue({ statusCode: 202 } as never);
+    mockSendEmail.mockResolvedValue({ success: true });
   });
 
   afterAll(() => {
-    process.env.EMAIL_SENDER_DOMAIN = previousSenderDomain;
+    if (previousSenderDomain === undefined) {
+      delete process.env.EMAIL_SENDER_DOMAIN;
+    } else {
+      process.env.EMAIL_SENDER_DOMAIN = previousSenderDomain;
+    }
   });
 
   it("emails only members of the target organization", async () => {
@@ -102,6 +107,60 @@ describe("EmailService", () => {
     expect(payload?.recipients).not.toEqual(
       expect.arrayContaining([{ email: "carol@example.com", name: "Carol" }]),
     );
+  });
+
+  it("does not email the organization when the recipient list is empty", async () => {
+    const org = await createOrganization("empty-targets");
+    const alice = await createUser("Alice", "alice-empty@example.com");
+    await db.insert(members).values({
+      id: randomUUID(),
+      userId: alice.id,
+      organizationId: org.id,
+      role: "member",
+    });
+
+    const sent = await EmailService.emailMembers(org.id, {
+      subject: "Hello",
+      content: [{ type: "text/plain", value: "No" }],
+      targetUserIds: [],
+    });
+
+    expect(sent).toBe(false);
+    expect(mockSendEmail).not.toHaveBeenCalled();
+  });
+
+  it("does not email members from another organization", async () => {
+    const org = await createOrganization("scoped-team");
+    const otherOrg = await createOrganization("outside-team");
+    const alice = await createUser("Alice", "alice-scoped@example.com");
+    const carol = await createUser("Carol", "carol-scoped@example.com");
+
+    await db.insert(members).values([
+      {
+        id: randomUUID(),
+        userId: alice.id,
+        organizationId: org.id,
+        role: "member",
+      },
+      {
+        id: randomUUID(),
+        userId: carol.id,
+        organizationId: otherOrg.id,
+        role: "member",
+      },
+    ]);
+
+    const sent = await EmailService.emailMembers(org.id, {
+      subject: "Scoped",
+      content: [{ type: "text/plain", value: "hi" }],
+      targetUserIds: [alice.id, carol.id],
+    });
+
+    expect(sent).toBe(true);
+    const payload = mockSendEmail.mock.calls[0]?.[0];
+    expect(payload?.recipients).toEqual([
+      { email: "alice-scoped@example.com", name: "Alice" },
+    ]);
   });
 
   it("does not call Juno when organization has no members", async () => {

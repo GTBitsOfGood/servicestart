@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DropdownMenu } from "radix-ui";
+import BogBanner from "@/components/bog/BogBanner/BogBanner";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
@@ -12,8 +13,12 @@ import { cn } from "@/lib/utils";
 import authClient from "@/lib/authClient";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import { isAdmin } from "@/lib/clientUtils";
+import { useEmailRecipients } from "@/lib/hooks/useEmailRecipients";
 import SendEmailModal from "@/components/SendEmailModal";
-import api from "@/lib/api";
+import {
+  EMAIL_SENT_MESSAGE,
+  postOrganizationEmail,
+} from "@/lib/organizationEmail";
 
 type FilterValue = "all" | NotificationType;
 
@@ -83,6 +88,7 @@ export default function InboxPage() {
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<FilterValue>("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const {
     allNotifications,
@@ -112,32 +118,8 @@ export default function InboxPage() {
   }, [notifications, search]);
 
   const organizationId = organization?.data?.id;
-  const [recipients, setRecipients] = useState<{ id: string; name: string }[]>(
-    [],
-  );
-
-  useEffect(() => {
-    if (!organizationId) return;
-    api.members
-      .$get({ query: { page: "1", pageSize: "100" } })
-      .then((res) => {
-        if (res.ok) {
-          return res.json();
-        }
-        throw new Error("Failed to fetch members");
-      })
-      .then((resJson) => {
-        if ("data" in resJson) {
-          setRecipients(
-            resJson.data.map((m: { userId: string; name: string }) => ({
-              id: m.userId,
-              name: m.name,
-            })),
-          );
-        }
-      })
-      .catch((err) => console.error(err));
-  }, [organizationId]);
+  const { recipients, recipientsLoading, recipientsError, retryRecipients } =
+    useEmailRecipients(organizationId, isModalOpen && isAuthorizedAdmin);
 
   if (isLoading) {
     return (
@@ -172,12 +154,24 @@ export default function InboxPage() {
             <BogButton
               variant="primary"
               size="medium"
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setEmailSent(false);
+                setIsModalOpen(true);
+              }}
             >
               New +
             </BogButton>
           )}
         </div>
+
+        {emailSent && (
+          <BogBanner
+            type="success"
+            variant="surface"
+            role="status"
+            content={<span>{EMAIL_SENT_MESSAGE}</span>}
+          />
+        )}
 
         <div className="flex flex-col gap-3 mobile:flex-row mobile:items-center mobile:justify-between">
           <div className="flex">
@@ -237,7 +231,7 @@ export default function InboxPage() {
                   {FILTER_OPTIONS.map((option) => (
                     <DropdownMenu.Item
                       key={option.value}
-                      className="flex cursor-pointer items-center gap-3 px-4 py-2 text-paragraph-2 text-grey-text-strong outline-none data-[highlighted]:bg-grey-fill-weaker"
+                      className="flex cursor-pointer items-center gap-3 px-4 py-2 text-paragraph-2 text-grey-text-strong outline-none data-highlighted:bg-grey-fill-weaker"
                       onSelect={() => setFilterType(option.value)}
                     >
                       <span
@@ -311,20 +305,19 @@ export default function InboxPage() {
         </div>
       </div>
       <SendEmailModal
-        isOpen={isModalOpen}
+        key={organizationId}
+        isOpen={isModalOpen && isAuthorizedAdmin}
         onClose={() => setIsModalOpen(false)}
         recipients={recipients}
-        onSend={async ({ subject, subtitle, body, footer, recipientIds }) => {
-          if (!organizationId) return;
-          const res = await api.emails.$post({
-            json: { subject, subtitle, body, footer, recipientIds },
-          });
-          if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(
-              (data as { error?: string }).error ?? "Failed to send email",
-            );
+        recipientsLoading={recipientsLoading}
+        recipientsError={recipientsError}
+        onRetryRecipients={retryRecipients}
+        onSend={async (values) => {
+          if (!organizationId) {
+            throw new Error("Failed to send email");
           }
+          await postOrganizationEmail(values);
+          setEmailSent(true);
         }}
       />
     </div>

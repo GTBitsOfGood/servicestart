@@ -21,17 +21,20 @@ async function emailMembers(
     MembersService.listMemberContacts(organizationId),
   ]);
 
-  if (!organization || allRecipients.length === 0) {
-    return;
+  if (!organization) {
+    return false;
   }
 
+  const targetUserIds = email.targetUserIds && new Set(email.targetUserIds);
   const recipients =
-    email.targetUserIds && email.targetUserIds.length > 0
-      ? allRecipients.filter((r) => email.targetUserIds!.includes(r.userId))
-      : allRecipients;
+    targetUserIds === undefined
+      ? allRecipients
+      : allRecipients.filter((recipient) =>
+          targetUserIds.has(recipient.userId),
+        );
 
   if (recipients.length === 0) {
-    return;
+    return false;
   }
 
   if (!organization.slug) {
@@ -55,12 +58,18 @@ async function emailMembers(
 
   const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
 
-  await juno.email.sendEmail({
+  const result = await juno.email.sendEmail({
     recipients: recipients.map(({ email, name }) => ({ email, name })),
     sender: { email: senderEmail, name: organization.name },
     subject: email.subject,
     contents: email.content,
   });
+
+  if (!result.success) {
+    throw new Error("Failed to send email");
+  }
+
+  return true;
 }
 
 async function registerOrganizationSender({
