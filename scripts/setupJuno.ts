@@ -1,6 +1,7 @@
 import { exec, execSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 import "dotenv/config";
+import { requireEnv } from "../lib/env";
 
 let junoProcess: ReturnType<typeof exec>;
 
@@ -11,6 +12,10 @@ const JUNO_HEADERS = {
 };
 
 async function main() {
+  const baseUrl = requireEnv("JUNO_BASE_URL");
+  if (!["http:", "https:"].includes(new URL(baseUrl).protocol)) {
+    throw new Error("JUNO_BASE_URL must be an HTTP(S) URL. See .env.template.");
+  }
   console.log("Setting up Juno...");
 
   console.log("Installing packages...");
@@ -32,7 +37,7 @@ async function main() {
   // Poll until Juno is ready
   while (true) {
     try {
-      const pollRes = await fetch(`${process.env.JUNO_BASE_URL}/project`, {
+      const pollRes = await fetch(`${baseUrl}/project`, {
         method: "GET",
         headers: JUNO_HEADERS,
       });
@@ -54,7 +59,7 @@ async function main() {
   }
 
   console.log("Creating API key...");
-  const res = await fetch(`${process.env.JUNO_BASE_URL}/auth/key`, {
+  const res = await fetch(`${baseUrl}/auth/key`, {
     method: "POST",
     headers: JUNO_HEADERS,
     body: JSON.stringify({

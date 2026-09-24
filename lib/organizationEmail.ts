@@ -3,8 +3,8 @@ import api from "@/lib/api";
 export type SendEmailValues = {
   subject: string;
   body: string;
-  subtitle: string;
-  footer: string;
+  subtitle?: string;
+  footer?: string;
   recipientIds: string[];
 };
 
@@ -46,9 +46,9 @@ export async function postOrganizationEmail(values: SendEmailValues) {
     json: {
       subject: values.subject,
       body: values.body,
-      subtitle: values.subtitle,
-      footer: values.footer,
       recipientIds: values.recipientIds,
+      ...(values.subtitle ? { subtitle: values.subtitle } : {}),
+      ...(values.footer ? { footer: values.footer } : {}),
     },
   });
 

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { OrganizationConfigKey } from "@/lib/schema";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import { cn } from "@/lib/utils";
+import OrganizationLogo from "@/components/OrganizationLogo";
+import { resolveOrganizationLogo } from "@/lib/organizationBranding";
 
 type SunsetLogoSize = "sm" | "md";
 
@@ -27,13 +29,14 @@ export function SunsetLogo({ size = "md", className }: SunsetLogoProps) {
   const bogHeightClass = "h-[10px]";
   const sunsetHeightClass = "h-[15px]";
 
-  const useCustomLogo = mounted && customLogoSrc && customLogoSrc.trim() !== "";
+  const useCustomLogo =
+    mounted && resolveOrganizationLogo(customLogoSrc).isCustom;
 
   if (useCustomLogo) {
     return (
       <div className={cn("flex items-center", className)}>
-        <img
-          src={customLogoSrc}
+        <OrganizationLogo
+          logoUrl={customLogoSrc}
           alt="Organization logo"
           className={`${circleClass} w-auto`}
         />
@@ -43,7 +46,7 @@ export function SunsetLogo({ size = "md", className }: SunsetLogoProps) {
 
   return (
     <div className={cn("flex items-center", className)}>
-      <img src="/logo.svg" alt="Logo" className={`${circleClass} w-auto`} />
+      <OrganizationLogo alt="Logo" className={`${circleClass} w-auto`} />
       <div className="flex flex-col items-start">
         <img
           src="/bog.svg"

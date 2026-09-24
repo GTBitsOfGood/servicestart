@@ -14,6 +14,21 @@ const sendEmailSchema = z.object({
     .min(1, "Select at least one recipient"),
 });
 
+function composeEmailBody({
+  subtitle,
+  body,
+  footer,
+}: {
+  subtitle?: string;
+  body: string;
+  footer?: string;
+}) {
+  return [subtitle, body, footer]
+    .map((section) => section?.trim())
+    .filter((section): section is string => Boolean(section))
+    .join("\n\n");
+}
+
 const app = new Hono().post(
   "/",
   zValidator("json", sendEmailSchema, (result, c) => {
@@ -27,7 +42,7 @@ const app = new Hono().post(
   async (c) => {
     const session = await requireAdmin(c);
     const organizationId = session.session.activeOrganizationId!;
-    const { subject, body, subtitle, footer, recipientIds } =
+    const { subject, subtitle, body, footer, recipientIds } =
       c.req.valid("json");
 
     const sent = await EmailService.emailMembers(organizationId, {
@@ -35,7 +50,7 @@ const app = new Hono().post(
       content: [
         {
           type: "text/plain",
-          value: [subtitle, body, footer].filter(Boolean).join("\n\n"),
+          value: composeEmailBody({ subtitle, body, footer }),
         },
       ],
       targetUserIds: recipientIds,

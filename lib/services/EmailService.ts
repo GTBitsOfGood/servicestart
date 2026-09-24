@@ -1,16 +1,11 @@
 import { juno } from "@/lib/junoClient";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
+import { getEmailSenderDomain } from "@/lib/env";
+import { getBaseUrl } from "@/lib/clientUtils";
 
 function senderDomain() {
-  if (process.env.EMAIL_SENDER_DOMAIN?.trim()) {
-    return process.env.EMAIL_SENDER_DOMAIN?.trim();
-  } else {
-    const url = new URL(
-      process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000",
-    );
-    return url.hostname;
-  }
+  return getEmailSenderDomain();
 }
 
 async function emailMembers(
@@ -152,7 +147,7 @@ async function sendInvitationEmail({
   }
 
   const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
-  const acceptUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/accept-invitation/${id}`;
+  const acceptUrl = `${getBaseUrl()}/accept-invitation/${id}`;
 
   await juno.email.sendEmail({
     recipients: [{ email }],

@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import {
   createTestUserAndSignIn,
+  ensureServicestartOrganization,
   expectPageDoesNotRedirect,
 } from "./testUtils";
 import { buildTestUser, signUpAndGetSession } from "../unit/testUtils";
@@ -24,6 +25,12 @@ function hexToRgb(hex: string): string {
 }
 
 test.describe("Login Page", () => {
+  // localhost resolves to the `servicestart` tenant; without it the config
+  // request 404s and the page correctly renders the not-found state instead.
+  test.beforeAll(async () => {
+    await ensureServicestartOrganization();
+  });
+
   test("login", async ({ page }) => {
     const user = await buildTestUser();
     await signUpAndGetSession(user);
