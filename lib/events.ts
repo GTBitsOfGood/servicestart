@@ -41,13 +41,13 @@ export function parseDurationMinutes(duration: string): number | null {
   return null;
 }
 
-const timestampSchema = z
+export const timestampSchema = z
   .string()
   .refine((value) => !Number.isNaN(Date.parse(value)), {
     message: "Must be a valid date and time",
   });
 
-const durationSchema = z
+export const durationSchema = z
   .string()
   .refine((value) => (parseDurationMinutes(value) ?? 0) > 0, {
     message: "Duration must be a positive amount of time",
@@ -55,7 +55,7 @@ const durationSchema = z
 
 const linkSchema = z.url({ message: "Links must be valid URLs" });
 
-const rsvpLimitSchema = z
+export const rsvpLimitSchema = z
   .number()
   .int("Capacity must be a whole number")
   .positive("Capacity must be greater than zero");
@@ -159,6 +159,16 @@ export type RegistrationBlock =
   | "unpublished"
   | "deadline-passed"
   | "full";
+
+export function publicationBlock(event: { publishedAt: Date | null }) {
+  return event.publishedAt == null ? ("unpublished" as const) : null;
+}
+
+export function deadlineBlock(event: { rsvpDeadline: Date | null }, now: Date) {
+  return event.rsvpDeadline && now.getTime() >= event.rsvpDeadline.getTime()
+    ? ("deadline-passed" as const)
+    : null;
+}
 
 export const registrationBlockMessages: Record<RegistrationBlock, string> = {
   "not-visible": "Event not found",

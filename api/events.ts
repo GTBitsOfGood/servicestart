@@ -6,6 +6,8 @@ import { auth } from "@/lib/auth";
 import { EventService } from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
+import { requireMembership } from "@/lib/authUtils";
+import { shiftErrorResponse } from "@/api/shifts/errors";
 import { TagService } from "@/lib/services/TagService";
 import { paginationQuerySchema } from "../lib/apiUtils";
 import { ForbiddenError } from "@/lib/errors";
@@ -215,44 +217,31 @@ const app = new Hono()
   })
   .get(
     "/:eventId/shifts",
+    zValidator("param", z.object({ eventId: z.string().min(1) })),
     zValidator("query", paginationQuerySchema),
     async (c) => {
-      const { eventId } = c.req.param();
-      const resolved = await getViewer(c);
-      if (!resolved) {
-        return c.json({ error: "Unauthorized" }, { status: 401 });
+      try {
+        const { eventId } = c.req.valid("param");
+        const { session, user } = await requireMembership(c);
+        const { page, pageSize } = c.req.valid("query");
+        const data = await ShiftService.listByEvent(
+          eventId,
+          session.activeOrganizationId!,
+          {
+            limit: pageSize,
+            offset: (page - 1) * pageSize,
+          },
+          user.id,
+        );
+
+        return c.json({
+          data,
+          page,
+          pageSize,
+        });
+      } catch (error) {
+        return shiftErrorResponse(c, error);
       }
-
-      const { viewer } = resolved;
-      const activeOrganizationId = viewer.organizationId;
-      if (!activeOrganizationId) {
-        return c.json({ error: "Event not found" }, { status: 404 });
-      }
-
-      const event = await EventService.findById(eventId);
-      if (
-        !event ||
-        event.organizationId !== activeOrganizationId ||
-        !canViewEvent(event, viewer)
-      ) {
-        return c.json({ error: "Event not found" }, { status: 404 });
-      }
-
-      const { page, pageSize } = c.req.valid("query");
-      const data = await ShiftService.listByEvent(
-        eventId,
-        activeOrganizationId,
-        {
-          limit: pageSize,
-          offset: (page - 1) * pageSize,
-        },
-      );
-
-      return c.json({
-        data,
-        page,
-        pageSize,
-      });
     },
   )
   .patch("/:eventId", zValidator("json", eventUpdateSchema), async (c) => {

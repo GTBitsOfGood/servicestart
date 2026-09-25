@@ -20,6 +20,7 @@ import {
   tags,
 } from "@/lib/schema";
 import type { RegistrationBlock } from "@/lib/events";
+import { publicationBlock, deadlineBlock } from "@/lib/events";
 import { randomUUID } from "node:crypto";
 
 export type RegisterResult = "added" | "already-registered" | RegistrationBlock;
@@ -321,7 +322,8 @@ async function register(
       .limit(1);
 
     if (!membership) return "not-a-member";
-    if (event.publishedAt == null) return "unpublished";
+    const publication = publicationBlock(event);
+    if (publication) return publication;
 
     const [existing] = await tx
       .select({ userId: eventRsvps.userId })
@@ -333,9 +335,8 @@ async function register(
 
     if (existing) return "already-registered";
 
-    if (event.rsvpDeadline && now.getTime() >= event.rsvpDeadline.getTime()) {
-      return "deadline-passed";
-    }
+    const deadline = deadlineBlock(event, now);
+    if (deadline) return deadline;
 
     if (event.rsvpLimit !== null) {
       const [{ value: rsvpCount }] = await tx
@@ -382,9 +383,8 @@ async function withdraw(
 
   if (!membership) return "not-a-member";
 
-  if (event.rsvpDeadline && now.getTime() >= event.rsvpDeadline.getTime()) {
-    return "deadline-passed";
-  }
+  const deadline = deadlineBlock(event, now);
+  if (deadline) return deadline;
 
   await db
     .delete(eventRsvps)
