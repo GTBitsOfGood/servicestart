@@ -1,4 +1,14 @@
-import { and, eq, gt, lt, isNull, isNotNull, ilike, or } from "drizzle-orm";
+import {
+  and,
+  count,
+  eq,
+  gt,
+  lt,
+  isNull,
+  isNotNull,
+  ilike,
+  or,
+} from "drizzle-orm";
 import db from "@/lib/db";
 import {
   events,
@@ -6,9 +16,15 @@ import {
   eventTags,
   eventHosts,
   EventVisibility,
+  members,
   tags,
 } from "@/lib/schema";
+import type { RegistrationBlock } from "@/lib/events";
 import { randomUUID } from "node:crypto";
+
+export type RegisterResult = "added" | "already-registered" | RegistrationBlock;
+
+export type WithdrawResult = "removed" | RegistrationBlock;
 
 async function create(
   organizationId: string,
@@ -65,7 +81,7 @@ async function create(
       publishedAt: events.publishedAt,
       publishedById: events.publishedById,
     });
-  if (tagIds) {
+  if (tagIds && tagIds.length > 0) {
     await db
       .insert(eventTags)
       .values(tagIds.map((tagId) => ({ eventId: event.id, tagId })));
@@ -192,6 +208,37 @@ async function listByPublic(options: { limit: number; offset: number }) {
     .offset(options.offset);
 }
 
+const eventColumns = {
+  id: events.id,
+  organizationId: events.organizationId,
+  name: events.name,
+  location: events.location,
+  description: events.description,
+  startTimestamp: events.startTimestamp,
+  duration: events.duration,
+  rsvpLimit: events.rsvpLimit,
+  rsvpDeadline: events.rsvpDeadline,
+  visibility: events.visibility,
+  accessibilityNotes: events.accessibilityNotes,
+  links: events.links,
+  coverImageUrl: events.coverImageUrl,
+  publishedAt: events.publishedAt,
+  publishedById: events.publishedById,
+};
+
+// Same shape as updateEvent, so a no-op update can answer with the stored row.
+async function findEventRow(eventId: string, organizationId: string) {
+  const [row] = await db
+    .select(eventColumns)
+    .from(events)
+    .where(
+      and(eq(events.id, eventId), eq(events.organizationId, organizationId)),
+    )
+    .limit(1);
+
+  return row ?? null;
+}
+
 async function updateEvent(
   eventId: string,
   organizationId: string,
@@ -238,25 +285,112 @@ async function updateEvent(
   return updated.length > 0 ? updated[0] : null;
 }
 
-async function addRSVP(eventId: string, userId: string) {
-  const [existing] = await db
-    .select()
-    .from(eventRsvps)
-    .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)))
-    .limit(1);
-  if (existing) {
-    return;
-  }
-  await db.insert(eventRsvps).values({
-    eventId,
-    userId,
+// Every registration rule lives here so the API route and the page action
+// cannot disagree. The event row is locked so capacity holds under concurrency.
+async function register(
+  eventId: string,
+  organizationId: string,
+  userId: string,
+  now: Date = new Date(),
+): Promise<RegisterResult> {
+  return await db.transaction(async (tx) => {
+    const [event] = await tx
+      .select({
+        publishedAt: events.publishedAt,
+        rsvpLimit: events.rsvpLimit,
+        rsvpDeadline: events.rsvpDeadline,
+      })
+      .from(events)
+      .where(
+        and(eq(events.id, eventId), eq(events.organizationId, organizationId)),
+      )
+      .for("update")
+      .limit(1);
+
+    if (!event) return "not-visible";
+
+    const [membership] = await tx
+      .select({ id: members.id })
+      .from(members)
+      .where(
+        and(
+          eq(members.userId, userId),
+          eq(members.organizationId, organizationId),
+        ),
+      )
+      .limit(1);
+
+    if (!membership) return "not-a-member";
+    if (event.publishedAt == null) return "unpublished";
+
+    const [existing] = await tx
+      .select({ userId: eventRsvps.userId })
+      .from(eventRsvps)
+      .where(
+        and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)),
+      )
+      .limit(1);
+
+    if (existing) return "already-registered";
+
+    if (event.rsvpDeadline && now.getTime() >= event.rsvpDeadline.getTime()) {
+      return "deadline-passed";
+    }
+
+    if (event.rsvpLimit !== null) {
+      const [{ value: rsvpCount }] = await tx
+        .select({ value: count() })
+        .from(eventRsvps)
+        .where(eq(eventRsvps.eventId, eventId));
+
+      if (rsvpCount >= event.rsvpLimit) return "full";
+    }
+
+    await tx.insert(eventRsvps).values({ eventId, userId });
+
+    return "added";
   });
 }
 
-async function deleteRSVP(eventId: string, userId: string) {
+// Withdrawal closes at the deadline, the same moment registration closes.
+async function withdraw(
+  eventId: string,
+  organizationId: string,
+  userId: string,
+  now: Date = new Date(),
+): Promise<WithdrawResult> {
+  const [event] = await db
+    .select({ rsvpDeadline: events.rsvpDeadline })
+    .from(events)
+    .where(
+      and(eq(events.id, eventId), eq(events.organizationId, organizationId)),
+    )
+    .limit(1);
+
+  if (!event) return "not-visible";
+
+  const [membership] = await db
+    .select({ id: members.id })
+    .from(members)
+    .where(
+      and(
+        eq(members.userId, userId),
+        eq(members.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+
+  if (!membership) return "not-a-member";
+
+  if (event.rsvpDeadline && now.getTime() >= event.rsvpDeadline.getTime()) {
+    return "deadline-passed";
+  }
+
   await db
     .delete(eventRsvps)
     .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)));
+
+  return "removed";
 }
 
 async function findByUser(userId: string) {
@@ -302,13 +436,52 @@ async function addEventHosts(eventId: string, userIds: string[]) {
   await db.insert(eventHosts).values(additions);
 }
 
-async function getEventHosts(eventId: string) {
-  const [hosts] = await db
-    .select()
+async function listEventHosts(eventId: string) {
+  return await db
+    .select({ eventId: eventHosts.eventId, userId: eventHosts.userId })
     .from(eventHosts)
     .where(eq(eventHosts.eventId, eventId));
+}
 
-  return hosts ?? null;
+async function setEventHosts(eventId: string, userIds: string[]) {
+  await db.transaction(async (tx) => {
+    await tx.delete(eventHosts).where(eq(eventHosts.eventId, eventId));
+    if (userIds.length === 0) return;
+    const unique = Array.from(new Set(userIds));
+    await tx
+      .insert(eventHosts)
+      .values(unique.map((userId) => ({ eventId, userId })));
+  });
+}
+
+async function setEventTags(eventId: string, tagIds: string[]) {
+  await db.transaction(async (tx) => {
+    await tx.delete(eventTags).where(eq(eventTags.eventId, eventId));
+    if (tagIds.length === 0) return;
+    const unique = Array.from(new Set(tagIds));
+    await tx
+      .insert(eventTags)
+      .values(unique.map((tagId) => ({ eventId, tagId })));
+  });
+}
+
+async function countRSVPs(eventId: string) {
+  const [{ value }] = await db
+    .select({ value: count() })
+    .from(eventRsvps)
+    .where(eq(eventRsvps.eventId, eventId));
+
+  return value;
+}
+
+async function hasRSVP(eventId: string, userId: string) {
+  const [existing] = await db
+    .select({ userId: eventRsvps.userId })
+    .from(eventRsvps)
+    .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)))
+    .limit(1);
+
+  return existing !== undefined;
 }
 
 export const EventService = {
@@ -318,12 +491,17 @@ export const EventService = {
   listByOrganization,
   listByPublic,
   updateEvent,
-  addRSVP,
-  deleteRSVP,
+  findEventRow,
+  register,
+  withdraw,
   findByUser,
   listRSVPsByEvent,
   addEventHosts,
-  getEventHosts,
+  listEventHosts,
+  setEventHosts,
+  setEventTags,
+  countRSVPs,
+  hasRSVP,
 };
 
 export default EventService;
