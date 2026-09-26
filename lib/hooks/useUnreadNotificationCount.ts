@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import authClient from "@/lib/authClient";
+import {
+  UNREAD_NOTIFICATION_COUNT_CHANGED,
+  type UnreadNotificationCountChangedDetail,
+} from "@/lib/notificationEvents";
 
 type UseUnreadNotificationCountResult = {
   count: number;
@@ -19,9 +23,41 @@ export function useUnreadNotificationCount(): UseUnreadNotificationCountResult {
   const organization = authClient.useActiveOrganization();
 
   const [count, setCount] = useState(0);
+  const [countOrganizationId, setCountOrganizationId] = useState<
+    string | undefined
+  >();
   const [isLoading, setIsLoading] = useState(false);
 
-  const canFetch = !!session.data && !!organization.data?.id;
+  const userId = session.data?.user?.id;
+  const organizationId = organization.data?.id;
+  const canFetch = !!userId && !!organizationId;
+
+  useEffect(() => {
+    if (!organizationId) return;
+
+    const handleCountChanged = (event: Event) => {
+      const { count: nextCount, organizationId: eventOrganizationId } = (
+        event as CustomEvent<UnreadNotificationCountChangedDetail>
+      ).detail;
+
+      if (eventOrganizationId === organizationId) {
+        setCount(nextCount);
+        setCountOrganizationId(eventOrganizationId);
+      }
+    };
+
+    window.addEventListener(
+      UNREAD_NOTIFICATION_COUNT_CHANGED,
+      handleCountChanged,
+    );
+
+    return () => {
+      window.removeEventListener(
+        UNREAD_NOTIFICATION_COUNT_CHANGED,
+        handleCountChanged,
+      );
+    };
+  }, [organizationId]);
 
   useEffect(() => {
     if (!canFetch) return;
@@ -34,23 +70,26 @@ export function useUnreadNotificationCount(): UseUnreadNotificationCountResult {
       .then(async (res) => {
         if (!res.ok) {
           setCount(0);
+          setCountOrganizationId(organizationId);
           return;
         }
         const json = await res.json();
         setCount(parseCount(json));
+        setCountOrganizationId(organizationId);
       })
       .catch(() => {
         setCount(0);
+        setCountOrganizationId(organizationId);
       })
       .finally(() => {
         setIsLoading(false);
       });
 
     return () => controller.abort();
-  }, [canFetch]);
+  }, [canFetch, organizationId, userId]);
 
   return {
-    count: canFetch ? count : 0,
+    count: canFetch && countOrganizationId === organizationId ? count : 0,
     isLoading: canFetch ? isLoading : false,
   };
 }

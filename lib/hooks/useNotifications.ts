@@ -5,8 +5,16 @@ import api from "@/lib/api";
 import type { NotificationListItem } from "@/components/notifications/NotificationItem";
 import { fetchNotifications, fetchUnreadCount } from "@/lib/notifications";
 import type { NotificationType } from "@/lib/schema";
+import authClient from "@/lib/authClient";
+import { publishUnreadNotificationCount } from "@/lib/notificationEvents";
 
 export function useNotifications(filterType?: NotificationType) {
+  const session = authClient.useSession();
+  const organization = authClient.useActiveOrganization();
+  const userId = session.data?.user?.id;
+  const organizationId = organization.data?.id;
+  const canFetch = !!userId && !!organizationId;
+
   const [allNotifications, setAllNotifications] = useState<
     NotificationListItem[]
   >([]);
@@ -20,6 +28,13 @@ export function useNotifications(filterType?: NotificationType) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadNotifications = useCallback(async () => {
+    if (!canFetch || !organizationId) {
+      setAllNotifications([]);
+      setUnreadNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
     const [all, unread, count] = await Promise.all([
       fetchNotifications("all", filterType),
       fetchNotifications("unread", filterType),
@@ -29,7 +44,8 @@ export function useNotifications(filterType?: NotificationType) {
     setAllNotifications(all);
     setUnreadNotifications(unread);
     setUnreadCount(count);
-  }, [filterType]);
+    publishUnreadNotificationCount(count, organizationId);
+  }, [canFetch, filterType, organizationId]);
 
   const refreshNotifications = useCallback(async () => {
     setIsRefreshing(true);
@@ -45,6 +61,15 @@ export function useNotifications(filterType?: NotificationType) {
   }, [loadNotifications]);
 
   useEffect(() => {
+    if (!canFetch) {
+      setAllNotifications([]);
+      setUnreadNotifications([]);
+      setUnreadCount(0);
+      setIsLoading(false);
+      setErrorMessage(null);
+      return;
+    }
+
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -58,7 +83,7 @@ export function useNotifications(filterType?: NotificationType) {
       .finally(() => {
         setIsLoading(false);
       });
-  }, [loadNotifications]);
+  }, [canFetch, loadNotifications]);
 
   const runMutation = useCallback(
     async (mutation: () => Promise<Response>, failureMessage?: string) => {
