@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import authClient from "@/lib/authClient";
 import {
@@ -27,6 +27,7 @@ export function useUnreadNotificationCount(): UseUnreadNotificationCountResult {
     string | undefined
   >();
   const [isLoading, setIsLoading] = useState(false);
+  const latestUpdateIdRef = useRef(0);
 
   const userId = session.data?.user?.id;
   const organizationId = organization.data?.id;
@@ -41,8 +42,10 @@ export function useUnreadNotificationCount(): UseUnreadNotificationCountResult {
       ).detail;
 
       if (eventOrganizationId === organizationId) {
+        latestUpdateIdRef.current += 1;
         setCount(nextCount);
         setCountOrganizationId(eventOrganizationId);
+        setIsLoading(false);
       }
     };
 
@@ -63,29 +66,44 @@ export function useUnreadNotificationCount(): UseUnreadNotificationCountResult {
     if (!canFetch) return;
 
     const controller = new AbortController();
-    Promise.resolve().then(() => setIsLoading(true));
+    const requestId = ++latestUpdateIdRef.current;
+    Promise.resolve().then(() => {
+      if (requestId === latestUpdateIdRef.current) setIsLoading(true);
+    });
 
     api.notifications.unreadCount
       .$get({}, { init: { signal: controller.signal } })
       .then(async (res) => {
+        if (requestId !== latestUpdateIdRef.current) return;
+
         if (!res.ok) {
           setCount(0);
           setCountOrganizationId(organizationId);
           return;
         }
+
         const json = await res.json();
+        if (requestId !== latestUpdateIdRef.current) return;
+
         setCount(parseCount(json));
         setCountOrganizationId(organizationId);
       })
       .catch(() => {
+        if (requestId !== latestUpdateIdRef.current) return;
+
         setCount(0);
         setCountOrganizationId(organizationId);
       })
       .finally(() => {
-        setIsLoading(false);
+        if (requestId === latestUpdateIdRef.current) setIsLoading(false);
       });
 
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      if (requestId === latestUpdateIdRef.current) {
+        latestUpdateIdRef.current += 1;
+      }
+    };
   }, [canFetch, organizationId, userId]);
 
   return {

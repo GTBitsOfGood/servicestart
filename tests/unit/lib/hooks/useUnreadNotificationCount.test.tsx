@@ -22,6 +22,15 @@ vi.mock("@/lib/api", () => ({
   },
 }));
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+
+  return { promise, resolve };
+}
+
 describe("useUnreadNotificationCount", () => {
   afterEach(() => {
     cleanup();
@@ -42,5 +51,32 @@ describe("useUnreadNotificationCount", () => {
 
     act(() => publishUnreadNotificationCount(9, "another-org"));
     expect(result.current.count).toBe(2);
+  });
+
+  it("does not let an older request replace a newer published count", async () => {
+    const response = deferred<{
+      ok: true;
+      json: () => Promise<{ count: number }>;
+    }>();
+    mockGetUnreadCount.mockReturnValue(response.promise);
+
+    const { result } = renderHook(() => useUnreadNotificationCount());
+    await waitFor(() => expect(mockGetUnreadCount).toHaveBeenCalledOnce());
+
+    act(() => publishUnreadNotificationCount(2, "org-1"));
+    expect(result.current.count).toBe(2);
+    expect(result.current.isLoading).toBe(false);
+
+    await act(async () => {
+      response.resolve({
+        ok: true,
+        json: async () => ({ count: 4 }),
+      });
+      await response.promise;
+      await Promise.resolve();
+    });
+
+    expect(result.current.count).toBe(2);
+    expect(result.current.isLoading).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import type { NotificationListItem } from "@/components/notifications/NotificationItem";
 import { fetchNotifications, fetchUnreadCount } from "@/lib/notifications";
@@ -14,6 +14,10 @@ export function useNotifications(filterType?: NotificationType) {
   const userId = session.data?.user?.id;
   const organizationId = organization.data?.id;
   const canFetch = !!userId && !!organizationId;
+  const activeScopeRef = useRef({ userId, organizationId });
+  const latestLoadIdRef = useRef(0);
+
+  activeScopeRef.current = { userId, organizationId };
 
   const [allNotifications, setAllNotifications] = useState<
     NotificationListItem[]
@@ -27,32 +31,60 @@ export function useNotifications(filterType?: NotificationType) {
   const [isMarkAllReadPending, setIsMarkAllReadPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const loadNotifications = useCallback(async () => {
+  const loadNotifications = useCallback(async (): Promise<boolean> => {
     if (!canFetch || !organizationId) {
+      latestLoadIdRef.current += 1;
       setAllNotifications([]);
       setUnreadNotifications([]);
       setUnreadCount(0);
-      return;
+      return true;
     }
 
-    const [all, unread, count] = await Promise.all([
-      fetchNotifications("all", filterType),
-      fetchNotifications("unread", filterType),
-      fetchUnreadCount(),
-    ]);
+    const loadId = ++latestLoadIdRef.current;
+    const loadUserId = userId;
+    const loadOrganizationId = organizationId;
+    let results: [NotificationListItem[], NotificationListItem[], number];
+
+    try {
+      results = await Promise.all([
+        fetchNotifications("all", filterType),
+        fetchNotifications("unread", filterType),
+        fetchUnreadCount(),
+      ]);
+    } catch (error) {
+      const activeScope = activeScopeRef.current;
+      const isCurrentLoad =
+        loadId === latestLoadIdRef.current &&
+        activeScope.userId === loadUserId &&
+        activeScope.organizationId === loadOrganizationId;
+
+      if (!isCurrentLoad) return false;
+      throw error;
+    }
+
+    const activeScope = activeScopeRef.current;
+    const isCurrentLoad =
+      loadId === latestLoadIdRef.current &&
+      activeScope.userId === loadUserId &&
+      activeScope.organizationId === loadOrganizationId;
+
+    if (!isCurrentLoad) return false;
+
+    const [all, unread, count] = results;
 
     setAllNotifications(all);
     setUnreadNotifications(unread);
     setUnreadCount(count);
     publishUnreadNotificationCount(count, organizationId);
-  }, [canFetch, filterType, organizationId]);
+    return true;
+  }, [canFetch, filterType, organizationId, userId]);
 
   const refreshNotifications = useCallback(async () => {
     setIsRefreshing(true);
 
     try {
-      await loadNotifications();
-      setErrorMessage(null);
+      const didLoad = await loadNotifications();
+      if (didLoad) setErrorMessage(null);
     } catch {
       setErrorMessage("Unable to refresh notifications.");
     } finally {
@@ -61,7 +93,10 @@ export function useNotifications(filterType?: NotificationType) {
   }, [loadNotifications]);
 
   useEffect(() => {
+    let isActive = true;
+
     if (!canFetch) {
+      latestLoadIdRef.current += 1;
       setAllNotifications([]);
       setUnreadNotifications([]);
       setUnreadCount(0);
@@ -75,14 +110,19 @@ export function useNotifications(filterType?: NotificationType) {
 
     loadNotifications()
       .catch(() => {
+        if (!isActive) return;
         setAllNotifications([]);
         setUnreadNotifications([]);
         setUnreadCount(0);
         setErrorMessage("Unable to load notifications.");
       })
       .finally(() => {
-        setIsLoading(false);
+        if (isActive) setIsLoading(false);
       });
+
+    return () => {
+      isActive = false;
+    };
   }, [canFetch, loadNotifications]);
 
   const runMutation = useCallback(
