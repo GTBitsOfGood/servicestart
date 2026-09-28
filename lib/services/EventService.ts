@@ -291,7 +291,7 @@ async function register(
   eventId: string,
   organizationId: string,
   userId: string,
-  now: Date = new Date(),
+  now?: Date,
 ): Promise<RegisterResult> {
   return await db.transaction(async (tx) => {
     const [event] = await tx
@@ -333,7 +333,12 @@ async function register(
 
     if (existing) return "already-registered";
 
-    if (event.rsvpDeadline && now.getTime() >= event.rsvpDeadline.getTime()) {
+    // Read the clock only after the lock, since waiting on it can outlast the deadline.
+    const checkedAt = now ?? new Date();
+    if (
+      event.rsvpDeadline &&
+      checkedAt.getTime() >= event.rsvpDeadline.getTime()
+    ) {
       return "deadline-passed";
     }
 
