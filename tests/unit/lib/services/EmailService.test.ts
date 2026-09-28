@@ -125,7 +125,7 @@ describe("EmailService", () => {
       targetUserIds: [],
     });
 
-    expect(sent).toBe(false);
+    expect(sent).toBe("no-recipients");
     expect(mockSendEmail).not.toHaveBeenCalled();
   });
 
@@ -156,11 +156,31 @@ describe("EmailService", () => {
       targetUserIds: [alice.id, carol.id],
     });
 
-    expect(sent).toBe(true);
+    expect(sent).toBe("sent");
     const payload = mockSendEmail.mock.calls[0]?.[0];
     expect(payload?.recipients).toEqual([
       { email: "alice-scoped@example.com", name: "Alice" },
     ]);
+  });
+
+  it("reports a failed delivery without throwing", async () => {
+    const org = await createOrganization("delivery-failed");
+    const alice = await createUser("Alice", "alice-failed@example.com");
+    await db.insert(members).values({
+      id: randomUUID(),
+      userId: alice.id,
+      organizationId: org.id,
+      role: "member",
+    });
+    mockSendEmail.mockResolvedValueOnce({ success: false });
+
+    const result = await EmailService.emailMembers(org.id, {
+      subject: "Hello",
+      content: [{ type: "text/plain", value: "Hi" }],
+    });
+
+    expect(result).toBe("delivery-failed");
+    expect(mockSendEmail).toHaveBeenCalledTimes(1);
   });
 
   it("does not call Juno when organization has no members", async () => {

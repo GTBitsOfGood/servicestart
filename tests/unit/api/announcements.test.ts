@@ -24,7 +24,7 @@ const mockEmailMembers = vi.mocked(EmailService.emailMembers);
 
 beforeEach(() => {
   mockEmailMembers.mockReset();
-  mockEmailMembers.mockResolvedValue(true);
+  mockEmailMembers.mockResolvedValue("sent");
 });
 
 async function setupOrgAndUser(role: "owner" | "admin" | "member") {

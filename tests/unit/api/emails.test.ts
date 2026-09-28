@@ -12,7 +12,7 @@ import {
 
 vi.mock("@/lib/services/EmailService", () => ({
   EmailService: {
-    emailMembers: vi.fn(async () => true),
+    emailMembers: vi.fn(async () => "sent" as const),
     registerOrganizationSender: vi.fn(async () => {}),
   },
 }));
@@ -21,7 +21,7 @@ const mockEmailMembers = vi.mocked(EmailService.emailMembers);
 
 beforeEach(() => {
   mockEmailMembers.mockReset();
-  mockEmailMembers.mockResolvedValue(true);
+  mockEmailMembers.mockResolvedValue("sent");
 });
 
 async function setupOrgAndUser(role: "owner" | "admin" | "member") {

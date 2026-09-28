@@ -8,6 +8,8 @@ function senderDomain() {
   return getEmailSenderDomain();
 }
 
+export type EmailMembersResult = "sent" | "no-recipients" | "delivery-failed";
+
 async function emailMembers(
   organizationId: string,
   email: {
@@ -15,14 +17,14 @@ async function emailMembers(
     content: { type: "text/plain" | "text/html"; value: string }[];
     targetUserIds?: string[];
   },
-) {
+): Promise<EmailMembersResult> {
   const [organization, allRecipients] = await Promise.all([
     OrganizationsService.findById(organizationId),
     MembersService.listMemberContacts(organizationId),
   ]);
 
   if (!organization) {
-    return false;
+    return "no-recipients";
   }
 
   const targetUserIds = email.targetUserIds && new Set(email.targetUserIds);
@@ -34,7 +36,7 @@ async function emailMembers(
         );
 
   if (recipients.length === 0) {
-    return false;
+    return "no-recipients";
   }
 
   if (!organization.slug) {
@@ -65,11 +67,7 @@ async function emailMembers(
     contents: email.content,
   });
 
-  if (!result.success) {
-    throw new Error("Failed to send email");
-  }
-
-  return true;
+  return result.success ? "sent" : "delivery-failed";
 }
 
 async function registerOrganizationSender({

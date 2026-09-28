@@ -45,7 +45,7 @@ const app = new Hono().post(
     const { subject, subtitle, body, footer, recipientIds } =
       c.req.valid("json");
 
-    const sent = await EmailService.emailMembers(organizationId, {
+    const result = await EmailService.emailMembers(organizationId, {
       subject,
       content: [
         {
@@ -56,13 +56,17 @@ const app = new Hono().post(
       targetUserIds: recipientIds,
     });
 
-    if (!sent) {
+    if (result === "no-recipients") {
       return c.json(
         {
           error: "None of the selected recipients belong to this organization",
         },
         400,
       );
+    }
+
+    if (result === "delivery-failed") {
+      return c.json({ error: "Failed to send email" }, 500);
     }
 
     return c.json({ success: true });
