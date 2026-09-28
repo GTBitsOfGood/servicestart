@@ -226,63 +226,68 @@ const eventColumns = {
   publishedById: events.publishedById,
 };
 
-// Same shape as updateEvent, so a no-op update can answer with the stored row.
-async function findEventRow(eventId: string, organizationId: string) {
-  const [row] = await db
-    .select(eventColumns)
-    .from(events)
-    .where(
-      and(eq(events.id, eventId), eq(events.organizationId, organizationId)),
-    )
-    .limit(1);
-
-  return row ?? null;
-}
+type EventUpdates = {
+  name?: string;
+  location?: string;
+  description?: string | null;
+  startTimestamp?: Date | null;
+  duration?: string | null;
+  coverImageUrl?: string | null;
+  publishedAt?: Date | null;
+  publishedById?: string | null;
+  rsvpLimit?: number | null;
+  rsvpDeadline?: Date | null;
+  visibility?: EventVisibility;
+  accessibilityNotes?: string | null;
+  links?: string[] | null;
+};
 
 async function updateEvent(
   eventId: string,
   organizationId: string,
-  updates: {
-    name?: string;
-    location?: string;
-    description?: string | null;
-    startTimestamp?: Date | null;
-    duration?: string | null;
-    coverImageUrl?: string | null;
-    publishedAt?: Date | null;
-    publishedById?: string | null;
-    rsvpLimit?: number | null;
-    rsvpDeadline?: Date | null;
-    visibility?: EventVisibility;
-    accessibilityNotes?: string | null;
-    links?: string[] | null;
-  },
+  updates: EventUpdates,
+  related: { tagIds?: string[]; hostIds?: string[] } = {},
 ) {
-  const updated = await db
-    .update(events)
-    .set(updates)
-    .where(
-      and(eq(events.id, eventId), eq(events.organizationId, organizationId)),
-    )
-    .returning({
-      id: events.id,
-      organizationId: events.organizationId,
-      name: events.name,
-      location: events.location,
-      description: events.description,
-      startTimestamp: events.startTimestamp,
-      duration: events.duration,
-      rsvpLimit: events.rsvpLimit,
-      rsvpDeadline: events.rsvpDeadline,
-      visibility: events.visibility,
-      accessibilityNotes: events.accessibilityNotes,
-      links: events.links,
-      coverImageUrl: events.coverImageUrl,
-      publishedAt: events.publishedAt,
-      publishedById: events.publishedById,
-    });
+  return await db.transaction(async (tx) => {
+    const scope = and(
+      eq(events.id, eventId),
+      eq(events.organizationId, organizationId),
+    );
 
-  return updated.length > 0 ? updated[0] : null;
+    // Postgres cannot update zero columns.
+    const [row] =
+      Object.keys(updates).length > 0
+        ? await tx
+            .update(events)
+            .set(updates)
+            .where(scope)
+            .returning(eventColumns)
+        : await tx.select(eventColumns).from(events).where(scope).limit(1);
+
+    if (!row) return null;
+
+    if (related.tagIds !== undefined) {
+      await tx.delete(eventTags).where(eq(eventTags.eventId, eventId));
+      const unique = Array.from(new Set(related.tagIds));
+      if (unique.length > 0) {
+        await tx
+          .insert(eventTags)
+          .values(unique.map((tagId) => ({ eventId, tagId })));
+      }
+    }
+
+    if (related.hostIds !== undefined) {
+      await tx.delete(eventHosts).where(eq(eventHosts.eventId, eventId));
+      const unique = Array.from(new Set(related.hostIds));
+      if (unique.length > 0) {
+        await tx
+          .insert(eventHosts)
+          .values(unique.map((userId) => ({ eventId, userId })));
+      }
+    }
+
+    return row;
+  });
 }
 
 // Every registration rule lives here so the API route and the page action
@@ -448,28 +453,6 @@ async function listEventHosts(eventId: string) {
     .where(eq(eventHosts.eventId, eventId));
 }
 
-async function setEventHosts(eventId: string, userIds: string[]) {
-  await db.transaction(async (tx) => {
-    await tx.delete(eventHosts).where(eq(eventHosts.eventId, eventId));
-    if (userIds.length === 0) return;
-    const unique = Array.from(new Set(userIds));
-    await tx
-      .insert(eventHosts)
-      .values(unique.map((userId) => ({ eventId, userId })));
-  });
-}
-
-async function setEventTags(eventId: string, tagIds: string[]) {
-  await db.transaction(async (tx) => {
-    await tx.delete(eventTags).where(eq(eventTags.eventId, eventId));
-    if (tagIds.length === 0) return;
-    const unique = Array.from(new Set(tagIds));
-    await tx
-      .insert(eventTags)
-      .values(unique.map((tagId) => ({ eventId, tagId })));
-  });
-}
-
 async function countRSVPs(eventId: string) {
   const [{ value }] = await db
     .select({ value: count() })
@@ -496,15 +479,12 @@ export const EventService = {
   listByOrganization,
   listByPublic,
   updateEvent,
-  findEventRow,
   register,
   withdraw,
   findByUser,
   listRSVPsByEvent,
   addEventHosts,
   listEventHosts,
-  setEventHosts,
-  setEventTags,
   countRSVPs,
   hasRSVP,
 };
