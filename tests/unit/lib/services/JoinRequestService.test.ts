@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/lib/db";
 import {
@@ -244,6 +244,32 @@ describe("JoinRequestsService.listByOrganization", () => {
     expect(result).toHaveLength(2);
   });
 
+  it("returns the next page when an offset is given", async () => {
+    const org = await createOrganization("list-offset");
+    const ids: string[] = [];
+    for (let i = 0; i < 4; i++) {
+      const { user } = await signUpAndGetSession(buildTestUser());
+      const id = await createJoinRequest(user.id, org.id);
+      await db
+        .update(joinRequests)
+        .set({ createdAt: new Date(Date.UTC(2025, 0, 4 - i)) })
+        .where(eq(joinRequests.id, id));
+      ids.push(id);
+    }
+
+    const page1 = await JoinRequestsService.listByOrganization(org.id, {
+      limit: 2,
+      offset: 0,
+    });
+    const page2 = await JoinRequestsService.listByOrganization(org.id, {
+      limit: 2,
+      offset: 2,
+    });
+
+    expect(page1.map((jr) => jr.id)).toEqual(ids.slice(0, 2));
+    expect(page2.map((jr) => jr.id)).toEqual(ids.slice(2, 4));
+  });
+
   it("only returns join requests for the given organization", async () => {
     const orgA = await createOrganization("list-a");
     const orgB = await createOrganization("list-b");
@@ -269,7 +295,12 @@ describe("JoinRequestsService.listHistory", () => {
     await db
       .update(joinRequestHistory)
       .set({ resolvedAt: new Date("2025-01-01T00:00:00Z") })
-      .where(eq(joinRequestHistory.action, "approved"));
+      .where(
+        and(
+          eq(joinRequestHistory.joinRequestId, id),
+          eq(joinRequestHistory.action, "approved"),
+        ),
+      );
 
     const history = await JoinRequestsService.listHistory(id);
 
@@ -453,7 +484,7 @@ describe("JoinRequestsService.updateStatus", () => {
     expect(await JoinRequestsService.listHistory(id)).toHaveLength(1);
   });
 
-  it("does not change join requests in other organizations", async () => {
+  it("only updates the given join request", async () => {
     const orgA = await createOrganization("update-a");
     const orgB = await createOrganization("update-b");
     const admin = await createAdmin(orgA.id);
