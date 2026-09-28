@@ -128,6 +128,18 @@ describe("NotificationsSidebar", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
+  it("links to the full inbox and closes when followed", async () => {
+    renderSidebar();
+    openSidebar();
+
+    const link = screen.getByRole("link", { name: "View full inbox" });
+    expect(link.getAttribute("href")).toBe("/inbox");
+
+    fireEvent.click(link);
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
   it("switches between All and Unread notifications", () => {
     renderSidebar();
     openSidebar();

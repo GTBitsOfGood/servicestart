@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactElement, useState } from "react";
+import Link from "next/link";
 import { Dialog } from "radix-ui";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { cn } from "@/lib/utils";
@@ -62,15 +63,25 @@ function NotificationsSidebarContent({ onClose }: { onClose: () => void }) {
               Notifications
             </Dialog.Title>
 
-            <Dialog.Close asChild>
-              <button
-                type="button"
-                aria-label="Close notifications"
-                className="rounded p-1 text-grey-icon-weak hover:text-grey-text-strong"
+            <div className="flex items-center gap-3">
+              <Link
+                href="/inbox"
+                onClick={onClose}
+                className="text-paragraph-2 font-semibold text-brand-text hover:opacity-80"
               >
-                <BogIcon name="x" size={28} />
-              </button>
-            </Dialog.Close>
+                View full inbox
+              </Link>
+
+              <Dialog.Close asChild>
+                <button
+                  type="button"
+                  aria-label="Close notifications"
+                  className="rounded p-1 text-grey-icon-weak hover:text-grey-text-strong"
+                >
+                  <BogIcon name="x" size={28} />
+                </button>
+              </Dialog.Close>
+            </div>
           </div>
 
           <div className="flex items-center justify-between">
