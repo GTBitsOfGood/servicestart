@@ -1,8 +1,11 @@
 "use client";
 
+import { resolveBranding } from "@/lib/branding";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
+import OrganizationNotFound from "@/components/OrganizationNotFound";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import { OrganizationConfigKey } from "@/lib/schema";
@@ -14,15 +17,13 @@ export default function ForgotPasswordPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
 
-  const {
-    primary_color = "#FFFFFF",
-    secondary_color = "#FFFFFF",
-    logo_url: logoUrl,
-  } = useOrganizationConfig([
+  const config = useOrganizationConfig([
     OrganizationConfigKey.PrimaryColor,
     OrganizationConfigKey.SecondaryColor,
     OrganizationConfigKey.LogoUrl,
   ]);
+  const { primary_color, secondary_color } = resolveBranding(config);
+  const { logo_url: logoUrl } = config;
 
   const handleEmailSubmit = async () => {
     const { error } = await authClient.requestPasswordReset({
@@ -37,6 +38,8 @@ export default function ForgotPasswordPage() {
       router.push("/login");
     }
   };
+
+  if (config.status === "not-found") return <OrganizationNotFound />;
 
   return (
     <div

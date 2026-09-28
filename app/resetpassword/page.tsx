@@ -1,8 +1,11 @@
 "use client";
 
+import { resolveBranding } from "@/lib/branding";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
+import OrganizationNotFound from "@/components/OrganizationNotFound";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import { OrganizationConfigKey } from "@/lib/schema";
@@ -19,15 +22,13 @@ export default function ResetPasswordPage() {
   const [isExpired, setIsExpired] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState(true);
 
-  const {
-    primary_color = "#FFFFFF",
-    secondary_color = "#FFFFFF",
-    logo_url: logoUrl,
-  } = useOrganizationConfig([
+  const config = useOrganizationConfig([
     OrganizationConfigKey.PrimaryColor,
     OrganizationConfigKey.SecondaryColor,
     OrganizationConfigKey.LogoUrl,
   ]);
+  const { primary_color, secondary_color } = resolveBranding(config);
+  const { logo_url: logoUrl } = config;
 
   const handleResetPassword = async () => {
     const token = new URLSearchParams(window.location.search).get("token");
@@ -79,6 +80,8 @@ export default function ResetPasswordPage() {
       setPasswordsMatch(password === passwordConfirm);
     }
   }, [password, passwordConfirm]);
+
+  if (config.status === "not-found") return <OrganizationNotFound />;
 
   return (
     <div

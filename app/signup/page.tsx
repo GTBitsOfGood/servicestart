@@ -1,5 +1,7 @@
 "use client";
 
+import { resolveBranding } from "@/lib/branding";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
@@ -7,6 +9,7 @@ import BogButton from "@/components/bog/BogButton/BogButton";
 import authClient from "@/lib/authClient";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
 import UnauthenticatedOrganizationLogo from "@/components/UnauthenticatedOrganizationLogo";
+import OrganizationNotFound from "@/components/OrganizationNotFound";
 import { OrganizationConfigKey } from "@/lib/schema";
 import { getSlugFromHost } from "@/lib/clientAuthUtils";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
@@ -19,17 +22,14 @@ export default function SignupPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const {
-    primary_color = "#FFFFFF",
-    secondary_color = "#FFFFFF",
-    tagline: configuredTagline,
-    logo_url: logoUrl,
-  } = useOrganizationConfig([
+  const config = useOrganizationConfig([
     OrganizationConfigKey.PrimaryColor,
     OrganizationConfigKey.SecondaryColor,
     OrganizationConfigKey.Tagline,
     OrganizationConfigKey.LogoUrl,
   ]);
+  const { primary_color, secondary_color } = resolveBranding(config);
+  const { logo_url: logoUrl, tagline: configuredTagline } = config;
   const tagline = configuredTagline?.trim() || "Welcome";
   const org = useActiveOrganization();
 
@@ -93,6 +93,8 @@ export default function SignupPage() {
 
     void checkLoggedIn();
   }, [org?.slug, router]);
+
+  if (config.status === "not-found") return <OrganizationNotFound />;
 
   return (
     <div

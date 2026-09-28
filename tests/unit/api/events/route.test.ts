@@ -474,6 +474,7 @@ describe("PATCH /api/events/:eventId", () => {
       name: "Original Name",
       location: "Original Location",
       description: "Original Description",
+      publishedAt: null,
     });
 
     const response = await testApi.events[":eventId"].$patch(
@@ -496,6 +497,7 @@ describe("PATCH /api/events/:eventId", () => {
     const eventId = await createEvent(organization.id, {
       name: "Old Event",
       location: "Old Location",
+      publishedAt: null,
     });
 
     const response = await testApi.events[":eventId"].$patch(
@@ -531,6 +533,7 @@ describe("PATCH /api/events/:eventId", () => {
       location: "Location",
       description: "Description",
       duration: "1 hour",
+      publishedAt: null,
     });
 
     const response = await testApi.events[":eventId"].$patch(
