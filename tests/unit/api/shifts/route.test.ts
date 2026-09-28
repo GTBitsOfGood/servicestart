@@ -380,6 +380,28 @@ describe("POST /app/api/shifts/[shiftId]/rsvps", () => {
     expect(response.status).toBe(404);
   });
 
+  it("returns 400 when the shift's event is a draft", async () => {
+    const theUser = await buildTestUser();
+    const organization = await createOrganization("acme");
+    const { user, session, headers } = await signUpAndGetSession(theUser);
+    await addMember(user.id, organization.id, "member");
+    await setActiveOrganization(session.id, organization.id);
+    const eventId = await createEvent(organization.id, { publishedAt: null });
+    const shiftId = await createShift(organization.id, { eventId });
+
+    const response = await app.request(`/api/shifts/${shiftId}/rsvps`, {
+      method: "POST",
+      headers: withJsonHeaders(headers),
+    });
+
+    expect(response.status).toBe(400);
+    const rsvps = await db
+      .select()
+      .from(shiftRSVPs)
+      .where(eq(shiftRSVPs.shiftId, shiftId));
+    expect(rsvps).toHaveLength(0);
+  });
+
   it("userId is not specified", async () => {
     const theUser = await buildTestUser();
     const organization = await createOrganization("acme");

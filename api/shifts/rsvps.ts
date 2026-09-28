@@ -1,4 +1,6 @@
 import { requireMembership } from "@/lib/authUtils";
+import { registrationBlockMessages } from "@/lib/events";
+import { EventService } from "@/lib/services/EventService";
 import { MembersService } from "@/lib/services/MemberService";
 import { ShiftService } from "@/lib/services/ShiftService";
 import { zValidator } from "@hono/zod-validator";
@@ -32,6 +34,18 @@ const app = new Hono()
 
       if (shift.organizationId !== organizationId) {
         return c.notFound();
+      }
+
+      const event = await EventService.findById(shift.eventId);
+      if (!event || event.organizationId !== organizationId) {
+        return c.notFound();
+      }
+
+      if (event.publishedAt == null) {
+        return c.json(
+          { error: registrationBlockMessages.unpublished },
+          { status: 400 },
+        );
       }
 
       const userId = c.req.valid("query").userId;
