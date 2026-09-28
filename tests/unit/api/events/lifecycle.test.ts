@@ -398,7 +398,10 @@ describe("editing an event", () => {
 
   it("rejects a host who is not in the organization", async () => {
     const { organization, headers } = await setupOrgAndUser("admin");
-    const eventId = await createEvent(organization.id, { name: "Event" });
+    const eventId = await createEvent(organization.id, {
+      name: "Event",
+      publishedAt: null,
+    });
 
     const response = await testApi.events[":eventId"].$patch(
       { param: { eventId }, json: { hosts: ["stranger@example.org"] } },
