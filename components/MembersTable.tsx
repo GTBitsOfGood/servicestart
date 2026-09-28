@@ -506,15 +506,15 @@ export default function MembersTable({
       />
 
       <SendEmailModal
-        key={`${emailModalOpen}-${emailRecipientIds.join(",")}`}
+        key={emailRecipientIds.join(",")}
         isOpen={emailModalOpen}
         onClose={() => setEmailModalOpen(false)}
         recipients={recipients}
         initialRecipientIds={emailRecipientIds}
-        onSend={async ({ subject, body, recipientIds }) => {
+        onSend={async ({ subject, subtitle, body, footer, recipientIds }) => {
           if (!organizationId) return;
           const res = await api.emails.$post({
-            json: { subject, body, recipientIds },
+            json: { subject, subtitle, body, footer, recipientIds },
           });
           if (!res.ok) {
             const data = await res.json().catch(() => ({}));

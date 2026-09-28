@@ -1,0 +1,5 @@
+# Opt-in real delivery. Requires approved SendGrid credentials and verified DNS.
+services:
+  email-service:
+    environment:
+      NODE_ENV: development
