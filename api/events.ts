@@ -313,35 +313,36 @@ const app = new Hono()
         : null;
     }
 
-    if (data.published !== undefined) {
-      const isPublished = event.publishedAt != null;
+    const isPublished = event.publishedAt != null;
+    const willBePublished = data.published ?? isPublished;
 
-      if (data.published && !isPublished) {
-        const publishError = validateReadyToPublish({
-          startTimestamp:
-            updates.startTimestamp !== undefined
-              ? updates.startTimestamp
-              : event.startTimestamp,
-          duration:
-            updates.duration !== undefined ? updates.duration : event.duration,
-          description:
-            updates.description !== undefined
-              ? updates.description
-              : event.description,
-          location:
-            updates.location !== undefined ? updates.location : event.location,
-        });
+    if (willBePublished) {
+      const publishError = validateReadyToPublish({
+        startTimestamp:
+          updates.startTimestamp !== undefined
+            ? updates.startTimestamp
+            : event.startTimestamp,
+        duration:
+          updates.duration !== undefined ? updates.duration : event.duration,
+        description:
+          updates.description !== undefined
+            ? updates.description
+            : event.description,
+        location:
+          updates.location !== undefined ? updates.location : event.location,
+      });
 
-        if (publishError) {
-          return c.json({ error: publishError }, { status: 400 });
-        }
-
-        updates.publishedAt = new Date();
-        updates.publishedById = session.user.id;
-      } else if (!data.published && isPublished) {
-        updates.publishedAt = null;
-        updates.publishedById = null;
+      if (publishError) {
+        return c.json({ error: publishError }, { status: 400 });
       }
+    }
+
+    if (willBePublished && !isPublished) {
+      updates.publishedAt = new Date();
+      updates.publishedById = session.user.id;
+    } else if (!willBePublished && isPublished) {
+      updates.publishedAt = null;
+      updates.publishedById = null;
     }
 
     if (data.tagIds !== undefined && data.tagIds.length > 0) {
@@ -369,22 +370,15 @@ const app = new Hono()
       hostIds = resolvedHosts.ids;
     }
 
-    // Postgres cannot update zero columns.
-    const updated =
-      Object.keys(updates).length > 0
-        ? await EventService.updateEvent(eventId, activeOrganizationId, updates)
-        : await EventService.findEventRow(eventId, activeOrganizationId);
+    const updated = await EventService.updateEvent(
+      eventId,
+      activeOrganizationId,
+      updates,
+      { tagIds: data.tagIds, hostIds },
+    );
 
     if (!updated) {
       return c.json({ error: "Failed to update event" }, { status: 500 });
-    }
-
-    if (data.tagIds !== undefined) {
-      await EventService.setEventTags(eventId, data.tagIds);
-    }
-
-    if (hostIds !== undefined) {
-      await EventService.setEventHosts(eventId, hostIds);
     }
 
     return c.json(updated);

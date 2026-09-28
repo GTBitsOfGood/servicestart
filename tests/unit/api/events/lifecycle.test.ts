@@ -360,7 +360,10 @@ describe("editing an event", () => {
   it("replaces hosts and tags rather than appending", async () => {
     const { organization, user, headers } = await setupOrgAndUser("admin");
     const { user: coHost } = await addUserToOrg(organization.id, "member");
-    const eventId = await createEvent(organization.id, { name: "Event" });
+    const eventId = await createEvent(organization.id, {
+      name: "Event",
+      publishedAt: null,
+    });
     const firstTag = await createTag(organization.id, "First");
     const secondTag = await createTag(organization.id, "Second");
 
@@ -395,7 +398,10 @@ describe("editing an event", () => {
 
   it("rejects a host who is not in the organization", async () => {
     const { organization, headers } = await setupOrgAndUser("admin");
-    const eventId = await createEvent(organization.id, { name: "Event" });
+    const eventId = await createEvent(organization.id, {
+      name: "Event",
+      publishedAt: null,
+    });
 
     const response = await testApi.events[":eventId"].$patch(
       { param: { eventId }, json: { hosts: ["stranger@example.org"] } },
@@ -502,6 +508,28 @@ describe("publishing and unpublishing", () => {
     );
 
     expect(response.status).toBe(200);
+  });
+
+  it("refuses to clear a published event's required details", async () => {
+    const { organization, headers } = await setupOrgAndUser("admin");
+    const eventId = await createEvent(organization.id, {
+      name: "Live Event",
+      startTimestamp: new Date(futureStart),
+      duration: "120 minutes",
+      description: "Bring a dish",
+    });
+
+    const response = await testApi.events[":eventId"].$patch(
+      { param: { eventId }, json: { description: null } },
+      { headers },
+    );
+
+    expect(response.status).toBe(400);
+    const [stored] = await db
+      .select()
+      .from(events)
+      .where(eq(events.id, eventId));
+    expect(stored.description).toBe("Bring a dish");
   });
 
   it("unpublishes a published event back to a draft", async () => {

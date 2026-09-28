@@ -1,19 +1,29 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import EventForm, { type SubmitIntent } from "@/components/events/EventForm";
-import type { EventFormValues, EventPayload } from "@/lib/eventFormUtils";
+import type { SubmitIntent } from "@/components/events/EventForm";
+import {
+  formValuesFromEvent,
+  type EventFormSource,
+  type EventPayload,
+} from "@/lib/eventFormUtils";
+
+// Times are shown in the browser's timezone, so the form cannot be server-rendered.
+const EventForm = dynamic(() => import("@/components/events/EventForm"), {
+  ssr: false,
+});
 
 type EditEventClientProps = {
   eventId: string;
-  initialValues: EventFormValues;
+  event: EventFormSource;
   isPublished: boolean;
 };
 
 export default function EditEventClient({
   eventId,
-  initialValues,
+  event,
   isPublished,
 }: EditEventClientProps) {
   const router = useRouter();
@@ -40,7 +50,7 @@ export default function EditEventClient({
   return (
     <EventForm
       heading={isPublished ? "Edit Event" : "Edit Draft"}
-      initialValues={initialValues}
+      initialValues={formValuesFromEvent(event)}
       isPublished={isPublished}
       onSubmit={handleSubmit}
       onCancel={() => router.push(`/events/${eventId}`)}
