@@ -3,7 +3,6 @@ import EditEventClient from "@/components/events/EditEventClient";
 import { redirectIfNotAdmin } from "@/lib/authUtils";
 import EventService from "@/lib/services/EventService";
 import { UserService } from "@/lib/services/UserService";
-import { formValuesFromEvent } from "@/lib/eventFormUtils";
 
 interface EditEventPageProps {
   params: Promise<{ id: string }>;
@@ -26,7 +25,7 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
     user?.email ? [user.email] : [],
   );
 
-  const initialValues = formValuesFromEvent({
+  const source = {
     name: event.name,
     location: event.location,
     description: event.description,
@@ -41,12 +40,12 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
     links: event.links,
     tagIds: event.tags.map((tag) => tag.tagId),
     hosts: hostEmails,
-  });
+  };
 
   return (
     <EditEventClient
       eventId={event.id}
-      initialValues={initialValues}
+      event={source}
       isPublished={event.publishedAt != null}
     />
   );

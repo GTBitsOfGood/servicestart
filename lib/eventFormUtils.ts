@@ -13,6 +13,7 @@ export type EventFormValues = {
   zipCode: string;
   eventCapacity: string;
   deadline: string;
+  savedDeadline: string | null;
   links: string[];
   notes: string;
   tagIds: string[];
@@ -32,6 +33,7 @@ export const emptyEventFormValues: EventFormValues = {
   zipCode: "",
   eventCapacity: "",
   deadline: "",
+  savedDeadline: null,
   links: [""],
   notes: "",
   tagIds: [],
@@ -124,6 +126,7 @@ export function formValuesFromEvent(event: EventFormSource): EventFormValues {
     description: event.description ?? "",
     eventCapacity: event.rsvpLimit !== null ? String(event.rsvpLimit) : "",
     deadline: deadline ? toDateInputValue(deadline) : "",
+    savedDeadline: event.rsvpDeadline,
     links: event.links && event.links.length > 0 ? event.links : [""],
     notes: event.accessibilityNotes ?? "",
     tagIds: event.tagIds,
@@ -249,7 +252,11 @@ export function buildEventPayload(
 
   let rsvpDeadline: string | null = null;
   if (values.deadline.trim() !== "") {
-    const parsed = new Date(`${values.deadline}T23:59:59`);
+    const saved = values.savedDeadline ? new Date(values.savedDeadline) : null;
+    const parsed =
+      saved && toDateInputValue(saved) === values.deadline
+        ? saved
+        : new Date(`${values.deadline}T23:59:59`);
     if (Number.isNaN(parsed.getTime())) {
       return {
         ok: false,

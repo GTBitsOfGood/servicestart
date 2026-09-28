@@ -138,6 +138,30 @@ describe("buildEventPayload", () => {
     }
   });
 
+  it("keeps a saved deadline's time when its date is unchanged", () => {
+    const saved = new Date(2026, 5, 10, 12, 0, 0).toISOString();
+
+    const result = buildEventPayload(
+      completeValues({ deadline: "2026-06-10", savedDeadline: saved }),
+      "publish",
+    );
+
+    expect(result.ok && result.payload.rsvpDeadline).toBe(saved);
+  });
+
+  it("moves a changed deadline to the end of its new day", () => {
+    const saved = new Date(2026, 5, 10, 12, 0, 0).toISOString();
+
+    const result = buildEventPayload(
+      completeValues({ deadline: "2026-06-11", savedDeadline: saved }),
+      "publish",
+    );
+
+    expect(result.ok && result.payload.rsvpDeadline).toBe(
+      new Date(2026, 5, 11, 23, 59, 59).toISOString(),
+    );
+  });
+
   it("rejects a deadline after the event starts", () => {
     const result = buildEventPayload(
       completeValues({ deadline: "2026-06-20" }),
