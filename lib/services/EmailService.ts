@@ -8,6 +8,8 @@ function senderDomain() {
   return getEmailSenderDomain();
 }
 
+export type EmailMembersResult = "sent" | "no-recipients" | "delivery-failed";
+
 async function emailMembers(
   organizationId: string,
   email: {
@@ -15,23 +17,26 @@ async function emailMembers(
     content: { type: "text/plain" | "text/html"; value: string }[];
     targetUserIds?: string[];
   },
-) {
+): Promise<EmailMembersResult> {
   const [organization, allRecipients] = await Promise.all([
     OrganizationsService.findById(organizationId),
     MembersService.listMemberContacts(organizationId),
   ]);
 
-  if (!organization || allRecipients.length === 0) {
-    return;
+  if (!organization) {
+    return "no-recipients";
   }
 
+  const targetUserIds = email.targetUserIds && new Set(email.targetUserIds);
   const recipients =
-    email.targetUserIds && email.targetUserIds.length > 0
-      ? allRecipients.filter((r) => email.targetUserIds!.includes(r.userId))
-      : allRecipients;
+    targetUserIds === undefined
+      ? allRecipients
+      : allRecipients.filter((recipient) =>
+          targetUserIds.has(recipient.userId),
+        );
 
   if (recipients.length === 0) {
-    return;
+    return "no-recipients";
   }
 
   if (!organization.slug) {
@@ -55,12 +60,14 @@ async function emailMembers(
 
   const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
 
-  await juno.email.sendEmail({
+  const result = await juno.email.sendEmail({
     recipients: recipients.map(({ email, name }) => ({ email, name })),
     sender: { email: senderEmail, name: organization.name },
     subject: email.subject,
     contents: email.content,
   });
+
+  return result.success ? "sent" : "delivery-failed";
 }
 
 async function registerOrganizationSender({
