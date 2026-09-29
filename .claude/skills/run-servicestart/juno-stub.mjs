@@ -1,4 +1,4 @@
-/* global process, console */
+/* global process */
 // Stand-in for Juno on :8888. Answers every request with success and appends
 // the request to a log, so email sends (POST /email/send) can be inspected.
 import fs from "node:fs";
@@ -16,4 +16,6 @@ http
       res.end(JSON.stringify({ success: true, statusCode: 200 }));
     });
   })
-  .listen(8888, () => console.log(`juno stub on :8888, logging to ${logFile}`));
+  .listen(8888, () =>
+    process.stdout.write(`juno stub on :8888, logging to ${logFile}\n`),
+  );

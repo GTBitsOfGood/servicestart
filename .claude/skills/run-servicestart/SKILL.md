@@ -16,7 +16,7 @@ Nothing to install in the cloud image: PostgreSQL 16 (`/usr/lib/postgresql/16`),
 RESET_DB=1 .claude/skills/run-servicestart/setup.sh   # also wipe + reseed the dev DB
 ```
 
-It starts Postgres clusters `main` (:5432, user `dev`/`root`, dev DB) and `test` (:5433, user `test`/`root`, for unit tests), writes `.env` if missing, runs `pnpm install`, migrates, seeds an empty DB, starts the Juno stub on :8888 and `next dev` on :3000, and waits until `/login` answers. Logs go to `/tmp/servicestart/` (`dev.log`, `seed.log`, …). Every request the app sends to "Juno" (for example emails) is appended to `/tmp/servicestart/juno-requests.log`.
+It starts Postgres clusters `main` (:5432, user `dev`/`root`, dev DB) and `test` (:5433, user `test`/`root`, for unit tests), writes `.env` if missing, runs `pnpm install`, migrates, seeds the DB if it has no notifications yet (the seed's last step, so an interrupted seed is retried), starts the Juno stub on :8888 and `next dev` on :3000, and waits until `/login` answers. `RESET_DB=1` resets the database `DB_URL` in `.env` points at, and refuses unless it's on localhost. Logs go to `/tmp/servicestart/` (`dev.log`, `seed.log`, …). Every request the app sends to "Juno" (for example emails) is appended to `/tmp/servicestart/juno-requests.log`.
 
 Seeded accounts (password `password123`) on http://localhost:3000, which is the `servicestart` org: `owner@example.com`, `admin@example.com` (admins), `member1@example.com`, `member2@example.com`, `joinrequest-pending@example.com`, `nonmember@example.com`.
 
@@ -86,6 +86,7 @@ tail -3 /tmp/servicestart/juno-requests.log
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `login <email> [origin]`        | Fresh browser context, signs in with `password123`, waits out the post-login redirect. Origin defaults to localhost:3000. |
 | `anon [origin]`                 | Fresh signed-out context.                                                                                                 |
+| `viewport <width> <height>`     | Resize the page, e.g. `viewport 390 844` for a phone.                                                                     |
 | `nav <path or url>`             | Go to a page (paths are relative to the current origin) and wait for network idle.                                        |
 | `click` / `hover` / `wait-for`  | Act on the first match of a Playwright selector. Quote selectors that contain spaces.                                     |
 | `fill <selector> <text>`        | Fill an input; the rest of the line is the value.                                                                         |

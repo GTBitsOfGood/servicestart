@@ -35,13 +35,23 @@ fi
 
 pnpm install --frozen-lockfile >"$LOG_DIR/install.log" 2>&1
 
-export PGPASSWORD=root
+# The database that migrate and seed use (DB_URL from .env, <branch> resolved).
+DB=$(pnpm exec tsx -e 'import "dotenv/config"; import { getDbUrl } from "./lib/env"; process.stdout.write(getDbUrl())')
 if [ "${RESET_DB:-}" = 1 ]; then
-  PGOPTIONS=--client-min-messages=warning psql -h localhost -U dev -d postgres -q \
+  case "$DB" in
+  postgres*://*@localhost:*/* | postgres*://*@127.0.0.1:*/*) ;;
+  *)
+    echo "RESET_DB=1 refused: DB_URL in .env is not a local database" >&2
+    exit 1
+    ;;
+  esac
+  PGOPTIONS=--client-min-messages=warning psql "$DB" -q \
     -c "DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 fi
 pnpm run db:migrate >"$LOG_DIR/migrate.log" 2>&1
-if [ "$(psql -h localhost -U dev -d postgres -tAc 'SELECT count(*) FROM organizations')" = 0 ]; then
+# Notifications are the seed's last step, so none means the seed never ran or
+# stopped partway. Re-running is safe: earlier steps skip rows that exist.
+if [ "$(psql "$DB" -tAc 'SELECT count(*) FROM notifications')" = 0 ]; then
   pnpm run db:seed >"$LOG_DIR/seed.log" 2>&1
   echo "seeded dev database"
 fi

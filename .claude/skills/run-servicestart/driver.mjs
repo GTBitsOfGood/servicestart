@@ -1,4 +1,4 @@
-/* global process, console, fetch */
+/* global process, fetch */
 // Headless-Chromium driver for a running ServiceStart dev server.
 // Reads one command per line from stdin; see SKILL.md for the command list.
 //   node .claude/skills/run-servicestart/driver.mjs <<'EOF'
@@ -37,6 +37,7 @@ let problems = [];
 let shotCount = 0;
 let failed = false;
 const vars = {};
+const print = (line) => process.stdout.write(`${line}\n`);
 
 async function newPage(nextOrigin) {
   await context?.close();
@@ -113,6 +114,11 @@ const commands = {
   async anon(rest) {
     await newPage(rest || undefined);
     return `signed out, origin ${origin}`;
+  },
+  async viewport(rest) {
+    const [width, height] = rest.split(/\s+/).map(Number);
+    await page.setViewportSize({ width, height });
+    return `${width}x${height}`;
   },
   async nav(rest) {
     await page.goto(toUrl(rest));
@@ -191,19 +197,19 @@ for await (const raw of rl) {
   if (!line || line.startsWith("#")) continue;
   if (line === "quit") break;
   const [name, rest] = splitFirst(line);
-  console.log(`> ${line}`);
+  print(`> ${line}`);
   const command = commands[name];
   if (!page && name !== "login" && name !== "anon") await newPage();
   try {
     if (!command) throw new Error(`unknown command "${name}"`);
     const result = await command(rest);
-    if (result) console.log(`  ${String(result).replace(/\n/g, "\n  ")}`);
+    if (result) print(`  ${String(result).replace(/\n/g, "\n  ")}`);
   } catch (error) {
     // Stop at the first failure: later steps depend on earlier ones.
     failed = true;
-    console.log(`  ERR ${error.message.split("\n")[0]}`);
+    print(`  ERR ${error.message.split("\n")[0]}`);
     const file = await screenshot("error").catch(() => null);
-    if (file) console.log(`  (screenshot: ${file}; stopping)`);
+    if (file) print(`  (screenshot: ${file}; stopping)`);
     break;
   }
 }
