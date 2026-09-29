@@ -6,6 +6,7 @@ import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import { useUnreadNotificationCount } from "@/lib/hooks/useUnreadNotificationCount";
 import { NavbarProps } from "@/lib/navbar";
+import NotificationsSidebar from "@/components/notifications/NotificationsSidebar";
 
 export function VerticalIconNav({ items }: NavbarProps) {
   const pathname = usePathname();
@@ -24,30 +25,52 @@ export function VerticalIconNav({ items }: NavbarProps) {
             item.href === "/"
               ? pathname === "/"
               : pathname.startsWith(item.href);
-          const isNotifications = item.label === "Notifications";
+          const isNotifications =
+            item.href === "/inbox" || item.href === "/notifications";
+
+          const navItem = (
+            <div
+              className={`flex h-20 w-full items-center justify-center transition-colors ${
+                isActive
+                  ? "bg-brand-text/20 font-semibold"
+                  : "hover:bg-brand-text/10"
+              }`}
+            >
+              <span className="relative shrink-0">
+                <BogIcon
+                  name={item.icon}
+                  size={22}
+                  className="text-grey-text-strong"
+                />
+                {isNotifications && unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-status-red-text px-1 text-xs font-bold text-white">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </span>
+            </div>
+          );
+
+          if (isNotifications) {
+            return (
+              <NotificationsSidebar
+                key={href}
+                trigger={
+                  <button
+                    type="button"
+                    aria-label="Notifications"
+                    className="block w-full"
+                  >
+                    {navItem}
+                  </button>
+                }
+              />
+            );
+          }
 
           return (
             <Link key={href} href={href} className="block w-full">
-              <div
-                className={`flex h-20 w-full items-center justify-center transition-colors ${
-                  isActive
-                    ? "bg-brand-text/20 font-semibold"
-                    : "hover:bg-brand-text/10"
-                }`}
-              >
-                <span className="relative shrink-0">
-                  <BogIcon
-                    name={item.icon}
-                    size={22}
-                    className="text-grey-text-strong"
-                  />
-                  {isNotifications && unreadCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-status-red-text px-1 text-xs font-bold text-white">
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </span>
-                  )}
-                </span>
-              </div>
+              {navItem}
             </Link>
           );
         })}
