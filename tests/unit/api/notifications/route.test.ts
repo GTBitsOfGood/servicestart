@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
+import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
 import { notifications, NotificationType } from "@/lib/schema";
 import {
@@ -237,6 +238,55 @@ describe("GET /api/notifications/unreadCount", () => {
   });
 });
 
+describe("POST /api/notifications/markAllRead", () => {
+  it("marks only the current user's notifications in the active organization read", async () => {
+    const { organization, user, headers } = await setupOrgAndUser("member");
+    const otherOrg = await createOrganization("other");
+    const otherUser = buildTestUser();
+    const { user: other } = await signUpAndGetSession(otherUser);
+
+    const currentId = await createNotification(user.id, organization.id, {
+      read: false,
+    });
+    const otherOrgId = await createNotification(user.id, otherOrg.id, {
+      read: false,
+    });
+    const otherUserId = await createNotification(other.id, organization.id, {
+      read: false,
+    });
+
+    const response = await testApi.notifications.markAllRead.$post(
+      {},
+      { headers },
+    );
+
+    expect(response.status).toBe(200);
+    const rows = await db
+      .select({ id: notifications.id, read: notifications.read })
+      .from(notifications)
+      .where(
+        and(
+          eq(notifications.read, false),
+          eq(notifications.organizationId, organization.id),
+        ),
+      );
+
+    expect(rows.map(({ id }) => id)).toEqual([otherUserId]);
+
+    const [current] = await db
+      .select({ read: notifications.read })
+      .from(notifications)
+      .where(eq(notifications.id, currentId));
+    const [otherOrganization] = await db
+      .select({ read: notifications.read })
+      .from(notifications)
+      .where(eq(notifications.id, otherOrgId));
+
+    expect(current.read).toBe(true);
+    expect(otherOrganization.read).toBe(false);
+  });
+});
+
 describe("PATCH /api/notifications/:id", () => {
   it("returns 401 when not logged in", async () => {
     const response = await testApi.notifications[":id"].$patch({
@@ -270,6 +320,24 @@ describe("PATCH /api/notifications/:id", () => {
     await addMember(other.id, organization.id, "member");
 
     const notificationId = await createNotification(other.id, organization.id, {
+      read: false,
+    });
+
+    const response = await testApi.notifications[":id"].$patch(
+      {
+        param: { id: notificationId },
+        json: { read: true },
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(403);
+  });
+
+  it("returns 403 when notification belongs to another organization", async () => {
+    const { user, headers } = await setupOrgAndUser("member");
+    const otherOrg = await createOrganization("other");
+    const notificationId = await createNotification(user.id, otherOrg.id, {
       read: false,
     });
 

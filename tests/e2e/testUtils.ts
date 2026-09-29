@@ -15,6 +15,9 @@ import {
 
 type SignInOptions = {
   baseUrl?: string;
+  role?: "admin" | "owner";
+  /** Join this organization instead of the default host org. */
+  organizationId?: string;
 };
 
 function getCookieParts(cookieHeader: string) {
@@ -71,7 +74,7 @@ export async function createTestAdminAndSignIn(
   const { session, headers } = await signUpAndGetSession(user);
   const slug = `e2e-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
   const org = await createOrganization(slug);
-  await addMember(session.userId, org.id, "admin");
+  await addMember(session.userId, org.id, options.role ?? "admin");
   await setActiveOrganization(session.id, org.id);
 
   const cookieHeader = headers["Cookie"];
@@ -197,17 +200,19 @@ function pathnamesEqual(
 
 /**
  * Creates a test user, adds them as a non-admin member of the default host org
- * (`servicestart`), sets the active organization on the session, and signs them in.
+ * (`servicestart`) or of `options.organizationId`, sets the active organization
+ * on the session, and signs them in.
  */
 export async function createTestMemberAndSignIn(
   page: Page,
   options: SignInOptions = {},
 ) {
-  const org = await ensureServicestartOrganization();
+  const organizationId =
+    options.organizationId ?? (await ensureServicestartOrganization()).id;
   const user = buildTestUser();
   const { session, headers } = await signUpAndGetSession(user);
-  await addMember(session.userId, org.id, "member");
-  await setActiveOrganization(session.id, org.id);
+  await addMember(session.userId, organizationId, "member");
+  await setActiveOrganization(session.id, organizationId);
 
   const cookieHeader = headers["Cookie"];
   if (!cookieHeader) {
@@ -230,7 +235,7 @@ export async function createTestMemberAndSignIn(
     },
   ]);
 
-  return { user, org };
+  return { user, organizationId };
 }
 
 /**
