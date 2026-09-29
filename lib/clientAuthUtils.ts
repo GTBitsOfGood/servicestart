@@ -1,13 +1,17 @@
 const defaultOrganizationSlug = "servicestart";
 
+/** Domain whose subdomains are tenants, e.g. `acme.servicestart.com`. */
+export function getTenantRootDomain(): string {
+  return typeof process !== "undefined" && process.env.E2E_TENANT_DOMAIN
+    ? process.env.E2E_TENANT_DOMAIN
+    : "servicestart.com"; // Default root domain for local tests
+}
+
 export function getSlugFromHost(host?: string): string {
   if (!host) return defaultOrganizationSlug;
 
   const normalized = host.toLowerCase().split(":")[0]; // Remove port if present
-  const rootDomain =
-    typeof process !== "undefined" && process.env.E2E_TENANT_DOMAIN
-      ? process.env.E2E_TENANT_DOMAIN
-      : "servicestart.com"; // Default root domain for local tests
+  const rootDomain = getTenantRootDomain();
   // If the host ends with the root domain, return the left-most label
   // as the slug (e.g. `acme.servicestart.com` -> `acme`). This is simpler
   // and more robust than depending on a RegExp match which can fail in

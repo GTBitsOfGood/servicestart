@@ -180,3 +180,29 @@ describe("beforeRemoveMember hook", () => {
     expect(remaining[0].eventId).toBe(org2EventId);
   });
 });
+
+describe("trusted origins", () => {
+  // .env.test: BETTER_AUTH_URL=http://localhost:3000, E2E_TENANT_DOMAIN=lvh.me
+  it("trusts the base URL and tenant subdomains", async () => {
+    const context = await auth.$context;
+
+    expect(context.isTrustedOrigin("http://localhost:3000")).toBe(true);
+    expect(context.isTrustedOrigin("http://lvh.me:3000")).toBe(true);
+    expect(context.isTrustedOrigin("http://acme.lvh.me:3000")).toBe(true);
+    expect(context.isTrustedOrigin("http://vertical-icon.lvh.me:3000")).toBe(
+      true,
+    );
+  });
+
+  it("does not trust other sites, ports, or schemes", async () => {
+    const context = await auth.$context;
+
+    expect(context.isTrustedOrigin("http://evil.example")).toBe(false);
+    expect(
+      context.isTrustedOrigin("http://acme.lvh.me.evil.example:3000"),
+    ).toBe(false);
+    expect(context.isTrustedOrigin("http://evil-lvh.me:3000")).toBe(false);
+    expect(context.isTrustedOrigin("http://acme.lvh.me:4000")).toBe(false);
+    expect(context.isTrustedOrigin("https://acme.lvh.me")).toBe(false);
+  });
+});

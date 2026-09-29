@@ -47,7 +47,7 @@ export default function DashboardGrid({ layout }: DashboardGridProps) {
       style={{ height: "min(696px, calc(100dvh - 200px))" }}
     >
       {columns.map((column, colIdx) => (
-        <div key={colIdx} className="flex flex-col gap-8">
+        <div key={colIdx} className="flex min-h-0 flex-col gap-8">
           {column.map((widget) => {
             const Component = WIDGET_COMPONENTS[widget.id];
             const isTall = widget.size === "tall";
