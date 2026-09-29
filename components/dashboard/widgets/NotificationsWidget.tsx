@@ -31,8 +31,8 @@ export default function NotificationsDashboardWidget() {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl bg-white p-8">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <div className="flex min-w-0 items-center gap-2">
           <h3 className="text-heading-3 font-semibold text-black">
             Notifications
           </h3>
