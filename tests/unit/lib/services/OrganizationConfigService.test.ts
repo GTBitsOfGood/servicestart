@@ -9,6 +9,7 @@ import {
   DEFAULT_ADMIN_LAYOUT,
   DEFAULT_MEMBER_LAYOUT,
 } from "@/lib/dashboard/constants";
+import { DEFAULT_BRANDING } from "@/lib/branding";
 
 describe("OrganizationConfigService - members_page_enabled", () => {
   describe("getConfig with MembersPageEnabled key", () => {
@@ -289,5 +290,94 @@ describe("OrganizationConfigService - DashboardLayout", () => {
 
     expect(retrieved1).toEqual(layout1);
     expect(retrieved2).toEqual(DEFAULT_MEMBER_LAYOUT);
+  });
+});
+
+describe("OrganizationConfigService - branding defaults", () => {
+  it("returns documented defaults when no branding rows exist", async () => {
+    const org = await createOrganization("cfg-brand-default");
+
+    const config = await OrganizationConfigService.getConfig(org.id, [
+      OrganizationConfigKey.PrimaryColor,
+      OrganizationConfigKey.SecondaryColor,
+    ]);
+
+    expect(config[OrganizationConfigKey.PrimaryColor]).toBe(
+      DEFAULT_BRANDING[OrganizationConfigKey.PrimaryColor],
+    );
+    expect(config[OrganizationConfigKey.SecondaryColor]).toBe(
+      DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
+    );
+  });
+
+  it("returns a configured primary color with the default secondary", async () => {
+    const org = await createOrganization("cfg-brand-partial");
+
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.PrimaryColor,
+      "#000000",
+    );
+
+    const config = await OrganizationConfigService.getConfig(org.id, [
+      OrganizationConfigKey.PrimaryColor,
+      OrganizationConfigKey.SecondaryColor,
+    ]);
+
+    expect(config[OrganizationConfigKey.PrimaryColor]).toBe("#000000");
+    expect(config[OrganizationConfigKey.SecondaryColor]).toBe(
+      DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
+    );
+  });
+
+  it("does not override a fully configured organization", async () => {
+    const org = await createOrganization("cfg-brand-full");
+
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.PrimaryColor,
+      "#123456",
+    );
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.SecondaryColor,
+      "#654321",
+    );
+
+    const config = await OrganizationConfigService.getConfig(org.id, [
+      OrganizationConfigKey.PrimaryColor,
+      OrganizationConfigKey.SecondaryColor,
+    ]);
+
+    expect(config[OrganizationConfigKey.PrimaryColor]).toBe("#123456");
+    expect(config[OrganizationConfigKey.SecondaryColor]).toBe("#654321");
+  });
+
+  it("does not leak branding from one organization to another", async () => {
+    const orgA = await createOrganization("cfg-brand-iso-a");
+    const orgB = await createOrganization("cfg-brand-iso-b");
+
+    await OrganizationConfigService.setConfig(
+      orgA.id,
+      OrganizationConfigKey.PrimaryColor,
+      "#aaaaaa",
+    );
+    await OrganizationConfigService.setConfig(
+      orgA.id,
+      OrganizationConfigKey.SecondaryColor,
+      "#bbbbbb",
+    );
+
+    const configB = await OrganizationConfigService.getConfig(orgB.id, [
+      OrganizationConfigKey.PrimaryColor,
+      OrganizationConfigKey.SecondaryColor,
+    ]);
+
+    expect(configB[OrganizationConfigKey.PrimaryColor]).toBe(
+      DEFAULT_BRANDING[OrganizationConfigKey.PrimaryColor],
+    );
+    expect(configB[OrganizationConfigKey.SecondaryColor]).toBe(
+      DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
+    );
   });
 });

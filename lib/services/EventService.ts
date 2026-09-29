@@ -1,4 +1,14 @@
-import { and, eq, gt, lt, isNull, isNotNull, ilike, or } from "drizzle-orm";
+import {
+  and,
+  count,
+  eq,
+  gt,
+  lt,
+  isNull,
+  isNotNull,
+  ilike,
+  or,
+} from "drizzle-orm";
 import db from "@/lib/db";
 import {
   events,
@@ -6,9 +16,16 @@ import {
   eventTags,
   eventHosts,
   EventVisibility,
+  members,
   tags,
 } from "@/lib/schema";
+import type { RegistrationBlock } from "@/lib/events";
+import { publicationBlock, deadlineBlock } from "@/lib/events";
 import { randomUUID } from "node:crypto";
+
+export type RegisterResult = "added" | "already-registered" | RegistrationBlock;
+
+export type WithdrawResult = "removed" | RegistrationBlock;
 
 async function create(
   organizationId: string,
@@ -65,7 +82,7 @@ async function create(
       publishedAt: events.publishedAt,
       publishedById: events.publishedById,
     });
-  if (tagIds) {
+  if (tagIds && tagIds.length > 0) {
     await db
       .insert(eventTags)
       .values(tagIds.map((tagId) => ({ eventId: event.id, tagId })));
@@ -192,71 +209,194 @@ async function listByPublic(options: { limit: number; offset: number }) {
     .offset(options.offset);
 }
 
+const eventColumns = {
+  id: events.id,
+  organizationId: events.organizationId,
+  name: events.name,
+  location: events.location,
+  description: events.description,
+  startTimestamp: events.startTimestamp,
+  duration: events.duration,
+  rsvpLimit: events.rsvpLimit,
+  rsvpDeadline: events.rsvpDeadline,
+  visibility: events.visibility,
+  accessibilityNotes: events.accessibilityNotes,
+  links: events.links,
+  coverImageUrl: events.coverImageUrl,
+  publishedAt: events.publishedAt,
+  publishedById: events.publishedById,
+};
+
+type EventUpdates = {
+  name?: string;
+  location?: string;
+  description?: string | null;
+  startTimestamp?: Date | null;
+  duration?: string | null;
+  coverImageUrl?: string | null;
+  publishedAt?: Date | null;
+  publishedById?: string | null;
+  rsvpLimit?: number | null;
+  rsvpDeadline?: Date | null;
+  visibility?: EventVisibility;
+  accessibilityNotes?: string | null;
+  links?: string[] | null;
+};
+
 async function updateEvent(
   eventId: string,
   organizationId: string,
-  updates: {
-    name?: string;
-    location?: string;
-    description?: string | null;
-    startTimestamp?: Date | null;
-    duration?: string | null;
-    coverImageUrl?: string | null;
-    publishedAt?: Date | null;
-    publishedById?: string | null;
-    rsvpLimit?: number | null;
-    rsvpDeadline?: Date | null;
-    visibility?: EventVisibility;
-    accessibilityNotes?: string | null;
-    links?: string[] | null;
-  },
+  updates: EventUpdates,
+  related: { tagIds?: string[]; hostIds?: string[] } = {},
 ) {
-  const updated = await db
-    .update(events)
-    .set(updates)
-    .where(
-      and(eq(events.id, eventId), eq(events.organizationId, organizationId)),
-    )
-    .returning({
-      id: events.id,
-      organizationId: events.organizationId,
-      name: events.name,
-      location: events.location,
-      description: events.description,
-      startTimestamp: events.startTimestamp,
-      duration: events.duration,
-      rsvpLimit: events.rsvpLimit,
-      rsvpDeadline: events.rsvpDeadline,
-      visibility: events.visibility,
-      accessibilityNotes: events.accessibilityNotes,
-      links: events.links,
-      coverImageUrl: events.coverImageUrl,
-      publishedAt: events.publishedAt,
-      publishedById: events.publishedById,
-    });
+  return await db.transaction(async (tx) => {
+    const scope = and(
+      eq(events.id, eventId),
+      eq(events.organizationId, organizationId),
+    );
 
-  return updated.length > 0 ? updated[0] : null;
-}
+    // Postgres cannot update zero columns.
+    const [row] =
+      Object.keys(updates).length > 0
+        ? await tx
+            .update(events)
+            .set(updates)
+            .where(scope)
+            .returning(eventColumns)
+        : await tx.select(eventColumns).from(events).where(scope).limit(1);
 
-async function addRSVP(eventId: string, userId: string) {
-  const [existing] = await db
-    .select()
-    .from(eventRsvps)
-    .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)))
-    .limit(1);
-  if (existing) {
-    return;
-  }
-  await db.insert(eventRsvps).values({
-    eventId,
-    userId,
+    if (!row) return null;
+
+    if (related.tagIds !== undefined) {
+      await tx.delete(eventTags).where(eq(eventTags.eventId, eventId));
+      const unique = Array.from(new Set(related.tagIds));
+      if (unique.length > 0) {
+        await tx
+          .insert(eventTags)
+          .values(unique.map((tagId) => ({ eventId, tagId })));
+      }
+    }
+
+    if (related.hostIds !== undefined) {
+      await tx.delete(eventHosts).where(eq(eventHosts.eventId, eventId));
+      const unique = Array.from(new Set(related.hostIds));
+      if (unique.length > 0) {
+        await tx
+          .insert(eventHosts)
+          .values(unique.map((userId) => ({ eventId, userId })));
+      }
+    }
+
+    return row;
   });
 }
 
-async function deleteRSVP(eventId: string, userId: string) {
+// Every registration rule lives here so the API route and the page action
+// cannot disagree. The event row is locked so capacity holds under concurrency.
+async function register(
+  eventId: string,
+  organizationId: string,
+  userId: string,
+  now?: Date,
+): Promise<RegisterResult> {
+  return await db.transaction(async (tx) => {
+    const [event] = await tx
+      .select({
+        publishedAt: events.publishedAt,
+        rsvpLimit: events.rsvpLimit,
+        rsvpDeadline: events.rsvpDeadline,
+      })
+      .from(events)
+      .where(
+        and(eq(events.id, eventId), eq(events.organizationId, organizationId)),
+      )
+      .for("update")
+      .limit(1);
+
+    if (!event) return "not-visible";
+
+    const [membership] = await tx
+      .select({ id: members.id })
+      .from(members)
+      .where(
+        and(
+          eq(members.userId, userId),
+          eq(members.organizationId, organizationId),
+        ),
+      )
+      .limit(1);
+
+    if (!membership) return "not-a-member";
+    const publication = publicationBlock(event);
+    if (publication) return publication;
+
+    const [existing] = await tx
+      .select({ userId: eventRsvps.userId })
+      .from(eventRsvps)
+      .where(
+        and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)),
+      )
+      .limit(1);
+
+    if (existing) return "already-registered";
+
+    // Read the clock only after the lock, since waiting on it can outlast the deadline.
+    const deadline = deadlineBlock(event, now ?? new Date());
+    if (deadline) return deadline;
+
+    if (event.rsvpLimit !== null) {
+      const [{ value: rsvpCount }] = await tx
+        .select({ value: count() })
+        .from(eventRsvps)
+        .where(eq(eventRsvps.eventId, eventId));
+
+      if (rsvpCount >= event.rsvpLimit) return "full";
+    }
+
+    await tx.insert(eventRsvps).values({ eventId, userId });
+
+    return "added";
+  });
+}
+
+// Withdrawal closes at the deadline, the same moment registration closes.
+async function withdraw(
+  eventId: string,
+  organizationId: string,
+  userId: string,
+  now: Date = new Date(),
+): Promise<WithdrawResult> {
+  const [event] = await db
+    .select({ rsvpDeadline: events.rsvpDeadline })
+    .from(events)
+    .where(
+      and(eq(events.id, eventId), eq(events.organizationId, organizationId)),
+    )
+    .limit(1);
+
+  if (!event) return "not-visible";
+
+  const [membership] = await db
+    .select({ id: members.id })
+    .from(members)
+    .where(
+      and(
+        eq(members.userId, userId),
+        eq(members.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+
+  if (!membership) return "not-a-member";
+
+  const deadline = deadlineBlock(event, now);
+  if (deadline) return deadline;
+
   await db
     .delete(eventRsvps)
     .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)));
+
+  return "removed";
 }
 
 async function findByUser(userId: string) {
@@ -302,13 +442,30 @@ async function addEventHosts(eventId: string, userIds: string[]) {
   await db.insert(eventHosts).values(additions);
 }
 
-async function getEventHosts(eventId: string) {
-  const [hosts] = await db
-    .select()
+async function listEventHosts(eventId: string) {
+  return await db
+    .select({ eventId: eventHosts.eventId, userId: eventHosts.userId })
     .from(eventHosts)
     .where(eq(eventHosts.eventId, eventId));
+}
 
-  return hosts ?? null;
+async function countRSVPs(eventId: string) {
+  const [{ value }] = await db
+    .select({ value: count() })
+    .from(eventRsvps)
+    .where(eq(eventRsvps.eventId, eventId));
+
+  return value;
+}
+
+async function hasRSVP(eventId: string, userId: string) {
+  const [existing] = await db
+    .select({ userId: eventRsvps.userId })
+    .from(eventRsvps)
+    .where(and(eq(eventRsvps.eventId, eventId), eq(eventRsvps.userId, userId)))
+    .limit(1);
+
+  return existing !== undefined;
 }
 
 export const EventService = {
@@ -318,12 +475,14 @@ export const EventService = {
   listByOrganization,
   listByPublic,
   updateEvent,
-  addRSVP,
-  deleteRSVP,
+  register,
+  withdraw,
   findByUser,
   listRSVPsByEvent,
   addEventHosts,
-  getEventHosts,
+  listEventHosts,
+  countRSVPs,
+  hasRSVP,
 };
 
 export default EventService;
