@@ -32,7 +32,9 @@ jobs:
       - name: Migrate database
         run: pnpm run db:migrate
       - name: Seed database
-        run: pnpm run db:seed
+        # Seeding needs auth initialization, but does not reuse signed cookies.
+        # Password hashes are independent of this temporary, process-only secret.
+        run: BETTER_AUTH_SECRET="$(openssl rand -base64 32)" pnpm run db:seed
       - name: Setup Juno File Storage
         run: pnpm run setupJunoFileStorage
         env:
@@ -56,3 +58,4 @@ jobs:
           JUNO_FILE_BUCKET_PREFIX: ${{ vars.JUNO_FILE_BUCKET_PREFIX }}
           SETUP_ORGANIZATION_ID: ${{ vars.SETUP_ORGANIZATION_ID }}
           SENDGRID_KEY: ${{ secrets.SENDGRID_KEY }}
+          EMAIL_SENDER_DOMAIN: ${{ vars.EMAIL_SENDER_DOMAIN }}

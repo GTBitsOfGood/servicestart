@@ -162,7 +162,7 @@ export default function MediaUploadCard({ variant }: MediaUploadCardProps) {
           disabled={isUploading}
           className="group flex w-full flex-col items-center justify-center rounded-[3rem] border-2 border-media-empty-upload-border bg-media-empty-upload-bg px-10 py-20 text-center text-media-empty-upload-text hover:bg-media-empty-upload-hover-bg hover:text-media-empty-upload-hover-text disabled:cursor-wait"
         >
-          <p className="mb-12 text-heading-1 text-[6.4rem] leading-[1] text-media-empty-upload-text group-hover:text-media-empty-upload-hover-text">
+          <p className="mb-12 text-heading-1 text-[6.4rem] leading-none text-media-empty-upload-text group-hover:text-media-empty-upload-hover-text">
             Let&apos;s get started!
           </p>
           <div className="mb-10 flex items-center justify-center">

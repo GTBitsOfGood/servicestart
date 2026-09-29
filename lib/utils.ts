@@ -1,6 +1,9 @@
 import clsx, { type ClassValue } from "clsx";
 
-const ROOT_DOMAIN = "servicestart.com";
+const ROOT_DOMAIN =
+  typeof process !== "undefined" && process.env.E2E_TENANT_DOMAIN
+    ? process.env.E2E_TENANT_DOMAIN
+    : "lvh.me";
 export const DEFAULT_SLUG = "servicestart";
 
 export function cn(...inputs: ClassValue[]) {

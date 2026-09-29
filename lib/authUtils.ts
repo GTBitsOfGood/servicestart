@@ -1,3 +1,4 @@
+import { ORGANIZATION_NOT_FOUND_PATH } from "@/lib/organizationRoutes";
 import type { Context } from "hono";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -11,7 +12,11 @@ import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
 import { UserService } from "@/lib/services/UserService";
+import { User } from "better-auth";
+import db from "@/lib/db";
+import { users } from "@/lib/schema";
 import { getSlugFromHost } from "./clientAuthUtils";
+// import { User } from "better-auth/client";
 import { NotificationService } from "@/lib/services/NotificationService";
 import { NotificationType } from "@/lib/schema";
 
@@ -118,7 +123,7 @@ export async function afterUserCreated(
 
     await createJoinRequestIfNeeded(userId, organization.id);
   } catch (err) {
-    console.error("Failed to handle organization membership:", err);
+    console.error(err);
   }
 }
 /**
@@ -213,6 +218,13 @@ export async function getActiveOrganizationIdFromHeaders(
   return organization.id;
 }
 
+/** Resolves a real organization or stops at the unguarded missing-org page. */
+export async function requireOrganizationOrRedirect(headerList: Headers) {
+  const organizationId = await getActiveOrganizationIdFromHeaders(headerList);
+  if (!organizationId) redirect(ORGANIZATION_NOT_FOUND_PATH);
+  return organizationId;
+}
+
 /**
  * Loads the Better Auth session for a Next.js server request. Redirects to
  * `/login` when there is no signed-in user.
@@ -237,12 +249,7 @@ export async function redirectIfNotMember() {
   const requestHeaders = await headers();
   const session = await requireSessionOrRedirect(requestHeaders);
 
-  const organizationId =
-    await getActiveOrganizationIdFromHeaders(requestHeaders);
-
-  if (!organizationId) {
-    redirect("/");
-  }
+  const organizationId = await requireOrganizationOrRedirect(requestHeaders);
 
   const membership = await MembersService.findByUserAndOrganization(
     session.user.id,
@@ -257,6 +264,97 @@ export async function redirectIfNotMember() {
   }
 
   redirect("/joinrequeststatus");
+}
+
+interface FindUserCtx {
+  context: {
+    internalAdapter: {
+      findAccountByUserId: (userId: string) => Promise<unknown>;
+    };
+  };
+}
+
+interface CreateUserCtx {
+  context: {
+    organizationId?: string;
+    [key: string]: unknown;
+  };
+}
+
+export function findUserByEmailOverride(
+  ctx: FindUserCtx,
+  organizationId: string,
+) {
+  return async (email: string) => {
+    if (!organizationId)
+      throw new Error("organizationId required for multi-tenant user lookup");
+    const user = await UserService.findByEmailAndOrganization(
+      email,
+      organizationId,
+    );
+    if (!user) return null;
+
+    const accounts = await ctx.context.internalAdapter.findAccountByUserId(
+      user.id,
+    );
+
+    return { user, accounts };
+  };
+}
+
+export function createUserOverride(ctx: CreateUserCtx) {
+  return async (user: User) => {
+    let organizationId = ctx.context.organizationId;
+
+    // Verify the organization exists for the given organizationId. If it
+    // doesn't, fall back to looking up an organization by the user-provided
+    // organizationSlug (if present). This handles test scenarios where the
+    // ctx.organizationId may be stale or invalid.
+    if (organizationId) {
+      const org = await OrganizationsService.findById(organizationId);
+      if (!org) {
+        organizationId = undefined as unknown as string | undefined;
+      }
+    }
+
+    if (!organizationId) {
+      const u = user as unknown as {
+        additionalFields?: { organizationSlug?: string };
+      };
+      const slug = u?.additionalFields?.organizationSlug;
+      if (slug) {
+        const org = await OrganizationsService.findBySlug(slug);
+        if (org) organizationId = org.id;
+      }
+    }
+
+    if (!organizationId)
+      throw new Error("organizationId required for multi-tenant user creation");
+    const { email, name, ...rest } = user as unknown as {
+      email: string;
+      name?: string;
+    } & Record<string, unknown>;
+    // Try to find user by email
+    const existingUser = await UserService.findByEmailAndOrganization(
+      email,
+      organizationId,
+    );
+    let id: string;
+    if (!existingUser) {
+      // Create new user
+      id = crypto.randomUUID();
+      await db.insert(users).values({
+        name: name || "",
+        email,
+        organizationId,
+        ...rest,
+        id,
+      });
+    } else {
+      id = existingUser.id;
+    }
+    return await UserService.findById(id);
+  };
 }
 
 /**

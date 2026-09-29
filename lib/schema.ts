@@ -101,22 +101,46 @@ export const notificationTypeEnum = pgEnum(
   NOTIFICATION_TYPE_VALUES,
 );
 
-export const users = pgTable("users", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").default(false).notNull(),
-  image: text("image"),
-  phoneNumber: text("phone_number"),
-  displayName: text("display_name"),
-  pronouns: text("pronouns"),
-  location: text("location"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull(),
+    organizationId: text("organization_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    emailVerified: boolean("email_verified").default(false).notNull(),
+    image: text("image"),
+    phoneNumber: text("phone_number"),
+    displayName: text("display_name"),
+    pronouns: text("pronouns"),
+    location: text("location"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    sql`UNIQUE (email, organization_id)`,
+    index("users_email_org_idx").on(table.email, table.organizationId),
+  ],
+);
+
+export const userOrganizations = pgTable(
+  "user_organizations",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.organizationId] })],
+);
 
 export const sessions = pgTable(
   "sessions",
@@ -388,14 +412,18 @@ export const shifts = pgTable(
   ],
 );
 
-export const shiftRSVPs = pgTable("shift_rsvps", {
-  userId: text("user_id")
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  shiftId: text("shift_id")
-    .notNull()
-    .references(() => shifts.id, { onDelete: "cascade" }),
-});
+export const shiftRSVPs = pgTable(
+  "shift_rsvps",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    shiftId: text("shift_id")
+      .notNull()
+      .references(() => shifts.id, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.shiftId, table.userId] })],
+);
 
 export const organizationConfig = pgTable(
   "organization_config",
@@ -516,6 +544,7 @@ export const relations = defineRelations(
     messages,
     messageRecipients,
     notifications,
+    userOrganizations,
   },
   (r) => ({
     users: {
@@ -547,6 +576,11 @@ export const relations = defineRelations(
         from: r.users.id,
         to: r.notifications.userId,
       }),
+      // Many-to-many: organizations for a user
+      organizations: r.many.userOrganizations({
+        from: r.users.id,
+        to: r.userOrganizations.userId,
+      }),
     },
     sessions: {
       organizations: r.one.organizations({
@@ -570,6 +604,11 @@ export const relations = defineRelations(
       notifications: r.many.notifications({
         from: r.organizations.id,
         to: r.notifications.organizationId,
+      }),
+      // Many-to-many: users for an organization
+      users: r.many.userOrganizations({
+        from: r.organizations.id,
+        to: r.userOrganizations.organizationId,
       }),
     },
     members: {
