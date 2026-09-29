@@ -271,7 +271,7 @@ export async function createEvent(
     startTimestamp: opts.startTimestamp ?? null,
     duration: opts.duration ?? null,
     coverImageUrl: opts.coverImageUrl ?? null,
-    publishedAt: opts.publishedAt ?? new Date(),
+    publishedAt: "publishedAt" in opts ? opts.publishedAt : new Date(),
     visibility: opts.visibility ?? EventVisibility.Public,
     rsvpLimit: opts.rsvpLimit ?? null,
     rsvpDeadline: opts.rsvpDeadline ?? null,

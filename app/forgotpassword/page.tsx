@@ -1,26 +1,29 @@
 "use client";
 
+import { resolveBranding } from "@/lib/branding";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
+import OrganizationNotFound from "@/components/OrganizationNotFound";
 import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import { OrganizationConfigKey } from "@/lib/schema";
-import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import authClient from "@/lib/authClient";
 import LeftArrowIcon from "@/components/LeftArrowIcon";
+import UnauthenticatedOrganizationLogo from "@/components/UnauthenticatedOrganizationLogo";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
 
-  const { primary_color = "#FFFFFF", secondary_color = "#FFFFFF" } =
-    useOrganizationConfig([
-      OrganizationConfigKey.PrimaryColor,
-      OrganizationConfigKey.SecondaryColor,
-    ]);
-  const org = useActiveOrganization();
-  const logo = org?.organization.data?.logo;
+  const config = useOrganizationConfig([
+    OrganizationConfigKey.PrimaryColor,
+    OrganizationConfigKey.SecondaryColor,
+    OrganizationConfigKey.LogoUrl,
+  ]);
+  const { primary_color, secondary_color } = resolveBranding(config);
+  const { logo_url: logoUrl } = config;
 
   const handleEmailSubmit = async () => {
     const { error } = await authClient.requestPasswordReset({
@@ -36,6 +39,8 @@ export default function ForgotPasswordPage() {
     }
   };
 
+  if (config.status === "not-found") return <OrganizationNotFound />;
+
   return (
     <div
       className="flex h-screen w-screen items-center"
@@ -46,20 +51,12 @@ export default function ForgotPasswordPage() {
     >
       <div className="flex h-full w-1/2 flex-shrink-0 items-center justify-between px-8">
         <div
-          className="flex h-[95%] w-full flex-col justify-flex-end rounded-3xl pb-5 pl-5 pr-1/2"
+          className="relative flex h-[95%] w-full flex-col justify-flex-end rounded-3xl pb-5 pl-5 pr-1/2"
           style={{
             background: `linear-gradient(180deg, ${primary_color} 0%, #FFF 100%)`,
           }}
         >
-          <div className="h-full w-1/3">
-            {logo && (
-              <img
-                src={`/images/${logo}`}
-                alt="Organization Logo"
-                className="h-[80%]"
-              />
-            )}
-          </div>
+          <UnauthenticatedOrganizationLogo logoUrl={logoUrl} />
         </div>
       </div>
       <div className="flex h-full flex-1 flex-col items-center justify-center">

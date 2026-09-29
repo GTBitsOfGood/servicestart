@@ -8,6 +8,7 @@ import {
   DEFAULT_ADMIN_LAYOUT,
   DEFAULT_MEMBER_LAYOUT,
 } from "@/lib/dashboard/constants";
+import { DEFAULT_BRANDING } from "@/lib/branding";
 
 export const ALLOWED_NAVBAR_VARIANTS = [
   "vertical-sidebar",
@@ -107,7 +108,7 @@ async function getPrimaryColor(organizationId: string) {
     )
     .limit(1);
 
-  return row?.value ?? "#FD8033";
+  return row?.value ?? DEFAULT_BRANDING[OrganizationConfigKey.PrimaryColor];
 }
 
 async function setPrimaryColor(organizationId: string, color: string) {
@@ -162,7 +163,7 @@ async function getSecondaryColor(organizationId: string) {
     )
     .limit(1);
 
-  return row?.value ?? "#FB3552";
+  return row?.value ?? DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor];
 }
 
 async function setSecondaryColor(organizationId: string, color: string) {
