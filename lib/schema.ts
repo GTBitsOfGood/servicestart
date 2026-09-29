@@ -412,14 +412,18 @@ export const shifts = pgTable(
   ],
 );
 
-export const shiftRSVPs = pgTable("shift_rsvps", {
-  userId: text("user_id")
-    .primaryKey()
-    .references(() => users.id, { onDelete: "cascade" }),
-  shiftId: text("shift_id")
-    .notNull()
-    .references(() => shifts.id, { onDelete: "cascade" }),
-});
+export const shiftRSVPs = pgTable(
+  "shift_rsvps",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    shiftId: text("shift_id")
+      .notNull()
+      .references(() => shifts.id, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.shiftId, table.userId] })],
+);
 
 export const organizationConfig = pgTable(
   "organization_config",
