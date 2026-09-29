@@ -11,6 +11,7 @@ import authClient from "@/lib/authClient";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
 import { UserProfileMenu } from "@/components/navigation/UserProfileMenu";
+import NotificationCounter from "@/components/navigation/NotificationCounter";
 
 export type MobileDrawerSide = "left" | "right";
 
@@ -83,18 +84,12 @@ function MobileTopBar({
   );
 
   const bellButton = (
-    <Link
-      href="/inbox"
-      aria-label="Notifications"
-      className="relative rounded-md p-2 text-grey-text-strong transition-colors hover:bg-brand-text/10"
-    >
-      <BogIcon name="bell" size={24} />
-      {unreadCount > 0 && (
-        <span className="absolute right-0 top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-status-red-text px-1 text-xs font-bold text-white">
-          {unreadCount > 99 ? "99+" : unreadCount}
-        </span>
-      )}
-    </Link>
+    <NotificationCounter
+      unreadCount={unreadCount}
+      iconSize={24}
+      className="rounded-md p-2 text-grey-text-strong transition-colors hover:bg-brand-text/10"
+      badgeClassName="right-0 top-0"
+    />
   );
 
   return (
