@@ -6,7 +6,7 @@ import { createAuthMiddleware, organization } from "better-auth/plugins";
 import db from "@/lib/db";
 import { afterUserCreated } from "@/lib/authUtils";
 import { headers } from "next/headers";
-import { getSlugFromHost } from "./clientAuthUtils";
+import { getSlugFromHost, getTenantRootDomain } from "./clientAuthUtils";
 import {
   eventRsvps,
   events,
@@ -21,6 +21,29 @@ import { EmailService } from "@/lib/services/EmailService";
 import { getBaseUrl } from "./clientUtils";
 import { requireEnv } from "./env";
 import { OrganizationsService } from "./services/OrganizationService";
+
+const baseURL = process.env.BETTER_AUTH_URL || getBaseUrl();
+
+/**
+ * Tenants are served from subdomains of the tenant root domain (`<slug>.lvh.me`
+ * in local development). Better Auth only trusts its base URL by default and
+ * rejects cookie-bearing requests from other origins, so trust the tenant
+ * hosts too. These are static patterns rather than a per-request function
+ * because Better Auth stores per-request origins on a context shared by
+ * concurrent requests.
+ */
+function tenantTrustedOrigins(): string[] {
+  const { protocol, port } = new URL(baseURL);
+  const suffix = port ? `:${port}` : "";
+  const roots = [getTenantRootDomain()];
+  if (process.env.NODE_ENV !== "production" && !roots.includes("lvh.me")) {
+    roots.push("lvh.me");
+  }
+  return roots.flatMap((root) => [
+    `${protocol}//${root}${suffix}`,
+    `${protocol}//*.${root}${suffix}`,
+  ]);
+}
 
 export const auth = betterAuth({
   secret: requireEnv("BETTER_AUTH_SECRET"),
@@ -142,7 +165,8 @@ export const auth = betterAuth({
       },
     },
   },
-  baseURL: process.env.BETTER_AUTH_URL || getBaseUrl(),
+  baseURL,
+  trustedOrigins: tenantTrustedOrigins(),
   database: drizzleAdapter(db, {
     provider: "pg",
     usePlural: true,
