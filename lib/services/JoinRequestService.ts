@@ -99,7 +99,7 @@ async function listByOrganization(
 
   const results =
     options?.limit !== undefined
-      ? await baseQuery.limit(options.limit)
+      ? await baseQuery.limit(options.limit).offset(options.offset ?? 0)
       : await baseQuery;
 
   const requestsWithHistory = await Promise.all(
