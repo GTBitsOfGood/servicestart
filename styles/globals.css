@@ -105,6 +105,16 @@
     transparent
   );
 
+  /* Theme tokens that will follow each org's theme (#300). They hold today's
+     values, so using them changes nothing yet. */
+  --color-page-bg: #ffffff;
+  --color-page-text: var(--color-grey-text-strong);
+  /* Text on brand-colored surfaces, e.g. a primary button's label. */
+  --color-brand-foreground: #ffffff;
+  --font-display: var(--font-heading);
+  /* Corner radius for inputs and buttons (Tailwind's `rounded`). */
+  --radius-control: 0.25rem;
+
   --text-desktop-display: 48px;
   --text-desktop-heading-1: 40px;
   --text-desktop-heading-2: 32px;
