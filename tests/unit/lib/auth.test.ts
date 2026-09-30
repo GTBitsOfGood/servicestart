@@ -1,8 +1,8 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { auth, tenantTrustedOrigins } from "@/lib/auth";
 import { eventRsvps, members, MemberType, shiftRSVPs } from "@/lib/schema";
 import {
   addMember,
@@ -204,6 +204,29 @@ describe("trusted origins", () => {
     expect(context.isTrustedOrigin("http://evil-lvh.me:3000")).toBe(false);
     expect(context.isTrustedOrigin("http://acme.lvh.me:4000")).toBe(false);
     expect(context.isTrustedOrigin("https://acme.lvh.me")).toBe(false);
+  });
+});
+
+describe(tenantTrustedOrigins, () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("keeps trusting localhost when the base URL is a tenant's host", () => {
+    const origins = tenantTrustedOrigins(
+      "http://visionariestothethrone.lvh.me:3000",
+    );
+
+    expect(origins).toContain("http://localhost:3000");
+    expect(origins).toContain("http://*.lvh.me:3000");
+  });
+
+  it("doesn't trust localhost in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+
+    const origins = tenantTrustedOrigins("https://acme.servicestart.com");
+
+    expect(origins.some((origin) => origin.includes("localhost"))).toBe(false);
   });
 });
 
