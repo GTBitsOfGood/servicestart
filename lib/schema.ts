@@ -299,7 +299,7 @@ export const members = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     role: text("role").notNull(),
-    // Set only when MemberTypesEnabled is on; always null for admins.
+    // Only takes effect while MemberTypesEnabled is on. Null for admins.
     memberType: memberTypeEnum("member_type"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
