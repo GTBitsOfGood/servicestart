@@ -10,12 +10,12 @@ Complete the [README local setup](../README.md#getting-started), including Docke
 Juno, your local `.env`, and database migrations. Keep the template's simulated
 email configuration for ordinary development.
 
-Add `visionariesforthethrone.lvh.me` to the comma-separated `ALLOWED_DEV_ORIGINS`
+Add `visionariestothethrone.lvh.me` to the comma-separated `ALLOWED_DEV_ORIGINS`
 value in your local `.env` (preserve any existing entries). Restart Next.js after
 changing it. For this tenant's auth work, set:
 
 ```dotenv
-BETTER_AUTH_URL=http://visionariesforthethrone.lvh.me:3000
+BETTER_AUTH_URL=http://visionariestothethrone.lvh.me:3000
 ```
 
 With your **local development database** configured, run:
@@ -32,9 +32,9 @@ known test passwords. Existing contributors can pull this change and rerun
 
 ## URLs and accounts
 
-- Signup: <http://visionariesforthethrone.lvh.me:3000/signup>
-- Login: <http://visionariesforthethrone.lvh.me:3000/login>
-- Existing application home: <http://visionariesforthethrone.lvh.me:3000/>
+- Signup: <http://visionariestothethrone.lvh.me:3000/signup>
+- Login: <http://visionariestothethrone.lvh.me:3000/login>
+- Existing application home: <http://visionariestothethrone.lvh.me:3000/>
 
 `lvh.me` resolves to loopback; no hosts-file entry is normally needed. Use the
 tenant hostname, not `localhost`, which selects the default ServiceStart tenant.
@@ -56,8 +56,8 @@ camp acceptance or automatic membership for new signups.
 
 ## Configuration and scope
 
-- Organization ID: `org_visionariesforthethrone`
-- Slug: `visionariesforthethrone`
+- Organization ID: `org_visionariestothethrone`
+- Slug: `visionariestothethrone`
 - Primary color: `#5C218C`; secondary color: `#C29BDC` (Figma palette).
 - Development tagline: `Visionaries to the Throne`.
 - Initial navbar: horizontal-center, white.

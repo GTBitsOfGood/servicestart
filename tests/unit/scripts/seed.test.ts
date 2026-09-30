@@ -89,7 +89,7 @@ it("seeds repeatable Visionaries branding and tenant-scoped development roles", 
   const orgs = await db
     .select()
     .from(organizations)
-    .where(eq(organizations.slug, "visionariesforthethrone"));
+    .where(eq(organizations.slug, "visionariestothethrone"));
   expect(orgs).toHaveLength(1);
   const org = orgs[0];
   expect(org.name).toBe("Visionaries to the Throne");
@@ -115,7 +115,7 @@ it("seeds repeatable Visionaries branding and tenant-scoped development roles", 
     ["nonmember@example.com", null],
   ]) {
     const result = await auth.api.signInEmail({
-      headers: new Headers({ host: "visionariesforthethrone.lvh.me:3000" }),
+      headers: new Headers({ host: "visionariestothethrone.lvh.me:3000" }),
       body: { email: email!, password: DEFAULT_TEST_PASSWORD },
     });
     const [user] = await db

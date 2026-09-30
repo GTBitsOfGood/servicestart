@@ -35,9 +35,9 @@ const ORGS: Array<{
     navbar: { variant: "horizontal-center", color: "red" },
   },
   {
-    id: "org_visionariesforthethrone",
+    id: "org_visionariestothethrone",
     name: "Visionaries to the Throne",
-    slug: "visionariesforthethrone",
+    slug: "visionariestothethrone",
     navbar: { variant: "horizontal-center", color: "white" },
     // Development defaults from the Figma style guide, not final page designs.
     config: {
