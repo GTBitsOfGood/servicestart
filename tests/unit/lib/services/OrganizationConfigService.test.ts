@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
+import { eq } from "drizzle-orm";
 import db from "@/lib/db";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
@@ -123,6 +124,111 @@ describe("OrganizationConfigService - members_page_enabled", () => {
       expect(config1[OrganizationConfigKey.MembersPageEnabled]).toBe(false);
       expect(config2[OrganizationConfigKey.MembersPageEnabled]).toBe(true);
     });
+  });
+});
+
+describe("OrganizationConfigService - forms_enabled", () => {
+  it("is off by default", async () => {
+    const org = await createOrganization("cfg-forms-default");
+
+    const config = await OrganizationConfigService.getConfig(org.id, [
+      OrganizationConfigKey.FormsEnabled,
+    ]);
+
+    expect(config[OrganizationConfigKey.FormsEnabled]).toBe(false);
+  });
+
+  it("can be turned on and off again", async () => {
+    const org = await createOrganization("cfg-forms-toggle");
+
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.FormsEnabled,
+      "true",
+    );
+    const on = await OrganizationConfigService.getConfig(org.id, [
+      OrganizationConfigKey.FormsEnabled,
+    ]);
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.FormsEnabled,
+      "false",
+    );
+    const off = await OrganizationConfigService.getConfig(org.id, [
+      OrganizationConfigKey.FormsEnabled,
+    ]);
+
+    expect(on[OrganizationConfigKey.FormsEnabled]).toBe(true);
+    expect(off[OrganizationConfigKey.FormsEnabled]).toBe(false);
+    const rows = await db
+      .select()
+      .from(organizationConfig)
+      .where(eq(organizationConfig.organizationId, org.id));
+    expect(rows).toHaveLength(1);
+  });
+
+  it("throws for an invalid value", async () => {
+    const org = await createOrganization("cfg-forms-invalid");
+
+    await expect(
+      OrganizationConfigService.setConfig(
+        org.id,
+        OrganizationConfigKey.FormsEnabled,
+        "on",
+      ),
+    ).rejects.toThrow("Value must be 'true' or 'false'");
+  });
+
+  it("is isolated per organization", async () => {
+    const org1 = await createOrganization("cfg-forms-iso1");
+    const org2 = await createOrganization("cfg-forms-iso2");
+
+    await OrganizationConfigService.setConfig(
+      org1.id,
+      OrganizationConfigKey.FormsEnabled,
+      "true",
+    );
+
+    const config2 = await OrganizationConfigService.getConfig(org2.id, [
+      OrganizationConfigKey.FormsEnabled,
+    ]);
+    expect(config2[OrganizationConfigKey.FormsEnabled]).toBe(false);
+  });
+});
+
+describe("OrganizationConfigService - keys without handlers", () => {
+  // These keys exist for #300 and #302, which add their get/set.
+  it("rejects setting a key that has no handler yet", async () => {
+    const org = await createOrganization("cfg-unhandled-set");
+
+    await expect(
+      OrganizationConfigService.setConfig(
+        org.id,
+        OrganizationConfigKey.CornerStyle,
+        "pill",
+      ),
+    ).rejects.toThrow("Invalid key");
+  });
+
+  it("leaves keys without handlers out of getConfig", async () => {
+    const org = await createOrganization("cfg-unhandled-get");
+
+    const config = await OrganizationConfigService.getConfig(org.id, [
+      OrganizationConfigKey.MemberTypesEnabled,
+      OrganizationConfigKey.FormsEnabled,
+    ]);
+
+    expect(config).toEqual({ [OrganizationConfigKey.FormsEnabled]: false });
+  });
+
+  it("ignores keys that aren't config keys", async () => {
+    const org = await createOrganization("cfg-unhandled-proto");
+
+    const config = await OrganizationConfigService.getConfig(org.id, [
+      "constructor" as OrganizationConfigKey,
+    ]);
+
+    expect(config).toEqual({});
   });
 });
 

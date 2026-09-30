@@ -320,6 +320,59 @@ async function setMembersPageEnabled(organizationId: string, value: string) {
   }
 }
 
+async function getFormsEnabled(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.FormsEnabled),
+      ),
+    )
+    .limit(1);
+
+  return (row?.value ?? "false") === "true";
+}
+
+async function setFormsEnabled(organizationId: string, value: string) {
+  if (value !== "true" && value !== "false") {
+    throw new Error("Value must be 'true' or 'false'");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.FormsEnabled),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.FormsEnabled),
+        ),
+      );
+  } else {
+    await db.insert(organizationConfig).values({
+      id: randomUUID(),
+      organizationId,
+      key: OrganizationConfigKey.FormsEnabled,
+      value,
+    });
+  }
+}
+
 async function getNavbarVariant(organizationId: string) {
   const [row] = await db
     .select({
@@ -876,6 +929,12 @@ async function setDashboardLayout(organizationId: string, value: string) {
   }
 }
 
+type ConfigHandler = {
+  get: (organizationId: string) => Promise<unknown>;
+  set: (organizationId: string, value: string) => Promise<void>;
+};
+
+// Keys without an entry here are rejected by setConfig and skipped by getConfig.
 const keyMap = {
   [OrganizationConfigKey.Description]: { get: getDesc, set: setDesc },
   [OrganizationConfigKey.PrimaryColor]: {
@@ -926,7 +985,17 @@ const keyMap = {
     get: getDashboardLayout,
     set: setDashboardLayout,
   },
-};
+  [OrganizationConfigKey.FormsEnabled]: {
+    get: getFormsEnabled,
+    set: setFormsEnabled,
+  },
+} satisfies Partial<Record<OrganizationConfigKey, ConfigHandler>>;
+
+type HandledConfigKey = keyof typeof keyMap;
+
+function isHandledConfigKey(key: string): key is HandledConfigKey {
+  return Object.hasOwn(keyMap, key);
+}
 
 async function getConfig(
   organizationId: string,
@@ -934,7 +1003,7 @@ async function getConfig(
 ) {
   const entries = await Promise.all(
     keys
-      .filter((key) => keyMap[key])
+      .filter(isHandledConfigKey)
       .map(async (key) => [key, await keyMap[key].get(organizationId)]),
   );
 
@@ -946,7 +1015,7 @@ async function setConfig(
   key: OrganizationConfigKey,
   value: string,
 ) {
-  if (!keyMap[key]) {
+  if (!isHandledConfigKey(key)) {
     throw new Error("Invalid key");
   }
 
