@@ -425,27 +425,30 @@ export async function createFormSubmission(
     submittedAt?: Date;
   } = {},
 ) {
-  const [submission] = await db
-    .insert(formSubmissions)
-    .values({
-      formId: form.id,
-      organizationId: form.organizationId,
-      userId: opts.userId ?? null,
-      submittedAt: opts.submittedAt ?? new Date(),
-    })
-    .returning({ id: formSubmissions.id });
+  return db.transaction(async (tx) => {
+    const [submission] = await tx
+      .insert(formSubmissions)
+      .values({
+        formId: form.id,
+        organizationId: form.organizationId,
+        userId: opts.userId ?? null,
+        submittedAt: opts.submittedAt ?? new Date(),
+      })
+      .returning({ id: formSubmissions.id });
 
-  const answers = Object.entries(opts.answers ?? {});
-  if (answers.length > 0) {
-    await db.insert(formAnswers).values(
-      answers.map(([componentId, value]) => ({
-        submissionId: submission.id,
-        componentId,
-        value,
-      })),
-    );
-  }
-  return submission.id;
+    const answers = Object.entries(opts.answers ?? {});
+    if (answers.length > 0) {
+      await tx.insert(formAnswers).values(
+        answers.map(([componentId, value]) => ({
+          formId: form.id,
+          submissionId: submission.id,
+          componentId,
+          value,
+        })),
+      );
+    }
+    return submission.id;
+  });
 }
 
 /**

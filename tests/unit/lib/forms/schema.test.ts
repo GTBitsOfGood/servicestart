@@ -216,6 +216,15 @@ describe("FormSettingsSchema", () => {
     ).toBe(true);
   });
 
+  it("rejects unknown settings", () => {
+    expect(
+      FormSettingsSchema.safeParse({
+        ...DEFAULT_FORM_SETTINGS,
+        requireLogIn: false,
+      }).success,
+    ).toBe(false);
+  });
+
   it("rejects a close time before the open time", () => {
     expect(
       FormSettingsSchema.safeParse({

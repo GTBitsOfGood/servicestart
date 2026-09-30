@@ -13,6 +13,7 @@ import {
   jsonb,
   unique,
   uuid,
+  foreignKey,
 } from "drizzle-orm/pg-core";
 import type {
   FormAnswerValue,
@@ -654,6 +655,8 @@ export const formComponents = pgTable(
       table.formId,
       table.position,
     ),
+    // Lets form_answers check that its component is on the same form.
+    unique("form_components_id_form_id_unique").on(table.id, table.formId),
   ],
 );
 
@@ -668,9 +671,10 @@ export const formSubmissions = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
-    // Null for anonymous submissions to forms that don't require login.
+    // Null for anonymous submissions to forms that don't require login, and
+    // once the submitter's account is deleted (the org keeps the response).
     userId: text("user_id").references(() => users.id, {
-      onDelete: "cascade",
+      onDelete: "set null",
     }),
     submittedAt: timestamp("submitted_at").defaultNow().notNull(),
   },
@@ -679,6 +683,8 @@ export const formSubmissions = pgTable(
       table.formId,
       table.userId,
     ),
+    // Lets form_answers check that its submission is on the same form.
+    unique("form_submissions_id_form_id_unique").on(table.id, table.formId),
   ],
 );
 
@@ -686,13 +692,11 @@ export const formAnswers = pgTable(
   "form_answers",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    submissionId: uuid("submission_id")
-      .notNull()
-      .references(() => formSubmissions.id, { onDelete: "cascade" }),
-    // Questions are only deleted from drafts, which have no answers.
-    componentId: uuid("component_id")
-      .notNull()
-      .references(() => formComponents.id, { onDelete: "cascade" }),
+    // References forms.id (the UUID), not forms.formId. The foreign keys below
+    // require the submission and the component to be on this form.
+    formId: uuid("form_id").notNull(),
+    submissionId: uuid("submission_id").notNull(),
+    componentId: uuid("component_id").notNull(),
     // Shape depends on the component's type; see FORM_ANSWER_VALUE_SCHEMAS.
     value: parsedJsonb<FormAnswerValue>("value").notNull(),
   },
@@ -701,6 +705,17 @@ export const formAnswers = pgTable(
       table.submissionId,
       table.componentId,
     ),
+    foreignKey({
+      name: "form_answers_submission_fkey",
+      columns: [table.submissionId, table.formId],
+      foreignColumns: [formSubmissions.id, formSubmissions.formId],
+    }).onDelete("cascade"),
+    // Questions are only deleted from drafts, which have no answers.
+    foreignKey({
+      name: "form_answers_component_fkey",
+      columns: [table.componentId, table.formId],
+      foreignColumns: [formComponents.id, formComponents.formId],
+    }).onDelete("cascade"),
   ],
 );
 
@@ -717,9 +732,10 @@ export const formUploads = pgTable(
     formId: uuid("form_id")
       .notNull()
       .references(() => forms.id, { onDelete: "cascade" }),
-    // Null for anonymous uploads to forms that don't require login.
+    // Null for anonymous uploads to forms that don't require login, and once
+    // the uploader's account is deleted.
     uploadedBy: text("uploaded_by").references(() => users.id, {
-      onDelete: "cascade",
+      onDelete: "set null",
     }),
     fileName: text("file_name").notNull(),
     contentType: text("content_type").notNull(),
