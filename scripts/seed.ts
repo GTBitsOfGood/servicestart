@@ -1,5 +1,4 @@
 import "dotenv/config"; //must be first to load environment variables
-import { randomUUID } from "node:crypto";
 import { EventVisibility, JoinRequestStatus, schema } from "../lib/schema";
 import db from "../lib/db";
 import { auth } from "@/lib/auth";
@@ -581,8 +580,8 @@ export async function main() {
   for (const email of memberEmails) {
     for (const org of ORGS) {
       const userId = userIdsByOrganization.get(org.id)!.get(email)!;
-      // Skip the ones an earlier run created. Their IDs are random, so
-      // onConflictDoNothing alone would insert a second copy.
+      // Skip the ones the user already has. Seeds before the IDs below were
+      // stable gave them random IDs, which onConflictDoNothing can't match.
       const existing = await db
         .select({ text: schema.notifications.text })
         .from(schema.notifications)
@@ -594,16 +593,18 @@ export async function main() {
         );
       const existingTexts = new Set(existing.map((row) => row.text));
       const notificationValues = notificationTemplates
-        .filter((tmpl) => !existingTexts.has(tmpl.text))
-        .map((tmpl) => ({
-          id: randomUUID(),
+        .map((tmpl, index) => ({
+          // Stable, so a seed running at the same time hits
+          // onConflictDoNothing instead of inserting a second copy.
+          id: `notif_${org.id}_${userId}_${index}`,
           userId,
           organizationId: org.id,
           type: tmpl.type,
           text: tmpl.text,
           read: tmpl.read,
           createdAt: new Date(Date.now() - tmpl.minutesAgo * 60 * 1000),
-        }));
+        }))
+        .filter((notification) => !existingTexts.has(notification.text));
       if (notificationValues.length === 0) continue;
 
       await db
