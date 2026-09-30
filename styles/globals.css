@@ -7,6 +7,12 @@
 
   --container-8xl: 1280px;
 
+  --spacing-requests-panel: 580px;
+  --spacing-requests-filter: 130px;
+  --spacing-requests-actions: 120px;
+  --spacing-requests-close-icon: 22px;
+  --text-requests-control: 13px;
+
   --color-brand-text: #fc5b43;
   --color-brand-stroke-strong: #fc5b43cc;
   --color-brand-stroke-weak: #fc5b4333;

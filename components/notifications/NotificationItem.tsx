@@ -411,7 +411,7 @@ export default function NotificationItem({
             )}
           </div>
 
-          <div className="flex shrink-0 items-start justify-start mobile:w-[120px] mobile:justify-end">
+          <div className="flex shrink-0 items-start justify-start mobile:w-requests-actions mobile:justify-end">
             {expanded ? (
               <div className="invisible hidden mobile:block">
                 {renderJoinRequestButtons(true)}

@@ -218,9 +218,9 @@ export default function RequestsPanel({
 
   return (
     <aside
-      className={`flex h-dvh w-full shrink-0 flex-col mobile:w-[580px] ${borderClass} bg-white pt-6 mobile:pt-10`}
+      className={`flex h-dvh w-full shrink-0 flex-col overflow-y-auto mobile:w-requests-panel ${borderClass} bg-white pt-6 mobile:pt-10`}
     >
-      <div className="border-b border-grey-stroke-weak px-5 py-4 mobile:px-6 mobile:py-5">
+      <div className="shrink-0 border-b border-grey-stroke-weak px-5 py-4 mobile:px-6 mobile:py-5">
         <div className="flex items-center justify-between gap-3">
           {onClose ? (
             <button
@@ -229,7 +229,7 @@ export default function RequestsPanel({
               aria-label="Close"
               className="rounded p-1 text-grey-icon-weak hover:bg-grey-fill-weak hover:text-grey-text-strong"
             >
-              <BogIcon name="x" size={22} />
+              <BogIcon name="x" className="size-requests-close-icon" />
             </button>
           ) : (
             <span />
@@ -277,7 +277,7 @@ export default function RequestsPanel({
                 size="small"
                 showValueInTrigger={false}
                 showClearIcon={false}
-                className="flex-1 mobile:w-[130px] mobile:flex-none px-2 py-1 font-medium text-[13px] justify-center gap-2"
+                className="flex-1 mobile:w-requests-filter mobile:flex-none px-2 py-1 font-medium text-requests-control justify-center gap-2"
               />
               <BogDropdown
                 type="radio"
@@ -300,7 +300,7 @@ export default function RequestsPanel({
                 size="small"
                 showValueInTrigger={false}
                 showClearIcon={false}
-                className="flex-1 mobile:w-[130px] mobile:flex-none px-2 py-1 font-medium text-[13px] justify-center gap-2"
+                className="flex-1 mobile:w-requests-filter mobile:flex-none px-2 py-1 font-medium text-requests-control justify-center gap-2"
               />
             </div>
           </div>
@@ -347,7 +347,7 @@ export default function RequestsPanel({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="shrink-0">
         {status === "loading" ? (
           <div className="space-y-px animate-pulse p-6">
             {Array.from({ length: 4 }).map((_, i) => (
