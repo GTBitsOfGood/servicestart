@@ -7,6 +7,7 @@ import {
 import {
   addMember,
   buildTestUser,
+  createJoinRequest,
   signUpAndGetSession,
 } from "../unit/testUtils";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
@@ -17,6 +18,50 @@ test.describe("Members Page", () => {
     page,
   }) => {
     await expectPageRedirectsUnlessAdmin(page, "/members");
+  });
+
+  test("request actions remain reachable on a short phone viewport with filters", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    const { org } = await createTestAdminAndSignIn(page);
+    const requester = buildTestUser();
+    const { session } = await signUpAndGetSession(requester);
+    await createJoinRequest(session.userId, org.id);
+
+    await page.goto("/members");
+    await page.getByRole("button", { name: "Requests", exact: true }).click();
+    const panel = page.getByRole("dialog", { name: "Join Requests" });
+    await expect(panel).toBeVisible();
+    for (const width of [375, 639, 640, 1280]) {
+      await page.setViewportSize({ width, height: 800 });
+      await expect(panel).toHaveCSS("width", `${width < 640 ? width : 580}px`);
+      expect(
+        await panel.evaluate((element) => element.scrollWidth),
+      ).toBeLessThanOrEqual(width < 640 ? width : 580);
+    }
+    await page.setViewportSize({ width: 375, height: 667 });
+    await panel.getByRole("button", { name: "Type", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Pending" }).click();
+    await page.keyboard.press("Escape");
+    await panel.getByRole("button", { name: "Sort By", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Oldest First" }).click();
+
+    // Simulate the reduced space available when a phone keyboard is open.
+    await page.setViewportSize({ width: 375, height: 200 });
+    const approve = panel.getByRole("button", { name: "Approve", exact: true });
+    await approve.scrollIntoViewIfNeeded();
+    await expect(approve).toBeInViewport({ ratio: 1 });
+    await approve.click();
+    await page
+      .getByRole("dialog", { name: "Approve Request" })
+      .getByRole("button", { name: "Approve", exact: true })
+      .click();
+    await expect(
+      panel.getByText("There are no pending requests at this time."),
+    ).toBeVisible();
+    await panel.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(panel).not.toBeVisible();
   });
 
   test("redirects when authenticated but not an org member or admin", async ({
