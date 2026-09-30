@@ -11,6 +11,7 @@ import {
   FormComponentType,
   FormStatus,
   organizations,
+  users,
 } from "@/lib/schema";
 import { FormDefinitionSchema } from "@/lib/forms/schema";
 import {
@@ -122,8 +123,68 @@ describe("forms tables", () => {
     await expect(
       db
         .insert(formAnswers)
-        .values({ submissionId, componentId, value: "Again" }),
+        .values({ formId: form.id, submissionId, componentId, value: "Again" }),
     ).rejects.toThrow();
+  });
+
+  it("won't store an answer to another form's question", async () => {
+    const org = await createOrganization("forms-cross-form");
+    const form = await createForm(org.id);
+    const otherForm = await createForm(org.id);
+    const [, otherQuestion] = otherForm.components;
+
+    await expect(
+      createFormSubmission(form, {
+        answers: { [otherQuestion.id]: "Sample answer" },
+      }),
+    ).rejects.toThrow();
+    // Claiming the other form's ID doesn't help: the submission isn't on it.
+    const submissionId = await createFormSubmission(form);
+    await expect(
+      db.insert(formAnswers).values({
+        formId: otherForm.id,
+        submissionId,
+        componentId: otherQuestion.id,
+        value: "Sample answer",
+      }),
+    ).rejects.toThrow();
+    // The failed helper call left no submission behind.
+    expect(
+      await db
+        .select()
+        .from(formSubmissions)
+        .where(eq(formSubmissions.formId, form.id)),
+    ).toHaveLength(1);
+  });
+
+  it("keeps responses and uploads when the user's account is deleted", async () => {
+    const org = await createOrganization("forms-user-deleted");
+    const { user } = await signUpAndGetSession(buildTestUser());
+    const form = await createForm(org.id, { status: FormStatus.Published });
+    const uploadId = await createFormUpload(form, { uploadedBy: user.id });
+    const submissionId = await createFormSubmission(form, {
+      userId: user.id,
+      answers: buildSampleAnswers(form, { uploadId }),
+    });
+
+    await db.delete(users).where(eq(users.id, user.id));
+
+    const [submission] = await db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, submissionId));
+    const [upload] = await db
+      .select()
+      .from(formUploads)
+      .where(eq(formUploads.id, uploadId));
+    expect(submission.userId).toBeNull();
+    expect(upload.uploadedBy).toBeNull();
+    expect(
+      await db
+        .select()
+        .from(formAnswers)
+        .where(eq(formAnswers.submissionId, submissionId)),
+    ).toHaveLength(form.components.length - 2);
   });
 
   it("stores anonymous submissions and uploads", async () => {

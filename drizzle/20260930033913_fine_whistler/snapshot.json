@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "5c7c1398-1c27-47d3-a365-58c75aa94df7",
+  "id": "095622f6-bf5d-46dd-91b1-c82e256bd546",
   "prevIds": [
     "6beb909f-a97c-4a07-8cfe-ca08fe745d67"
   ],
@@ -845,6 +845,19 @@
       "generated": null,
       "identity": null,
       "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "form_answers"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "form_id",
       "entityType": "columns",
       "schema": "public",
       "table": "form_answers"
@@ -3325,35 +3338,39 @@
       "table": "events"
     },
     {
-      "nameExplicit": false,
+      "nameExplicit": true,
       "columns": [
-        "submission_id"
+        "submission_id",
+        "form_id"
       ],
       "schemaTo": "public",
       "tableTo": "form_submissions",
       "columnsTo": [
-        "id"
+        "id",
+        "form_id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "form_answers_submission_id_form_submissions_id_fkey",
+      "name": "form_answers_submission_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "form_answers"
     },
     {
-      "nameExplicit": false,
+      "nameExplicit": true,
       "columns": [
-        "component_id"
+        "component_id",
+        "form_id"
       ],
       "schemaTo": "public",
       "tableTo": "form_components",
       "columnsTo": [
-        "id"
+        "id",
+        "form_id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "form_answers_component_id_form_components_id_fkey",
+      "name": "form_answers_component_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "form_answers"
@@ -3437,7 +3454,7 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
+      "onDelete": "SET NULL",
       "name": "form_submissions_user_id_users_id_fkey",
       "entityType": "fks",
       "schema": "public",
@@ -3488,7 +3505,7 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
+      "onDelete": "SET NULL",
       "name": "form_uploads_uploaded_by_users_id_fkey",
       "entityType": "fks",
       "schema": "public",
@@ -4234,6 +4251,30 @@
       "entityType": "uniques",
       "schema": "public",
       "table": "form_answers"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "id",
+        "form_id"
+      ],
+      "nullsNotDistinct": false,
+      "name": "form_components_id_form_id_unique",
+      "entityType": "uniques",
+      "schema": "public",
+      "table": "form_components"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        "id",
+        "form_id"
+      ],
+      "nullsNotDistinct": false,
+      "name": "form_submissions_id_form_id_unique",
+      "entityType": "uniques",
+      "schema": "public",
+      "table": "form_submissions"
     },
     {
       "nameExplicit": true,

@@ -19,7 +19,7 @@ export const FormIdSchema = z
   });
 
 export const FormSettingsSchema = z
-  .object({
+  .strictObject({
     requireLogin: z.boolean(),
     allowMultipleSubmissions: z.boolean(),
     opensAt: z.iso.datetime({ offset: true }).nullable(),
