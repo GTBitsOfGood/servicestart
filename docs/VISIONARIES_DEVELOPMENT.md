@@ -12,11 +12,19 @@ email configuration for ordinary development.
 
 Add `visionariestothethrone.lvh.me` to the comma-separated `ALLOWED_DEV_ORIGINS`
 value in your local `.env` (preserve any existing entries). Restart Next.js after
-changing it. For this tenant's auth work, set:
+changing it.
+
+Leave `BETTER_AUTH_URL` at the template's `http://localhost:3000`. Visionaries,
+ServiceStart at `localhost:3000`, and the other seeded tenants all work with it
+at the same time. Change it only when you need links that Better Auth builds,
+such as the password reset link, to open on the Visionaries host:
 
 ```dotenv
 BETTER_AUTH_URL=http://visionariestothethrone.lvh.me:3000
 ```
+
+`localhost:3000` keeps working with either value. Restart Next.js after changing
+it.
 
 With your **local development database** configured, run:
 
