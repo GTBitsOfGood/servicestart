@@ -9,12 +9,20 @@ import {
   members,
   organizationConfig,
   OrganizationConfigKey,
+  forms,
+  formComponents,
+  MemberType,
 } from "@/lib/schema";
+import { FormDefinitionSchema } from "@/lib/forms/schema";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { hashPassword } from "better-auth/crypto";
 import { main } from "@/scripts/seed";
-import { eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { expect, it } from "vitest";
-import { DEFAULT_TEST_PASSWORD } from "../testUtils";
+import {
+  DEFAULT_TEST_PASSWORD,
+  VISIONARIES_APPLICATION_FORM,
+} from "../testUtils";
 
 it("should run the seed script without errors", async () => {
   await expect(main()).resolves.not.toThrow();
@@ -132,6 +140,85 @@ it("seeds repeatable Visionaries branding and tenant-scoped development roles", 
     .from(organizationConfig)
     .where(eq(organizationConfig.organizationId, "org_servicestart"));
   expect(defaults.some((row) => row.value === "#5C218C")).toBe(false);
+});
+
+it("turns on forms for Visionaries only", async () => {
+  await main();
+
+  for (const [orgId, enabled] of [
+    ["org_visionariestothethrone", true],
+    ["org_servicestart", false],
+  ] as const) {
+    const config = await OrganizationConfigService.getConfig(orgId, [
+      OrganizationConfigKey.FormsEnabled,
+    ]);
+    expect(config[OrganizationConfigKey.FormsEnabled]).toBe(enabled);
+  }
+});
+
+it("seeds one published copy of the Visionaries application", async () => {
+  await main();
+  await main();
+
+  const seeded = await db
+    .select()
+    .from(forms)
+    .where(eq(forms.organizationId, "org_visionariestothethrone"));
+  expect(seeded).toHaveLength(1);
+  const [form] = seeded;
+  const components = await db
+    .select()
+    .from(formComponents)
+    .where(eq(formComponents.formId, form.id))
+    .orderBy(asc(formComponents.position));
+  const definition = FormDefinitionSchema.parse({
+    ...form,
+    components: components.map(
+      ({ id, type, label, helpText, required, position, config }) => ({
+        id,
+        type,
+        label,
+        helpText,
+        required,
+        position,
+        config,
+      }),
+    ),
+  });
+  expect(definition).toEqual(VISIONARIES_APPLICATION_FORM);
+
+  const [creator] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, form.createdBy!));
+  expect(creator.email).toBe("admin@example.com");
+  expect(creator.organizationId).toBe("org_visionariestothethrone");
+});
+
+it("seeds a Visionaries applicant who can sign in", async () => {
+  await main();
+
+  const result = await auth.api.signInEmail({
+    headers: new Headers({ host: "visionariestothethrone.lvh.me:3000" }),
+    body: { email: "applicant@example.com", password: DEFAULT_TEST_PASSWORD },
+  });
+  const [membership] = await db
+    .select()
+    .from(members)
+    .where(
+      and(
+        eq(members.userId, result.user.id),
+        eq(members.organizationId, "org_visionariestothethrone"),
+      ),
+    );
+  expect(membership.role).toBe("member");
+  expect(membership.memberType).toBe(MemberType.Applicant);
+  expect(
+    await db
+      .select()
+      .from(users)
+      .where(eq(users.email, "applicant@example.com")),
+  ).toHaveLength(1);
 });
 
 it("repairs an old unscoped seed account without replacing its ID or credential", async () => {
