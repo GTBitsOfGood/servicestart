@@ -7,6 +7,12 @@
 
   --container-8xl: 1280px;
 
+  --spacing-requests-panel: 580px;
+  --spacing-requests-filter: 130px;
+  --spacing-requests-actions: 120px;
+  --spacing-requests-close-icon: 22px;
+  --text-requests-control: 13px;
+
   --color-brand-text: #fc5b43;
   --color-brand-stroke-strong: #fc5b43cc;
   --color-brand-stroke-weak: #fc5b4333;
@@ -98,6 +104,16 @@
     var(--color-brand-text) 5%,
     transparent
   );
+
+  /* Theme tokens that will follow each org's theme (#300). They hold today's
+     values, so using them changes nothing yet. */
+  --color-page-bg: #ffffff;
+  --color-page-text: var(--color-grey-text-strong);
+  /* Text on brand-colored surfaces, e.g. a primary button's label. */
+  --color-brand-foreground: #ffffff;
+  --font-display: var(--font-heading);
+  /* Corner radius for inputs and buttons (Tailwind's `rounded`). */
+  --radius-control: 0.25rem;
 
   --text-desktop-display: 48px;
   --text-desktop-heading-1: 40px;

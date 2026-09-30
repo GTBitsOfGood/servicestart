@@ -1,6 +1,6 @@
 "use client";
 
-import { NO_NAVBAR_PAGES } from "@/lib/navbar";
+import { isNoNavbarPage } from "@/lib/navbar";
 import { usePathname } from "next/navigation";
 import React from "react";
 
@@ -13,7 +13,7 @@ export default function NavbarWrapper({
 }) {
   const pathname = usePathname();
 
-  if (NO_NAVBAR_PAGES.includes(pathname)) {
+  if (isNoNavbarPage(pathname)) {
     return <>{noNavbarChildren}</>;
   }
 
