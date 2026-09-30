@@ -15,6 +15,11 @@ import {
   media,
   messages,
   messageRecipients,
+  forms,
+  formComponents,
+  formSubmissions,
+  formAnswers,
+  formUploads,
 } from "@/lib/schema";
 import { beforeAll, beforeEach, afterAll } from "vitest";
 import { execSync } from "child_process";
@@ -49,6 +54,11 @@ beforeEach(async () => {
 
   // Child tables first, then parent tables
   // Add line here when you create a new table
+  await db.delete(formAnswers);
+  await db.delete(formSubmissions);
+  await db.delete(formUploads);
+  await db.delete(formComponents);
+  await db.delete(forms);
   await db.delete(media);
   await db.delete(messageRecipients);
   await db.delete(messages);

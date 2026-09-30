@@ -16,9 +16,28 @@ import {
   eventRsvps,
   media,
   MediaType,
+  forms,
+  formComponents,
+  formSubmissions,
+  formAnswers,
+  formUploads,
+  FormStatus,
 } from "@/lib/schema";
+import { DEFAULT_FORM_SETTINGS } from "@/lib/forms/constants";
+import type {
+  FormAnswerValue,
+  FormComponent,
+  FormDefinition,
+  FormSettings,
+} from "@/lib/forms/schema";
+import { VISIONARIES_APPLICATION_FORM } from "@/tests/unit/fixtures/forms";
 import { testClient } from "hono/testing";
 import { app } from "@/lib/app";
+
+export {
+  VISIONARIES_APPLICATION_FORM,
+  buildSampleAnswers,
+} from "@/tests/unit/fixtures/forms";
 
 export const testApi = testClient(app).api;
 
@@ -311,6 +330,154 @@ export async function createMedia(
   });
   return id;
 }
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
+  ? Omit<T, K>
+  : never;
+
+/** A form component to insert; the helper assigns its ID and position. */
+export type NewFormComponent = DistributiveOmit<
+  FormComponent,
+  "id" | "position"
+>;
+
+export type TestForm = FormDefinition & { organizationId: string };
+
+/**
+ * Creates a form and its components for an organization, with new IDs.
+ * Components default to the Visionaries camp application's, in order; pass
+ * `components: []` for a form with no questions. Values aren't validated, so
+ * a test can store an invalid config on purpose.
+ */
+export async function createForm(
+  organizationId: string,
+  opts: {
+    formId?: string;
+    title?: string;
+    description?: string | null;
+    status?: FormStatus;
+    settings?: Partial<FormSettings>;
+    createdBy?: string | null;
+    components?: NewFormComponent[];
+  } = {},
+): Promise<TestForm> {
+  const [form] = await db
+    .insert(forms)
+    .values({
+      organizationId,
+      formId: opts.formId ?? `test-form-${randomUUID().slice(0, 8)}`,
+      title: opts.title ?? "Test Form",
+      description: opts.description ?? null,
+      status: opts.status ?? FormStatus.Draft,
+      settings: { ...DEFAULT_FORM_SETTINGS, ...opts.settings },
+      createdBy: opts.createdBy ?? null,
+    })
+    .returning();
+
+  const newComponents: NewFormComponent[] =
+    opts.components ?? VISIONARIES_APPLICATION_FORM.components;
+  const rows =
+    newComponents.length === 0
+      ? []
+      : await db
+          .insert(formComponents)
+          .values(
+            newComponents.map((component, position) => ({
+              ...component,
+              id: randomUUID(),
+              formId: form.id,
+              organizationId,
+              position,
+            })),
+          )
+          .returning();
+
+  return {
+    id: form.id,
+    organizationId,
+    formId: form.formId,
+    title: form.title,
+    description: form.description,
+    status: form.status,
+    settings: form.settings,
+    components: rows
+      .sort((a, b) => a.position - b.position)
+      .map(({ id, type, label, helpText, required, position, config }) => ({
+        id,
+        type,
+        label,
+        helpText,
+        required,
+        position,
+        config,
+      })) as FormComponent[],
+  };
+}
+
+/**
+ * Creates a submission to a form with the given answers, keyed by component
+ * ID (see buildSampleAnswers). Returns the submission ID.
+ */
+export async function createFormSubmission(
+  form: { id: string; organizationId: string },
+  opts: {
+    userId?: string | null;
+    answers?: Record<string, FormAnswerValue>;
+    submittedAt?: Date;
+  } = {},
+) {
+  return db.transaction(async (tx) => {
+    const [submission] = await tx
+      .insert(formSubmissions)
+      .values({
+        formId: form.id,
+        organizationId: form.organizationId,
+        userId: opts.userId ?? null,
+        submittedAt: opts.submittedAt ?? new Date(),
+      })
+      .returning({ id: formSubmissions.id });
+
+    const answers = Object.entries(opts.answers ?? {});
+    if (answers.length > 0) {
+      await tx.insert(formAnswers).values(
+        answers.map(([componentId, value]) => ({
+          formId: form.id,
+          submissionId: submission.id,
+          componentId,
+          value,
+        })),
+      );
+    }
+    return submission.id;
+  });
+}
+
+/**
+ * Creates a form_uploads row. Does not create the file in storage.
+ * Returns the upload ID.
+ */
+export async function createFormUpload(
+  form: { id: string; organizationId: string },
+  opts: {
+    uploadedBy?: string | null;
+    fileName?: string;
+    contentType?: string;
+    sizeBytes?: number;
+  } = {},
+) {
+  const [upload] = await db
+    .insert(formUploads)
+    .values({
+      formId: form.id,
+      organizationId: form.organizationId,
+      uploadedBy: opts.uploadedBy ?? null,
+      fileName: opts.fileName ?? `${randomUUID()}.png`,
+      contentType: opts.contentType ?? "image/png",
+      sizeBytes: opts.sizeBytes ?? 1024,
+    })
+    .returning({ id: formUploads.id });
+  return upload.id;
+}
+
 /**
  * @deprecated Use buildTestUser + signUpAndGetHeaders instead
  * Signs up a test user, which you can use to run API routes.

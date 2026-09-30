@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { eventRsvps, shiftRSVPs } from "@/lib/schema";
+import { eventRsvps, members, MemberType, shiftRSVPs } from "@/lib/schema";
 import {
   addMember,
   buildTestUser,
@@ -204,5 +204,49 @@ describe("trusted origins", () => {
     expect(context.isTrustedOrigin("http://evil-lvh.me:3000")).toBe(false);
     expect(context.isTrustedOrigin("http://acme.lvh.me:4000")).toBe(false);
     expect(context.isTrustedOrigin("https://acme.lvh.me")).toBe(false);
+  });
+});
+
+describe("member type", () => {
+  it("is returned with the member", async () => {
+    const org = await createOrganization("member-type-read");
+    const { session, headers } = await signUpAndGetSession(buildTestUser());
+    await addMember(session.userId, org.id, "member");
+    await setActiveOrganization(session.id, org.id);
+    await db
+      .update(members)
+      .set({ memberType: MemberType.Applicant })
+      .where(
+        and(
+          eq(members.userId, session.userId),
+          eq(members.organizationId, org.id),
+        ),
+      );
+
+    const member = await auth.api.getActiveMember({ headers });
+
+    expect(member?.memberType).toBe(MemberType.Applicant);
+  });
+
+  it("can't be set through addMember's input", async () => {
+    const org = await createOrganization("member-type-input");
+    const { user } = await signUpAndGetSession(buildTestUser());
+
+    // Not a literal, so TypeScript allows the field BetterAuth should drop.
+    const body = {
+      userId: user.id,
+      organizationId: org.id,
+      role: "member" as const,
+      memberType: MemberType.Attendee,
+    };
+    await auth.api.addMember({ body });
+
+    const [member] = await db
+      .select()
+      .from(members)
+      .where(
+        and(eq(members.userId, user.id), eq(members.organizationId, org.id)),
+      );
+    expect(member.memberType).toBeNull();
   });
 });

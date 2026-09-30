@@ -128,6 +128,17 @@ export const auth = betterAuth({
             },
           },
         },
+        member: {
+          additionalFields: {
+            // A MemberType value or null. Server code sets it; clients can't,
+            // since it gates what a member can see.
+            memberType: {
+              type: "string",
+              required: false,
+              input: false,
+            },
+          },
+        },
         invitation: {
           additionalFields: {
             name: {

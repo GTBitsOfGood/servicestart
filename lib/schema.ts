@@ -1,5 +1,6 @@
 import { defineRelations, sql } from "drizzle-orm";
 import {
+  customType,
   pgEnum,
   pgTable,
   timestamp,
@@ -10,7 +11,15 @@ import {
   primaryKey,
   integer,
   jsonb,
+  unique,
+  uuid,
+  foreignKey,
 } from "drizzle-orm/pg-core";
+import type {
+  FormAnswerValue,
+  FormComponentConfigValue,
+  FormSettings,
+} from "./forms/schema";
 
 // TypeScript enum for join request status values
 export enum JoinRequestStatus {
@@ -46,6 +55,15 @@ export enum OrganizationConfigKey {
   MobileNavbarVariant = "mobile_navbar_variant",
   MobileNavbarShowIcons = "mobile_navbar_show_icons",
   MobileNavbarProfileOrientation = "mobile_navbar_profile_orientation",
+  FormsEnabled = "forms_enabled",
+  MemberTypesEnabled = "member_types_enabled",
+  AutoApproveSignups = "auto_approve_signups",
+  BackgroundColor = "background_color",
+  TextColor = "text_color",
+  DisplayFont = "display_font",
+  HeadingFont = "heading_font",
+  BodyFont = "body_font",
+  CornerStyle = "corner_style",
 }
 
 export enum EventVisibility {
@@ -60,7 +78,7 @@ export const eventVisibilityEnum = pgEnum(
 
 export type ToggleableOrganizationFeature = Extract<
   OrganizationConfigKey,
-  OrganizationConfigKey.MembersPageEnabled
+  OrganizationConfigKey.MembersPageEnabled | OrganizationConfigKey.FormsEnabled
 >;
 
 // Array of enum values for use with pgEnum and Zod
@@ -100,6 +118,62 @@ export const notificationTypeEnum = pgEnum(
   "notification_type",
   NOTIFICATION_TYPE_VALUES,
 );
+
+export enum MemberType {
+  Applicant = "applicant",
+  Attendee = "attendee",
+}
+
+export const MEMBER_TYPE_VALUES = Object.values(MemberType) as [
+  MemberType,
+  ...MemberType[],
+];
+export const memberTypeEnum = pgEnum("member_type", MEMBER_TYPE_VALUES);
+
+export enum FormStatus {
+  Draft = "draft",
+  Published = "published",
+  Closed = "closed",
+}
+
+export const FORM_STATUS_VALUES = Object.values(FormStatus) as [
+  FormStatus,
+  ...FormStatus[],
+];
+export const formStatusEnum = pgEnum("form_status", FORM_STATUS_VALUES);
+
+// Each value needs a config schema and an answer schema in lib/forms/schema.ts,
+// plus an entry in the builder (#298) and renderer (#299) registries.
+export enum FormComponentType {
+  ShortText = "short_text",
+  LongText = "long_text",
+  Email = "email",
+  Phone = "phone",
+  Number = "number",
+  Image = "image",
+  SectionHeader = "section_header",
+}
+
+export const FORM_COMPONENT_TYPE_VALUES = Object.values(FormComponentType) as [
+  FormComponentType,
+  ...FormComponentType[],
+];
+export const formComponentTypeEnum = pgEnum(
+  "form_component_type",
+  FORM_COMPONENT_TYPE_VALUES,
+);
+
+// Drizzle's jsonb column JSON.parses the value node-postgres has already
+// parsed, so a stored string that looks like JSON ("7", "4045550123", "true")
+// reads back as a number or boolean. Use this for columns that can hold a bare
+// string; it keeps the driver's value as is.
+function parsedJsonb<T>(name: string) {
+  return customType<{ data: T; driverData: unknown }>({
+    dataType: () => "jsonb",
+    toDriver: (value) => JSON.stringify(value),
+    fromDriver: (value) => value as T,
+  })(name);
+}
 
 export const users = pgTable(
   "users",
@@ -226,6 +300,8 @@ export const members = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     role: text("role").notNull(),
+    // Only takes effect while MemberTypesEnabled is on. Null for admins.
+    memberType: memberTypeEnum("member_type"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
@@ -522,6 +598,153 @@ export const notifications = pgTable(
   ],
 );
 
+export const forms = pgTable(
+  "forms",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    // Human-assigned key used in URLs (e.g. "camp-application-2027"), unique
+    // per organization. Child tables reference the UUID `id`, not this.
+    formId: text("form_id").notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    status: formStatusEnum("status").default(FormStatus.Draft).notNull(),
+    settings: jsonb("settings").$type<FormSettings>().notNull(),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique("forms_organization_id_form_id_unique").on(
+      table.organizationId,
+      table.formId,
+    ),
+  ],
+);
+
+export const formComponents = pgTable(
+  "form_components",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // References forms.id (the UUID), not forms.formId.
+    formId: uuid("form_id")
+      .notNull()
+      .references(() => forms.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    type: formComponentTypeEnum("type").notNull(),
+    label: text("label").notNull(),
+    helpText: text("help_text"),
+    required: boolean("required").default(false).notNull(),
+    position: integer("position").notNull(),
+    // Shape depends on `type`; validate with FORM_COMPONENT_CONFIG_SCHEMAS.
+    config: jsonb("config").$type<FormComponentConfigValue>().notNull(),
+    // Unused for now: questions are locked once a form is published.
+    archivedAt: timestamp("archived_at"),
+  },
+  (table) => [
+    index("form_components_form_id_position_idx").on(
+      table.formId,
+      table.position,
+    ),
+    // Lets form_answers check that its component is on the same form.
+    unique("form_components_id_form_id_unique").on(table.id, table.formId),
+  ],
+);
+
+export const formSubmissions = pgTable(
+  "form_submissions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // References forms.id (the UUID), not forms.formId.
+    formId: uuid("form_id")
+      .notNull()
+      .references(() => forms.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    // Null for anonymous submissions to forms that don't require login, and
+    // once the submitter's account is deleted (the org keeps the response).
+    userId: text("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("form_submissions_form_id_user_id_idx").on(
+      table.formId,
+      table.userId,
+    ),
+    // Lets form_answers check that its submission is on the same form.
+    unique("form_submissions_id_form_id_unique").on(table.id, table.formId),
+  ],
+);
+
+export const formAnswers = pgTable(
+  "form_answers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // References forms.id (the UUID), not forms.formId. The foreign keys below
+    // require the submission and the component to be on this form.
+    formId: uuid("form_id").notNull(),
+    submissionId: uuid("submission_id").notNull(),
+    componentId: uuid("component_id").notNull(),
+    // Shape depends on the component's type; see FORM_ANSWER_VALUE_SCHEMAS.
+    value: parsedJsonb<FormAnswerValue>("value").notNull(),
+  },
+  (table) => [
+    unique("form_answers_submission_id_component_id_unique").on(
+      table.submissionId,
+      table.componentId,
+    ),
+    foreignKey({
+      name: "form_answers_submission_fkey",
+      columns: [table.submissionId, table.formId],
+      foreignColumns: [formSubmissions.id, formSubmissions.formId],
+    }).onDelete("cascade"),
+    // Questions are only deleted from drafts, which have no answers.
+    foreignKey({
+      name: "form_answers_component_fkey",
+      columns: [table.componentId, table.formId],
+      foreignColumns: [formComponents.id, formComponents.formId],
+    }).onDelete("cascade"),
+  ],
+);
+
+// Files uploaded to a form (headshots). Kept apart from `media` so they never
+// appear in the media library.
+export const formUploads = pgTable(
+  "form_uploads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    // References forms.id (the UUID), not forms.formId.
+    formId: uuid("form_id")
+      .notNull()
+      .references(() => forms.id, { onDelete: "cascade" }),
+    // Null for anonymous uploads to forms that don't require login, and once
+    // the uploader's account is deleted.
+    uploadedBy: text("uploaded_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    fileName: text("file_name").notNull(),
+    contentType: text("content_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("form_uploads_form_id_idx").on(table.formId)],
+);
+
 export const relations = defineRelations(
   {
     users,
@@ -545,6 +768,11 @@ export const relations = defineRelations(
     messageRecipients,
     notifications,
     userOrganizations,
+    forms,
+    formComponents,
+    formSubmissions,
+    formAnswers,
+    formUploads,
   },
   (r) => ({
     users: {
@@ -609,6 +837,10 @@ export const relations = defineRelations(
       users: r.many.userOrganizations({
         from: r.organizations.id,
         to: r.userOrganizations.organizationId,
+      }),
+      forms: r.many.forms({
+        from: r.organizations.id,
+        to: r.forms.organizationId,
       }),
     },
     members: {
@@ -766,6 +998,75 @@ export const relations = defineRelations(
         to: r.organizations.id,
       }),
     },
+    forms: {
+      organization: r.one.organizations({
+        from: r.forms.organizationId,
+        to: r.organizations.id,
+      }),
+      creator: r.one.users({
+        from: r.forms.createdBy,
+        to: r.users.id,
+        optional: true,
+      }),
+      components: r.many.formComponents({
+        from: r.forms.id,
+        to: r.formComponents.formId,
+      }),
+      submissions: r.many.formSubmissions({
+        from: r.forms.id,
+        to: r.formSubmissions.formId,
+      }),
+      uploads: r.many.formUploads({
+        from: r.forms.id,
+        to: r.formUploads.formId,
+      }),
+    },
+    formComponents: {
+      form: r.one.forms({
+        from: r.formComponents.formId,
+        to: r.forms.id,
+      }),
+      answers: r.many.formAnswers({
+        from: r.formComponents.id,
+        to: r.formAnswers.componentId,
+      }),
+    },
+    formSubmissions: {
+      form: r.one.forms({
+        from: r.formSubmissions.formId,
+        to: r.forms.id,
+      }),
+      user: r.one.users({
+        from: r.formSubmissions.userId,
+        to: r.users.id,
+        optional: true,
+      }),
+      answers: r.many.formAnswers({
+        from: r.formSubmissions.id,
+        to: r.formAnswers.submissionId,
+      }),
+    },
+    formAnswers: {
+      submission: r.one.formSubmissions({
+        from: r.formAnswers.submissionId,
+        to: r.formSubmissions.id,
+      }),
+      component: r.one.formComponents({
+        from: r.formAnswers.componentId,
+        to: r.formComponents.id,
+      }),
+    },
+    formUploads: {
+      form: r.one.forms({
+        from: r.formUploads.formId,
+        to: r.forms.id,
+      }),
+      uploader: r.one.users({
+        from: r.formUploads.uploadedBy,
+        to: r.users.id,
+        optional: true,
+      }),
+    },
   }),
 );
 
@@ -791,4 +1092,9 @@ export const schema = {
   messages,
   messageRecipients,
   notifications,
+  forms,
+  formComponents,
+  formSubmissions,
+  formAnswers,
+  formUploads,
 };
