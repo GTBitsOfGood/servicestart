@@ -13,12 +13,13 @@ import {
   formComponents,
   FormStatus,
   MemberType,
+  notifications,
 } from "@/lib/schema";
 import { FormDefinitionSchema } from "@/lib/forms/schema";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { hashPassword } from "better-auth/crypto";
 import { main } from "@/scripts/seed";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, count, eq, isNull } from "drizzle-orm";
 import { expect, it } from "vitest";
 import {
   createForm,
@@ -52,6 +53,16 @@ it("should not create duplicate organizations on multiple runs", async () => {
     .where(eq(organizations.slug, "servicestart"));
 
   expect(orgs.length).toBe(1); // Only one organization with the slug 'servicestart' should exist
+});
+
+it("doesn't duplicate notifications on multiple runs", async () => {
+  await main();
+  const [first] = await db.select({ count: count() }).from(notifications);
+  await main();
+  const [second] = await db.select({ count: count() }).from(notifications);
+
+  expect(first.count).toBeGreaterThan(0);
+  expect(second.count).toBe(first.count);
 });
 
 it("creates users/accounts such that they can be signed into", async () => {

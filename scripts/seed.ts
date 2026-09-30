@@ -580,15 +580,31 @@ export async function main() {
 
   for (const email of memberEmails) {
     for (const org of ORGS) {
-      const notificationValues = notificationTemplates.map((tmpl) => ({
-        id: randomUUID(),
-        userId: userIdsByOrganization.get(org.id)!.get(email)!,
-        organizationId: org.id,
-        type: tmpl.type,
-        text: tmpl.text,
-        read: tmpl.read,
-        createdAt: new Date(Date.now() - tmpl.minutesAgo * 60 * 1000),
-      }));
+      const userId = userIdsByOrganization.get(org.id)!.get(email)!;
+      // Skip the ones an earlier run created. Their IDs are random, so
+      // onConflictDoNothing alone would insert a second copy.
+      const existing = await db
+        .select({ text: schema.notifications.text })
+        .from(schema.notifications)
+        .where(
+          and(
+            eq(schema.notifications.userId, userId),
+            eq(schema.notifications.organizationId, org.id),
+          ),
+        );
+      const existingTexts = new Set(existing.map((row) => row.text));
+      const notificationValues = notificationTemplates
+        .filter((tmpl) => !existingTexts.has(tmpl.text))
+        .map((tmpl) => ({
+          id: randomUUID(),
+          userId,
+          organizationId: org.id,
+          type: tmpl.type,
+          text: tmpl.text,
+          read: tmpl.read,
+          createdAt: new Date(Date.now() - tmpl.minutesAgo * 60 * 1000),
+        }));
+      if (notificationValues.length === 0) continue;
 
       await db
         .insert(schema.notifications)
