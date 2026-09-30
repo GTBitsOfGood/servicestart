@@ -45,9 +45,13 @@ type Status = "loading" | "error" | "forbidden" | "ok";
 
 interface RequestsPanelProps {
   side?: "left" | "right";
+  onClose?: () => void;
 }
 
-export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
+export default function RequestsPanel({
+  side = "right",
+  onClose,
+}: RequestsPanelProps) {
   const { data: session, isPending: isSessionLoading } =
     authClient.useSession();
   const { organization } = useActiveOrganization();
@@ -214,15 +218,29 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
 
   return (
     <aside
-      className={`flex h-screen w-[580px] shrink-0 flex-col ${borderClass} bg-white pt-10`}
+      className={`flex h-dvh w-full shrink-0 flex-col overflow-y-auto mobile:w-requests-panel ${borderClass} bg-white pt-6 mobile:pt-10`}
     >
-      <div className="border-b border-grey-stroke-weak px-6 py-5">
-        <h2 className="text-right text-heading-2 text-grey-text-strong">
-          Requests
-        </h2>
+      <div className="shrink-0 border-b border-grey-stroke-weak px-5 py-4 mobile:px-6 mobile:py-5">
+        <div className="flex items-center justify-between gap-3">
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="rounded p-1 text-grey-icon-weak hover:bg-grey-fill-weak hover:text-grey-text-strong"
+            >
+              <BogIcon name="x" className="size-requests-close-icon" />
+            </button>
+          ) : (
+            <span />
+          )}
+          <h2 className="text-right text-heading-2 text-grey-text-strong">
+            Requests
+          </h2>
+        </div>
         <div className="mt-4 flex flex-col gap-3">
-          <div className="flex w-full items-center gap-3">
-            <div className="flex-1 min-w-0">
+          <div className="flex w-full flex-col gap-3 mobile:flex-row mobile:items-center">
+            <div className="min-w-0 mobile:flex-1">
               <BogTextInput
                 name="search"
                 type="search"
@@ -235,7 +253,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
                 }}
               />
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex items-center gap-2 mobile:shrink-0">
               <BogDropdown
                 type="checkbox"
                 name="typeFilter"
@@ -259,7 +277,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
                 size="small"
                 showValueInTrigger={false}
                 showClearIcon={false}
-                className="w-[130px] px-2 py-1 font-medium text-[13px] justify-center gap-2"
+                className="flex-1 mobile:w-requests-filter mobile:flex-none px-2 py-1 font-medium text-requests-control justify-center gap-2"
               />
               <BogDropdown
                 type="radio"
@@ -282,7 +300,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
                 size="small"
                 showValueInTrigger={false}
                 showClearIcon={false}
-                className="w-[130px] px-2 py-1 font-medium text-[13px] justify-center gap-2"
+                className="flex-1 mobile:w-requests-filter mobile:flex-none px-2 py-1 font-medium text-requests-control justify-center gap-2"
               />
             </div>
           </div>
@@ -329,7 +347,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="shrink-0">
         {status === "loading" ? (
           <div className="space-y-px animate-pulse p-6">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -354,7 +372,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
           <>
             <Section label="Pending" count={pending.length} defaultOpen>
               {pending.length === 0 ? (
-                <p className="px-10 py-6 font-bold text-grey-text-strong text-paragraph-1">
+                <p className="px-5 py-4 mobile:px-10 mobile:py-6 font-bold text-grey-text-strong text-paragraph-1">
                   There are no pending requests at this time.
                 </p>
               ) : (
@@ -372,7 +390,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
               defaultOpen={false}
             >
               {approved.length === 0 ? (
-                <p className="px-10 py-6 font-bold text-grey-text-strong text-paragraph-1">
+                <p className="px-5 py-4 mobile:px-10 mobile:py-6 font-bold text-grey-text-strong text-paragraph-1">
                   There are no approved requests at this time.
                 </p>
               ) : (
@@ -387,7 +405,7 @@ export default function RequestsPanel({ side = "right" }: RequestsPanelProps) {
             </Section>
             <Section label="Denied" count={denied.length} defaultOpen={false}>
               {denied.length === 0 ? (
-                <p className="px-10 py-6 font-bold text-grey-text-strong text-paragraph-1">
+                <p className="px-5 py-4 mobile:px-10 mobile:py-6 font-bold text-grey-text-strong text-paragraph-1">
                   There are no denied requests at this time.
                 </p>
               ) : (
@@ -424,7 +442,7 @@ function Section({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-10 py-6 text-left bg-grey-fill-weak"
+        className="flex w-full items-center justify-between px-5 py-4 mobile:px-10 mobile:py-6 text-left bg-grey-fill-weak"
       >
         <div className="text-paragraph-1 font-extrabold text-grey-text-weak">
           {count} {label}

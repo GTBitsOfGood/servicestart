@@ -782,11 +782,14 @@ export default function MembersTable({
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-40 bg-black/30 data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
-          <Dialog.Content className="fixed inset-y-0 left-0 z-50 outline-none">
+          <Dialog.Content className="fixed inset-y-0 left-0 z-50 w-full outline-none mobile:w-auto">
             <Dialog.Title asChild>
               <span className="sr-only">Join Requests</span>
             </Dialog.Title>
-            <RequestsPanel side="left" />
+            <RequestsPanel
+              side="left"
+              onClose={() => setRequestsPanelOpen(false)}
+            />
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>

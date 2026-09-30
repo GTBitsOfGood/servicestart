@@ -47,6 +47,7 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
   { label: "Events", href: "/events", icon: "calendar" },
 ];
 
+// Entries ending in "/" also match every path under them (see matchesPage).
 export const NO_NAVBAR_PAGES = [
   ORGANIZATION_NOT_FOUND_PATH,
   "/login",
@@ -55,5 +56,20 @@ export const NO_NAVBAR_PAGES = [
   "/resetpassword",
   "/forgotpassword",
 ];
+
+/**
+ * Whether `pathname` is one of `pages`. An entry ending in "/" matches any
+ * path under it: "/forms/" matches "/forms/abc" but not "/forms" or
+ * "/formsabc". Other entries match only the exact path.
+ */
+export function matchesPage(pathname: string, pages: readonly string[]) {
+  return pages.some((page) =>
+    page.endsWith("/") ? pathname.startsWith(page) : pathname === page,
+  );
+}
+
+export function isNoNavbarPage(pathname: string) {
+  return matchesPage(pathname, NO_NAVBAR_PAGES);
+}
 
 export const MEMBERSHIP_REDIRECT_EXCLUDED_PAGES = NO_NAVBAR_PAGES;

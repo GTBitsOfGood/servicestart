@@ -115,7 +115,9 @@ export default function NotificationItem({
         <div
           className={cn(
             "flex gap-2",
-            stacked ? "flex-col items-end" : "items-center gap-3",
+            stacked
+              ? "items-center mobile:flex-col mobile:items-end"
+              : "items-center gap-3",
           )}
         >
           <BogButton
@@ -148,7 +150,9 @@ export default function NotificationItem({
         <div
           className={cn(
             "flex flex-nowrap gap-2",
-            stacked ? "flex-col items-end" : "items-center gap-3",
+            stacked
+              ? "items-center mobile:flex-col mobile:items-end"
+              : "items-center gap-3",
           )}
         >
           <span className="inline-flex w-[110px] flex-shrink-0 items-center justify-center gap-1 rounded-md border border-transparent bg-grey-off-state py-1 px-1 text-[12px] font-semibold text-white whitespace-nowrap">
@@ -175,7 +179,9 @@ export default function NotificationItem({
         <div
           className={cn(
             "flex flex-nowrap gap-2",
-            stacked ? "flex-col items-end" : "items-center gap-3",
+            stacked
+              ? "items-center mobile:flex-col mobile:items-end"
+              : "items-center gap-3",
           )}
         >
           <span className="inline-flex w-[100px] flex-shrink-0 items-center justify-center gap-1 rounded-md border border-transparent bg-grey-off-state  py-1 text-[12px] font-semibold text-white whitespace-nowrap">
@@ -371,7 +377,7 @@ export default function NotificationItem({
             </div>
           </div>
         )}
-        <div className="flex w-full items-start justify-between gap-8">
+        <div className="flex w-full flex-col gap-3 mobile:flex-row mobile:items-start mobile:justify-between mobile:gap-8">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <p className="text-paragraph-1 font-semibold text-grey-text-strong">
               {title}
@@ -405,9 +411,11 @@ export default function NotificationItem({
             )}
           </div>
 
-          <div className="flex w-[120px] shrink-0 items-start justify-end">
+          <div className="flex shrink-0 items-start justify-start mobile:w-requests-actions mobile:justify-end">
             {expanded ? (
-              <div className="invisible">{renderJoinRequestButtons(true)}</div>
+              <div className="invisible hidden mobile:block">
+                {renderJoinRequestButtons(true)}
+              </div>
             ) : (
               renderJoinRequestButtons(true)
             )}
@@ -417,7 +425,7 @@ export default function NotificationItem({
 
       {joinRequest && expanded && (
         <div className="mb-0 mt-1 flex flex-col gap-2">
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-3 mobile:grid-cols-2 mobile:gap-6">
             <div className="flex flex-col gap-1">
               <p className="text-small leading-tight font-semibold text-grey-text-strong uppercase tracking-wide">
                 Requester Info
@@ -488,7 +496,7 @@ export default function NotificationItem({
       )}
 
       {joinRequest && expanded && (
-        <div className="mt-4 flex w-full items-center justify-between">
+        <div className="mt-4 flex w-full flex-wrap items-center justify-between gap-3">
           <button
             type="button"
             onClick={(e) => {
