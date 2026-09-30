@@ -81,21 +81,34 @@ const VISIONARIES_ORG: SeedOrg = {
 };
 
 // Inserts the published camp application with the fixture's IDs. Leaves an
-// existing copy as is.
+// existing seeded copy as is, and won't overwrite a form someone else created
+// with the same form ID.
 async function seedVisionariesApplication(createdBy: string) {
   const { components, ...form } = VISIONARIES_APPLICATION_FORM;
   await db.transaction(async (tx) => {
-    const [inserted] = await tx
-      .insert(schema.forms)
-      .values({ ...form, organizationId: VISIONARIES_ORG.id, createdBy })
-      .onConflictDoNothing()
-      .returning({ id: schema.forms.id });
-    if (!inserted) return;
+    const [existing] = await tx
+      .select({ id: schema.forms.id })
+      .from(schema.forms)
+      .where(
+        and(
+          eq(schema.forms.organizationId, VISIONARIES_ORG.id),
+          eq(schema.forms.formId, form.formId),
+        ),
+      );
+    if (existing?.id === form.id) return;
+    if (existing) {
+      throw new Error(
+        `Visionaries already has a form with the ID "${form.formId}" that the seed didn't create. Delete or rename it, then reseed.`,
+      );
+    }
 
+    await tx
+      .insert(schema.forms)
+      .values({ ...form, organizationId: VISIONARIES_ORG.id, createdBy });
     await tx.insert(schema.formComponents).values(
       components.map((component) => ({
         ...component,
-        formId: inserted.id,
+        formId: form.id,
         organizationId: VISIONARIES_ORG.id,
       })),
     );
@@ -293,6 +306,18 @@ export async function main() {
             memberType: userData.memberType ?? null,
           })
           .onConflictDoNothing();
+        // Also type a membership that already existed.
+        if (userData.memberType) {
+          await db
+            .update(schema.members)
+            .set({ memberType: userData.memberType })
+            .where(
+              and(
+                eq(schema.members.userId, userId),
+                eq(schema.members.organizationId, org.id),
+              ),
+            );
+        }
       }
     }
   }

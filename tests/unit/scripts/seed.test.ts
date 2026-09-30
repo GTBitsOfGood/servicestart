@@ -11,6 +11,7 @@ import {
   OrganizationConfigKey,
   forms,
   formComponents,
+  FormStatus,
   MemberType,
 } from "@/lib/schema";
 import { FormDefinitionSchema } from "@/lib/forms/schema";
@@ -20,6 +21,7 @@ import { main } from "@/scripts/seed";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { expect, it } from "vitest";
 import {
+  createForm,
   DEFAULT_TEST_PASSWORD,
   VISIONARIES_APPLICATION_FORM,
 } from "../testUtils";
@@ -195,6 +197,21 @@ it("seeds one published copy of the Visionaries application", async () => {
   expect(creator.organizationId).toBe("org_visionariestothethrone");
 });
 
+it("won't overwrite another form with the application's form ID", async () => {
+  await main();
+  await db.delete(forms).where(eq(forms.id, VISIONARIES_APPLICATION_FORM.id));
+  const draft = await createForm("org_visionariestothethrone", {
+    formId: VISIONARIES_APPLICATION_FORM.formId,
+    components: [],
+  });
+
+  await expect(main()).rejects.toThrow(
+    `Visionaries already has a form with the ID "${VISIONARIES_APPLICATION_FORM.formId}"`,
+  );
+  const [stored] = await db.select().from(forms).where(eq(forms.id, draft.id));
+  expect(stored.status).toBe(FormStatus.Draft);
+});
+
 it("seeds a Visionaries applicant who can sign in", async () => {
   await main();
 
@@ -213,6 +230,18 @@ it("seeds a Visionaries applicant who can sign in", async () => {
     );
   expect(membership.role).toBe("member");
   expect(membership.memberType).toBe(MemberType.Applicant);
+
+  // Reseeding restores the type on an existing membership.
+  await db
+    .update(members)
+    .set({ memberType: null })
+    .where(eq(members.id, membership.id));
+  await main();
+  const [retyped] = await db
+    .select()
+    .from(members)
+    .where(eq(members.id, membership.id));
+  expect(retyped.memberType).toBe(MemberType.Applicant);
   expect(
     await db
       .select()
