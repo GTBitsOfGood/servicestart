@@ -105,6 +105,9 @@ Use Node.js compatible with the installed Next.js version and pnpm 10.17.1 (`npm
 
    Open http://localhost:3000 and sign in. Invite a test address or send a member email to exercise the local flow. Default Juno uses `NODE_ENV=test`: it simulates domain registration and accepts emails without delivering them. Its DNS records are fake and must not be published. A successful request here does **not** prove inbox delivery.
 
+For the Visionaries tenant, see [Visionaries development setup](docs/VISIONARIES_DEVELOPMENT.md)
+for local URLs, branding defaults, and student/admin test accounts.
+
 ### Real email (team-assisted)
 
 Ask an infrastructure maintainer for an approved SendGrid key and sender domain. Set `SENDGRID_KEY` and `EMAIL_SENDER_DOMAIN` in your local `.env`; the domain is the base domain, such as `example.org`, without a URL scheme or the `mail.` prefix. The app sends as `<org-slug>@mail.<domain>`.
