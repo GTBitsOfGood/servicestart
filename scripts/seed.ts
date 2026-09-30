@@ -3,9 +3,16 @@ import { randomUUID } from "node:crypto";
 import { EventVisibility, JoinRequestStatus, schema } from "../lib/schema";
 import db from "../lib/db";
 import { auth } from "@/lib/auth";
-import { OrganizationConfigKey, NotificationType } from "@/lib/schema";
+import {
+  MemberType,
+  OrganizationConfigKey,
+  NotificationType,
+} from "@/lib/schema";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { DEFAULT_TEST_PASSWORD } from "@/tests/unit/testUtils";
+import {
+  DEFAULT_TEST_PASSWORD,
+  VISIONARIES_APPLICATION_FORM,
+} from "@/tests/unit/testUtils";
 import { and, eq, isNull } from "drizzle-orm";
 
 const isTest = require.main !== module; // Check if the script is being run directly or imported in tests
@@ -21,31 +28,103 @@ type NavbarConfig = {
   color: string;
 };
 
-const ORGS: Array<{
+type SeedUser = {
+  name: string;
+  email: string;
+  role: string | null;
+  phoneNumber: string | null;
+  memberType?: MemberType;
+};
+
+type SeedOrg = {
   id: string;
   name: string;
   slug: string;
   navbar: NavbarConfig;
   config?: Partial<Record<OrganizationConfigKey, string>>;
-}> = [
+  // Accounts only this org gets, on top of the shared ones in main().
+  extraUsers?: SeedUser[];
+};
+
+// ===========================================================================
+// Visionaries setup
+//
+// Visionaries to the Throne is the org Sprint 3 builds against, at
+// http://visionariestothethrone.lvh.me:3000. It gets the shared accounts
+// (admin@example.com is its admin), an applicant, and a published copy of
+// its camp application. Put its config rows here, e.g. theme values (#300)
+// and member type toggles (#302).
+// ===========================================================================
+
+const VISIONARIES_ORG: SeedOrg = {
+  id: "org_visionariestothethrone",
+  name: "Visionaries to the Throne",
+  slug: "visionariestothethrone",
+  navbar: { variant: "horizontal-center", color: "white" },
+  config: {
+    // Development defaults from the Figma style guide, not final page designs.
+    [OrganizationConfigKey.PrimaryColor]: "#5C218C",
+    [OrganizationConfigKey.SecondaryColor]: "#C29BDC",
+    [OrganizationConfigKey.Tagline]: "Visionaries to the Throne",
+    [OrganizationConfigKey.FormsEnabled]: "true",
+    // TODO: set LogoUrl once the approved logo is committed to public/.
+  },
+  extraUsers: [
+    {
+      name: "Applicant User",
+      email: "applicant@example.com",
+      role: "member",
+      phoneNumber: null,
+      memberType: MemberType.Applicant,
+    },
+  ],
+};
+
+// Inserts the published camp application with the fixture's IDs. Leaves an
+// existing seeded copy as is, and won't overwrite a form someone else created
+// with the same form ID.
+async function seedVisionariesApplication(createdBy: string) {
+  const { components, ...form } = VISIONARIES_APPLICATION_FORM;
+  await db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ id: schema.forms.id })
+      .from(schema.forms)
+      .where(
+        and(
+          eq(schema.forms.organizationId, VISIONARIES_ORG.id),
+          eq(schema.forms.formId, form.formId),
+        ),
+      );
+    if (existing?.id === form.id) return;
+    if (existing) {
+      throw new Error(
+        `Visionaries already has a form with the ID "${form.formId}" that the seed didn't create. Delete or rename it, then reseed.`,
+      );
+    }
+
+    await tx
+      .insert(schema.forms)
+      .values({ ...form, organizationId: VISIONARIES_ORG.id, createdBy });
+    await tx.insert(schema.formComponents).values(
+      components.map((component) => ({
+        ...component,
+        formId: form.id,
+        organizationId: VISIONARIES_ORG.id,
+      })),
+    );
+  });
+}
+
+// ===========================================================================
+
+const ORGS: SeedOrg[] = [
   {
     id: "org_servicestart",
     name: "ServiceStart",
     slug: "servicestart",
     navbar: { variant: "horizontal-center", color: "red" },
   },
-  {
-    id: "org_visionariestothethrone",
-    name: "Visionaries to the Throne",
-    slug: "visionariestothethrone",
-    navbar: { variant: "horizontal-center", color: "white" },
-    // Development defaults from the Figma style guide, not final page designs.
-    config: {
-      [OrganizationConfigKey.PrimaryColor]: "#5C218C",
-      [OrganizationConfigKey.SecondaryColor]: "#C29BDC",
-      [OrganizationConfigKey.Tagline]: "Visionaries to the Throne",
-    },
-  },
+  VISIONARIES_ORG,
   {
     id: "org_vertical_icon",
     name: "Vertical Icon Org",
@@ -101,7 +180,7 @@ export async function main() {
 
   log("Organizations created with navbar configs.");
 
-  const usersData = [
+  const usersData: SeedUser[] = [
     {
       name: "Owner User",
       email: "owner@example.com",
@@ -158,7 +237,7 @@ export async function main() {
   for (const org of ORGS) {
     const orgUserIds = new Map<string, string>();
     userIdsByOrganization.set(org.id, orgUserIds);
-    for (const userData of usersData) {
+    for (const userData of [...usersData, ...(org.extraUsers ?? [])]) {
       let [user] = await db
         .select()
         .from(schema.users)
@@ -224,13 +303,32 @@ export async function main() {
             userId,
             organizationId: org.id,
             role: userData.role,
+            memberType: userData.memberType ?? null,
           })
           .onConflictDoNothing();
+        // Also type a membership that already existed.
+        if (userData.memberType) {
+          await db
+            .update(schema.members)
+            .set({ memberType: userData.memberType })
+            .where(
+              and(
+                eq(schema.members.userId, userId),
+                eq(schema.members.organizationId, org.id),
+              ),
+            );
+        }
       }
     }
   }
 
   log("Users and members created.");
+
+  await seedVisionariesApplication(
+    userIdsByOrganization.get(VISIONARIES_ORG.id)!.get("admin@example.com")!,
+  );
+
+  log("Visionaries camp application created.");
   const joinRequestSeedData = [
     {
       id: "jr_pending_servicestart",
@@ -273,7 +371,7 @@ export async function main() {
 
   log("Join requests created for pending, approved, and denied states.");
   log(
-    "Seed accounts use password123. Sign in at localhost:3000 for ServiceStart or <org-slug>.lvh.me:3000 for vertical-icon, horizontal-left, or horizontal-center. Each organization has separate accounts.",
+    "Seed accounts use password123. Sign in at localhost:3000 for ServiceStart or <org-slug>.lvh.me:3000 for visionariestothethrone, vertical-icon, horizontal-left, or horizontal-center. Each organization has separate accounts.",
   );
 
   const orgId = "org_servicestart";
