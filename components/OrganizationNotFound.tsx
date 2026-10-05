@@ -5,8 +5,16 @@
  * placeholder colors is the failure this fixes. No sign-in form either — if
  * there is a box, people type in it, and they are back at the dead end.
  */
-export default function OrganizationNotFound() {
-  const host = typeof window === "undefined" ? "" : window.location.host;
+export default function OrganizationNotFound({
+  host: requestedHost,
+  protocol: requestedProtocol,
+}: { host?: string; protocol?: "http:" | "https:" } = {}) {
+  const host =
+    requestedHost ??
+    (typeof window === "undefined" ? "" : window.location.host);
+  const protocol =
+    requestedProtocol ??
+    (typeof window === "undefined" ? "https:" : window.location.protocol);
   // `acme.servicestart.com` -> `servicestart.com`. Avoids a config value;
   // NEXT_PUBLIC_BASE_URL points at a single tenant and is unusable here.
   const parentDomain = host.split(".").slice(1).join(".");
@@ -25,7 +33,7 @@ export default function OrganizationNotFound() {
       {parentDomain && (
         <a
           className="text-desktop-paragraph-2 font-bold text-grey-text-strong underline"
-          href={`${window.location.protocol}//${parentDomain}`}
+          href={`${protocol}//${parentDomain}`}
         >
           Go to ServiceStart &rarr;
         </a>

@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { eq } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
 import db from "@/lib/db";
