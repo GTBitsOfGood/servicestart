@@ -1,15 +1,11 @@
-import { media } from "@/lib/schema";
-import type { InferInsertModel } from "drizzle-orm";
 import { LocalFileService } from "./LocalFileService";
 import { JunoFileService } from "./JunoFileService";
 
-export type MediaUploadInput = Omit<
-  InferInsertModel<typeof media>,
-  "id" | "uploadedAt"
->;
+/** Where a file is stored: `fileName` within the organization's storage. */
+export type StoredFileLocation = { organizationId: string; fileName: string };
 
 export interface IFileService {
-  upload(mediaInput: MediaUploadInput, file: File): Promise<void>;
+  upload(location: StoredFileLocation, file: File): Promise<void>;
   deleteFile(organizationId: string, fileName: string): Promise<void>;
   readFile(organizationId: string, fileName: string): Promise<Buffer>;
   getBucketName(organizationId: string): string;
