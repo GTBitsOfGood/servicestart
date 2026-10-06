@@ -14,6 +14,7 @@ import { OrganizationConfigKey } from "@/lib/schema";
 
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 import { getSlugFromHost } from "@/lib/clientAuthUtils";
+import { getRedirectPath } from "@/lib/utils";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,12 +40,12 @@ export default function LoginPage() {
         {
           email,
           password,
-          callbackURL: "/",
+          callbackURL: getRedirectPath(window.location.search),
         },
         {
           // Don't set headers here; `authClient` sets `x-organization-slug` automatically
           onSuccess: () => {
-            router.push("/");
+            router.push(getRedirectPath(window.location.search));
           },
           onError: (ctx) => {
             alert(ctx.error.message || "Invalid email or password");
@@ -64,7 +65,7 @@ export default function LoginPage() {
       }
 
       if (org?.slug === getSlugFromHost(window.location.host)) {
-        router.replace("/");
+        router.replace(getRedirectPath(window.location.search));
       }
     };
 
@@ -135,7 +136,7 @@ export default function LoginPage() {
             Don't have an account?{" "}
             <BogButton
               className="text-desktop-paragraph-1 font-bold underline bg-transparent text-black"
-              onClick={() => router.push("/signup")}
+              onClick={() => router.push(`/signup${window.location.search}`)}
             >
               Sign up
             </BogButton>

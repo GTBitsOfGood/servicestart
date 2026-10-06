@@ -38,3 +38,12 @@ export function getSlugFromHostname(hostname: string): string {
   }
   return DEFAULT_SLUG;
 }
+
+/**
+ * The `redirect` search param when it's a path on this site, otherwise "/".
+ * Rejects other origins, e.g. "//evil.com", so it can't be an open redirect.
+ */
+export function getRedirectPath(search: string) {
+  const path = new URLSearchParams(search).get("redirect");
+  return path && /^\/(?![/\\])/.test(path) ? path : "/";
+}
