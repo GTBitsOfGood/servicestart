@@ -229,6 +229,91 @@ describe("DynamicForm", () => {
     expect((submit as HTMLButtonElement).disabled).toBe(false);
   });
 
+  it("keeps answers edited while an image uploads", async () => {
+    let finish!: (value: { id: string }) => void;
+    const onSubmit = vi.fn(
+      async (): Promise<DynamicFormSubmitResult> => ({ ok: true }),
+    );
+    render(
+      <DynamicForm
+        definition={form}
+        onSubmit={onSubmit}
+        uploadImage={() => new Promise((resolve) => (finish = resolve))}
+      />,
+    );
+    const input =
+      document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    fireEvent.change(input, {
+      target: { files: [new File(["png"], "me.png", { type: "image/png" })] },
+    });
+
+    type(/^Student Name/, "Ada Lovelace");
+    await act(async () => finish({ id: UPLOAD_ID }));
+
+    expect(field(/^Student Name/).value).toBe("Ada Lovelace");
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    await waitFor(() =>
+      expect(screen.queryByText("Upload an image")).toBeNull(),
+    );
+    expect(screen.queryAllByText("This question is required")).toHaveLength(7);
+  });
+
+  it("keeps both answers when two uploads finish out of order", async () => {
+    const [headshot] = form.components.slice(-1);
+    const twoImages = {
+      formId: form.formId,
+      components: [
+        {
+          ...headshot,
+          id: "00000000-0000-4000-8000-000000000001",
+          position: 0,
+        },
+        {
+          ...headshot,
+          id: "00000000-0000-4000-8000-000000000002",
+          position: 1,
+        },
+      ],
+    };
+    const uploads: ((value: { id: string }) => void)[] = [];
+    const onSubmit = vi.fn(
+      async (): Promise<DynamicFormSubmitResult> => ({ ok: true }),
+    );
+    render(
+      <DynamicForm
+        definition={twoImages}
+        onSubmit={onSubmit}
+        uploadImage={() => new Promise((resolve) => uploads.push(resolve))}
+      />,
+    );
+    document
+      .querySelectorAll<HTMLInputElement>('input[type="file"]')
+      .forEach((input) =>
+        fireEvent.change(input, {
+          target: {
+            files: [new File(["png"], "me.png", { type: "image/png" })],
+          },
+        }),
+      );
+
+    await waitFor(() => expect(uploads).toHaveLength(2));
+    await act(async () => uploads[1]({ id: UPLOAD_ID }));
+    await act(async () =>
+      uploads[0]({ id: "4c1e7b63-9d2e-4f8b-a031-7e6d5c4b3a21" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0]).toEqual([
+      {
+        "00000000-0000-4000-8000-000000000001": {
+          uploadId: "4c1e7b63-9d2e-4f8b-a031-7e6d5c4b3a21",
+        },
+        "00000000-0000-4000-8000-000000000002": { uploadId: UPLOAD_ID },
+      },
+    ]);
+  });
+
   it("links each question's error with aria-describedby", async () => {
     renderForm();
     fireEvent.click(screen.getByRole("button", { name: "Submit" }));

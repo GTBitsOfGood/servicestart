@@ -51,6 +51,8 @@ export default function DynamicForm({
   uploadImage = uploadFormImage,
 }: DynamicFormProps) {
   const [values, setValues] = useState<Record<string, FieldValue>>({});
+  // The latest answers, for callbacks that finish later, like an upload's.
+  const valuesRef = useRef(values);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -87,9 +89,14 @@ export default function DynamicForm({
     focusTarget.current = null;
   }, [errors, formError]);
 
-  function showFieldError(id: string, current: Record<string, FieldValue>) {
+  function showFieldError(
+    id: string,
+    current: Record<string, FieldValue>,
+    { onlyIfShown = false } = {},
+  ) {
     const error = validate(current).errors[id];
     setErrors((previous) => {
+      if (onlyIfShown && !previous[id]) return previous;
       const next = { ...previous };
       if (error) next[id] = error;
       else delete next[id];
@@ -99,15 +106,19 @@ export default function DynamicForm({
 
   function handleChange(id: string, value: FieldValue | undefined) {
     dirtyIds.current.add(id);
-    const next = { ...values };
+    const next = { ...valuesRef.current };
     if (value === undefined) delete next[id];
     else next[id] = value;
+    valuesRef.current = next;
     setValues(next);
-    if (errors[id]) showFieldError(id, next);
+    // Clears a shown error once the answer is fixed.
+    showFieldError(id, next, { onlyIfShown: true });
   }
 
   function handleBlur(id: string) {
-    if (dirtyIds.current.has(id) || errors[id]) showFieldError(id, values);
+    if (dirtyIds.current.has(id) || errors[id]) {
+      showFieldError(id, valuesRef.current);
+    }
   }
 
   const setUploading = useCallback((id: string, uploading: boolean) => {
@@ -127,7 +138,7 @@ export default function DynamicForm({
     event.preventDefault();
     if (preview || !onSubmit || submittingRef.current) return;
 
-    const { answers, errors: fieldErrors } = validate(values);
+    const { answers, errors: fieldErrors } = validate(valuesRef.current);
     setErrors(fieldErrors);
     if (!answers) {
       setFormError(fieldErrors[""] ?? null);
