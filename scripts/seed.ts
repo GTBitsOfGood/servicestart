@@ -78,7 +78,7 @@ const VISIONARIES_ORG: SeedOrg = {
     [OrganizationConfigKey.SecondaryColor]: "#C29BDC",
     [OrganizationConfigKey.Tagline]: "Visionaries to the Throne",
     [OrganizationConfigKey.FormsEnabled]: "true",
-    // TODO: set LogoUrl once the approved logo is committed to public/.
+    // TODO: set the LogoUrl once the approved logo is committed to public/.
   },
   extraUsers: [
     {
