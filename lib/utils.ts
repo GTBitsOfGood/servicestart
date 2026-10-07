@@ -39,11 +39,19 @@ export function getSlugFromHostname(hostname: string): string {
   return DEFAULT_SLUG;
 }
 
+// Any origin works; it only tells local paths from external URLs.
+const REDIRECT_BASE = "http://redirect.invalid";
+
 /**
- * The `redirect` search param when it's a path on this site, otherwise "/".
- * Rejects other origins, e.g. "//evil.com", so it can't be an open redirect.
+ * The `redirect` search param as a path on this site, otherwise "/". Parses
+ * it the way the browser will, since parsing drops characters like tabs, so
+ * "/\t/evil.com" becomes "//evil.com" and is rejected.
  */
 export function getRedirectPath(search: string) {
   const path = new URLSearchParams(search).get("redirect");
-  return path && /^\/(?![/\\])/.test(path) ? path : "/";
+  if (!path?.startsWith("/")) return "/";
+  const url = new URL(path, REDIRECT_BASE);
+  return url.origin === REDIRECT_BASE
+    ? `${url.pathname}${url.search}${url.hash}`
+    : "/";
 }

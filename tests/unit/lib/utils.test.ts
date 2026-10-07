@@ -20,6 +20,10 @@ describe("getRedirectPath", () => {
     "?redirect=https%3A%2F%2Fevil.com",
     "?redirect=%2F%2Fevil.com",
     "?redirect=%2F%5Cevil.com",
+    "?redirect=%2F%09%2Fevil.com",
+    "?redirect=%2F%0A%2Fevil.com",
+    "?redirect=%2F%0D%2Fevil.com",
+    "?redirect=%2F%5C%09evil.com",
     "?redirect=javascript%3Aalert(1)",
   ])("falls back to the home page for %j", (search) => {
     expect(getRedirectPath(search)).toBe("/");
