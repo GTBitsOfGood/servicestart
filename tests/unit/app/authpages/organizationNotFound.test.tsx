@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import LoginPage from "@/app/login/page";
 import SignupPage from "@/app/signup/page";
 import ForgotPasswordPage from "@/app/forgotpassword/page";
-import ResetPasswordPage from "@/app/resetpassword/page";
+import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
 
 const mockConfig = vi.fn();
 
@@ -40,7 +40,11 @@ const PAGES = [
   ["login", LoginPage, "Password"],
   ["signup", SignupPage, "John"],
   ["forgotpassword", ForgotPasswordPage, "example@email.com"],
-  ["resetpassword", ResetPasswordPage, "Enter a new password"],
+  [
+    "resetpassword",
+    () => <ResetPasswordForm token="test-token" />,
+    "Enter a new password",
+  ],
 ] as const;
 
 describe("auth pages for a nonexistent organization", () => {
@@ -51,8 +55,6 @@ describe("auth pages for a nonexistent organization", () => {
       value: {
         ...window.location,
         host: "doesnotexist.lvh.me:3000",
-        // resetpassword renders an "expired" view without a token
-        search: "?token=test-token",
       },
       writable: true,
     });

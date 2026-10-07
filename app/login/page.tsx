@@ -1,148 +1,122 @@
 "use client";
 
-import { resolveBranding } from "@/lib/branding";
-
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import AuthLayout from "@/components/auth/AuthLayout";
+import AuthTextField, {
+  focusFirstInvalidField,
+} from "@/components/auth/AuthTextField";
+import AuthPasswordField from "@/components/auth/AuthPasswordField";
+import AuthSubmitButton from "@/components/auth/AuthSubmitButton";
+import AuthFormMessage, {
+  type FormMessage,
+} from "@/components/auth/AuthFormMessage";
+import { AUTH_LINK_CLASS } from "@/components/auth/authStyles";
+import { AuthMessage } from "@/components/auth/authConstants";
 import authClient from "@/lib/authClient";
-import useOrganizationConfig from "@/lib/hooks/useOrganizationConfig";
-import OrganizationNotFound from "@/components/OrganizationNotFound";
-import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
-import BogButton from "@/components/bog/BogButton/BogButton";
-import UnauthenticatedOrganizationLogo from "@/components/UnauthenticatedOrganizationLogo";
-import { OrganizationConfigKey } from "@/lib/schema";
+import {
+  hasErrors,
+  safeRedirectPath,
+  validateLogin,
+  type FieldErrors,
+} from "@/lib/authValidation";
+import { useRedirectIfSignedIn } from "@/lib/hooks/useRedirectIfSignedIn";
 
-import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
-import { getSlugFromHost } from "@/lib/clientAuthUtils";
+const WRONG_CREDENTIALS_CODE = "INVALID_EMAIL_OR_PASSWORD";
+
+/** Where to go after logging in: `?redirect=` if it stays on this site. */
+function getRedirectPath() {
+  return safeRedirectPath(
+    new URLSearchParams(window.location.search).get("redirect"),
+    window.location.origin,
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors<"email" | "password">>({});
+  const [message, setMessage] = useState<FormMessage>();
+  const pending = message?.kind === "loading";
 
-  const config = useOrganizationConfig([
-    OrganizationConfigKey.PrimaryColor,
-    OrganizationConfigKey.SecondaryColor,
-    OrganizationConfigKey.Tagline,
-    OrganizationConfigKey.LogoUrl,
-  ]);
-  const { primary_color, secondary_color } = resolveBranding(config);
-  const { logo_url: logoUrl, tagline: configuredTagline } = config;
-  const tagline = configuredTagline?.trim() || "Welcome";
-  const org = useActiveOrganization();
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (pending) return;
 
-  const handleLogin = async () => {
-    setLoading(true);
-    try {
-      await authClient.signIn.email(
-        {
-          email,
-          password,
-          callbackURL: "/",
-        },
-        {
-          // Don't set headers here; `authClient` sets `x-organization-slug` automatically
-          onSuccess: () => {
-            router.push("/");
-          },
-          onError: (ctx) => {
-            alert(ctx.error.message || "Invalid email or password");
-          },
-        },
-      );
-    } finally {
-      setLoading(false);
+    const fieldErrors = validateLogin({ email, password });
+    setErrors(fieldErrors);
+    if (hasErrors(fieldErrors)) {
+      setMessage(undefined);
+      focusFirstInvalidField(event.currentTarget);
+      return;
     }
-  };
 
-  useEffect(() => {
-    const checkLoggedIn = async () => {
-      const session = await authClient.getSession();
-      if (!session?.data?.user) {
+    setMessage({ kind: "loading", text: AuthMessage.Loading });
+    try {
+      const { error } = await authClient.signIn.email({
+        email: email.trim(),
+        password,
+      });
+      if (error) {
+        setMessage({
+          kind: "error",
+          text:
+            error.code === WRONG_CREDENTIALS_CODE
+              ? AuthMessage.WrongCredentials
+              : AuthMessage.LoginFailed,
+        });
         return;
       }
+    } catch {
+      setMessage({ kind: "error", text: AuthMessage.LoginFailed });
+      return;
+    }
+    router.push(getRedirectPath());
+  };
 
-      if (org?.slug === getSlugFromHost(window.location.host)) {
-        router.replace("/");
-      }
-    };
-
-    void checkLoggedIn();
-  }, [org?.slug, router]);
-
-  if (config.status === "not-found") return <OrganizationNotFound />;
+  useRedirectIfSignedIn(getRedirectPath);
 
   return (
-    <div
-      className="flex h-screen w-screen items-center"
-      data-testid="page"
-      style={{
-        background: `linear-gradient(75deg, ${primary_color} 0%, ${secondary_color} 100%)`,
-      }}
-    >
-      <div className="flex h-full w-[53%] flex-shrink-0 items-center justify-between px-[30px]">
-        <div
-          className="relative flex h-[94%] w-full flex-col justify-flex-end rounded-[20px] pt-[90%] pb-[20px] pl-[20px] pr-[60%]"
-          style={{
-            background: `linear-gradient(180deg, ${primary_color} 0%, #FFF 100%)`,
-          }}
-        >
-          <UnauthenticatedOrganizationLogo logoUrl={logoUrl} />
-        </div>
-      </div>
-      <div className="flex h-full flex-1 flex-col items-center justify-between pt-[12%]">
-        <div className="flex w-[78%] bg-white flex-col items-center gap-6 rounded-4xl border-[2px] border-[#FFF] p-9 pt-25 shadow-[0_4px_7px_0_rgba(0,0,0,0.4)]">
-          <h1 className="self-stretch">Login</h1>
-          <p
-            className="self-stretch text-mobile-heading-2 text-grey-text-strong"
-            data-testid="organization-tagline"
-          >
-            {tagline}
-          </p>
-          <BogTextInput
-            name="email"
-            type="email"
-            label="Email"
-            placeholder="example@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="self-stretch rounded-sm px-3 font-semibold text-grey-text-strong"
-          />
-          <BogTextInput
-            name="password"
-            type="password"
+    <AuthLayout title="Login" showTagline>
+      <form className="flex flex-col gap-6" onSubmit={handleSubmit} noValidate>
+        <AuthTextField
+          label="Email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder="example@email.com"
+          value={email}
+          onChange={setEmail}
+          error={errors.email}
+        />
+        <div className="flex flex-col gap-3">
+          <AuthPasswordField
             label="Password"
+            name="password"
+            autoComplete="current-password"
             placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="self-stretch rounded-sm px-3 font-semibold text-grey-text-strong"
+            onChange={setPassword}
+            error={errors.password}
           />
-          <BogButton
-            className="text-desktop-paragraph-2 font-bold underline bg-transparent text-black"
-            onClick={() => router.push("/forgotpassword")}
+          <Link
+            href="/forgotpassword"
+            className={`self-end text-mobile-paragraph-2 ${AUTH_LINK_CLASS}`}
           >
             Forgot Password?
-          </BogButton>
-          <BogButton
-            onClick={handleLogin}
-            disabled={loading}
-            className="flex h-[10%] items-center justify-center rounded-[4px] bg-grey-text-strong px-8 py-3 text-center text-desktop-paragraph-1 text-white"
-          >
-            Login
-          </BogButton>
-          <p className="text-desktop-paragraph-2">
-            Don't have an account?{" "}
-            <BogButton
-              className="text-desktop-paragraph-1 font-bold underline bg-transparent text-black"
-              onClick={() => router.push("/signup")}
-            >
-              Sign up
-            </BogButton>
-          </p>
+          </Link>
         </div>
-        <div className="flex h-full flex-1 flex-col items-center justify-between pt-[249px]" />
-      </div>
-    </div>
+        <AuthFormMessage message={message} />
+        <AuthSubmitButton pending={pending}>Login</AuthSubmitButton>
+        <p className="text-center">
+          Don&rsquo;t have an account?{" "}
+          <Link href="/signup" className={AUTH_LINK_CLASS}>
+            Create Account
+          </Link>
+        </p>
+      </form>
+    </AuthLayout>
   );
 }

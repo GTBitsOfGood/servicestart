@@ -20,6 +20,7 @@ import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
 import { EmailService } from "@/lib/services/EmailService";
 import { getBaseUrl } from "./clientUtils";
 import { requireEnv } from "./env";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./authValidation";
 import { OrganizationsService } from "./services/OrganizationService";
 
 const baseURL = process.env.BETTER_AUTH_URL || getBaseUrl();
@@ -191,6 +192,8 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    minPasswordLength: PASSWORD_MIN_LENGTH,
+    maxPasswordLength: PASSWORD_MAX_LENGTH,
     sendResetPassword: async ({ user, url }, request) => {
       const host = request?.headers?.get("host");
       const slug = getSlugFromHost(host || undefined);
