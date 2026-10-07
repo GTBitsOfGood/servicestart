@@ -182,7 +182,7 @@ async function submit({
   });
 }
 
-/** Records a file already in storage. `uploadedBy` is null for a guest. */
+/** Records an uploaded file. `uploadedBy` is null for a guest. */
 async function createUpload(upload: {
   organizationId: string;
   formId: string;
@@ -198,10 +198,22 @@ async function createUpload(upload: {
   return row.id;
 }
 
+async function deleteUpload(id: string, organizationId: string) {
+  await db
+    .delete(formUploads)
+    .where(
+      and(
+        eq(formUploads.id, id),
+        eq(formUploads.organizationId, organizationId),
+      ),
+    );
+}
+
 export const FormSubmissionService = {
   getDefinition,
   getPublishedDefinition,
   hasSubmitted,
   submit,
   createUpload,
+  deleteUpload,
 };

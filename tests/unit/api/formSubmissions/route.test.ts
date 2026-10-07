@@ -516,6 +516,18 @@ describe("POST /api/forms/:formId/uploads", () => {
     expect(row.fileName.endsWith(extension)).toBe(true);
   });
 
+  it("leaves no upload row when storing the file fails", async () => {
+    const org = await createOrg("acme");
+    const form = await publishedForm(org.id);
+    const { cookie } = await signIn(org.id);
+    vi.mocked(FileService.upload).mockRejectedValueOnce(new Error("down"));
+
+    const res = await upload("acme", form.formId, png(), cookie);
+
+    expect(res.status).toBe(500);
+    expect(await db.select().from(formUploads)).toHaveLength(0);
+  });
+
   it("lets a guest upload to a form that doesn't require login", async () => {
     const org = await createOrg("acme");
     const form = await publishedForm(org.id, { requireLogin: false });

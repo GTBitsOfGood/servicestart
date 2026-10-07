@@ -241,12 +241,8 @@ const app = new Hono()
       }
 
       // Headshots never get media rows, so they stay out of the media library.
+      // The row goes in first so every stored file has one to clean up by.
       const fileName = `${randomUUID()}${FILE_EXTENSIONS[contentType]}`;
-      try {
-        await FileService.upload({ organizationId, fileName }, file);
-      } catch {
-        return c.json({ error: "Couldn't save the image. Try again." }, 500);
-      }
       const id = await FormSubmissionService.createUpload({
         organizationId,
         formId: form.id,
@@ -255,6 +251,12 @@ const app = new Hono()
         contentType,
         sizeBytes: file.size,
       });
+      try {
+        await FileService.upload({ organizationId, fileName }, file);
+      } catch {
+        await FormSubmissionService.deleteUpload(id, organizationId);
+        return c.json({ error: "Couldn't save the image. Try again." }, 500);
+      }
       return c.json({ id }, 201);
     },
   );
