@@ -8,6 +8,7 @@ import {
   OrganizationConfigKey,
   NotificationType,
 } from "@/lib/schema";
+import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import {
   DEFAULT_TEST_PASSWORD,
@@ -406,7 +407,14 @@ export async function main() {
       .select({ status: schema.joinRequests.status })
       .from(schema.joinRequests)
       .where(eq(schema.joinRequests.id, joinRequest.id));
-    if (seededRequest.status === JoinRequestStatus.Approved) {
+    const existingMembership = await MembersService.findByUserAndOrganization(
+      userId,
+      "org_servicestart",
+    );
+    if (
+      seededRequest.status === JoinRequestStatus.Approved &&
+      !existingMembership
+    ) {
       await db
         .insert(schema.members)
         .values({

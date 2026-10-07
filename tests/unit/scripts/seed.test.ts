@@ -22,6 +22,8 @@ import { FormDefinitionSchema } from "@/lib/forms/schema";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { hashPassword } from "better-auth/crypto";
 import { main } from "@/scripts/seed";
+import { JoinRequestsService } from "@/lib/services/JoinRequestService";
+import { MembersService } from "@/lib/services/MemberService";
 import { and, asc, count, eq, isNull } from "drizzle-orm";
 import { expect, it } from "vitest";
 import {
@@ -79,6 +81,65 @@ it("seeds one request per applicant and no pending requests for existing members
     )
     .filter((id): id is string => !!id);
   expect(linkedIds.every((id) => requestIds.has(id))).toBe(true);
+});
+
+it("reuses an approved applicant's existing membership and fully removes access", async () => {
+  await main();
+  const [request] = await db
+    .select()
+    .from(joinRequests)
+    .where(eq(joinRequests.id, "jr_approved_servicestart"));
+  await db
+    .delete(members)
+    .where(
+      and(
+        eq(members.userId, request.userId),
+        eq(members.organizationId, request.organizationId),
+      ),
+    );
+  // Better Auth approvals create membership IDs independent of the seed's ID.
+  await db.insert(members).values({
+    id: "previously-approved-membership",
+    userId: request.userId,
+    organizationId: request.organizationId,
+    role: "member",
+  });
+  await main();
+  await main();
+  const memberships = await db
+    .select()
+    .from(members)
+    .where(
+      and(
+        eq(members.userId, request.userId),
+        eq(members.organizationId, request.organizationId),
+      ),
+    );
+  expect(memberships.map((membership) => membership.id)).toEqual([
+    "previously-approved-membership",
+  ]);
+  const session = await auth.api.signInEmail({
+    body: {
+      email: "admin@example.com",
+      password: DEFAULT_TEST_PASSWORD,
+    },
+    headers: new Headers({ host: "localhost:3000" }),
+    returnHeaders: true,
+  });
+  await JoinRequestsService.updateStatus(
+    request.id,
+    JoinRequestStatus.Pending,
+    session.response.user.id,
+    new Headers({ cookie: session.headers.get("set-cookie")! }),
+    undefined,
+    JoinRequestStatus.Approved,
+  );
+  expect(
+    await MembersService.findByUserAndOrganization(
+      request.userId,
+      request.organizationId,
+    ),
+  ).toBeNull();
 });
 
 it("retains pending requests with review history when reseeding", async () => {

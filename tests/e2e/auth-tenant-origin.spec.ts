@@ -16,6 +16,7 @@ for (const slug of ["missing-auth-a", "missing-auth-b"]) {
       url.hostname = `${slug}.lvh.me`;
       await page.route("**/_next/static/**", (route) => route.abort());
       const response = await page.goto(new URL(path, url).href);
+      expect(response!.status()).toBe(404);
       expect(await response!.text()).toContain(
         'data-testid="organization-not-found"',
       );

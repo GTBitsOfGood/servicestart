@@ -370,12 +370,12 @@ describe("pages with no resolvable organization", () => {
 });
 
 describe("organization resolution regressions", () => {
-  it("renders the terminal page without a session or redirect", () => {
-    mockHeaders.mockReset();
+  it("renders the terminal page without a session or redirect", async () => {
+    mockHeaders.mockReturnValue(new Headers({ host: buildHost("missing") }));
     mockRedirect.mockClear();
-    const markup = renderToStaticMarkup(OrganizationNotFoundPage());
+    const markup = renderToStaticMarkup(await OrganizationNotFoundPage());
     expect(markup).toContain("Check the spelling");
-    expect(mockHeaders).not.toHaveBeenCalled();
+    expect(markup).toContain(buildHost("missing"));
     expect(mockRedirect).not.toHaveBeenCalled();
   });
 
