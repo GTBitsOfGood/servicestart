@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import AuthLayout from "@/components/auth/AuthLayout";
+import { useEffect, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import AuthPageIntro from "@/components/auth/AuthPageIntro";
 import AuthPasswordField from "@/components/auth/AuthPasswordField";
 import { focusFirstInvalidField } from "@/components/auth/AuthTextField";
 import AuthSubmitButton from "@/components/auth/AuthSubmitButton";
@@ -14,7 +15,6 @@ import {
   SUCCESS_REDIRECT_DELAY_MS,
 } from "@/components/auth/authConstants";
 import authClient from "@/lib/authClient";
-import { useDelayedRedirect } from "@/lib/hooks/useDelayedRedirect";
 import {
   PASSWORD_POLICY_HINT,
   hasErrors,
@@ -22,12 +22,11 @@ import {
   type FieldErrors,
 } from "@/lib/authValidation";
 
-/** BetterAuth's code for a reset token that's expired or already used. */
 const INVALID_TOKEN_CODE = "INVALID_TOKEN";
 
 /** The reset form for the `token` from the emailed link; null when missing. */
 export default function ResetPasswordForm({ token }: { token: string | null }) {
-  const scheduleRedirect = useDelayedRedirect();
+  const router = useRouter();
   const [expired, setExpired] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -36,6 +35,15 @@ export default function ResetPasswordForm({ token }: { token: string | null }) {
   >({});
   const [message, setMessage] = useState<FormMessage>();
   const pending = message?.kind === "loading" || message?.kind === "success";
+
+  useEffect(() => {
+    if (message?.kind !== "success") return;
+    const timeout = setTimeout(
+      () => router.push("/login"),
+      SUCCESS_REDIRECT_DELAY_MS,
+    );
+    return () => clearTimeout(timeout);
+  }, [message, router]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -69,25 +77,26 @@ export default function ResetPasswordForm({ token }: { token: string | null }) {
     }
 
     setMessage({ kind: "success", text: AuthMessage.PasswordReset });
-    scheduleRedirect("/login", SUCCESS_REDIRECT_DELAY_MS);
   };
 
   if (token === null || expired) {
     return (
-      <AuthLayout
-        title="Link Expired"
-        description="To reset your password, go back to login and select “Forgot Password?” to get a new link."
-      >
+      <>
+        <AuthPageIntro
+          title="Link Expired"
+          description="To reset your password, go back to login and select “Forgot Password?” to get a new link."
+        />
         <BackToLoginLink />
-      </AuthLayout>
+      </>
     );
   }
 
   return (
-    <AuthLayout
-      title="Reset Password"
-      description="Choose a new password, different from your previous one."
-    >
+    <>
+      <AuthPageIntro
+        title="Reset Password"
+        description="Choose a new password, different from your previous one."
+      />
       <form className="flex flex-col gap-6" onSubmit={handleSubmit} noValidate>
         <AuthPasswordField
           label="New Password"
@@ -112,6 +121,6 @@ export default function ResetPasswordForm({ token }: { token: string | null }) {
         <AuthSubmitButton pending={pending}>Reset Password</AuthSubmitButton>
         <BackToLoginLink />
       </form>
-    </AuthLayout>
+    </>
   );
 }

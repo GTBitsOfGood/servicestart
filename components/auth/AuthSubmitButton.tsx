@@ -2,8 +2,6 @@
 
 import type { ReactNode } from "react";
 import BogButton from "@/components/bog/BogButton/BogButton";
-import { FOCUS_RING } from "@/components/auth/authStyles";
-import { cn } from "@/lib/utils";
 
 type AuthSubmitButtonProps = {
   children: ReactNode;
@@ -27,7 +25,7 @@ export default function AuthSubmitButton({
       disabled={pending}
       aria-busy={pending || undefined}
       size="large"
-      className={cn("w-full rounded-control text-brand-foreground", FOCUS_RING)}
+      className="w-full rounded-control text-brand-foreground"
     >
       {children}
     </BogButton>

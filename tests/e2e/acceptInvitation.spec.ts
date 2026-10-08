@@ -162,9 +162,7 @@ test.describe("Accept invitation", () => {
       `${tenantUrl(otherOrg.slug)}/accept-invitation/${invitationId}`,
     );
 
-    await expect(
-      page.getByRole("heading", { name: "Invitation not found" }),
-    ).toBeVisible();
     await expect(page.getByText("invited to join")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "404" })).toBeVisible();
   });
 });

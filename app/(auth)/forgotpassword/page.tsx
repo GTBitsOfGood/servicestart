@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import AuthLayout from "@/components/auth/AuthLayout";
+import AuthPageIntro from "@/components/auth/AuthPageIntro";
 import AuthTextField, {
   focusFirstInvalidField,
 } from "@/components/auth/AuthTextField";
@@ -49,10 +49,11 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <AuthLayout
-      title="Reset Password"
-      description="Enter your email to receive a password reset link."
-    >
+    <>
+      <AuthPageIntro
+        title="Reset Password"
+        description="Enter your email to receive a password reset link."
+      />
       <form className="flex flex-col gap-6" onSubmit={handleSubmit} noValidate>
         <AuthTextField
           label="Email"
@@ -68,6 +69,6 @@ export default function ForgotPasswordPage() {
         <AuthSubmitButton pending={pending}>Send Reset Link</AuthSubmitButton>
         <BackToLoginLink />
       </form>
-    </AuthLayout>
+    </>
   );
 }

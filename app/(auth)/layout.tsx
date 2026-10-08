@@ -14,38 +14,23 @@ const AUTH_CONFIG_KEYS = [
   OrganizationConfigKey.LogoUrl,
 ] as const;
 
-const DEFAULT_TAGLINE = "Welcome";
-
-type AuthLayoutProps = {
-  title: ReactNode;
-  /** Text under the title. */
-  description?: ReactNode;
-  /** Show the org's configured tagline under the title instead. */
-  showTagline?: boolean;
-  children: ReactNode;
-};
+const AUTH_FOCUS =
+  "[&_a:focus-visible]:outline-2 [&_a:focus-visible]:outline-offset-2 [&_a:focus-visible]:outline-brand-text [&_button:focus-visible]:outline-2 [&_button:focus-visible]:outline-offset-2 [&_button:focus-visible]:outline-brand-text";
 
 /**
- * Shared shell for the signed-out pages: the org's brand panel with its logo,
- * and a card for the form. One column on mobile, two from `desktop` up.
+ * Shared shell for signed-out pages: brand panel, card, and org-not-found gate.
+ * Each page supplies its own heading and intro copy.
  */
-export default function AuthLayout({
-  title,
-  description,
-  showTagline = false,
-  children,
-}: AuthLayoutProps) {
+export default function AuthRouteLayout({ children }: { children: ReactNode }) {
   const config = useOrganizationConfig(AUTH_CONFIG_KEYS);
   const { primary_color: primary, secondary_color: secondary } =
     resolveBranding(config);
 
   if (config.status === "not-found") return <OrganizationNotFound />;
 
-  const tagline = config.tagline?.trim() || DEFAULT_TAGLINE;
-
   return (
     <div
-      className="flex min-h-dvh w-full flex-col gap-4 p-4 desktop:flex-row desktop:gap-8 desktop:p-8"
+      className={`flex min-h-dvh w-full flex-col gap-4 p-4 desktop:flex-row desktop:gap-8 desktop:p-8 ${AUTH_FOCUS}`}
       data-testid="page"
       style={{
         backgroundImage: `linear-gradient(75deg, ${primary} 0%, ${secondary} 100%)`,
@@ -61,22 +46,6 @@ export default function AuthLayout({
       </div>
       <main className="flex flex-1 items-center justify-center">
         <div className="flex w-full max-w-200 flex-col gap-8 rounded-3xl bg-page-bg p-8 text-page-text shadow-lg desktop:p-14">
-          {/* Its own page-bg so the tagline's contrast is checked against it. */}
-          <div className="flex flex-col gap-3 bg-page-bg">
-            <h1 className="font-display">{title}</h1>
-            {showTagline ? (
-              <p
-                className="text-grey-text-strong"
-                data-testid="organization-tagline"
-              >
-                {tagline}
-              </p>
-            ) : (
-              description && (
-                <p className="text-grey-text-weak">{description}</p>
-              )
-            )}
-          </div>
           {children}
         </div>
       </main>

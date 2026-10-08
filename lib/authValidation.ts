@@ -26,45 +26,62 @@ export type FieldErrors<Field extends string> = Partial<
   Record<Field, AuthFieldError>
 >;
 
-const emailSchema = z.email();
+const emailField = z
+  .string()
+  .trim()
+  .min(1, AuthFieldError.EmailRequired)
+  .pipe(z.email(AuthFieldError.EmailInvalid));
+
+const newPasswordField = z
+  .string()
+  .min(1, AuthFieldError.PasswordRequired)
+  .min(PASSWORD_MIN_LENGTH, AuthFieldError.PasswordTooShort)
+  .max(PASSWORD_MAX_LENGTH, AuthFieldError.PasswordTooLong);
+
+const loginSchema = z.object({
+  email: emailField,
+  password: z.string().min(1, AuthFieldError.PasswordRequired),
+});
+
+const signupSchema = z
+  .object({
+    firstName: z.string().trim().min(1, AuthFieldError.FirstNameRequired),
+    lastName: z.string().trim().min(1, AuthFieldError.LastNameRequired),
+    email: emailField,
+    password: newPasswordField,
+    confirmPassword: z.string().min(1, AuthFieldError.ConfirmPasswordRequired),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: AuthFieldError.PasswordsDontMatch,
+    path: ["confirmPassword"],
+  });
+
+const resetPasswordSchema = z
+  .object({
+    password: newPasswordField,
+    confirmPassword: z.string().min(1, AuthFieldError.ConfirmPasswordRequired),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: AuthFieldError.PasswordsDontMatch,
+    path: ["confirmPassword"],
+  });
+
+function fieldErrorsFromZod<Field extends string>(
+  error: z.ZodError,
+): FieldErrors<Field> {
+  const flattened = z.flattenError(error);
+  const result: FieldErrors<Field> = {};
+  for (const [key, messages] of Object.entries(flattened.fieldErrors)) {
+    const message = messages?.[0];
+    if (message) result[key as Field] = message as AuthFieldError;
+  }
+  return result;
+}
 
 export function validateEmail(email: string): AuthFieldError | undefined {
-  if (!email.trim()) return AuthFieldError.EmailRequired;
-  if (!emailSchema.safeParse(email.trim()).success) {
-    return AuthFieldError.EmailInvalid;
-  }
-  return undefined;
-}
-
-/** Checks a password being set against the server's policy. */
-export function validateNewPassword(
-  password: string,
-): AuthFieldError | undefined {
-  if (!password) return AuthFieldError.PasswordRequired;
-  if (password.length < PASSWORD_MIN_LENGTH) {
-    return AuthFieldError.PasswordTooShort;
-  }
-  if (password.length > PASSWORD_MAX_LENGTH) {
-    return AuthFieldError.PasswordTooLong;
-  }
-  return undefined;
-}
-
-export function validateConfirmPassword(
-  password: string,
-  confirmPassword: string,
-): AuthFieldError | undefined {
-  if (!confirmPassword) return AuthFieldError.ConfirmPasswordRequired;
-  if (password !== confirmPassword) return AuthFieldError.PasswordsDontMatch;
-  return undefined;
-}
-
-function compact<Field extends string>(
-  errors: Record<Field, AuthFieldError | undefined>,
-): FieldErrors<Field> {
-  return Object.fromEntries(
-    Object.entries(errors).filter(([, message]) => message !== undefined),
-  ) as FieldErrors<Field>;
+  const result = emailField.safeParse(email);
+  if (result.success) return undefined;
+  return result.error.issues[0]?.message as AuthFieldError;
 }
 
 export function hasErrors(errors: FieldErrors<string>): boolean {
@@ -72,10 +89,9 @@ export function hasErrors(errors: FieldErrors<string>): boolean {
 }
 
 export function validateLogin(values: { email: string; password: string }) {
-  return compact({
-    email: validateEmail(values.email),
-    password: values.password ? undefined : AuthFieldError.PasswordRequired,
-  });
+  const result = loginSchema.safeParse(values);
+  if (result.success) return {};
+  return fieldErrorsFromZod(result.error);
 }
 
 export function validateSignup(values: {
@@ -85,33 +101,18 @@ export function validateSignup(values: {
   password: string;
   confirmPassword: string;
 }) {
-  return compact({
-    firstName: values.firstName.trim()
-      ? undefined
-      : AuthFieldError.FirstNameRequired,
-    lastName: values.lastName.trim()
-      ? undefined
-      : AuthFieldError.LastNameRequired,
-    email: validateEmail(values.email),
-    password: validateNewPassword(values.password),
-    confirmPassword: validateConfirmPassword(
-      values.password,
-      values.confirmPassword,
-    ),
-  });
+  const result = signupSchema.safeParse(values);
+  if (result.success) return {};
+  return fieldErrorsFromZod(result.error);
 }
 
 export function validateResetPassword(values: {
   password: string;
   confirmPassword: string;
 }) {
-  return compact({
-    password: validateNewPassword(values.password),
-    confirmPassword: validateConfirmPassword(
-      values.password,
-      values.confirmPassword,
-    ),
-  });
+  const result = resetPasswordSchema.safeParse(values);
+  if (result.success) return {};
+  return fieldErrorsFromZod(result.error);
 }
 
 /**

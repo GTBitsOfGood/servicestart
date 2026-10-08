@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import AuthLayout from "@/components/auth/AuthLayout";
+import AuthOrgTagline from "@/components/auth/AuthOrgTagline";
+import AuthPageIntro from "@/components/auth/AuthPageIntro";
 import AuthTextField, {
   focusFirstInvalidField,
 } from "@/components/auth/AuthTextField";
@@ -25,7 +26,6 @@ import { useRedirectIfSignedIn } from "@/lib/hooks/useRedirectIfSignedIn";
 
 const WRONG_CREDENTIALS_CODE = "INVALID_EMAIL_OR_PASSWORD";
 
-/** Where to go after logging in: `?redirect=` if it stays on this site. */
 function getRedirectPath() {
   return safeRedirectPath(
     new URLSearchParams(window.location.search).get("redirect"),
@@ -79,7 +79,11 @@ export default function LoginPage() {
   useRedirectIfSignedIn(getRedirectPath);
 
   return (
-    <AuthLayout title="Login" showTagline>
+    <>
+      <div className="flex flex-col gap-3 bg-page-bg">
+        <AuthPageIntro title="Login" />
+        <AuthOrgTagline />
+      </div>
       <form className="flex flex-col gap-6" onSubmit={handleSubmit} noValidate>
         <AuthTextField
           label="Email"
@@ -117,6 +121,6 @@ export default function LoginPage() {
           </Link>
         </p>
       </form>
-    </AuthLayout>
+    </>
   );
 }

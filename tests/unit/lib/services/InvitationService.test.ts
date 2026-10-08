@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import db from "@/lib/db";
 import { invitations } from "@/lib/schema";
 import {
-  AcceptInvitationResult,
   InvitationService,
   InvitationStatus,
 } from "@/lib/services/InvitationService";
@@ -127,12 +126,12 @@ describe("InvitationService.acceptForUser", () => {
       role: "admin",
     });
 
-    const result = await InvitationService.acceptForUser(id, organization.id, {
+    const role = await InvitationService.acceptForUser(id, organization.id, {
       id: user.id,
       email: user.email.toUpperCase(),
     });
 
-    expect(result).toBe(AcceptInvitationResult.Accepted);
+    expect(role).toBe("admin");
     expect(await getStatus(id)).toBe(InvitationStatus.Accepted);
     const membership = await MembersService.findByUserAndOrganization(
       user.id,
@@ -147,7 +146,7 @@ describe("InvitationService.acceptForUser", () => {
 
     expect(
       await InvitationService.acceptForUser(id, organization.id, user),
-    ).toBe(AcceptInvitationResult.Closed);
+    ).toBe(undefined);
   });
 
   it("rejects an expired invitation", async () => {
@@ -157,7 +156,7 @@ describe("InvitationService.acceptForUser", () => {
 
     expect(
       await InvitationService.acceptForUser(id, organization.id, user),
-    ).toBe(AcceptInvitationResult.Closed);
+    ).toBe(undefined);
     expect(await getStatus(id)).toBe(InvitationStatus.Pending);
     expect(
       await MembersService.findByUserAndOrganization(user.id, organization.id),
@@ -171,7 +170,7 @@ describe("InvitationService.acceptForUser", () => {
 
     expect(
       await InvitationService.acceptForUser(id, organization.id, user),
-    ).toBe(AcceptInvitationResult.Closed);
+    ).toBe(undefined);
   });
 
   it("rejects someone the invitation wasn't sent to", async () => {
@@ -180,7 +179,7 @@ describe("InvitationService.acceptForUser", () => {
 
     expect(
       await InvitationService.acceptForUser(id, organization.id, someoneElse),
-    ).toBe(AcceptInvitationResult.WrongRecipient);
+    ).toBe(undefined);
     expect(await getStatus(id)).toBe(InvitationStatus.Pending);
   });
 
@@ -190,7 +189,7 @@ describe("InvitationService.acceptForUser", () => {
 
     expect(
       await InvitationService.acceptForUser(id, organization.id, user),
-    ).toBe(AcceptInvitationResult.AlreadyMember);
+    ).toBe(undefined);
     expect(await getStatus(id)).toBe(InvitationStatus.Pending);
   });
 
@@ -199,7 +198,7 @@ describe("InvitationService.acceptForUser", () => {
     const orgB = await createOrganization("invite-scope-b");
 
     expect(await InvitationService.acceptForUser(id, orgB.id, user)).toBe(
-      AcceptInvitationResult.NotFound,
+      undefined,
     );
     expect(await getStatus(id)).toBe(InvitationStatus.Pending);
     expect(

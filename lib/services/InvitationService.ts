@@ -47,6 +47,18 @@ async function findByIdAndOrganization(
   return invitation ?? null;
 }
 
+async function findById(invitationId: string) {
+  const [invitation] = await db
+    .select({
+      id: invitations.id,
+      organizationId: invitations.organizationId,
+    })
+    .from(invitations)
+    .where(eq(invitations.id, invitationId))
+    .limit(1);
+  return invitation ?? null;
+}
+
 /** Whether the invitation can still be accepted at `now`. */
 function isOpen(
   invitation: Pick<Invitation, "status" | "expiresAt">,
@@ -57,78 +69,68 @@ function isOpen(
   );
 }
 
-/** Outcomes of {@link acceptForUser}; only "accepted" adds a member. */
-export const AcceptInvitationResult = {
-  Accepted: "accepted",
-  NotFound: "not-found",
-  Closed: "closed",
-  WrongRecipient: "wrong-recipient",
-  AlreadyMember: "already-member",
-} as const;
-
-export type AcceptInvitationResult =
-  (typeof AcceptInvitationResult)[keyof typeof AcceptInvitationResult];
-
 /**
  * Accepts an invitation for the user it was sent to: adds them to the
  * invitation's organization with the invited role and marks it accepted.
- * The invitation must belong to `organizationId`, be open, and be addressed
- * to `user.email`. Doesn't need a session, so it also works while one is
- * being created at sign-up.
+ * Returns the invited role, or `undefined` when the invitation can't be accepted.
  */
 async function acceptForUser(
   invitationId: string,
   organizationId: string,
   user: { id: string; email: string },
-): Promise<AcceptInvitationResult> {
+): Promise<string | undefined> {
   const invitation = await findByIdAndOrganization(
     invitationId,
     organizationId,
   );
-  if (!invitation) return AcceptInvitationResult.NotFound;
-  if (!isOpen(invitation)) return AcceptInvitationResult.Closed;
+  if (!invitation) return undefined;
+  if (!isOpen(invitation)) return undefined;
   if (invitation.email.toLowerCase() !== user.email.toLowerCase()) {
-    return AcceptInvitationResult.WrongRecipient;
+    return undefined;
   }
 
-  return db.transaction(async (tx) => {
-    const [existing] = await tx
-      .select({ id: members.id })
-      .from(members)
-      .where(
-        and(
-          eq(members.userId, user.id),
-          eq(members.organizationId, organizationId),
-        ),
-      )
-      .limit(1);
-    if (existing) return AcceptInvitationResult.AlreadyMember;
+  const [existing] = await db
+    .select({ id: members.id })
+    .from(members)
+    .where(
+      and(
+        eq(members.userId, user.id),
+        eq(members.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+  if (existing) return undefined;
 
-    // Re-checks open-ness in the write so two accepts can't both win.
+  const now = new Date();
+
+  return db.transaction(async (tx) => {
     const [accepted] = await tx
       .update(invitations)
       .set({ status: InvitationStatus.Accepted })
       .where(
         and(
           eq(invitations.id, invitation.id),
+          eq(invitations.organizationId, organizationId),
           eq(invitations.status, InvitationStatus.Pending),
-          gt(invitations.expiresAt, new Date()),
+          gt(invitations.expiresAt, now),
         ),
       )
-      .returning({ id: invitations.id });
-    if (!accepted) return AcceptInvitationResult.Closed;
+      .returning({ role: invitations.role });
+    if (!accepted) return undefined;
 
     await tx.insert(members).values({
       id: randomUUID(),
       userId: user.id,
       organizationId,
-      role: invitation.role,
+      role: accepted.role,
     });
-    return AcceptInvitationResult.Accepted;
+
+    return accepted.role;
   });
 }
 
 export const InvitationService = {
+  findById,
   findByIdAndOrganization,
   acceptForUser,
   isOpen,

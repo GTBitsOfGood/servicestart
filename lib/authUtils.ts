@@ -11,13 +11,10 @@ import {
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
-import {
-  AcceptInvitationResult,
-  InvitationService,
-} from "@/lib/services/InvitationService";
+import { InvitationService } from "@/lib/services/InvitationService";
+import { findOrganizationByRequestHost } from "@/lib/organizationFromHost";
 import { UserService } from "@/lib/services/UserService";
 import { User } from "better-auth";
-import { APIError } from "better-auth/api";
 import db from "@/lib/db";
 import { users } from "@/lib/schema";
 import { getSlugFromHost, INVITATION_ID_HEADER } from "./clientAuthUtils";
@@ -70,10 +67,7 @@ export async function afterUserCreated(
 ): Promise<void> {
   try {
     const host = headers?.get("host") || undefined;
-    const slug = getSlugFromHost(host);
-    if (!slug) return;
-
-    const organization = await OrganizationsService.findBySlug(slug);
+    const organization = await findOrganizationByRequestHost(host);
     if (!organization) return;
 
     const membership = await MembersService.findByUserAndOrganization(
@@ -87,14 +81,14 @@ export async function afterUserCreated(
     const invitationId = headers?.get(INVITATION_ID_HEADER);
     if (invitationId) {
       const user = await UserService.findById(userId);
-      const result =
+      const role =
         user &&
         (await InvitationService.acceptForUser(
           invitationId,
           organization.id,
           user,
         ));
-      if (result === AcceptInvitationResult.Accepted) return;
+      if (role) return;
     }
 
     await createJoinRequestIfNeeded(userId, organization.id);
@@ -311,16 +305,6 @@ export function createUserOverride(ctx: CreateUserCtx) {
       name?: string;
     } & Record<string, unknown>;
     // Try to find user by email
-    const existingUser = await UserService.findByEmailAndOrganization(
-      email,
-      organizationId,
-    );
-    if (existingUser) {
-      throw new APIError("BAD_REQUEST", {
-        message: "User already exists. Use another email.",
-        code: "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL",
-      });
-    }
     const id = crypto.randomUUID();
     await db.insert(users).values({
       name: name || "",

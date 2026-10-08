@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import AuthTextField, {
   focusFirstInvalidField,
 } from "@/components/auth/AuthTextField";
@@ -24,7 +25,6 @@ import {
 } from "@/lib/authValidation";
 import { getSlugFromHost, INVITATION_ID_HEADER } from "@/lib/clientAuthUtils";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
-import { useDelayedRedirect } from "@/lib/hooks/useDelayedRedirect";
 
 /** BetterAuth's code for an email that already has an account in this org. */
 const ACCOUNT_EXISTS_CODE = "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL";
@@ -48,7 +48,7 @@ export default function SignupForm({
   invitation,
   loginHref = "/login",
 }: SignupFormProps) {
-  const scheduleRedirect = useDelayedRedirect();
+  const router = useRouter();
   const org = useActiveOrganization();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -59,6 +59,15 @@ export default function SignupForm({
   const [message, setMessage] = useState<FormMessage>();
   // Stays blocked after success while the redirect is pending.
   const pending = message?.kind === "loading" || message?.kind === "success";
+
+  useEffect(() => {
+    if (message?.kind !== "success") return;
+    const timeout = setTimeout(
+      () => router.push("/"),
+      SUCCESS_REDIRECT_DELAY_MS,
+    );
+    return () => clearTimeout(timeout);
+  }, [message, router]);
 
   const accountExists = (
     <>
@@ -116,7 +125,6 @@ export default function SignupForm({
     }
 
     setMessage({ kind: "success", text: AuthMessage.AccountCreated });
-    scheduleRedirect("/", SUCCESS_REDIRECT_DELAY_MS);
   };
 
   return (

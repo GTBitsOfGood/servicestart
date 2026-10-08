@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AuthFormMessage, {
@@ -8,32 +7,8 @@ import AuthFormMessage, {
 } from "@/components/auth/AuthFormMessage";
 import AuthSubmitButton from "@/components/auth/AuthSubmitButton";
 import { AuthMessage } from "@/components/auth/authConstants";
-import { FOCUS_RING } from "@/components/auth/authStyles";
 import api from "@/lib/api";
 import authClient from "@/lib/authClient";
-import { cn } from "@/lib/utils";
-
-/** A link styled like the primary auth button. */
-const PRIMARY_LINK_CLASS = cn(
-  "flex w-full items-center justify-center rounded-control bg-brand-text px-5 py-3 text-mobile-paragraph-1 text-brand-foreground hover:bg-brand-hover",
-  FOCUS_RING,
-);
-
-export function LogInToAcceptLink({ href }: { href: string }) {
-  return (
-    <Link href={href} className={PRIMARY_LINK_CLASS}>
-      Log in to accept
-    </Link>
-  );
-}
-
-export function ContinueLink() {
-  return (
-    <Link href="/" className={PRIMARY_LINK_CLASS}>
-      Continue
-    </Link>
-  );
-}
 
 /** Accepts the invitation as the signed-in invitee, then goes home. */
 export function AcceptInvitationButton({
@@ -58,10 +33,11 @@ export function AcceptInvitationButton({
       const { organizationId } = (await res.json()) as {
         organizationId: string;
       };
-      const { error: activeOrgError } =
-        await authClient.organization.setActive({
+      const { error: activeOrgError } = await authClient.organization.setActive(
+        {
           organizationId,
-        });
+        },
+      );
       if (activeOrgError) {
         setMessage({ kind: "error", text: AuthMessage.AcceptFailed });
         return;
