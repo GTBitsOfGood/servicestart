@@ -18,20 +18,15 @@ import { AuthMessage } from "@/components/auth/authConstants";
 import authClient from "@/lib/authClient";
 import {
   hasErrors,
-  safeRedirectPath,
   validateLogin,
   type FieldErrors,
 } from "@/lib/authValidation";
-import { useRedirectIfSignedIn } from "@/lib/hooks/useRedirectIfSignedIn";
+import {
+  getRedirectPath,
+  useRedirectIfSignedIn,
+} from "@/lib/hooks/useRedirectIfSignedIn";
 
 const WRONG_CREDENTIALS_CODE = "INVALID_EMAIL_OR_PASSWORD";
-
-function getRedirectPath() {
-  return safeRedirectPath(
-    new URLSearchParams(window.location.search).get("redirect"),
-    window.location.origin,
-  );
-}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -76,14 +71,13 @@ export default function LoginPage() {
     router.push(getRedirectPath());
   };
 
-  useRedirectIfSignedIn(getRedirectPath);
+  useRedirectIfSignedIn();
 
   return (
     <>
-      <div className="flex flex-col gap-3 bg-page-bg">
-        <AuthPageIntro title="Login" />
+      <AuthPageIntro title="Login">
         <AuthOrgTagline />
-      </div>
+      </AuthPageIntro>
       <form className="flex flex-col gap-6" onSubmit={handleSubmit} noValidate>
         <AuthTextField
           label="Email"

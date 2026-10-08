@@ -10,12 +10,11 @@ import { OrganizationConfigKey } from "@/lib/schema";
 const AUTH_CONFIG_KEYS = [
   OrganizationConfigKey.PrimaryColor,
   OrganizationConfigKey.SecondaryColor,
-  OrganizationConfigKey.Tagline,
   OrganizationConfigKey.LogoUrl,
 ] as const;
 
 const AUTH_FOCUS =
-  "[&_a:focus-visible]:outline-2 [&_a:focus-visible]:outline-offset-2 [&_a:focus-visible]:outline-brand-text [&_button:focus-visible]:outline-2 [&_button:focus-visible]:outline-offset-2 [&_button:focus-visible]:outline-brand-text";
+  "[&_:is(a,button,input):focus-visible]:outline-2 [&_:is(a,button,input):focus-visible]:outline-offset-2 [&_:is(a,button,input):focus-visible]:outline-brand-text";
 
 /**
  * Shared shell for signed-out pages: brand panel, card, and org-not-found gate.

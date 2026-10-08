@@ -6,14 +6,13 @@ import SignupForm from "@/components/auth/SignupForm";
 import { useRedirectIfSignedIn } from "@/lib/hooks/useRedirectIfSignedIn";
 
 export default function SignupPage() {
-  useRedirectIfSignedIn(() => "/");
+  useRedirectIfSignedIn();
 
   return (
     <>
-      <div className="flex flex-col gap-3 bg-page-bg">
-        <AuthPageIntro title="Sign Up" />
+      <AuthPageIntro title="Sign Up">
         <AuthOrgTagline />
-      </div>
+      </AuthPageIntro>
       <SignupForm />
     </>
   );
