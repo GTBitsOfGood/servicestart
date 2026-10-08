@@ -71,7 +71,10 @@ function fieldErrorsFromZod<Field extends string>(
 ): FieldErrors<Field> {
   const flattened = z.flattenError(error);
   const result: FieldErrors<Field> = {};
-  for (const [key, messages] of Object.entries(flattened.fieldErrors)) {
+  const fieldErrors = flattened.fieldErrors as Partial<
+    Record<string, string[] | undefined>
+  >;
+  for (const [key, messages] of Object.entries(fieldErrors)) {
     const message = messages?.[0];
     if (message) result[key as Field] = message as AuthFieldError;
   }
