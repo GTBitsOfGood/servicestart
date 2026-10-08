@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import AuthLayout from "@/components/auth/AuthLayout";
 import AuthPasswordField from "@/components/auth/AuthPasswordField";
 import { focusFirstInvalidField } from "@/components/auth/AuthTextField";
@@ -15,6 +14,7 @@ import {
   SUCCESS_REDIRECT_DELAY_MS,
 } from "@/components/auth/authConstants";
 import authClient from "@/lib/authClient";
+import { useDelayedRedirect } from "@/lib/hooks/useDelayedRedirect";
 import {
   PASSWORD_POLICY_HINT,
   hasErrors,
@@ -27,7 +27,7 @@ const INVALID_TOKEN_CODE = "INVALID_TOKEN";
 
 /** The reset form for the `token` from the emailed link; null when missing. */
 export default function ResetPasswordForm({ token }: { token: string | null }) {
-  const router = useRouter();
+  const scheduleRedirect = useDelayedRedirect();
   const [expired, setExpired] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -69,7 +69,7 @@ export default function ResetPasswordForm({ token }: { token: string | null }) {
     }
 
     setMessage({ kind: "success", text: AuthMessage.PasswordReset });
-    setTimeout(() => router.push("/login"), SUCCESS_REDIRECT_DELAY_MS);
+    scheduleRedirect("/login", SUCCESS_REDIRECT_DELAY_MS);
   };
 
   if (token === null || expired) {

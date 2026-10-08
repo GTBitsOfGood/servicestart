@@ -104,8 +104,9 @@ export async function createOrganization(slug: string) {
  */
 export async function signUpAndGetHeaders(
   user: ReturnType<typeof buildTestUser>,
+  organizationSlug?: string,
 ) {
-  const slug = await getOrgSlug();
+  const slug = organizationSlug ?? (await getOrgSlug());
   const res = await auth.api.signUpEmail({
     body: {
       ...user,
@@ -126,8 +127,9 @@ export async function signUpAndGetHeaders(
  */
 export async function signUpAndGetSession(
   user: ReturnType<typeof buildTestUser>,
+  organizationSlug?: string,
 ) {
-  const slug = await getOrgSlug();
+  const slug = organizationSlug ?? (await getOrgSlug());
   const res = await auth.api.signUpEmail({
     body: {
       ...user,

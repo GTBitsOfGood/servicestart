@@ -17,6 +17,7 @@ import {
 } from "@/lib/services/InvitationService";
 import { UserService } from "@/lib/services/UserService";
 import { User } from "better-auth";
+import { APIError } from "better-auth/api";
 import db from "@/lib/db";
 import { users } from "@/lib/schema";
 import { getSlugFromHost, INVITATION_ID_HEADER } from "./clientAuthUtils";
@@ -314,20 +315,20 @@ export function createUserOverride(ctx: CreateUserCtx) {
       email,
       organizationId,
     );
-    let id: string;
-    if (!existingUser) {
-      // Create new user
-      id = crypto.randomUUID();
-      await db.insert(users).values({
-        name: name || "",
-        email,
-        organizationId,
-        ...rest,
-        id,
+    if (existingUser) {
+      throw new APIError("BAD_REQUEST", {
+        message: "User already exists. Use another email.",
+        code: "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL",
       });
-    } else {
-      id = existingUser.id;
     }
+    const id = crypto.randomUUID();
+    await db.insert(users).values({
+      name: name || "",
+      email,
+      organizationId,
+      ...rest,
+      id,
+    });
     return await UserService.findById(id);
   };
 }

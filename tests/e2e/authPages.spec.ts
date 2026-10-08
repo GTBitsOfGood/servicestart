@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { and, eq, like } from "drizzle-orm";
 import db from "@/lib/db";
 import { verifications } from "@/lib/schema";
@@ -13,7 +13,22 @@ test.describe("Auth pages", () => {
     await ensureServicestartOrganization();
   });
 
-  test.describe("signup", () => {
+  test.describe.serial("signup", () => {
+    test.beforeEach(async ({ page }) => {
+      await page.context().clearCookies();
+    });
+
+    async function fillPasswordFields(page: Page, password: string) {
+      const passwordField = page.getByLabel("Password", { exact: true });
+      const confirmField = page.getByLabel("Confirm Password", {
+        exact: true,
+      });
+      await passwordField.fill(password);
+      await confirmField.fill(password);
+      await expect(passwordField).toHaveValue(password);
+      await expect(confirmField).toHaveValue(password);
+    }
+
     test("shows inline errors instead of submitting an invalid form", async ({
       page,
     }) => {
@@ -54,16 +69,13 @@ test.describe("Auth pages", () => {
       page,
     }) => {
       const user = buildTestUser();
-      await signUpAndGetSession(user);
+      await signUpAndGetSession(user, "servicestart");
       await page.goto("/signup");
 
       await page.getByLabel("First Name").fill("Existing");
       await page.getByLabel("Last Name").fill("User");
       await page.getByLabel("Email").fill(user.email);
-      await page.getByLabel("Password", { exact: true }).fill(user.password);
-      await page
-        .getByLabel("Confirm Password", { exact: true })
-        .fill(user.password);
+      await fillPasswordFields(page, user.password);
       await page.getByRole("button", { name: "Create Account" }).click();
 
       const message = page.getByTestId("form-message");
@@ -79,10 +91,7 @@ test.describe("Auth pages", () => {
       await page.getByLabel("First Name").fill("New");
       await page.getByLabel("Last Name").fill("Volunteer");
       await page.getByLabel("Email").fill(user.email);
-      await page.getByLabel("Password", { exact: true }).fill(user.password);
-      await page
-        .getByLabel("Confirm Password", { exact: true })
-        .fill(user.password);
+      await fillPasswordFields(page, user.password);
       await page.getByRole("button", { name: "Create Account" }).click();
 
       await expect(page.getByText(AuthMessage.AccountCreated)).toBeVisible();
@@ -96,7 +105,7 @@ test.describe("Auth pages", () => {
   test.describe("login", () => {
     test("says when the password is wrong", async ({ page }) => {
       const user = buildTestUser();
-      await signUpAndGetSession(user);
+      await signUpAndGetSession(user, "servicestart");
       await page.goto("/login");
 
       await page.getByLabel("Email").fill(user.email);
@@ -135,7 +144,7 @@ test.describe("Auth pages", () => {
 
   test("forgot password sends a reset email", async ({ page }) => {
     const user = buildTestUser();
-    const { user: created } = await signUpAndGetSession(user);
+    const { user: created } = await signUpAndGetSession(user, "servicestart");
     await page.goto("/forgotpassword");
 
     await page.getByLabel("Email").fill(user.email);

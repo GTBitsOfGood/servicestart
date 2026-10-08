@@ -11,6 +11,7 @@ export const AuthMessage = {
   PasswordReset: "Password reset. Taking you to log in…",
   ResetFailed: "Couldn't reset your password. Try again.",
   AcceptFailed: "Couldn't accept the invitation. Try again.",
+  SignOutFailed: "Couldn't sign out. Try again.",
 } as const;
 
 /** Long enough to read a success message before the page moves on. */

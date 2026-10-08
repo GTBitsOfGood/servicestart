@@ -55,6 +55,17 @@ export function AcceptInvitationButton({
         setMessage({ kind: "error", text: AuthMessage.AcceptFailed });
         return;
       }
+      const { organizationId } = (await res.json()) as {
+        organizationId: string;
+      };
+      const { error: activeOrgError } =
+        await authClient.organization.setActive({
+          organizationId,
+        });
+      if (activeOrgError) {
+        setMessage({ kind: "error", text: AuthMessage.AcceptFailed });
+        return;
+      }
     } catch {
       setMessage({ kind: "error", text: AuthMessage.AcceptFailed });
       return;
@@ -75,21 +86,30 @@ export function AcceptInvitationButton({
 /** Signs out so the invitee can open the link again with their account. */
 export function SignOutButton() {
   const router = useRouter();
-  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState<FormMessage>();
+  const pending = message?.kind === "loading";
 
   const signOut = async () => {
-    setPending(true);
+    setMessage({ kind: "loading", text: AuthMessage.Loading });
     try {
-      await authClient.signOut();
+      const { error } = await authClient.signOut();
+      if (error) {
+        setMessage({ kind: "error", text: AuthMessage.SignOutFailed });
+        return;
+      }
       router.refresh();
-    } finally {
-      setPending(false);
+      setMessage(undefined);
+    } catch {
+      setMessage({ kind: "error", text: AuthMessage.SignOutFailed });
     }
   };
 
   return (
-    <AuthSubmitButton type="button" pending={pending} onClick={signOut}>
-      Sign out
-    </AuthSubmitButton>
+    <div className="flex flex-col gap-6">
+      <AuthFormMessage message={message} />
+      <AuthSubmitButton type="button" pending={pending} onClick={signOut}>
+        Sign out
+      </AuthSubmitButton>
+    </div>
   );
 }
