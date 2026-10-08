@@ -11,6 +11,7 @@ import messages from "@/api/messages";
 import emails from "@/api/emails";
 import profile from "@/api/profile";
 import tags from "@/api/tags";
+import invitations from "@/api/invitations";
 import { Hono } from "hono";
 import { handle } from "hono/netlify";
 
@@ -28,7 +29,8 @@ const app = new Hono()
   .route("/messages", messages)
   .route("/emails", emails)
   .route("/profile", profile)
-  .route("/tags", tags);
+  .route("/tags", tags)
+  .route("/invitations", invitations);
 
 export const GET = handle(app);
 export const POST = handle(app);

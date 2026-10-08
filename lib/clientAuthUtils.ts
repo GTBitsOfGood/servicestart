@@ -1,5 +1,8 @@
 const defaultOrganizationSlug = "servicestart";
 
+/** Sent with sign-up from an invitation link so the invitation is accepted. */
+export const INVITATION_ID_HEADER = "x-invitation-id";
+
 /** Domain whose subdomains are tenants, e.g. `acme.servicestart.com`. */
 export function getTenantRootDomain(): string {
   return typeof process !== "undefined" && process.env.E2E_TENANT_DOMAIN

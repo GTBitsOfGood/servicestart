@@ -11,11 +11,13 @@ import {
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
+import { InvitationService } from "@/lib/services/InvitationService";
+import { findOrganizationByRequestHost } from "@/lib/organizationFromHost";
 import { UserService } from "@/lib/services/UserService";
 import { User } from "better-auth";
 import db from "@/lib/db";
 import { users } from "@/lib/schema";
-import { getSlugFromHost } from "./clientAuthUtils";
+import { getSlugFromHost, INVITATION_ID_HEADER } from "./clientAuthUtils";
 // import { User } from "better-auth/client";
 import { NotificationService } from "@/lib/services/NotificationService";
 import { NotificationType } from "@/lib/schema";
@@ -25,43 +27,6 @@ type AppSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 type SessionWithOrganization = AppSession & {
   organizationId: string;
 };
-
-/**
- * Accepts invite if one exists and is pending
- */
-async function acceptInviteIfAvailable(
-  userId: string,
-  organizationId: string,
-  headers: Headers,
-): Promise<boolean> {
-  const user = await UserService.findById(userId);
-  if (!user) return false;
-
-  const invitations = await auth.api.listUserInvitations({
-    query: { email: user.email },
-    headers,
-  });
-
-  const invitation = Array.isArray(invitations)
-    ? invitations.find(
-        (inv: { organizationId: string; status: string; id: string }) =>
-          inv.organizationId === organizationId && inv.status === "pending",
-      )
-    : null;
-
-  if (!invitation) return false;
-
-  try {
-    await auth.api.acceptInvitation({
-      body: { invitationId: invitation.id },
-      headers,
-    });
-  } catch {
-    return false;
-  }
-
-  return true;
-}
 
 /**
  * Creates a join request for the user if there isn't already one
@@ -92,7 +57,9 @@ export async function createJoinRequestIfNeeded(
 }
 
 /**
- * Accepts pending invite if it exists and adds the user to the organization
+ * Accepts the invitation the user signed up from (the `x-invitation-id`
+ * header the invitation page sends) if it's theirs; otherwise files a join
+ * request with the host's organization.
  */
 export async function afterUserCreated(
   userId: string,
@@ -100,10 +67,7 @@ export async function afterUserCreated(
 ): Promise<void> {
   try {
     const host = headers?.get("host") || undefined;
-    const slug = getSlugFromHost(host);
-    if (!slug) return;
-
-    const organization = await OrganizationsService.findBySlug(slug);
+    const organization = await findOrganizationByRequestHost(host);
     if (!organization) return;
 
     const membership = await MembersService.findByUserAndOrganization(
@@ -112,13 +76,19 @@ export async function afterUserCreated(
     );
     if (membership) return;
 
-    if (headers) {
-      const accepted = await acceptInviteIfAvailable(
-        userId,
-        organization.id,
-        headers,
-      );
-      if (accepted) return;
+    // Only a sign-up from the invitation link accepts it: an email match
+    // alone would let anyone who knows the address claim the invited role.
+    const invitationId = headers?.get(INVITATION_ID_HEADER);
+    if (invitationId) {
+      const user = await UserService.findById(userId);
+      const role =
+        user &&
+        (await InvitationService.acceptForUser(
+          invitationId,
+          organization.id,
+          user,
+        ));
+      if (role) return;
     }
 
     await createJoinRequestIfNeeded(userId, organization.id);

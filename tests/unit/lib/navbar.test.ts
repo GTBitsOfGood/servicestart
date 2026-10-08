@@ -27,6 +27,10 @@ describe(isNoNavbarPage, () => {
     expect(isNoNavbarPage(page)).toBe(true);
   });
 
+  it("hides the navbar on an invitation link", () => {
+    expect(isNoNavbarPage("/accept-invitation/abc123")).toBe(true);
+  });
+
   it("shows the navbar elsewhere", () => {
     expect(isNoNavbarPage("/")).toBe(false);
     expect(isNoNavbarPage("/events")).toBe(false);

@@ -22,7 +22,9 @@ import {
   formAnswers,
   formUploads,
   FormStatus,
+  invitations,
 } from "@/lib/schema";
+import { InvitationStatus } from "@/lib/services/InvitationService";
 import { DEFAULT_FORM_SETTINGS } from "@/lib/forms/constants";
 import type {
   FormAnswerValue,
@@ -102,8 +104,9 @@ export async function createOrganization(slug: string) {
  */
 export async function signUpAndGetHeaders(
   user: ReturnType<typeof buildTestUser>,
+  organizationSlug?: string,
 ) {
-  const slug = await getOrgSlug();
+  const slug = organizationSlug ?? (await getOrgSlug());
   const res = await auth.api.signUpEmail({
     body: {
       ...user,
@@ -124,8 +127,9 @@ export async function signUpAndGetHeaders(
  */
 export async function signUpAndGetSession(
   user: ReturnType<typeof buildTestUser>,
+  organizationSlug?: string,
 ) {
-  const slug = await getOrgSlug();
+  const slug = organizationSlug ?? (await getOrgSlug());
   const res = await auth.api.signUpEmail({
     body: {
       ...user,
@@ -476,6 +480,37 @@ export async function createFormUpload(
     })
     .returning({ id: formUploads.id });
   return upload.id;
+}
+
+const INVITATION_TTL_MS = 48 * 60 * 60 * 1000;
+
+/**
+ * Inserts an invitation row the way BetterAuth's `inviteMember` would, without
+ * sending an email. Defaults to a pending member invite expiring in 48 hours.
+ * Returns the invitation ID.
+ */
+export async function createInvitation(
+  organizationId: string,
+  inviterId: string,
+  opts: {
+    email?: string;
+    role?: string;
+    status?: string;
+    expiresAt?: Date;
+  } = {},
+) {
+  const id = randomUUID();
+  await db.insert(invitations).values({
+    id,
+    organizationId,
+    inviterId,
+    email: opts.email ?? buildTestUser().email,
+    name: "Invited User",
+    role: opts.role ?? "member",
+    status: opts.status ?? InvitationStatus.Pending,
+    expiresAt: opts.expiresAt ?? new Date(Date.now() + INVITATION_TTL_MS),
+  });
+  return id;
 }
 
 /**

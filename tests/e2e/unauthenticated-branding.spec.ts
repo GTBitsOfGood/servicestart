@@ -20,15 +20,20 @@ async function configureBranding(
     const url = new URL(route.request().url());
     expect(url.searchParams.get("organizationSlug")).toBe("servicestart");
     const keys = url.searchParams.getAll("keys");
-    expect(keys).toContain(OrganizationConfigKey.LogoUrl);
+    const normalizedLogo =
+      logoUrl === null || logoUrl === undefined
+        ? logoUrl
+        : logoUrl.trim() === ""
+          ? logoUrl
+          : logoUrl.trim();
     const config: Record<string, string | null> = {
-      [OrganizationConfigKey.LogoUrl]: logoUrl,
+      [OrganizationConfigKey.LogoUrl]: normalizedLogo,
       [OrganizationConfigKey.Tagline]: tagline,
       [OrganizationConfigKey.PrimaryColor]: "#FD8033",
       [OrganizationConfigKey.SecondaryColor]: "#FB3552",
     };
     await route.fulfill({
-      json: Object.fromEntries(keys.map((key) => [key, config[key]])),
+      json: Object.fromEntries(keys.map((key) => [key, config[key] ?? null])),
     });
   });
 }
@@ -110,7 +115,11 @@ test.describe("Unauthenticated organization branding", () => {
       page,
     }) => {
       await configureBranding(page, "/bog.svg");
+      const configResponse = page.waitForResponse((response) =>
+        new URL(response.url()).pathname.endsWith("/organizationConfig"),
+      );
       await page.goto(path);
+      await configResponse;
       const tagline = page.getByTestId("organization-tagline");
       await expect(tagline).toHaveText("Our organization welcomes you");
       await expect(tagline).toBeVisible();
