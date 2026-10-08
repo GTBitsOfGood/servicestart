@@ -51,11 +51,6 @@ export default async function AcceptInvitationPage({
   );
   if (!organization) notFound();
 
-  const invitationRef = await InvitationService.findById(invitationId);
-  if (!invitationRef || invitationRef.organizationId !== organization.id) {
-    notFound();
-  }
-
   const invitation = await InvitationService.findByIdAndOrganization(
     invitationId,
     organization.id,
@@ -141,7 +136,10 @@ export default async function AcceptInvitationPage({
         title={invitedTitle(invitation)}
         description="Create your account to accept."
       />
-      <SignupForm invitation={invitation} loginHref={loginHref} />
+      <SignupForm
+        invitation={{ id: invitation.id, email: invitation.email }}
+        loginHref={loginHref}
+      />
     </>
   );
 }

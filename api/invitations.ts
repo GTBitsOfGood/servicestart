@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
-import z from "zod";
+import { z } from "zod";
 import { requireAuth } from "@/lib/authUtils";
 import { findOrganizationByRequestHost } from "@/lib/organizationFromHost";
 import { InvitationService } from "@/lib/services/InvitationService";

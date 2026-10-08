@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, sql } from "drizzle-orm";
 import db from "@/lib/db";
 import { invitations, members, organizations } from "@/lib/schema";
 
@@ -47,18 +47,6 @@ async function findByIdAndOrganization(
   return invitation ?? null;
 }
 
-async function findById(invitationId: string) {
-  const [invitation] = await db
-    .select({
-      id: invitations.id,
-      organizationId: invitations.organizationId,
-    })
-    .from(invitations)
-    .where(eq(invitations.id, invitationId))
-    .limit(1);
-  return invitation ?? null;
-}
-
 /** Whether the invitation can still be accepted at `now`. */
 function isOpen(
   invitation: Pick<Invitation, "status" | "expiresAt">,
@@ -79,16 +67,6 @@ async function acceptForUser(
   organizationId: string,
   user: { id: string; email: string },
 ): Promise<string | undefined> {
-  const invitation = await findByIdAndOrganization(
-    invitationId,
-    organizationId,
-  );
-  if (!invitation) return undefined;
-  if (!isOpen(invitation)) return undefined;
-  if (invitation.email.toLowerCase() !== user.email.toLowerCase()) {
-    return undefined;
-  }
-
   const [existing] = await db
     .select({ id: members.id })
     .from(members)
@@ -109,10 +87,11 @@ async function acceptForUser(
       .set({ status: InvitationStatus.Accepted })
       .where(
         and(
-          eq(invitations.id, invitation.id),
+          eq(invitations.id, invitationId),
           eq(invitations.organizationId, organizationId),
           eq(invitations.status, InvitationStatus.Pending),
           gt(invitations.expiresAt, now),
+          sql`lower(${invitations.email}) = lower(${user.email})`,
         ),
       )
       .returning({ role: invitations.role });
@@ -130,7 +109,6 @@ async function acceptForUser(
 }
 
 export const InvitationService = {
-  findById,
   findByIdAndOrganization,
   acceptForUser,
   isOpen,

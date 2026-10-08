@@ -305,14 +305,24 @@ export function createUserOverride(ctx: CreateUserCtx) {
       name?: string;
     } & Record<string, unknown>;
     // Try to find user by email
-    const id = crypto.randomUUID();
-    await db.insert(users).values({
-      name: name || "",
+    const existingUser = await UserService.findByEmailAndOrganization(
       email,
       organizationId,
-      ...rest,
-      id,
-    });
+    );
+    let id: string;
+    if (!existingUser) {
+      // Create new user
+      id = crypto.randomUUID();
+      await db.insert(users).values({
+        name: name || "",
+        email,
+        organizationId,
+        ...rest,
+        id,
+      });
+    } else {
+      id = existingUser.id;
+    }
     return await UserService.findById(id);
   };
 }
