@@ -10,6 +10,40 @@ import { AuthMessage } from "@/components/auth/authConstants";
 import api from "@/lib/api";
 import authClient from "@/lib/authClient";
 
+const SESSION_POLL_MS = 50;
+const SESSION_POLL_ATTEMPTS = 20;
+
+async function waitForAuthSession() {
+  for (let attempt = 0; attempt < SESSION_POLL_ATTEMPTS; attempt++) {
+    const { data } = await authClient.getSession();
+    if (data?.session) return true;
+    await new Promise((resolve) => setTimeout(resolve, SESSION_POLL_MS));
+  }
+  return false;
+}
+
+/** Accepts the invitation for the current session and sets the active org. */
+export async function acceptInvitationForSession(
+  invitationId: string,
+): Promise<boolean> {
+  try {
+    if (!(await waitForAuthSession())) return false;
+    const res = await api.invitations[":id"].accept.$post({
+      param: { id: invitationId },
+    });
+    if (!res.ok) return false;
+    const { organizationId } = (await res.json()) as {
+      organizationId: string;
+    };
+    const { error: activeOrgError } = await authClient.organization.setActive({
+      organizationId,
+    });
+    return !activeOrgError;
+  } catch {
+    return false;
+  }
+}
+
 /** Accepts the invitation as the signed-in invitee, then goes home. */
 export function AcceptInvitationButton({
   invitationId,
@@ -22,27 +56,7 @@ export function AcceptInvitationButton({
 
   const accept = async () => {
     setMessage({ kind: "loading", text: AuthMessage.Loading });
-    try {
-      const res = await api.invitations[":id"].accept.$post({
-        param: { id: invitationId },
-      });
-      if (!res.ok) {
-        setMessage({ kind: "error", text: AuthMessage.AcceptFailed });
-        return;
-      }
-      const { organizationId } = (await res.json()) as {
-        organizationId: string;
-      };
-      const { error: activeOrgError } = await authClient.organization.setActive(
-        {
-          organizationId,
-        },
-      );
-      if (activeOrgError) {
-        setMessage({ kind: "error", text: AuthMessage.AcceptFailed });
-        return;
-      }
-    } catch {
+    if (!(await acceptInvitationForSession(invitationId))) {
       setMessage({ kind: "error", text: AuthMessage.AcceptFailed });
       return;
     }

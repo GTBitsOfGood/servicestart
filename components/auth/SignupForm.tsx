@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import AuthTextField, {
   focusFirstInvalidField,
 } from "@/components/auth/AuthTextField";
+import { acceptInvitationForSession } from "@/components/auth/AcceptInvitationActions";
 import AuthPasswordField from "@/components/auth/AuthPasswordField";
 import AuthSubmitButton from "@/components/auth/AuthSubmitButton";
 import AuthFormMessage, {
@@ -122,6 +123,11 @@ export default function SignupForm({
     } catch {
       setMessage({ kind: "error", text: AuthMessage.SignupFailed });
       return;
+    }
+
+    if (invitation) {
+      setMessage({ kind: "loading", text: AuthMessage.Loading });
+      await acceptInvitationForSession(invitation.id);
     }
 
     setMessage({ kind: "success", text: AuthMessage.AccountCreated });
