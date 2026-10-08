@@ -1,7 +1,6 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 import { JunoFileService } from "@/lib/services/JunoFileService";
 import { JunoFileDeletionNotSupportedError } from "@/lib/errors";
-import { MediaType } from "@/lib/schema";
 
 const { uploadFile, downloadFile, getConfig } = vi.hoisted(() => ({
   uploadFile: vi.fn(),
@@ -19,15 +18,6 @@ vi.mock("@/lib/junoClient", () => ({
   },
 }));
 
-function createMockFile(content: string, name: string): File {
-  return {
-    name,
-    async arrayBuffer() {
-      return new TextEncoder().encode(content).buffer;
-    },
-  } as File;
-}
-
 describe("JunoFileService", () => {
   beforeEach(() => {
     process.env.FILE_SERVICE_IMPLEMENTATION = "juno";
@@ -43,19 +33,36 @@ describe("JunoFileService", () => {
     }) as unknown as typeof fetch;
   });
 
-  it("upload rejects direct multipart upload", async () => {
-    const mediaInput = {
-      organizationId: "org-1",
-      fileName: "test.jpg",
-      title: "t",
-      type: MediaType.Image,
-      altText: "",
-    };
-    const file = createMockFile("data", "test.jpg");
+  it("upload PUTs the file to a presigned upload URL", async () => {
+    const file = new File(["data"], "test.png", { type: "image/png" });
 
-    await expect(JunoFileService.upload(mediaInput, file)).rejects.toThrow(
-      "Direct upload is not supported with JunoFileService",
+    await JunoFileService.upload(
+      { organizationId: "org-1", fileName: "test.png" },
+      file,
     );
+
+    expect(uploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({ fileName: "test.png" }),
+    );
+    expect(fetch).toHaveBeenCalledWith("https://upload.example/presigned", {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": "image/png", "x-ms-blob-type": "BlockBlob" },
+    });
+  });
+
+  it("upload throws when the blob upload fails", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+    } as Response);
+
+    await expect(
+      JunoFileService.upload(
+        { organizationId: "org-1", fileName: "test.png" },
+        new File(["data"], "test.png", { type: "image/png" }),
+      ),
+    ).rejects.toThrow("Blob upload failed (403)");
   });
 
   it("deleteFile throws JunoFileDeletionNotSupportedError", async () => {
