@@ -14,11 +14,16 @@ import {
   FormStatus,
   MemberType,
   notifications,
+  joinRequests,
+  joinRequestHistory,
+  JoinRequestStatus,
 } from "@/lib/schema";
 import { FormDefinitionSchema } from "@/lib/forms/schema";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { hashPassword } from "better-auth/crypto";
 import { main } from "@/scripts/seed";
+import { JoinRequestsService } from "@/lib/services/JoinRequestService";
+import { MembersService } from "@/lib/services/MemberService";
 import { and, asc, count, eq, isNull } from "drizzle-orm";
 import { expect, it } from "vitest";
 import {
@@ -29,6 +34,145 @@ import {
 
 it("should run the seed script without errors", async () => {
   await expect(main()).resolves.not.toThrow();
+});
+
+it("seeds one request per applicant and no pending requests for existing members", async () => {
+  await main();
+  await main();
+  const requests = await db
+    .select()
+    .from(joinRequests)
+    .where(eq(joinRequests.organizationId, "org_servicestart"));
+  const memberships = await db
+    .select()
+    .from(members)
+    .where(eq(members.organizationId, "org_servicestart"));
+  const memberIds = new Set(memberships.map((member) => member.userId));
+  expect(
+    requests.filter(
+      (request) =>
+        request.status === JoinRequestStatus.Pending &&
+        memberIds.has(request.userId),
+    ),
+  ).toEqual([]);
+  for (const id of [
+    "jr_pending_servicestart",
+    "jr_approved_servicestart",
+    "jr_denied_servicestart",
+  ]) {
+    const fixture = requests.find((request) => request.id === id)!;
+    expect(fixture).toBeDefined();
+    expect(
+      requests.filter((request) => request.userId === fixture.userId),
+    ).toHaveLength(1);
+  }
+  const approved = requests.find(
+    (request) => request.id === "jr_approved_servicestart",
+  )!;
+  expect(memberIds.has(approved.userId)).toBe(true);
+  const allNotifications = await db.select().from(notifications);
+  const allRequests = await db.select().from(joinRequests);
+  const requestIds = new Set(allRequests.map((request) => request.id));
+  const linkedIds = allNotifications
+    .map(
+      (notification) =>
+        (notification.metadata as { joinRequestId?: string } | null)
+          ?.joinRequestId,
+    )
+    .filter((id): id is string => !!id);
+  expect(linkedIds.every((id) => requestIds.has(id))).toBe(true);
+});
+
+it("reuses an approved applicant's existing membership and fully removes access", async () => {
+  await main();
+  const [request] = await db
+    .select()
+    .from(joinRequests)
+    .where(eq(joinRequests.id, "jr_approved_servicestart"));
+  await db
+    .delete(members)
+    .where(
+      and(
+        eq(members.userId, request.userId),
+        eq(members.organizationId, request.organizationId),
+      ),
+    );
+  // Better Auth approvals create membership IDs independent of the seed's ID.
+  await db.insert(members).values({
+    id: "previously-approved-membership",
+    userId: request.userId,
+    organizationId: request.organizationId,
+    role: "member",
+  });
+  await main();
+  await main();
+  const memberships = await db
+    .select()
+    .from(members)
+    .where(
+      and(
+        eq(members.userId, request.userId),
+        eq(members.organizationId, request.organizationId),
+      ),
+    );
+  expect(memberships.map((membership) => membership.id)).toEqual([
+    "previously-approved-membership",
+  ]);
+  const session = await auth.api.signInEmail({
+    body: {
+      email: "admin@example.com",
+      password: DEFAULT_TEST_PASSWORD,
+    },
+    headers: new Headers({ host: "localhost:3000" }),
+    returnHeaders: true,
+  });
+  await JoinRequestsService.updateStatus(
+    request.id,
+    JoinRequestStatus.Pending,
+    session.response.user.id,
+    new Headers({ cookie: session.headers.get("set-cookie")! }),
+    undefined,
+    JoinRequestStatus.Approved,
+  );
+  expect(
+    await MembersService.findByUserAndOrganization(
+      request.userId,
+      request.organizationId,
+    ),
+  ).toBeNull();
+});
+
+it("retains pending requests with review history when reseeding", async () => {
+  await main();
+  const [member] = await db
+    .select()
+    .from(members)
+    .where(eq(members.organizationId, "org_servicestart"));
+  await db.insert(joinRequests).values({
+    id: "reviewed-request",
+    userId: member.userId,
+    organizationId: member.organizationId,
+    status: JoinRequestStatus.Pending,
+  });
+  await db.insert(joinRequestHistory).values({
+    id: "review-history",
+    joinRequestId: "reviewed-request",
+    action: "removed",
+    resolvedByUserId: member.userId,
+  });
+  await main();
+  expect(
+    await db
+      .select()
+      .from(joinRequests)
+      .where(eq(joinRequests.id, "reviewed-request")),
+  ).toHaveLength(1);
+  expect(
+    await db
+      .select()
+      .from(joinRequestHistory)
+      .where(eq(joinRequestHistory.id, "review-history")),
+  ).toHaveLength(1);
 });
 
 it("should create an organization with the slug 'servicestart'", async () => {

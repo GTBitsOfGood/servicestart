@@ -42,6 +42,26 @@ function fulfillEmail(route: Route, status: number, body: unknown) {
 }
 
 test.describe("Inbox email", () => {
+  test("hydrates the admin composer after navigation from the member directory", async ({
+    page,
+  }) => {
+    const hydrationErrors: string[] = [];
+    page.on("pageerror", (error) => {
+      hydrationErrors.push(error.message);
+    });
+    await createTestAdminAndSignIn(page);
+    await page.goto("/members");
+    await page
+      .getByRole("button", { name: "Notifications", exact: true })
+      .first()
+      .click();
+    await page.getByRole("link", { name: "View full inbox" }).click();
+    await expect(page.getByRole("button", { name: "New +" })).toBeVisible();
+    await page.getByRole("button", { name: "New +" }).click();
+    await expect(page.getByPlaceholder("Message Headline")).toBeVisible();
+    expect(hydrationErrors).toEqual([]);
+  });
+
   test("hides New from members who are not admins", async ({ page }) => {
     await createTestMemberAndSignIn(page);
     await page.goto("/inbox");

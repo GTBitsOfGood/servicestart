@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { DropdownMenu } from "radix-ui";
 import BogBanner from "@/components/bog/BogBanner/BogBanner";
 import BogButton from "@/components/bog/BogButton/BogButton";
@@ -34,6 +34,10 @@ const FILTER_OPTIONS = [
 ] satisfies { label: string; value: FilterValue }[];
 
 type InboxTab = "all" | "unread";
+
+const subscribeToHydration = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
 
 function LoadingSkeleton() {
   return (
@@ -80,6 +84,11 @@ function LoadingSkeleton() {
 }
 
 export default function InboxPage() {
+  const mounted = useSyncExternalStore(
+    subscribeToHydration,
+    clientSnapshot,
+    serverSnapshot,
+  );
   const { data: session } = authClient.useSession();
   const { organization } = useActiveOrganization();
   const isAuthorizedAdmin = isAdmin(organization?.data, session?.user);
@@ -121,7 +130,7 @@ export default function InboxPage() {
   const { recipients, recipientsLoading, recipientsError, retryRecipients } =
     useEmailRecipients(organizationId, isModalOpen && isAuthorizedAdmin);
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return (
       <div className="px-6 py-6 mobile:px-10 mobile:py-16 desktop:px-20">
         <LoadingSkeleton />

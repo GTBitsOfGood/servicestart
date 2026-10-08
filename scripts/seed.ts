@@ -4,15 +4,17 @@ import db from "../lib/db";
 import { auth } from "@/lib/auth";
 import {
   MemberType,
+  joinRequestHistory,
   OrganizationConfigKey,
   NotificationType,
 } from "@/lib/schema";
+import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import {
   DEFAULT_TEST_PASSWORD,
   VISIONARIES_APPLICATION_FORM,
 } from "@/tests/unit/testUtils";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, notExists, sql } from "drizzle-orm";
 
 const isTest = require.main !== module; // Check if the script is being run directly or imported in tests
 
@@ -20,6 +22,16 @@ function log(...args: unknown[]) {
   if (!isTest) {
     console.log(...args);
   }
+}
+
+async function removeRequestNotifications(requests: { id: string }[]) {
+  if (requests.length === 0) return;
+  await db.delete(schema.notifications).where(
+    inArray(
+      sql<string>`${schema.notifications.metadata}->>'joinRequestId'`,
+      requests.map(({ id }) => id),
+    ),
+  );
 }
 
 type NavbarConfig = {
@@ -66,7 +78,7 @@ const VISIONARIES_ORG: SeedOrg = {
     [OrganizationConfigKey.SecondaryColor]: "#C29BDC",
     [OrganizationConfigKey.Tagline]: "Visionaries to the Throne",
     [OrganizationConfigKey.FormsEnabled]: "true",
-    // TODO: set LogoUrl once the approved logo is committed to public/.
+    // TODO: set the LogoUrl once the approved logo is committed to public/.
   },
   extraUsers: [
     {
@@ -305,6 +317,30 @@ export async function main() {
             memberType: userData.memberType ?? null,
           })
           .onConflictDoNothing();
+        // Signup creates an automatic pending request before we add membership.
+        // Remove only unresolved requests without history for seeded members.
+        const removedRequests = await db
+          .delete(schema.joinRequests)
+          .where(
+            and(
+              eq(schema.joinRequests.userId, userId),
+              eq(schema.joinRequests.organizationId, org.id),
+              eq(schema.joinRequests.status, JoinRequestStatus.Pending),
+              notExists(
+                db
+                  .select()
+                  .from(joinRequestHistory)
+                  .where(
+                    eq(
+                      joinRequestHistory.joinRequestId,
+                      schema.joinRequests.id,
+                    ),
+                  ),
+              ),
+            ),
+          )
+          .returning({ id: schema.joinRequests.id });
+        await removeRequestNotifications(removedRequests);
         // Also type a membership that already existed.
         if (userData.memberType) {
           await db
@@ -366,6 +402,50 @@ export async function main() {
         createdAt: joinRequest.createdAt,
       })
       .onConflictDoNothing();
+    // The canonical fixture replaces the signup hook's initial pending request.
+    const [seededRequest] = await db
+      .select({ status: schema.joinRequests.status })
+      .from(schema.joinRequests)
+      .where(eq(schema.joinRequests.id, joinRequest.id));
+    const existingMembership = await MembersService.findByUserAndOrganization(
+      userId,
+      "org_servicestart",
+    );
+    if (
+      seededRequest.status === JoinRequestStatus.Approved &&
+      !existingMembership
+    ) {
+      await db
+        .insert(schema.members)
+        .values({
+          id: `member_${userId}_org_servicestart`,
+          userId,
+          organizationId: "org_servicestart",
+          role: "member",
+        })
+        .onConflictDoNothing();
+    }
+    // Keep resolved requests and request history from subsequent development.
+    const removedRequests = await db
+      .delete(schema.joinRequests)
+      .where(
+        and(
+          eq(schema.joinRequests.userId, userId),
+          eq(schema.joinRequests.organizationId, "org_servicestart"),
+          ne(schema.joinRequests.id, joinRequest.id),
+          eq(schema.joinRequests.status, JoinRequestStatus.Pending),
+          notExists(
+            db
+              .select()
+              .from(joinRequestHistory)
+              .where(
+                eq(joinRequestHistory.joinRequestId, schema.joinRequests.id),
+              ),
+          ),
+        ),
+      )
+      .returning({ id: schema.joinRequests.id });
+    await removeRequestNotifications(removedRequests);
   }
 
   log("Join requests created for pending, approved, and denied states.");
