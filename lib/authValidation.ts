@@ -18,13 +18,8 @@ export const AuthFieldError = {
   PasswordsDontMatch: "Passwords don't match.",
 } as const;
 
-export type AuthFieldError =
-  (typeof AuthFieldError)[keyof typeof AuthFieldError];
-
 /** One error message per field; a missing key means the field is valid. */
-export type FieldErrors<Field extends string> = Partial<
-  Record<Field, AuthFieldError>
->;
+export type FieldErrors<Field extends string> = Partial<Record<Field, string>>;
 
 const emailField = z
   .string()
@@ -37,6 +32,14 @@ const newPasswordField = z
   .min(1, AuthFieldError.PasswordRequired)
   .min(PASSWORD_MIN_LENGTH, AuthFieldError.PasswordTooShort)
   .max(PASSWORD_MAX_LENGTH, AuthFieldError.PasswordTooLong);
+
+const passwordsMatch = (data: { password: string; confirmPassword: string }) =>
+  data.password === data.confirmPassword;
+
+const passwordsMatchRefinement = {
+  message: AuthFieldError.PasswordsDontMatch,
+  path: ["confirmPassword"],
+};
 
 const loginSchema = z.object({
   email: emailField,
@@ -51,40 +54,42 @@ const signupSchema = z
     password: newPasswordField,
     confirmPassword: z.string().min(1, AuthFieldError.ConfirmPasswordRequired),
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: AuthFieldError.PasswordsDontMatch,
-    path: ["confirmPassword"],
-  });
+  .refine(passwordsMatch, passwordsMatchRefinement);
 
 const resetPasswordSchema = z
   .object({
     password: newPasswordField,
     confirmPassword: z.string().min(1, AuthFieldError.ConfirmPasswordRequired),
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: AuthFieldError.PasswordsDontMatch,
-    path: ["confirmPassword"],
-  });
+  .refine(passwordsMatch, passwordsMatchRefinement);
 
-function fieldErrorsFromZod<Field extends string>(
+function firstFieldErrors<Field extends string>(
   error: z.ZodError,
 ): FieldErrors<Field> {
   const flattened = z.flattenError(error);
-  const result: FieldErrors<Field> = {};
-  const fieldErrors = flattened.fieldErrors as Partial<
-    Record<string, string[] | undefined>
-  >;
-  for (const [key, messages] of Object.entries(fieldErrors)) {
-    const message = messages?.[0];
-    if (message) result[key as Field] = message as AuthFieldError;
+  const entries: [string, string][] = [];
+  for (const [key, messages] of Object.entries(flattened.fieldErrors)) {
+    if (!Array.isArray(messages)) continue;
+    const message = messages[0];
+    if (typeof message === "string") entries.push([key, message]);
   }
-  return result;
+  return Object.fromEntries(entries) as FieldErrors<Field>;
 }
 
-export function validateEmail(email: string): AuthFieldError | undefined {
+function validate<Schema extends z.ZodType>(
+  schema: Schema,
+  values: z.infer<Schema>,
+): FieldErrors<string> {
+  const result = schema.safeParse(values);
+  if (result.success) return {};
+  return firstFieldErrors(result.error);
+}
+
+export function validateEmail(email: string): string | undefined {
   const result = emailField.safeParse(email);
   if (result.success) return undefined;
-  return result.error.issues[0]?.message as AuthFieldError;
+  const message = result.error.issues[0]?.message;
+  return typeof message === "string" ? message : undefined;
 }
 
 export function hasErrors(errors: FieldErrors<string>): boolean {
@@ -92,9 +97,7 @@ export function hasErrors(errors: FieldErrors<string>): boolean {
 }
 
 export function validateLogin(values: { email: string; password: string }) {
-  const result = loginSchema.safeParse(values);
-  if (result.success) return {};
-  return fieldErrorsFromZod(result.error);
+  return validate(loginSchema, values);
 }
 
 export function validateSignup(values: {
@@ -104,18 +107,14 @@ export function validateSignup(values: {
   password: string;
   confirmPassword: string;
 }) {
-  const result = signupSchema.safeParse(values);
-  if (result.success) return {};
-  return fieldErrorsFromZod(result.error);
+  return validate(signupSchema, values);
 }
 
 export function validateResetPassword(values: {
   password: string;
   confirmPassword: string;
 }) {
-  const result = resetPasswordSchema.safeParse(values);
-  if (result.success) return {};
-  return fieldErrorsFromZod(result.error);
+  return validate(resetPasswordSchema, values);
 }
 
 /**

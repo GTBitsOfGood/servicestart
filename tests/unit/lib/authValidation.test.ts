@@ -6,6 +6,7 @@ import {
   safeRedirectPath,
   validateEmail,
   validateLogin,
+  validateResetPassword,
   validateSignup,
 } from "@/lib/authValidation";
 
@@ -72,6 +73,26 @@ describe(validateSignup, () => {
       firstName: AuthFieldError.FirstNameRequired,
       lastName: AuthFieldError.LastNameRequired,
     });
+  });
+});
+
+describe(validateResetPassword, () => {
+  it("accepts matching passwords", () => {
+    expect(
+      validateResetPassword({
+        password: VALID_PASSWORD,
+        confirmPassword: VALID_PASSWORD,
+      }),
+    ).toEqual({});
+  });
+
+  it("requires matching passwords", () => {
+    expect(
+      validateResetPassword({
+        password: VALID_PASSWORD,
+        confirmPassword: `${VALID_PASSWORD}x`,
+      }),
+    ).toEqual({ confirmPassword: AuthFieldError.PasswordsDontMatch });
   });
 });
 
