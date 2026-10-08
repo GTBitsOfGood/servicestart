@@ -4,7 +4,7 @@ import type { IconProps } from "../../../utils/design-system/types/types";
 import BogIcon from "../BogIcon/BogIcon";
 import { cn } from "@/lib/utils";
 
-interface BogTextInputProps {
+export interface BogTextInputProps {
   /** Whether or not the text input has multiple lines. */
   multiline?: boolean;
   /** The type of text the input stores. */

@@ -1,19 +1,19 @@
 "use client";
 
-import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
+import BogTextInput, {
+  type BogTextInputProps,
+} from "@/components/bog/BogTextInput/BogTextInput";
+import { AUTH_FIELD_CLASS } from "@/components/auth/authStyles";
 
-export type AuthTextFieldProps = {
+export type AuthTextFieldProps = Pick<
+  BogTextInputProps,
+  "name" | "autoComplete" | "placeholder" | "hint" | "readOnly" | "endAdornment"
+> & {
   label: string;
-  name: string;
   value: string;
   onChange: (value: string) => void;
   type?: "text" | "email" | "password";
-  autoComplete?: string;
-  placeholder?: string;
   error?: string;
-  hint?: string;
-  readOnly?: boolean;
-  endAdornment?: React.ReactNode;
 };
 
 /** Auth-styled labelled input built on {@link BogTextInput}. */
@@ -42,7 +42,7 @@ export default function AuthTextField({
       errorText={error}
       hint={hint}
       endAdornment={endAdornment}
-      className="w-full font-semibold text-page-text [&_label]:text-mobile-paragraph-2 [&_label]:font-semibold [&_label]:text-page-text [&_input]:rounded-control [&_input]:border-grey-stroke-strong [&_input]:bg-page-bg [&_input]:px-4 [&_input]:py-3 [&_input]:text-mobile-paragraph-1 [&_input]:text-page-text"
+      className={AUTH_FIELD_CLASS}
       onChange={(event) => onChange(event.target.value)}
     />
   );

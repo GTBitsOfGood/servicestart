@@ -6,7 +6,10 @@ import AuthTextField, {
   type AuthTextFieldProps,
 } from "@/components/auth/AuthTextField";
 
-type AuthPasswordFieldProps = Omit<AuthTextFieldProps, "type" | "endAdornment">;
+export type AuthPasswordFieldProps = Omit<
+  AuthTextFieldProps,
+  "type" | "endAdornment"
+>;
 
 /** Password field with a show/hide toggle (Bog has no eye icons yet). */
 export default function AuthPasswordField(props: AuthPasswordFieldProps) {
