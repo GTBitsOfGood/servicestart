@@ -7,20 +7,22 @@ type ThemedModalProps = ComponentProps<typeof BogModal>;
 
 /** Applies organization control tokens to the buttons owned by BogModal. */
 export default function ThemedModal({
+  primaryButtonClassName,
   primaryButtonStyle,
+  secondaryButtonClassName,
   secondaryButtonStyle,
   ...props
 }: ThemedModalProps) {
   return (
     <BogModal
       {...props}
+      primaryButtonClassName={`themed-button ${primaryButtonClassName ?? ""}`.trim()}
       primaryButtonStyle={{
-        borderRadius: "var(--radius-control)",
         color: "var(--color-brand-foreground)",
         ...primaryButtonStyle,
       }}
+      secondaryButtonClassName={`themed-button ${secondaryButtonClassName ?? ""}`.trim()}
       secondaryButtonStyle={{
-        borderRadius: "var(--radius-control)",
         backgroundColor: "var(--color-page-bg)",
         ...secondaryButtonStyle,
       }}

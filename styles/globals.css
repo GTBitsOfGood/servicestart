@@ -171,19 +171,18 @@
 
 /* Theme adapters for BoG primitives. These intentionally live outside
    components/bog so the shared primitives remain untouched. */
-.themed-text-input :is(input, textarea) {
+html[data-corner-style] .themed-button,
+html[data-corner-style] .theme-control,
+html[data-corner-style] .themed-dropdown > button,
+html[data-corner-style] .themed-text-input :is(input, textarea) {
   border-radius: var(--radius-control) !important;
 }
 
-/* BogDropdown's primary trigger assumes white text internally. Keep its
-   existing shape, but use the contrast-safe organization foreground. */
+/* BogDropdown's primary trigger assumes white text internally. Use the
+   contrast-safe organization foreground without editing the primitive. */
 .themed-dropdown-primary > button,
 .themed-dropdown-primary > button svg {
   color: var(--color-brand-foreground) !important;
-}
-
-.theme-control {
-  border-radius: var(--radius-control);
 }
 
 @keyframes fade-in {

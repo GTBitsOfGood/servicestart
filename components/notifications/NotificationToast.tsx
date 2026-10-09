@@ -134,7 +134,7 @@ export default function NotificationToast({
             <Link
               href={`/inbox/${notification.id}`}
               onClick={() => markAsRead(notification.id)}
-              className="theme-control inline-flex items-center bg-brand-text px-3 py-2 text-paragraph-2 font-semibold text-brand-foreground hover:opacity-90"
+              className="theme-control inline-flex items-center rounded bg-brand-text px-3 py-2 text-paragraph-2 font-semibold text-brand-foreground hover:opacity-90"
             >
               {ctaLabel}
             </Link>
@@ -166,7 +166,7 @@ export default function NotificationToast({
                   Required Reasoning
                 </label>
                 <textarea
-                  className="theme-control w-full border border-grey-stroke-weak bg-grey-fill-weaker px-3 py-2 text-sm text-grey-text-strong placeholder:text-grey-text-weak focus:outline-none focus:ring-1 focus:ring-brand-text"
+                  className="theme-control w-full rounded border border-grey-stroke-weak bg-grey-fill-weaker px-3 py-2 text-sm text-grey-text-strong placeholder:text-grey-text-weak focus:outline-none focus:ring-1 focus:ring-brand-text"
                   rows={3}
                   placeholder="Enter reasoning for denial here."
                   value={denyReason}

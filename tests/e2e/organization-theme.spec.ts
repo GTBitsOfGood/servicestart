@@ -65,6 +65,15 @@ async function selectNewsletterAndGetSaveButton(page: Page) {
   return saveButton;
 }
 
+async function openRequestsAndGetTypeFilter(page: Page, baseUrl: string) {
+  await page.goto(`${baseUrl}/members`);
+  await page.getByRole("button", { name: "Requests", exact: true }).click();
+
+  const typeFilter = page.getByRole("button", { name: "Type", exact: true });
+  await expect(typeFilter).toBeVisible();
+  return typeFilter;
+}
+
 async function getDisplayFontFamily(page: Page) {
   return page.locator("body").evaluate((body) => {
     const displayText = document.createElement("span");
@@ -115,6 +124,25 @@ test.describe("Organization theme", () => {
       "rgb(92, 33, 140)",
     );
 
+    await page.goto(`${baseUrl}/media`);
+    await expect(page.locator("html")).toHaveAttribute(
+      "data-corner-style",
+      "pill",
+    );
+    await expect(page.getByRole("combobox", { name: "Type" })).toHaveCSS(
+      "border-radius",
+      "32px",
+    );
+
+    await page.goto(`${baseUrl}/inbox`);
+    await expect(page.getByPlaceholder("Search notifications...")).toHaveCSS(
+      "border-radius",
+      "32px",
+    );
+
+    const pillTypeFilter = await openRequestsAndGetTypeFilter(page, baseUrl);
+    await expect(pillTypeFilter).toHaveCSS("border-radius", "32px");
+
     await page.goto(`${baseUrl}/settings/admindashboard`);
     const heading = page.getByRole("heading", { name: "Customize Dashboard" });
     await expect(heading).toHaveCSS("font-family", /Lexend/);
@@ -125,6 +153,18 @@ test.describe("Organization theme", () => {
     await expect(saveButton).toHaveCSS("background-color", "rgb(92, 33, 140)");
     await expect(saveButton).toHaveCSS("color", "rgb(255, 255, 255)");
     await expect(saveButton).toHaveCSS("border-radius", "32px");
+
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.CornerStyle,
+      "square",
+    );
+    const squareTypeFilter = await openRequestsAndGetTypeFilter(page, baseUrl);
+    await expect(page.locator("html")).toHaveAttribute(
+      "data-corner-style",
+      "square",
+    );
+    await expect(squareTypeFilter).toHaveCSS("border-radius", "0px");
   });
 
   test("keeps the current defaults when an organization has no theme rows", async ({
@@ -151,6 +191,25 @@ test.describe("Organization theme", () => {
       text: "#22070B",
       radius: "0.25rem",
     });
+
+    await page.goto(`${baseUrl}/media`);
+    await expect(page.locator("html")).not.toHaveAttribute(
+      "data-corner-style",
+      /.+/,
+    );
+    await expect(page.getByRole("combobox", { name: "Type" })).toHaveCSS(
+      "border-radius",
+      "7.5px",
+    );
+
+    await page.goto(`${baseUrl}/inbox`);
+    await expect(page.getByPlaceholder("Search notifications...")).toHaveCSS(
+      "border-radius",
+      "4px",
+    );
+
+    const typeFilter = await openRequestsAndGetTypeFilter(page, baseUrl);
+    await expect(typeFilter).toHaveCSS("border-radius", "100px");
 
     await page.goto(`${baseUrl}/settings/admindashboard`);
     const heading = page.getByRole("heading", { name: "Customize Dashboard" });
@@ -195,6 +254,16 @@ test.describe("Organization theme", () => {
     await expect(cardHeading.locator("..")).toHaveCSS(
       "background-color",
       "rgb(255, 255, 255)",
+    );
+
+    await expect(page.locator("html")).not.toHaveAttribute(
+      "data-corner-style",
+      /.+/,
+    );
+    await page.goto(`${baseUrl}/inbox`);
+    await expect(page.getByPlaceholder("Search notifications...")).toHaveCSS(
+      "border-radius",
+      "4px",
     );
   });
 });

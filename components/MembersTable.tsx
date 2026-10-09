@@ -574,7 +574,7 @@ export default function MembersTable({
 
       {/* Search bar + Settings button */}
       <div className="flex items-center gap-3">
-        <div className="theme-control flex h-10.5 flex-1 items-center overflow-hidden border border-grey-stroke-weak">
+        <div className="theme-control flex h-10.5 flex-1 items-center overflow-hidden rounded-md border border-grey-stroke-weak">
           <input
             type="text"
             placeholder="Enter text to search"
@@ -597,7 +597,7 @@ export default function MembersTable({
               setSettingsOpen(opening);
               if (opening) setPendingVisibility(new Set(visibleColumns));
             }}
-            className="theme-control flex h-10.5 shrink-0 cursor-pointer items-center gap-1 border border-brand-stroke-strong px-2 shadow-inner"
+            className="theme-control flex h-10.5 shrink-0 cursor-pointer items-center gap-1 rounded border border-brand-stroke-strong px-2 shadow-inner"
           >
             <span className="font-semibold text-desktop-paragraph-2 text-brand-text whitespace-nowrap px-1">
               Settings
@@ -828,7 +828,7 @@ export default function MembersTable({
               aria-label="Previous page"
               disabled={page <= 1}
               onClick={() => goToPage(page - 1)}
-              className="theme-control flex cursor-pointer items-center gap-1 border border-grey-stroke-weak px-3 py-1.5 text-mobile-paragraph-2 text-grey-text-weak focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+              className="theme-control flex cursor-pointer items-center gap-1 rounded border border-grey-stroke-weak px-3 py-1.5 text-mobile-paragraph-2 text-grey-text-weak focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
             >
               <BogIcon name="caret-left" size={12} weight="bold" />
               Previous
@@ -840,7 +840,7 @@ export default function MembersTable({
               aria-label="Next page"
               disabled={page >= totalPages}
               onClick={() => goToPage(page + 1)}
-              className="theme-control flex cursor-pointer items-center gap-1 border border-grey-stroke-weak px-3 py-1.5 text-mobile-paragraph-2 text-grey-text-weak focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+              className="theme-control flex cursor-pointer items-center gap-1 rounded border border-grey-stroke-weak px-3 py-1.5 text-mobile-paragraph-2 text-grey-text-weak focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
             >
               Next
               <BogIcon name="caret-right" size={12} weight="bold" />

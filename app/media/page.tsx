@@ -24,7 +24,7 @@ function FilterSelect({
       <select
         aria-label={label}
         defaultValue=""
-        className={`theme-control h-11 min-w-52 appearance-none border px-4 pr-10 text-paragraph-2 ${
+        className={`theme-control h-11 min-w-52 appearance-none rounded-xl border px-4 pr-10 text-paragraph-2 ${
           isDark
             ? "border-grey-text-strong bg-grey-text-strong text-media-inverse"
             : "border-grey-stroke-strong bg-media-surface-soft text-grey-text-strong"

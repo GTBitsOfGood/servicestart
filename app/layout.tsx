@@ -8,7 +8,8 @@ import NotificationToastProvider from "@/components/notifications/NotificationTo
 import { getSlugFromHost } from "@/lib/clientAuthUtils";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { getOrganizationThemeCssVariables } from "@/lib/theme";
+import { OrganizationConfigKey } from "@/lib/schema";
+import { getOrganizationThemeCssVariables, isCornerStyle } from "@/lib/theme";
 import { themeFontVariableClassNames } from "@/app/fonts";
 
 export default async function RootLayout({
@@ -24,6 +25,11 @@ export default async function RootLayout({
     : {};
   const themeVariables = getOrganizationThemeCssVariables(themeConfig);
   const hasConfiguredTheme = Object.keys(themeConfig).length > 0;
+  const configuredCornerStyle = themeConfig[OrganizationConfigKey.CornerStyle];
+  const cornerStyle =
+    configuredCornerStyle && isCornerStyle(configuredCornerStyle)
+      ? configuredCornerStyle
+      : undefined;
 
   return (
     <html
@@ -31,6 +37,7 @@ export default async function RootLayout({
       className={themeFontVariableClassNames}
       style={themeVariables as CSSProperties}
       data-organization-theme={hasConfiguredTheme ? "custom" : undefined}
+      data-corner-style={cornerStyle}
     >
       <body>
         <ActiveOrganizationSync />

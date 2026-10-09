@@ -107,7 +107,7 @@ export default function HoursTab({ events }: HoursTabProps) {
         </p>
 
         <div className="flex items-center gap-6">
-          <div className="theme-control flex items-center gap-2 border border-page-text/20 px-4 py-2">
+          <div className="theme-control flex items-center gap-2 rounded-md border border-page-text/20 px-4 py-2">
             <input
               type="text"
               placeholder="Enter text to search"

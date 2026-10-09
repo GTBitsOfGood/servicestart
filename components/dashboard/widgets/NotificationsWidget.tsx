@@ -68,7 +68,7 @@ export default function NotificationsDashboardWidget() {
             </p>
             <button
               type="button"
-              className="theme-control bg-brand-text px-4 py-2 text-paragraph-2 font-semibold text-brand-foreground hover:opacity-90"
+              className="theme-control rounded bg-brand-text px-4 py-2 text-paragraph-2 font-semibold text-brand-foreground hover:opacity-90"
               onClick={() => void refreshNotifications()}
             >
               Retry

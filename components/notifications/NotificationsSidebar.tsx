@@ -138,7 +138,7 @@ function NotificationsSidebarContent({ onClose }: { onClose: () => void }) {
               </p>
               <button
                 type="button"
-                className="theme-control mt-3 bg-brand-text px-5 py-2 text-paragraph-2 font-semibold text-brand-foreground hover:opacity-90"
+                className="theme-control mt-3 rounded bg-brand-text px-5 py-2 text-paragraph-2 font-semibold text-brand-foreground hover:opacity-90"
                 onClick={() => void refreshNotifications()}
               >
                 Retry

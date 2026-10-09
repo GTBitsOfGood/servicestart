@@ -11,6 +11,7 @@ type ThemedButtonProps = ComponentProps<typeof BogButton>;
  */
 export default function ThemedButton({
   variant = "primary",
+  className,
   style,
   ...props
 }: ThemedButtonProps) {
@@ -18,8 +19,8 @@ export default function ThemedButton({
     <BogButton
       {...props}
       variant={variant}
+      className={`themed-button ${className ?? ""}`.trim()}
       style={{
-        borderRadius: "var(--radius-control)",
         ...(variant === "primary"
           ? { color: "var(--color-brand-foreground)" }
           : {}),

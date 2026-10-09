@@ -258,7 +258,7 @@ export default function DashboardLayoutBuilder({
               onClick={handleDiscard}
               disabled={!hasChanges}
               type="button"
-              className={`theme-control flex items-center gap-1 px-2 py-2 text-paragraph-2 font-semibold transition-colors ${
+              className={`theme-control flex items-center gap-1 rounded px-2 py-2 text-paragraph-2 font-semibold transition-colors ${
                 hasChanges
                   ? "text-brand-text hover:opacity-80"
                   : "text-grey-off-state"
@@ -278,7 +278,7 @@ export default function DashboardLayoutBuilder({
               onClick={handleSave}
               disabled={!hasChanges || isSaving}
               type="button"
-              className={`theme-control px-3 py-2 text-paragraph-2 font-semibold transition-colors ${
+              className={`theme-control rounded px-3 py-2 text-paragraph-2 font-semibold transition-colors ${
                 hasChanges
                   ? "bg-brand-text text-brand-foreground hover:opacity-90"
                   : "bg-grey-fill-weak text-white"

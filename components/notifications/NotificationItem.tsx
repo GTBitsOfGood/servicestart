@@ -237,7 +237,7 @@ export default function NotificationItem({
                 Required Reasoning
               </label>
               <textarea
-                className="theme-control w-full border border-grey-stroke-weak bg-grey-fill-weaker px-3 py-2 text-md text-grey-text-strong placeholder:text-grey-text-weak focus:outline-none focus:ring-1 focus:ring-brand-text"
+                className="theme-control w-full rounded border border-grey-stroke-weak bg-grey-fill-weaker px-3 py-2 text-md text-grey-text-strong placeholder:text-grey-text-weak focus:outline-none focus:ring-1 focus:ring-brand-text"
                 rows={3}
                 placeholder="Enter reasoning for denial here."
                 value={denyReason}

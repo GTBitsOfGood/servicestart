@@ -41,7 +41,7 @@ export default function EventAdminActions({
       <div className="flex items-center gap-3">
         <Link
           href={`/events/${eventId}/edit`}
-          className="theme-control inline-flex items-center border border-brand-stroke-strong bg-page-bg px-4 py-2 text-paragraph-2 font-semibold text-brand-text"
+          className="theme-control inline-flex items-center rounded border border-brand-stroke-strong bg-page-bg px-4 py-2 text-paragraph-2 font-semibold text-brand-text"
         >
           Edit
         </Link>
