@@ -161,4 +161,40 @@ test.describe("Organization theme", () => {
     await expect(saveButton).toHaveCSS("background-color", "rgb(252, 91, 67)");
     await expect(saveButton).toHaveCSS("border-radius", "2.5px");
   });
+
+  test("keeps fixed white dashboard cards readable with a dark page theme", async ({
+    page,
+  }) => {
+    const slug = `dark-theme-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+    const { org, baseUrl } = await createThemedAdminSession(page, slug);
+
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.BackgroundColor,
+      "#111111",
+    );
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.TextColor,
+      "#FFFFFF",
+    );
+
+    await page.goto(baseUrl);
+
+    const pageHeading = page.getByRole("heading", {
+      name: "Admin Dashboard",
+      level: 1,
+    });
+    await expect(pageHeading).toHaveCSS("color", "rgb(255, 255, 255)");
+
+    const cardHeading = page.getByRole("heading", {
+      name: "Events",
+      level: 3,
+    });
+    await expect(cardHeading).toHaveCSS("color", "rgb(0, 0, 0)");
+    await expect(cardHeading.locator("..")).toHaveCSS(
+      "background-color",
+      "rgb(255, 255, 255)",
+    );
+  });
 });

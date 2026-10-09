@@ -134,4 +134,17 @@ describe("getOrganizationThemeCssVariables", () => {
       "color-mix(in oklch, #5C218C 40%, #FFFEF1)",
     );
   });
+
+  it("keeps fixed white dashboard cards readable for a dark page theme", () => {
+    const variables = getOrganizationThemeCssVariables({
+      [OrganizationConfigKey.BackgroundColor]: "#111111",
+      [OrganizationConfigKey.TextColor]: "#FFFFFF",
+    });
+
+    expect(variables["--color-page-text"]).toBe("#FFFFFF");
+    expect(variables["--color-app-strong-text"]).toBe("#000000");
+    expect(
+      getContrastRatio(variables["--color-app-strong-text"], "#FFFFFF"),
+    ).toBeGreaterThanOrEqual(4.5);
+  });
 });

@@ -28,6 +28,7 @@ export const FONT_FAMILY_VARIABLE_BY_THEME_FONT = {
 
 const LIGHT_BRAND_FOREGROUND = "#FFFFFF";
 const DARK_BRAND_FOREGROUND = "#000000";
+const FIXED_CARD_SURFACE = "#FFFFFF";
 
 export const DEFAULT_APP_THEME = {
   primaryColor: "#FC5B43",
@@ -156,6 +157,17 @@ export function getAccessibleBrandForeground(brandColor: string): string {
     : DARK_BRAND_FOREGROUND;
 }
 
+function getAccessibleSurfaceText(
+  preferredTextColor: string,
+  surfaceColor: string,
+): string {
+  if (getContrastRatio(preferredTextColor, surfaceColor) >= 4.5) {
+    return preferredTextColor;
+  }
+
+  return getAccessibleBrandForeground(surfaceColor);
+}
+
 function resolveColor(value: string | undefined, fallback: string): string {
   return value && isHexColor(value) ? value : fallback;
 }
@@ -246,7 +258,13 @@ export function getOrganizationThemeCssVariables(
     // organization's page colors without changing an unconfigured org's
     // current appearance.
     variables["--color-app-shell-bg"] = theme.backgroundColor;
-    variables["--color-app-strong-text"] = theme.textColor;
+    // Dashboard cards keep their existing white surface. Use the configured
+    // text color when it is readable there, otherwise choose an AA-safe
+    // foreground so light-on-dark page themes do not become white-on-white.
+    variables["--color-app-strong-text"] = getAccessibleSurfaceText(
+      theme.textColor,
+      FIXED_CARD_SURFACE,
+    );
     variables["--color-navbar-bg"] = theme.backgroundColor;
     variables["--color-mobile-navbar-bg"] = theme.backgroundColor;
     variables["--color-media-page-bg"] = theme.backgroundColor;
