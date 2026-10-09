@@ -256,6 +256,17 @@ test.describe("Organization theme", () => {
       "rgb(255, 255, 255)",
     );
 
+    await page.goto(`${baseUrl}/settings/admindashboard`);
+    await expect(
+      page.getByText("Dashboard preview", { exact: true }),
+    ).toHaveCSS("color", "rgba(255, 255, 255, 0.4)");
+    await expect(
+      page.getByRole("button", { name: "Events", exact: true }).locator("p"),
+    ).toHaveCSS("color", "rgb(255, 255, 255)");
+    await expect(
+      page.getByText("[events widget here]", { exact: true }),
+    ).toHaveCSS("color", "rgba(0, 0, 0, 0.4)");
+
     await expect(page.locator("html")).not.toHaveAttribute(
       "data-corner-style",
       /.+/,
