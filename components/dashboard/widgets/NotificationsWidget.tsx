@@ -30,10 +30,10 @@ export default function NotificationsDashboardWidget() {
   const visible = unreadNotifications.slice(0, MAX_VISIBLE);
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl bg-white p-8">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl bg-solid-bg-base p-8">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
         <div className="flex min-w-0 items-center gap-2">
-          <h3 className="text-heading-3 font-semibold text-black">
+          <h3 className="text-heading-3 font-semibold text-app-strong-text">
             Notifications
           </h3>
           {unreadCount > 0 && (
@@ -68,7 +68,7 @@ export default function NotificationsDashboardWidget() {
             </p>
             <button
               type="button"
-              className="rounded bg-brand-text px-4 py-2 text-paragraph-2 font-semibold text-white hover:opacity-90"
+              className="theme-control rounded bg-brand-text px-4 py-2 text-paragraph-2 font-semibold text-brand-foreground hover:opacity-90"
               onClick={() => void refreshNotifications()}
             >
               Retry

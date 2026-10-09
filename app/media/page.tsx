@@ -24,7 +24,7 @@ function FilterSelect({
       <select
         aria-label={label}
         defaultValue=""
-        className={`h-11 min-w-52 appearance-none rounded-xl border px-4 pr-10 text-paragraph-2 ${
+        className={`theme-control h-11 min-w-52 appearance-none rounded-xl border px-4 pr-10 text-paragraph-2 ${
           isDark
             ? "border-grey-text-strong bg-grey-text-strong text-media-inverse"
             : "border-grey-stroke-strong bg-media-surface-soft text-grey-text-strong"
@@ -61,11 +61,11 @@ export default async function MediaPage() {
   const hasMedia = mediaItems.length > 0;
 
   return (
-    <div className="min-h-full bg-media-page-bg text-grey-text-strong">
+    <div className="min-h-full bg-media-page-bg text-page-text">
       <section className="mx-auto max-w-[152rem] px-8 py-10 md:px-10 lg:px-12 lg:py-14">
         <div className="flex flex-col gap-8">
           <div className="mb-4 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-            <h1 className="text-heading-1 text-[4.8rem] leading-[1] text-grey-text-strong">
+            <h1 className="text-heading-1 text-[4.8rem] leading-[1] text-page-text">
               Media Gallery
             </h1>
 
@@ -76,7 +76,7 @@ export default async function MediaPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="text-paragraph-1 font-normal text-grey-text-strong">
+                <span className="text-paragraph-1 font-normal text-page-text">
                   Sort by
                 </span>
                 <FilterSelect

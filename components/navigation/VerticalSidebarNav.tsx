@@ -15,7 +15,7 @@ export function VerticalSidebarNav({ items }: NavbarProps) {
   const [openItemLabel, setOpenItemLabel] = useState<string | null>(null);
   const { count: unreadCount } = useUnreadNotificationCount();
 
-  const navBgClass = "bg-brand-fill";
+  const navBgClass = "bg-navbar-bg";
 
   return (
     <aside
@@ -26,7 +26,7 @@ export function VerticalSidebarNav({ items }: NavbarProps) {
           <SunsetLogo size="md" />
         </div>
 
-        <nav className="flex w-full flex-col text-nav font-normal text-grey-text-strong">
+        <nav className="flex w-full flex-col text-nav font-normal text-page-text">
           {items.map((item) => {
             const hasDropdown = !!item.subpages?.length;
             const isOpen = openItemLabel === item.label;
@@ -57,7 +57,7 @@ export function VerticalSidebarNav({ items }: NavbarProps) {
                     <BogIcon
                       name={item.icon}
                       size={20}
-                      className="text-grey-text-strong"
+                      className="text-page-text"
                     />
                     {isNotifications && unreadCount > 0 && (
                       <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-status-red-text px-1 text-xs font-bold text-white">
@@ -113,7 +113,7 @@ export function VerticalSidebarNav({ items }: NavbarProps) {
                       <BogIcon
                         name={item.icon}
                         size={20}
-                        className="text-grey-text-strong"
+                        className="text-page-text"
                       />
                     </span>
                     <span>{item.label}</span>
@@ -121,12 +121,12 @@ export function VerticalSidebarNav({ items }: NavbarProps) {
                   <BogIcon
                     name={isOpen ? "chevron-down" : "chevron-right"}
                     size={16}
-                    className="text-grey-text-strong"
+                    className="text-page-text"
                   />
                 </button>
 
                 {isOpen && (
-                  <div className="flex flex-col gap-2 bg-brand-fill py-2 pl-14 pr-6">
+                  <div className="flex flex-col gap-2 bg-navbar-bg py-2 pl-14 pr-6">
                     {item.subpages?.map((sub) => {
                       const isSubpageActive = pathname === sub.href;
                       return (
@@ -134,8 +134,8 @@ export function VerticalSidebarNav({ items }: NavbarProps) {
                           <div
                             className={`${
                               isSubpageActive
-                                ? "font-semibold text-grey-text-strong"
-                                : "text-grey-text-weak"
+                                ? "font-semibold text-page-text"
+                                : "text-page-text/70"
                             }`}
                           >
                             {sub.label}

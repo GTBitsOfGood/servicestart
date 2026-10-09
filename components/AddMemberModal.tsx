@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import authClient from "@/lib/authClient";
-import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
-import BogModal from "@/components/bog/BogModal/BogModal";
+import BogTextInput from "@/components/theme/ThemedTextInput";
+import BogModal from "@/components/theme/ThemedModal";
 import BogBanner from "@/components/bog/BogBanner/BogBanner";
 
 interface AddMemberModalProps {

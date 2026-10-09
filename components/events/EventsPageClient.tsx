@@ -145,7 +145,7 @@ export default function EventsPageClient({
         {canCreateEvents ? (
           <Link
             href="/events/create"
-            className="inline-flex shrink-0 items-center justify-center rounded bg-brand-text px-4 py-2 text-center text-paragraph-1 font-semibold text-white hover:opacity-90"
+            className="theme-control inline-flex shrink-0 items-center justify-center rounded bg-brand-text px-4 py-2 text-center text-paragraph-1 font-semibold text-brand-foreground hover:opacity-90"
           >
             Create event
           </Link>
@@ -170,7 +170,7 @@ export default function EventsPageClient({
       <div className="mt-16 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <form
           onSubmit={handleSearchSubmit}
-          className="flex min-h-9 min-w-0 flex-1 items-stretch overflow-hidden rounded-md border border-grey-stroke-weak bg-white sm:max-w-xl"
+          className="theme-control flex min-h-9 min-w-0 flex-1 items-stretch overflow-hidden rounded-md border border-grey-stroke-weak bg-page-bg sm:max-w-xl"
         >
           <label className="flex min-w-0 flex-1 items-center px-3">
             <span className="sr-only">Search events</span>

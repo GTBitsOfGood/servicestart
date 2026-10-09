@@ -12,13 +12,13 @@ export function VerticalIconNav({ items }: NavbarProps) {
   const pathname = usePathname();
   const { count: unreadCount } = useUnreadNotificationCount();
 
-  const navBgClass = "bg-brand-fill";
+  const navBgClass = "bg-navbar-bg";
 
   return (
     <aside
       className={`sticky top-0 flex h-screen w-24 shrink-0 flex-col items-center justify-between py-8 shadow-md ${navBgClass}`}
     >
-      <nav className="flex w-full flex-col gap-0.5 text-nav font-normal text-grey-text-strong">
+      <nav className="flex w-full flex-col gap-0.5 text-nav font-normal text-page-text">
         {items.map((item) => {
           const href = item.href;
           const isActive =
@@ -40,7 +40,7 @@ export function VerticalIconNav({ items }: NavbarProps) {
                 <BogIcon
                   name={item.icon}
                   size={22}
-                  className="text-grey-text-strong"
+                  className="text-page-text"
                 />
                 {isNotifications && unreadCount > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-status-red-text px-1 text-xs font-bold text-white">
