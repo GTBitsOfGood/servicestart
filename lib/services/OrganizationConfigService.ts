@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import db from "@/lib/db";
 import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
 import { DashboardLayoutSchema } from "@/lib/dashboard/schema";
@@ -9,6 +9,18 @@ import {
   DEFAULT_MEMBER_LAYOUT,
 } from "@/lib/dashboard/constants";
 import { DEFAULT_BRANDING } from "@/lib/branding";
+import {
+  assertCornerStyle,
+  assertHexColor,
+  assertThemeFont,
+  DEFAULT_APP_THEME,
+  isCornerStyle,
+  isThemeFont,
+  ORGANIZATION_THEME_CONFIG_KEYS,
+  type OrganizationThemeConfig,
+  type OrganizationThemeConfigKey,
+  type ThemeFont,
+} from "@/lib/theme";
 
 export const ALLOWED_NAVBAR_VARIANTS = [
   "vertical-sidebar",
@@ -32,6 +44,61 @@ export const ALLOWED_MOBILE_NAVBAR_VARIANTS = [
 
 export type MobileNavbarVariant =
   (typeof ALLOWED_MOBILE_NAVBAR_VARIANTS)[number];
+
+async function getStoredConfigValue(
+  organizationId: string,
+  key: OrganizationConfigKey,
+) {
+  const [row] = await db
+    .select({ value: organizationConfig.value })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, key),
+      ),
+    )
+    .limit(1);
+
+  return row?.value;
+}
+
+async function setStoredConfigValue(
+  organizationId: string,
+  key: OrganizationConfigKey,
+  value: string,
+) {
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, key),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, key),
+        ),
+      );
+    return;
+  }
+
+  await db.insert(organizationConfig).values({
+    id: randomUUID(),
+    organizationId,
+    key,
+    value,
+  });
+}
 
 async function getDesc(organizationId: string) {
   const [row] = await db
@@ -112,10 +179,7 @@ async function getPrimaryColor(organizationId: string) {
 }
 
 async function setPrimaryColor(organizationId: string, color: string) {
-  const hexColorRegex = /^#([0-9A-Fa-f]{3}){1,2}$/;
-  if (!color.match(hexColorRegex)) {
-    throw new Error("Color must be a valid hex code");
-  }
+  assertHexColor(color);
 
   const [existing] = await db
     .select({ id: organizationConfig.id })
@@ -167,10 +231,7 @@ async function getSecondaryColor(organizationId: string) {
 }
 
 async function setSecondaryColor(organizationId: string, color: string) {
-  const hexColorRegex = /^#([0-9A-Fa-f]{3}){1,2}$/;
-  if (!color.match(hexColorRegex)) {
-    throw new Error("Color must be a valid hex code");
-  }
+  assertHexColor(color);
 
   const [existing] = await db
     .select({ id: organizationConfig.id })
@@ -202,6 +263,136 @@ async function setSecondaryColor(organizationId: string, color: string) {
       value: color,
     });
   }
+}
+
+async function getBackgroundColor(organizationId: string) {
+  return (
+    (await getStoredConfigValue(
+      organizationId,
+      OrganizationConfigKey.BackgroundColor,
+    )) ?? DEFAULT_APP_THEME.backgroundColor
+  );
+}
+
+async function setBackgroundColor(organizationId: string, color: string) {
+  assertHexColor(color);
+  await setStoredConfigValue(
+    organizationId,
+    OrganizationConfigKey.BackgroundColor,
+    color,
+  );
+}
+
+async function getTextColor(organizationId: string) {
+  return (
+    (await getStoredConfigValue(
+      organizationId,
+      OrganizationConfigKey.TextColor,
+    )) ?? DEFAULT_APP_THEME.textColor
+  );
+}
+
+async function setTextColor(organizationId: string, color: string) {
+  assertHexColor(color);
+  await setStoredConfigValue(
+    organizationId,
+    OrganizationConfigKey.TextColor,
+    color,
+  );
+}
+
+async function getFontConfig(
+  organizationId: string,
+  key: OrganizationConfigKey,
+  fallback: ThemeFont,
+) {
+  const value = await getStoredConfigValue(organizationId, key);
+  return value && isThemeFont(value) ? value : fallback;
+}
+
+async function setFontConfig(
+  organizationId: string,
+  key: OrganizationConfigKey,
+  font: string,
+) {
+  assertThemeFont(font);
+  await setStoredConfigValue(organizationId, key, font);
+}
+
+async function getDisplayFont(organizationId: string) {
+  return getFontConfig(
+    organizationId,
+    OrganizationConfigKey.DisplayFont,
+    DEFAULT_APP_THEME.displayFont,
+  );
+}
+
+async function setDisplayFont(organizationId: string, font: string) {
+  await setFontConfig(organizationId, OrganizationConfigKey.DisplayFont, font);
+}
+
+async function getHeadingFont(organizationId: string) {
+  return getFontConfig(
+    organizationId,
+    OrganizationConfigKey.HeadingFont,
+    DEFAULT_APP_THEME.headingFont,
+  );
+}
+
+async function setHeadingFont(organizationId: string, font: string) {
+  await setFontConfig(organizationId, OrganizationConfigKey.HeadingFont, font);
+}
+
+async function getBodyFont(organizationId: string) {
+  return getFontConfig(
+    organizationId,
+    OrganizationConfigKey.BodyFont,
+    DEFAULT_APP_THEME.bodyFont,
+  );
+}
+
+async function setBodyFont(organizationId: string, font: string) {
+  await setFontConfig(organizationId, OrganizationConfigKey.BodyFont, font);
+}
+
+async function getCornerStyle(organizationId: string) {
+  const value = await getStoredConfigValue(
+    organizationId,
+    OrganizationConfigKey.CornerStyle,
+  );
+  return value && isCornerStyle(value) ? value : DEFAULT_APP_THEME.cornerStyle;
+}
+
+async function setCornerStyle(organizationId: string, cornerStyle: string) {
+  assertCornerStyle(cornerStyle);
+  await setStoredConfigValue(
+    organizationId,
+    OrganizationConfigKey.CornerStyle,
+    cornerStyle,
+  );
+}
+
+async function getThemeConfig(
+  organizationId: string,
+): Promise<OrganizationThemeConfig> {
+  const rows = await db
+    .select({
+      key: organizationConfig.key,
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        inArray(organizationConfig.key, [
+          ...ORGANIZATION_THEME_CONFIG_KEYS,
+        ] as OrganizationThemeConfigKey[]),
+      ),
+    );
+
+  return Object.fromEntries(
+    rows.map(({ key, value }) => [key, value]),
+  ) as OrganizationThemeConfig;
 }
 
 async function getTagline(organizationId: string) {
@@ -945,6 +1136,30 @@ const keyMap = {
     get: getSecondaryColor,
     set: setSecondaryColor,
   },
+  [OrganizationConfigKey.BackgroundColor]: {
+    get: getBackgroundColor,
+    set: setBackgroundColor,
+  },
+  [OrganizationConfigKey.TextColor]: {
+    get: getTextColor,
+    set: setTextColor,
+  },
+  [OrganizationConfigKey.DisplayFont]: {
+    get: getDisplayFont,
+    set: setDisplayFont,
+  },
+  [OrganizationConfigKey.HeadingFont]: {
+    get: getHeadingFont,
+    set: setHeadingFont,
+  },
+  [OrganizationConfigKey.BodyFont]: {
+    get: getBodyFont,
+    set: setBodyFont,
+  },
+  [OrganizationConfigKey.CornerStyle]: {
+    get: getCornerStyle,
+    set: setCornerStyle,
+  },
   [OrganizationConfigKey.Tagline]: {
     get: getTagline,
     set: setTagline,
@@ -1024,6 +1239,7 @@ async function setConfig(
 
 export const OrganizationConfigService = {
   getConfig,
+  getThemeConfig,
   setConfig,
   getAdminDashboardLayout,
   setAdminDashboardLayout,

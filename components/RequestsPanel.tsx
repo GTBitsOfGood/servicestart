@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
-import BogDropdown from "@/components/bog/BogDropdown/BogDropdown";
+import BogTextInput from "@/components/theme/ThemedTextInput";
+import BogDropdown from "@/components/theme/ThemedDropdown";
 import BogChip from "@/components/bog/BogChip/BogChip";
 import NotificationItem from "@/components/notifications/NotificationItem";
 import { JoinRequestStatus, NotificationType } from "@/lib/schema";
@@ -363,7 +363,7 @@ export default function RequestsPanel({
               type="button"
               onClick={() => void refresh()}
               disabled={isRefreshing}
-              className="rounded border border-grey-stroke-strong px-4 py-2 text-paragraph-2 text-grey-text-strong hover:bg-grey-fill-weaker disabled:opacity-50"
+              className="theme-control border border-grey-stroke-strong px-4 py-2 text-paragraph-2 text-grey-text-strong hover:bg-grey-fill-weaker disabled:opacity-50"
             >
               Try again
             </button>

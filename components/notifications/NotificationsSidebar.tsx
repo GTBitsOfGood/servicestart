@@ -91,7 +91,7 @@ function NotificationsSidebarContent({ onClose }: { onClose: () => void }) {
                 className={cn(
                   "rounded-full px-4 py-1 text-paragraph-2",
                   tab === "all"
-                    ? "bg-brand-text font-bold text-white"
+                    ? "bg-brand-text font-bold text-brand-foreground"
                     : "border border-grey-stroke-strong text-grey-text-weak",
                 )}
                 onClick={() => setTab("all")}
@@ -103,7 +103,7 @@ function NotificationsSidebarContent({ onClose }: { onClose: () => void }) {
                 className={cn(
                   "rounded-full px-4 py-1 text-paragraph-2",
                   tab === "unread"
-                    ? "bg-brand-text font-bold text-white"
+                    ? "bg-brand-text font-bold text-brand-foreground"
                     : "border border-grey-stroke-strong text-grey-text-weak",
                 )}
                 onClick={() => setTab("unread")}
@@ -138,7 +138,7 @@ function NotificationsSidebarContent({ onClose }: { onClose: () => void }) {
               </p>
               <button
                 type="button"
-                className="mt-3 rounded bg-brand-text px-5 py-2 text-paragraph-2 font-semibold text-white hover:opacity-90"
+                className="theme-control mt-3 bg-brand-text px-5 py-2 text-paragraph-2 font-semibold text-brand-foreground hover:opacity-90"
                 onClick={() => void refreshNotifications()}
               >
                 Retry

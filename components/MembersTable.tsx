@@ -12,9 +12,9 @@ import BogTable, {
   type RowCellContent,
   type TableRow,
 } from "@/components/bog/BogTable/BogTable";
-import BogModal from "@/components/bog/BogModal/BogModal";
+import BogModal from "@/components/theme/ThemedModal";
 import BogBanner from "@/components/bog/BogBanner/BogBanner";
-import BogButton from "@/components/bog/BogButton/BogButton";
+import BogButton from "@/components/theme/ThemedButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { useEmailRecipients } from "@/lib/hooks/useEmailRecipients";
 import SendEmailModal from "@/components/SendEmailModal";
@@ -308,10 +308,12 @@ export default function MembersTable({
             content: (
               <div
                 className={`inline-flex items-center justify-center rounded-[10px] px-3 py-1 ${
-                  isAdmin ? "bg-brand-text" : "bg-status-active"
+                  isAdmin
+                    ? "bg-brand-text text-brand-foreground"
+                    : "bg-status-active text-white"
                 }`}
               >
-                <span className="font-semibold text-white whitespace-nowrap">
+                <span className="whitespace-nowrap font-semibold text-inherit">
                   {isAdmin ? "Admin" : "Member"}
                 </span>
               </div>
@@ -556,14 +558,14 @@ export default function MembersTable({
           onClick={() => setRequestsPanelOpen(true)}
         >
           <div className="flex items-center gap-4">
-            <span className="font-semibold text-desktop-paragraph-2 text-white whitespace-nowrap px-1">
+            <span className="whitespace-nowrap px-1 text-desktop-paragraph-2 font-semibold text-brand-foreground">
               Requests
             </span>
             <BogIcon
               name="users"
               size={20}
               weight="fill"
-              color="white"
+              color="var(--color-brand-foreground)"
               className="shrink-0"
             />
           </div>
@@ -572,7 +574,7 @@ export default function MembersTable({
 
       {/* Search bar + Settings button */}
       <div className="flex items-center gap-3">
-        <div className="flex flex-1 items-center overflow-hidden h-10.5 border border-grey-stroke-weak rounded-md">
+        <div className="theme-control flex h-10.5 flex-1 items-center overflow-hidden border border-grey-stroke-weak">
           <input
             type="text"
             placeholder="Enter text to search"
@@ -595,7 +597,7 @@ export default function MembersTable({
               setSettingsOpen(opening);
               if (opening) setPendingVisibility(new Set(visibleColumns));
             }}
-            className="flex items-center shrink-0 cursor-pointer h-10.5 border border-brand-stroke-strong rounded px-2 gap-1 shadow-inner"
+            className="theme-control flex h-10.5 shrink-0 cursor-pointer items-center gap-1 border border-brand-stroke-strong px-2 shadow-inner"
           >
             <span className="font-semibold text-desktop-paragraph-2 text-brand-text whitespace-nowrap px-1">
               Settings
@@ -607,9 +609,9 @@ export default function MembersTable({
             />
           </button>
           {settingsOpen && (
-            <div className="absolute right-0 top-[calc(100%+8px)] w-107.75 bg-white border border-grey-stroke-weak rounded-lg p-6 flex flex-col gap-3 shadow-[0px_8px_8px_-4px_rgba(0,0,0,0.04),0px_20px_24px_-4px_rgba(0,0,0,0.08)] z-50">
+            <div className="absolute right-0 top-[calc(100%+8px)] z-50 flex w-107.75 flex-col gap-3 rounded-lg border border-grey-stroke-weak bg-page-bg p-6 shadow-[0px_8px_8px_-4px_rgba(0,0,0,0.04),0px_20px_24px_-4px_rgba(0,0,0,0.08)]">
               <p
-                className="font-paragraph text-[20px] leading-7 text-black"
+                className="font-paragraph text-[20px] leading-7 text-page-text"
                 style={{ fontWeight: 700 }}
               >
                 Information Visibility
@@ -826,7 +828,7 @@ export default function MembersTable({
               aria-label="Previous page"
               disabled={page <= 1}
               onClick={() => goToPage(page - 1)}
-              className="flex items-center gap-1 cursor-pointer focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed text-mobile-paragraph-2 text-grey-text-weak border border-grey-stroke-weak rounded px-3 py-1.5"
+              className="theme-control flex cursor-pointer items-center gap-1 border border-grey-stroke-weak px-3 py-1.5 text-mobile-paragraph-2 text-grey-text-weak focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
             >
               <BogIcon name="caret-left" size={12} weight="bold" />
               Previous
@@ -838,7 +840,7 @@ export default function MembersTable({
               aria-label="Next page"
               disabled={page >= totalPages}
               onClick={() => goToPage(page + 1)}
-              className="flex items-center gap-1 cursor-pointer focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed text-mobile-paragraph-2 text-grey-text-weak border border-grey-stroke-weak rounded px-3 py-1.5"
+              className="theme-control flex cursor-pointer items-center gap-1 border border-grey-stroke-weak px-3 py-1.5 text-mobile-paragraph-2 text-grey-text-weak focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
             >
               Next
               <BogIcon name="caret-right" size={12} weight="bold" />

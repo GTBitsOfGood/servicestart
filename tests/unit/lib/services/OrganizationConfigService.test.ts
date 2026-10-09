@@ -11,6 +11,7 @@ import {
   DEFAULT_MEMBER_LAYOUT,
 } from "@/lib/dashboard/constants";
 import { DEFAULT_BRANDING } from "@/lib/branding";
+import { DEFAULT_APP_THEME } from "@/lib/theme";
 
 describe("OrganizationConfigService - members_page_enabled", () => {
   describe("getConfig with MembersPageEnabled key", () => {
@@ -196,16 +197,141 @@ describe("OrganizationConfigService - forms_enabled", () => {
   });
 });
 
+describe("OrganizationConfigService - organization theme", () => {
+  const newThemeKeys = [
+    OrganizationConfigKey.BackgroundColor,
+    OrganizationConfigKey.TextColor,
+    OrganizationConfigKey.DisplayFont,
+    OrganizationConfigKey.HeadingFont,
+    OrganizationConfigKey.BodyFont,
+    OrganizationConfigKey.CornerStyle,
+  ];
+
+  it("returns today's defaults when no theme rows exist", async () => {
+    const org = await createOrganization("cfg-theme-default");
+
+    const config = await OrganizationConfigService.getConfig(
+      org.id,
+      newThemeKeys,
+    );
+
+    expect(config).toEqual({
+      [OrganizationConfigKey.BackgroundColor]:
+        DEFAULT_APP_THEME.backgroundColor,
+      [OrganizationConfigKey.TextColor]: DEFAULT_APP_THEME.textColor,
+      [OrganizationConfigKey.DisplayFont]: DEFAULT_APP_THEME.displayFont,
+      [OrganizationConfigKey.HeadingFont]: DEFAULT_APP_THEME.headingFont,
+      [OrganizationConfigKey.BodyFont]: DEFAULT_APP_THEME.bodyFont,
+      [OrganizationConfigKey.CornerStyle]: DEFAULT_APP_THEME.cornerStyle,
+    });
+  });
+
+  it("keeps raw theme config empty when an organization has no saved theme", async () => {
+    const org = await createOrganization("cfg-theme-raw-default");
+
+    await expect(
+      OrganizationConfigService.getThemeConfig(org.id),
+    ).resolves.toEqual({});
+  });
+
+  it("stores and retrieves every new theme value", async () => {
+    const org = await createOrganization("cfg-theme-values");
+    const values = {
+      [OrganizationConfigKey.BackgroundColor]: "#FFFEF1",
+      [OrganizationConfigKey.TextColor]: "#373444",
+      [OrganizationConfigKey.DisplayFont]: "fredoka",
+      [OrganizationConfigKey.HeadingFont]: "lexend",
+      [OrganizationConfigKey.BodyFont]: "lexend",
+      [OrganizationConfigKey.CornerStyle]: "pill",
+    };
+
+    await Promise.all(
+      Object.entries(values).map(([key, value]) =>
+        OrganizationConfigService.setConfig(
+          org.id,
+          key as OrganizationConfigKey,
+          value,
+        ),
+      ),
+    );
+
+    await expect(
+      OrganizationConfigService.getConfig(org.id, newThemeKeys),
+    ).resolves.toEqual(values);
+    await expect(
+      OrganizationConfigService.getThemeConfig(org.id),
+    ).resolves.toEqual(values);
+  });
+
+  it("updates a theme value instead of creating another row", async () => {
+    const org = await createOrganization("cfg-theme-update");
+
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.BackgroundColor,
+      "#FFFFFF",
+    );
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.BackgroundColor,
+      "#FFFEF1",
+    );
+
+    const rows = await db
+      .select()
+      .from(organizationConfig)
+      .where(eq(organizationConfig.organizationId, org.id));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.value).toBe("#FFFEF1");
+  });
+
+  it.each([
+    [OrganizationConfigKey.BackgroundColor, "cream", "valid hex code"],
+    [OrganizationConfigKey.TextColor, "rgb(0,0,0)", "valid hex code"],
+    [OrganizationConfigKey.DisplayFont, "comic-sans", "Font must be one of"],
+    [OrganizationConfigKey.HeadingFont, "serif", "Font must be one of"],
+    [OrganizationConfigKey.BodyFont, "arial", "Font must be one of"],
+    [OrganizationConfigKey.CornerStyle, "extra-round", "must be one of"],
+  ])("rejects an invalid %s value", async (key, value, message) => {
+    const org = await createOrganization(`cfg-theme-invalid-${key}`);
+
+    await expect(
+      OrganizationConfigService.setConfig(org.id, key, value),
+    ).rejects.toThrow(message);
+  });
+
+  it("does not leak saved theme values between organizations", async () => {
+    const orgA = await createOrganization("cfg-theme-iso-a");
+    const orgB = await createOrganization("cfg-theme-iso-b");
+
+    await OrganizationConfigService.setConfig(
+      orgA.id,
+      OrganizationConfigKey.TextColor,
+      "#373444",
+    );
+
+    await expect(
+      OrganizationConfigService.getThemeConfig(orgB.id),
+    ).resolves.toEqual({});
+    const configB = await OrganizationConfigService.getConfig(orgB.id, [
+      OrganizationConfigKey.TextColor,
+    ]);
+    expect(configB[OrganizationConfigKey.TextColor]).toBe(
+      DEFAULT_APP_THEME.textColor,
+    );
+  });
+});
+
 describe("OrganizationConfigService - keys without handlers", () => {
-  // These keys exist for #300 and #302, which add their get/set.
+  // These keys exist for #302, which adds their get/set.
   it("rejects setting a key that has no handler yet", async () => {
     const org = await createOrganization("cfg-unhandled-set");
 
     await expect(
       OrganizationConfigService.setConfig(
         org.id,
-        OrganizationConfigKey.CornerStyle,
-        "pill",
+        OrganizationConfigKey.MemberTypesEnabled,
+        "true",
       ),
     ).rejects.toThrow("Invalid key");
   });

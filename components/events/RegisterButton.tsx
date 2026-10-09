@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import BogButton from "@/components/bog/BogButton/BogButton";
+import BogButton from "@/components/theme/ThemedButton";
 
 export type RegisterState = {
   registered: boolean;
@@ -41,7 +41,7 @@ export default function RegisterButton({
         type="button"
         variant="primary"
         size="small"
-        className="px-10 py-3 text-xl bg-brand-text text-white"
+        className="bg-brand-text px-10 py-3 text-xl text-brand-foreground"
         disabled={isDisabled}
         onClick={() => {
           startTransition(async () => {

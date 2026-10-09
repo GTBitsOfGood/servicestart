@@ -28,7 +28,7 @@ function NavTabs({
   );
 
   return (
-    <nav className="flex h-full max-w-full items-stretch gap-2 overflow-x-auto text-nav font-normal text-grey-text-strong mobile:gap-8">
+    <nav className="flex h-full max-w-full items-stretch gap-2 overflow-x-auto text-nav font-normal text-page-text mobile:gap-8">
       {items.map((item) => {
         const isActive =
           item.href === "/"
@@ -78,7 +78,7 @@ function NavTabs({
               <BogIcon
                 name={isOpen ? "chevron-up" : "chevron-down"}
                 size={14}
-                className="text-grey-text-strong"
+                className="text-page-text"
               />
               <div
                 className={`absolute bottom-0 left-0 right-0 h-1 transition-colors ${
@@ -131,7 +131,7 @@ export function HorizontalNav({
 }: HorizontalNavProps & NavbarProps) {
   const pathname = usePathname();
 
-  const navBgClass = "bg-brand-fill";
+  const navBgClass = "bg-navbar-bg";
 
   const tabs = <NavTabs items={items} pathname={pathname} />;
   const logo = <SunsetLogo size="sm" />;

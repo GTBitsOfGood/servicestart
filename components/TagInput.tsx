@@ -110,7 +110,7 @@ export function TagInput({
         control: (base, state) => ({
           ...base,
           minHeight: "44px",
-          borderRadius: "4px",
+          borderRadius: "var(--radius-control)",
           borderColor: state.isFocused
             ? "var(--color-media-border)"
             : "var(--color-media-divider)",
@@ -166,7 +166,7 @@ export function TagInput({
         }),
         input: (base) => ({
           ...base,
-          color: "var(--color-grey-text-strong)",
+          color: "var(--color-page-text)",
           fontFamily: "var(--font-paragraph)",
           fontSize: "var(--text-desktop-paragraph-2)",
           margin: "0",

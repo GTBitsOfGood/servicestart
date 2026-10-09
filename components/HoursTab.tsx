@@ -5,7 +5,7 @@ import BogTable, {
   ColumnHeaderCellContent,
   TableRow,
 } from "@/components/bog/BogTable/BogTable";
-import BogButton from "@/components/bog/BogButton/BogButton";
+import BogButton from "@/components/theme/ThemedButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 
 interface EventRow {
@@ -102,27 +102,27 @@ export default function HoursTab({ events }: HoursTabProps) {
   return (
     <div className="mt-[30px]">
       <div className="flex items-center justify-between mb-6">
-        <p className="text-paragraph-2 font-semibold text-black">
+        <p className="text-paragraph-2 font-semibold text-page-text">
           Total Hours: {formatMinutes(totalMinutes)}
         </p>
 
         <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2 border border-black/20 rounded-md px-4 py-2">
+          <div className="theme-control flex items-center gap-2 border border-page-text/20 px-4 py-2">
             <input
               type="text"
               placeholder="Enter text to search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="text-paragraph-2 outline-none bg-transparent w-120 placeholder:text-black/40"
+              className="w-120 bg-transparent text-paragraph-2 text-page-text outline-none placeholder:text-page-text/40"
             />
-            <BogIcon name="search" size={16} className="text-black/40" />
+            <BogIcon name="search" size={16} className="text-page-text/40" />
           </div>
 
           <BogButton
             variant="primary"
             size="medium"
             onClick={handleExport}
-            className="bg-[#FC5B43] flex items-center gap-2"
+            className="flex items-center gap-2"
           >
             <BogIcon name="download" size={16} />
             Export
