@@ -295,7 +295,7 @@ export default function DashboardLayoutBuilder({
 
       {/* ── Right panel: preview ─────────────────────────────────── */}
       <div className="flex flex-1 flex-col bg-media-page-bg px-12 py-40">
-        <p className="font-normal text-heading-2 text-page-text/40">
+        <p className="font-normal text-heading-2 text-app-strong-text/40">
           Dashboard preview
         </p>
         <div className="mt-9">
@@ -356,7 +356,7 @@ function WidgetCard({
     >
       <div className="flex w-full flex-col gap-1">
         <div className="aspect-[8/5] w-full rounded-xl bg-media-divider" />
-        <p className="text-left text-paragraph-2 text-page-text">
+        <p className="text-left text-paragraph-2 text-app-strong-text">
           {widget.label}
         </p>
       </div>
