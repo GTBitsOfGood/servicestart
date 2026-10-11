@@ -28,7 +28,7 @@ function NavTabs({
   );
 
   return (
-    <nav className="flex h-full max-w-full items-stretch gap-2 overflow-x-auto text-nav font-normal text-grey-text-strong mobile:gap-8">
+    <nav className="flex h-full max-w-full items-stretch gap-2 text-nav font-normal text-grey-text-strong mobile:gap-8">
       {items.map((item) => {
         const isActive =
           item.href === "/"
@@ -167,7 +167,7 @@ export function HorizontalNav({
 
   return (
     <header
-      className={`relative flex h-16 items-center overflow-x-hidden px-3 shadow-sm mobile:h-20 mobile:px-6 desktop:px-10 ${navBgClass}`}
+      className={`relative z-50 flex h-16 items-center px-3 shadow-sm mobile:h-20 mobile:px-6 desktop:px-10 ${navBgClass}`}
     >
       {leftContent}
       {middleContent}
