@@ -1,10 +1,11 @@
 // @vitest-environment happy-dom
 import { render, screen, cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import LoginPage from "@/app/login/page";
-import SignupPage from "@/app/signup/page";
-import ForgotPasswordPage from "@/app/forgotpassword/page";
-import ResetPasswordPage from "@/app/resetpassword/page";
+import AuthRouteLayout from "@/app/(auth)/layout";
+import LoginPage from "@/app/(auth)/login/page";
+import SignupPage from "@/app/(auth)/signup/page";
+import ForgotPasswordPage from "@/app/(auth)/forgotpassword/page";
+import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
 
 const mockConfig = vi.fn();
 
@@ -40,7 +41,11 @@ const PAGES = [
   ["login", LoginPage, "Password"],
   ["signup", SignupPage, "John"],
   ["forgotpassword", ForgotPasswordPage, "example@email.com"],
-  ["resetpassword", ResetPasswordPage, "Enter a new password"],
+  [
+    "resetpassword",
+    () => <ResetPasswordForm token="test-token" />,
+    "Enter a new password",
+  ],
 ] as const;
 
 describe("auth pages for a nonexistent organization", () => {
@@ -51,8 +56,6 @@ describe("auth pages for a nonexistent organization", () => {
       value: {
         ...window.location,
         host: "doesnotexist.lvh.me:3000",
-        // resetpassword renders an "expired" view without a token
-        search: "?token=test-token",
       },
       writable: true,
     });
@@ -64,7 +67,11 @@ describe("auth pages for a nonexistent organization", () => {
     it("renders the not-found state instead of the form", () => {
       mockConfig.mockReturnValue({ status: "not-found" });
 
-      render(<Page />);
+      render(
+        <AuthRouteLayout>
+          <Page />
+        </AuthRouteLayout>,
+      );
 
       const notFound = screen.getByTestId("organization-not-found");
       // The host is rendered in its own span, so the copy spans text nodes.
@@ -82,7 +89,11 @@ describe("auth pages for a nonexistent organization", () => {
         secondary_color: "#FB3552",
       });
 
-      render(<Page />);
+      render(
+        <AuthRouteLayout>
+          <Page />
+        </AuthRouteLayout>,
+      );
 
       expect(screen.queryByTestId("organization-not-found")).toBeNull();
       expect(screen.getByPlaceholderText(formMarker)).toBeTruthy();
@@ -93,7 +104,11 @@ describe("auth pages for a nonexistent organization", () => {
     it("renders normally when the config request errored", () => {
       mockConfig.mockReturnValue({ status: "error" });
 
-      render(<Page />);
+      render(
+        <AuthRouteLayout>
+          <Page />
+        </AuthRouteLayout>,
+      );
 
       expect(screen.queryByTestId("organization-not-found")).toBeNull();
       expect(screen.getByPlaceholderText(formMarker)).toBeTruthy();
