@@ -8,17 +8,6 @@ vi.mock("next/navigation", () => ({
   usePathname: () => pathname.current,
 }));
 
-// No real entry is a prefix yet (#299 and #301 add them), so add one.
-vi.mock("@/lib/navbar", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/navbar")>();
-  const pages = [...actual.NO_NAVBAR_PAGES, "/forms/"];
-  return {
-    ...actual,
-    NO_NAVBAR_PAGES: pages,
-    isNoNavbarPage: (path: string) => actual.matchesPage(path, pages),
-  };
-});
-
 function renderAt(path: string) {
   pathname.current = path;
   render(
