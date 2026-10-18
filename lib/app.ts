@@ -1,4 +1,5 @@
 import ping from "@/api/ping";
+import forms from "@/api/forms";
 import joinRequests from "@/api/joinRequests";
 import announcements from "@/api/announcements";
 import events from "@/api/events";
@@ -15,6 +16,7 @@ import emails from "@/api/emails";
 
 export const app = new Hono()
   .basePath("/api")
+  .route("/forms", forms)
   .route("/ping", ping)
   .route("/joinRequests", joinRequests)
   .route("/announcements", announcements)

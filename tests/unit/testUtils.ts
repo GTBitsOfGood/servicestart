@@ -342,6 +342,26 @@ export type NewFormComponent = DistributiveOmit<
 
 export type TestForm = FormDefinition & { organizationId: string };
 
+/** Adds fixture questions to an existing form, including one created in E2E. */
+export async function createFormComponents(
+  form: { id: string; organizationId: string },
+  components: NewFormComponent[] = VISIONARIES_APPLICATION_FORM.components,
+) {
+  if (!components.length) return [];
+  return db
+    .insert(formComponents)
+    .values(
+      components.map((component, position) => ({
+        ...component,
+        id: randomUUID(),
+        formId: form.id,
+        organizationId: form.organizationId,
+        position,
+      })),
+    )
+    .returning();
+}
+
 /**
  * Creates a form and its components for an organization, with new IDs.
  * Components default to the Visionaries camp application's, in order; pass

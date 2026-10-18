@@ -40,6 +40,12 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
     icon: "gear",
     requireAdmin: true,
     subpages: [
+      {
+        label: "Forms",
+        href: "/settings/forms",
+        requireAdmin: true,
+        requireConfig: OrganizationConfigKey.FormsEnabled,
+      },
       { label: "Admin Dashboard", href: "/settings/admindashboard" },
       { label: "Dashboard", href: "/settings/dashboard" },
     ],
