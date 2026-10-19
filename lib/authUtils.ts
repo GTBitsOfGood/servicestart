@@ -11,6 +11,7 @@ import {
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { UserService } from "@/lib/services/UserService";
 import { User } from "better-auth";
 import db from "@/lib/db";
@@ -18,7 +19,7 @@ import { users } from "@/lib/schema";
 import { getSlugFromHost } from "./clientAuthUtils";
 // import { User } from "better-auth/client";
 import { NotificationService } from "@/lib/services/NotificationService";
-import { NotificationType } from "@/lib/schema";
+import { JoinRequestStatus, MemberType, NotificationType } from "@/lib/schema";
 
 type AppSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 
@@ -27,15 +28,16 @@ type SessionWithOrganization = AppSession & {
 };
 
 /**
- * Accepts invite if one exists and is pending
+ * Accepts the user's pending invite to the organization, if there is one.
+ * Returns "pending" when an invite exists but couldn't be accepted.
  */
 async function acceptInviteIfAvailable(
   userId: string,
   organizationId: string,
   headers: Headers,
-): Promise<boolean> {
+): Promise<"accepted" | "pending" | "none"> {
   const user = await UserService.findById(userId);
-  if (!user) return false;
+  if (!user) return "none";
 
   const invitations = await auth.api.listUserInvitations({
     query: { email: user.email },
@@ -49,7 +51,7 @@ async function acceptInviteIfAvailable(
       )
     : null;
 
-  if (!invitation) return false;
+  if (!invitation) return "none";
 
   try {
     await auth.api.acceptInvitation({
@@ -57,10 +59,13 @@ async function acceptInviteIfAvailable(
       headers,
     });
   } catch {
-    return false;
+    // acceptInvitation needs a session cookie, which the request creating the
+    // session doesn't have yet, so this fails at signup. The invite is
+    // accepted from its email link instead (#301).
+    return "pending";
   }
 
-  return true;
+  return "accepted";
 }
 
 /**
@@ -112,16 +117,34 @@ export async function afterUserCreated(
     );
     if (membership) return;
 
-    if (headers) {
-      const accepted = await acceptInviteIfAvailable(
-        userId,
-        organization.id,
-        headers,
-      );
-      if (accepted) return;
+    const invite = headers
+      ? await acceptInviteIfAvailable(userId, organization.id, headers)
+      : "none";
+    if (invite === "accepted") return;
+
+    const autoApprove = await OrganizationConfigService.getAutoApproveSignups(
+      organization.id,
+    );
+    // A pending invite carries its own role, so don't auto-approve over it.
+    if (!autoApprove || invite === "pending") {
+      await createJoinRequestIfNeeded(userId, organization.id);
+      return;
     }
 
-    await createJoinRequestIfNeeded(userId, organization.id);
+    // Any earlier request (pending, denied, or the denied row a removal
+    // records) means an admin already decided, so don't auto-approve over it.
+    const existingRequest = await JoinRequestsService.findByUserAndOrganization(
+      userId,
+      organization.id,
+    );
+    if (existingRequest) return;
+
+    await MembersService.addSignupMember(userId, organization.id);
+    await JoinRequestsService.create(
+      userId,
+      organization.id,
+      JoinRequestStatus.Approved,
+    );
   } catch (err) {
     console.error(err);
   }
@@ -184,6 +207,32 @@ export async function requireAdmin(c: Context) {
   );
 
   if (!MembersService.isAdminOrOwner(membership?.role)) {
+    throw new ForbiddenError();
+  }
+
+  return session;
+}
+
+/**
+ * Returns the current session only if the user is a member of the active
+ * organization whose member type is in `allowed`. Admins and owners always
+ * pass, and so does everyone while MemberTypesEnabled is off.
+ */
+export async function requireMemberType(c: Context, allowed: MemberType[]) {
+  const session = await requireMembership(c);
+  const organizationId = session.session.activeOrganizationId!;
+
+  const membership = await MembersService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+  if (MembersService.isAdminOrOwner(membership?.role)) return session;
+
+  const enabled =
+    await OrganizationConfigService.getMemberTypesEnabled(organizationId);
+  if (!enabled) return session;
+
+  if (!membership?.memberType || !allowed.includes(membership.memberType)) {
     throw new ForbiddenError();
   }
 

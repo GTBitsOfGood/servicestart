@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
 import { auth, tenantTrustedOrigins } from "@/lib/auth";
 import { eventRsvps, members, MemberType, shiftRSVPs } from "@/lib/schema";
+import { EmailService } from "@/lib/services/EmailService";
 import {
   addMember,
   buildTestUser,
@@ -271,5 +272,88 @@ describe("member type", () => {
         and(eq(members.userId, user.id), eq(members.organizationId, org.id)),
       );
     expect(member.memberType).toBeNull();
+  });
+});
+
+describe("invitation roles", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  async function signInAs(role: "owner" | "admin" | "member") {
+    const org = await createOrganization(
+      `invite-${role}-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+    );
+    const { session, headers } = await signUpAndGetSession(buildTestUser());
+    await addMember(session.userId, org.id, role);
+    await setActiveOrganization(session.id, org.id);
+    return { org, headers };
+  }
+
+  function invite(
+    org: { id: string },
+    headers: Record<string, string>,
+    role: "member" | "admin" | "owner",
+  ) {
+    const invitee = buildTestUser();
+    return auth.api.createInvitation({
+      body: {
+        email: invitee.email,
+        name: invitee.name,
+        role,
+        organizationId: org.id,
+      },
+      headers,
+    });
+  }
+
+  it("doesn't let a member invite anyone", async () => {
+    const sendInvitationEmail = vi
+      .spyOn(EmailService, "sendInvitationEmail")
+      .mockResolvedValue(undefined as never);
+    const { org, headers } = await signInAs("member");
+
+    await expect(invite(org, headers, "member")).rejects.toMatchObject({
+      statusCode: 403,
+    });
+    expect(sendInvitationEmail).not.toHaveBeenCalled();
+  });
+
+  it("lets an admin invite an admin", async () => {
+    const sendInvitationEmail = vi
+      .spyOn(EmailService, "sendInvitationEmail")
+      .mockResolvedValue(undefined as never);
+    const { org, headers } = await signInAs("admin");
+
+    const invitation = await invite(org, headers, "admin");
+
+    expect(invitation.role).toBe("admin");
+    expect(sendInvitationEmail).toHaveBeenCalledOnce();
+  });
+
+  it("doesn't let an admin invite an owner", async () => {
+    vi.spyOn(EmailService, "sendInvitationEmail").mockResolvedValue(
+      undefined as never,
+    );
+    const { org, headers } = await signInAs("admin");
+
+    await expect(invite(org, headers, "owner")).rejects.toMatchObject({
+      statusCode: 403,
+    });
+  });
+
+  it("doesn't let an owner invite an owner", async () => {
+    const sendInvitationEmail = vi
+      .spyOn(EmailService, "sendInvitationEmail")
+      .mockResolvedValue(undefined as never);
+    const { org, headers } = await signInAs("owner");
+
+    await expect(invite(org, headers, "owner")).rejects.toMatchObject({
+      statusCode: 403,
+      body: {
+        message: "Invitations can only be for the member or admin role.",
+      },
+    });
+    expect(sendInvitationEmail).not.toHaveBeenCalled();
   });
 });
