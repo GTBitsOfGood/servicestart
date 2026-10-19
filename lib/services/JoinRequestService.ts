@@ -198,14 +198,7 @@ async function updateStatus(
       newStatus === JoinRequestStatus.Approved &&
       currentStatus !== JoinRequestStatus.Approved
     ) {
-      await auth.api.addMember({
-        body: {
-          organizationId: jr.organizationId,
-          userId: jr.userId,
-          role: "member",
-        },
-        headers,
-      });
+      await MembersService.addSignupMember(jr.userId, jr.organizationId);
     } else if (
       newStatus !== JoinRequestStatus.Approved &&
       currentStatus === JoinRequestStatus.Approved
@@ -266,13 +259,17 @@ async function deleteById(joinRequestId: string) {
   await db.delete(joinRequests).where(eq(joinRequests.id, joinRequestId));
 }
 
-async function create(userId: string, organizationId: string) {
+async function create(
+  userId: string,
+  organizationId: string,
+  status: JoinRequestStatus = JoinRequestStatus.Pending,
+) {
   const id = randomUUID();
   await db.insert(joinRequests).values({
     id,
     userId,
     organizationId,
-    status: JoinRequestStatus.Pending,
+    status,
   });
   return id;
 }

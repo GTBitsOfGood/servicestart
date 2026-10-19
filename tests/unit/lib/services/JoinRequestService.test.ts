@@ -6,7 +6,10 @@ import {
   joinRequestHistory,
   joinRequests,
   JoinRequestStatus,
+  MemberType,
+  OrganizationConfigKey,
 } from "@/lib/schema";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { MembersService } from "@/lib/services/MemberService";
 import NotificationService from "@/lib/services/NotificationService";
@@ -38,6 +41,23 @@ async function listNotificationTexts(userId: string, organizationId: string) {
 }
 
 describe("JoinRequestsService.create", () => {
+  it("creates a join request with the given status", async () => {
+    const org = await createOrganization("create-approved");
+    const { user } = await signUpAndGetSession(buildTestUser());
+
+    const id = await JoinRequestsService.create(
+      user.id,
+      org.id,
+      JoinRequestStatus.Approved,
+    );
+
+    const [row] = await db
+      .select()
+      .from(joinRequests)
+      .where(eq(joinRequests.id, id));
+    expect(row.status).toBe(JoinRequestStatus.Approved);
+  });
+
   it("creates a pending join request and returns its id", async () => {
     const org = await createOrganization("create-pending");
     const { user } = await signUpAndGetSession(buildTestUser());
@@ -373,6 +393,37 @@ describe("JoinRequestsService.updateStatus", () => {
     });
   });
 
+  it.each([
+    ["applicant", "true", MemberType.Applicant],
+    ["untyped", "false", null],
+  ] as const)(
+    "adds an %s member when member types are %s",
+    async (_name, memberTypesEnabled, expectedType) => {
+      const org = await createOrganization(`update-type-${memberTypesEnabled}`);
+      await OrganizationConfigService.setConfig(
+        org.id,
+        OrganizationConfigKey.MemberTypesEnabled,
+        memberTypesEnabled,
+      );
+      const admin = await createAdmin(org.id);
+      const { user } = await signUpAndGetSession(buildTestUser());
+      const id = await createJoinRequest(user.id, org.id);
+
+      await JoinRequestsService.updateStatus(
+        id,
+        JoinRequestStatus.Approved,
+        admin.user.id,
+        admin.headers,
+        undefined,
+        JoinRequestStatus.Pending,
+      );
+
+      expect(
+        await MembersService.findByUserAndOrganization(user.id, org.id),
+      ).toMatchObject({ role: "member", memberType: expectedType });
+    },
+  );
+
   it("denies a pending request with a reason and includes it in the notification", async () => {
     const org = await createOrganization("update-deny");
     const admin = await createAdmin(org.id);
@@ -451,6 +502,12 @@ describe("JoinRequestsService.updateStatus", () => {
     expect(
       await MembersService.findByUserAndOrganization(user.id, org.id),
     ).toBeNull();
+    // beforeRemoveMember leaves the existing request alone.
+    const requests = await db
+      .select({ status: joinRequests.status })
+      .from(joinRequests)
+      .where(eq(joinRequests.userId, user.id));
+    expect(requests).toEqual([{ status: JoinRequestStatus.Pending }]);
 
     const texts = await listNotificationTexts(user.id, org.id);
     expect(texts).toEqual([
