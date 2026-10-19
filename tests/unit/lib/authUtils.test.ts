@@ -20,6 +20,7 @@ import {
   OrganizationConfigKey,
 } from "@/lib/schema";
 import { EmailService } from "@/lib/services/EmailService";
+import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import {
   ForbiddenError,
@@ -583,6 +584,42 @@ describe("auto-approved signups", () => {
     expect(requests[0].status).toBe(JoinRequestStatus.Denied);
   });
 
+  it("doesn't re-add a member removed from the Requests panel who withdraws", async () => {
+    const org = await createOrganization("auto-panel-removed");
+    await setToggles(org.id, { autoApprove: true, memberTypes: true });
+    const admin = await createOrgAdmin(org.id);
+    const user = buildTestUser();
+    const res = await auth.api.signUpEmail({
+      body: { ...user, organizationSlug: "auto-panel-removed" },
+      headers: {
+        host: buildHost("auto-panel-removed"),
+        "x-organization-slug": "auto-panel-removed",
+      },
+      returnHeaders: true,
+    });
+    const userId = res.response.user.id;
+    const [request] = await getJoinRequests(userId, org.id);
+
+    await JoinRequestsService.updateStatus(
+      request.id,
+      JoinRequestStatus.Pending,
+      admin.user.id,
+      admin.headers,
+      undefined,
+      JoinRequestStatus.Approved,
+    );
+    const withdraw = await testApi.joinRequests[":organizationId"].$delete(
+      { param: { organizationId: org.id } },
+      { headers: { Cookie: res.headers.get("set-cookie")! } },
+    );
+    await signInOnHost("auto-panel-removed", user);
+
+    expect(withdraw.status).toBe(403);
+    expect(await getMembership(userId, org.id)).toBeNull();
+    const requests = await getJoinRequests(userId, org.id);
+    expect(requests.map((r) => r.status)).toEqual([JoinRequestStatus.Pending]);
+  });
+
   it("doesn't add a user whose join request was denied", async () => {
     const org = await createOrganization("auto-denied");
     const { user, userId } = await signUpOnHost("auto-denied");
@@ -783,5 +820,29 @@ describe("member directory and applicants", () => {
     await expect(
       MembersPage({ searchParams: Promise.resolve({}) }),
     ).rejects.toThrow("NEXT_REDIRECT:/");
+  });
+});
+
+describe("members page pagination", () => {
+  it("clamps a page past the end to the last page", async () => {
+    const organization = await createOrganization(
+      `pages-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+    );
+    const { user, session, headers } =
+      await signUpAndGetSession(buildTestUser());
+    await addMember(user.id, organization.id, "admin");
+    await setActiveOrganization(session.id, organization.id);
+    mockHeaders.mockReturnValue(
+      new Headers({
+        cookie: headers.Cookie,
+        host: buildHost(organization.slug),
+      }),
+    );
+
+    const page = await MembersPage({
+      searchParams: Promise.resolve({ page: "5", pageSize: "20" }),
+    });
+
+    expect(page.props.children.props).toMatchObject({ page: 1, total: 1 });
   });
 });

@@ -43,7 +43,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
       ? (typeParam as MemberType)
       : undefined;
 
-  const page = Math.max(1, parseInt(pageParam ?? "1") || 1);
+  const requestedPage = Math.max(1, parseInt(pageParam ?? "1") || 1);
   const pageSize = Math.min(
     100,
     Math.max(
@@ -51,16 +51,22 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
       parseInt(pageSizeParam ?? String(DEFAULT_PAGE_SIZE)) || DEFAULT_PAGE_SIZE,
     ),
   );
+  const total = await MembersService.countByOrganization(
+    organizationId,
+    memberType,
+  );
+  // A type change or removal can empty the last page, so stay in range.
+  const page = Math.min(
+    requestedPage,
+    Math.max(1, Math.ceil(total / pageSize)),
+  );
   const offset = (page - 1) * pageSize;
 
-  const [memberRows, total] = await Promise.all([
-    MembersService.listMembers(organizationId, {
-      limit: pageSize,
-      offset,
-      memberType,
-    }),
-    MembersService.countByOrganization(organizationId, memberType),
-  ]);
+  const memberRows = await MembersService.listMembers(organizationId, {
+    limit: pageSize,
+    offset,
+    memberType,
+  });
 
   async function addMemberDirectly(orgId: string, email: string, name: string) {
     "use server";

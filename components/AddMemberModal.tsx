@@ -74,10 +74,14 @@ export default function AddMemberModal({
     try {
       // A resend keeps a pending invite's old role, so cancel one with a
       // different role first. Its email link stops working.
-      const { data: invitations } =
+      const { data: invitations, error: listError } =
         await authClient.organization.listInvitations({
           query: { organizationId },
         });
+      if (listError) {
+        setError(listError.message ?? "Something went wrong.");
+        return;
+      }
       const normalizedEmail = email.trim().toLowerCase();
       const stale = invitations?.find(
         (inv) =>

@@ -149,7 +149,10 @@ async function setMemberTypes(
         ),
       );
 
-    if (rows.length < uniqueIds.length) return { error: "not_found" as const };
+    // Distinct IDs: members has no unique (user, org), so a user can have two rows.
+    const foundIds = new Set(rows.map((row) => row.userId));
+    if (foundIds.size < uniqueIds.length)
+      return { error: "not_found" as const };
     if (rows.some((row) => isAdminOrOwner(row.role))) {
       return { error: "admin" as const };
     }

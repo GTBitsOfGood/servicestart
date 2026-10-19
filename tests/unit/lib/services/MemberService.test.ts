@@ -430,6 +430,30 @@ describe("MembersService.setMemberTypes", () => {
     ]);
   });
 
+  it("returns not_found when a duplicate row hides an unknown ID", async () => {
+    const org = await createOrganization("types-duplicate");
+    const [userId] = await addTypedMembers(org.id, [MemberType.Applicant]);
+    // members has no unique (user, org), so this user has two rows.
+    await db.insert(members).values({
+      id: randomUUID(),
+      userId,
+      organizationId: org.id,
+      role: "member",
+      memberType: MemberType.Applicant,
+    });
+
+    const result = await MembersService.setMemberTypes(
+      org.id,
+      [userId, randomUUID()],
+      MemberType.Attendee,
+    );
+
+    expect(result).toEqual({ error: "not_found" });
+    expect(await getTypes(org.id, [userId])).toEqual({
+      [userId]: MemberType.Applicant,
+    });
+  });
+
   it("rejects admins and owners and writes nothing", async () => {
     const org = await createOrganization("types-admin");
     const [memberId] = await addTypedMembers(org.id, [MemberType.Applicant]);
