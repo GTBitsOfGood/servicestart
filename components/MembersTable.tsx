@@ -16,6 +16,8 @@ import BogModal from "@/components/bog/BogModal/BogModal";
 import BogBanner from "@/components/bog/BogBanner/BogBanner";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
+import BogDropdown from "@/components/bog/BogDropdown/BogDropdown";
+import { MemberType } from "@/lib/schema";
 import { useEmailRecipients } from "@/lib/hooks/useEmailRecipients";
 import SendEmailModal from "@/components/SendEmailModal";
 import {
@@ -32,6 +34,7 @@ interface MemberRow {
   email: string;
   phoneNumber: string | null;
   role: string;
+  memberType: MemberType | null;
   createdAt: Date;
 }
 
@@ -47,6 +50,8 @@ interface MembersTableProps {
   pageSize: number;
   organizationId: string;
   currentUserId: string;
+  memberTypesEnabled: boolean;
+  memberTypeFilter: MemberType | null;
   onAddDirectly?: (
     organizationId: string,
     email: string,
@@ -72,6 +77,7 @@ const COLUMNS: ColumnConfig[] = [
   },
   { key: "member", label: "Member", datatype: "string", weight: 20 },
   { key: "role", label: "Role", datatype: "string", weight: 13 },
+  { key: "type", label: "Type", datatype: "string", weight: 16 },
   { key: "contact", label: "Contact", datatype: "other", weight: 25 },
   { key: "hours", label: "Hours", datatype: "number", weight: 11 },
   { key: "lastActive", label: "Last Active", datatype: "string", weight: 20 },
@@ -85,6 +91,21 @@ const CONTACT_SUB_KEYS = ["phone", "email"] as const;
 
 const DEFAULT_VISIBLE = new Set([...ALL_TOGGLEABLE_KEYS, ...CONTACT_SUB_KEYS]);
 
+const MEMBER_TYPE_LABELS: Record<MemberType, string> = {
+  [MemberType.Applicant]: "Applicant",
+  [MemberType.Attendee]: "Current Attendee",
+};
+
+const TYPE_FILTER_OPTIONS: { label: string; value: MemberType | null }[] = [
+  { label: "All types", value: null },
+  { label: "Applicants", value: MemberType.Applicant },
+  { label: "Current Attendees", value: MemberType.Attendee },
+];
+
+function isAdminRole(role: string) {
+  return role === "admin" || role === "owner";
+}
+
 export default function MembersTable({
   members,
   total,
@@ -92,6 +113,8 @@ export default function MembersTable({
   pageSize,
   organizationId,
   currentUserId,
+  memberTypesEnabled,
+  memberTypeFilter,
   onAddDirectly,
 }: MembersTableProps) {
   const router = useRouter();
@@ -135,6 +158,54 @@ export default function MembersTable({
   const [batchRemoving, setBatchRemoving] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ done: 0, total: 0 });
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [typeUpdating, setTypeUpdating] = useState(false);
+  const [typeError, setTypeError] = useState<string | null>(null);
+
+  const toggleableKeys = useMemo(
+    () =>
+      ALL_TOGGLEABLE_KEYS.filter((key) => memberTypesEnabled || key !== "type"),
+    [memberTypesEnabled],
+  );
+
+  const setMemberTypes = useCallback(
+    async (userIds: string[], memberType: MemberType) => {
+      if (userIds.length === 0) return;
+      setTypeUpdating(true);
+      setTypeError(null);
+      try {
+        const res = await api.members.type.$patch({
+          json: { userIds, memberType },
+        });
+        if (!res.ok) {
+          setTypeError("Couldn't update the member type. Please try again.");
+          return;
+        }
+        router.refresh();
+      } catch {
+        setTypeError("Couldn't update the member type. Please try again.");
+      } finally {
+        setTypeUpdating(false);
+      }
+    },
+    [router],
+  );
+
+  const markSelectedAsAttendees = useCallback(async () => {
+    const userIds = members
+      .filter((m) => selectedRows.has(m.userId) && !isAdminRole(m.role))
+      .map((m) => m.userId);
+    await setMemberTypes(userIds, MemberType.Attendee);
+    setSelectedRows(new Set());
+  }, [members, selectedRows, setMemberTypes]);
+
+  function filterByType(memberType: MemberType | null) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (memberType) params.set("type", memberType);
+    else params.delete("type");
+    params.set("page", "1");
+    setSelectedRows(new Set());
+    router.push(`${pathname}?${params.toString()}`);
+  }
 
   const handleRemove = useCallback(
     async (memberEmail: string) => {
@@ -239,14 +310,18 @@ export default function MembersTable({
   const startItem = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const endItem = Math.min(page * pageSize, total);
   const hasSelection = selectedRows.size > 0;
+  const selectedNonAdminCount = members.filter(
+    (m) => selectedRows.has(m.userId) && !isAdminRole(m.role),
+  ).length;
 
   const visibleIndices = useMemo(
     () =>
       COLUMNS.reduce<number[]>((acc, col, i) => {
+        if (col.key === "type" && !memberTypesEnabled) return acc;
         if (col.alwaysVisible || visibleColumns.has(col.key)) acc.push(i);
         return acc;
       }, []),
-    [visibleColumns],
+    [visibleColumns, memberTypesEnabled],
   );
 
   const totalWeight = useMemo(
@@ -284,7 +359,7 @@ export default function MembersTable({
             : formatDate(act.lastActive);
         const isSelected = selectedRows.has(member.userId);
         const isSelf = member.userId === currentUserId;
-        const isAdmin = member.role === "admin" || member.role === "owner";
+        const isAdmin = isAdminRole(member.role);
 
         const allCells: RowCellContent[] = [
           {
@@ -315,6 +390,30 @@ export default function MembersTable({
                   {isAdmin ? "Admin" : "Member"}
                 </span>
               </div>
+            ),
+          },
+          {
+            content: isAdmin ? null : (
+              <select
+                aria-label={`Type for ${member.name}`}
+                value={member.memberType ?? ""}
+                disabled={typeUpdating}
+                onChange={(e) =>
+                  setMemberTypes([member.userId], e.target.value as MemberType)
+                }
+                className="max-w-full cursor-pointer rounded-full border border-brand-stroke-strong bg-white px-2 py-1 text-[13px] text-brand-text disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {!member.memberType && (
+                  <option value="" disabled>
+                    —
+                  </option>
+                )}
+                {Object.values(MemberType).map((type) => (
+                  <option key={type} value={type}>
+                    {MEMBER_TYPE_LABELS[type]}
+                  </option>
+                ))}
+              </select>
             ),
           },
           {
@@ -402,6 +501,8 @@ export default function MembersTable({
       removing,
       visibleIndices,
       visibleColumns,
+      typeUpdating,
+      setMemberTypes,
     ],
   );
 
@@ -528,6 +629,15 @@ export default function MembersTable({
         }}
       />
 
+      {typeError && (
+        <BogBanner
+          type="error"
+          variant="surface"
+          role="alert"
+          content={<span>{typeError}</span>}
+        />
+      )}
+
       {emailSent && (
         <BogBanner
           type="success"
@@ -537,7 +647,7 @@ export default function MembersTable({
         />
       )}
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <BogIcon
             name="users"
@@ -570,9 +680,9 @@ export default function MembersTable({
         </BogButton>
       </div>
 
-      {/* Search bar + Settings button */}
-      <div className="flex items-center gap-3">
-        <div className="flex flex-1 items-center overflow-hidden h-10.5 border border-grey-stroke-weak rounded-md">
+      {/* Search bar + type filter + Settings button */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex min-w-48 flex-1 items-center overflow-hidden h-10.5 border border-grey-stroke-weak rounded-md">
           <input
             type="text"
             placeholder="Enter text to search"
@@ -588,6 +698,29 @@ export default function MembersTable({
             />
           </div>
         </div>
+        {memberTypesEnabled && (
+          <div role="group" aria-label="Filter by type" className="shrink-0">
+            <BogDropdown
+              name="memberTypeFilter"
+              options={TYPE_FILTER_OPTIONS.map((o) => o.label)}
+              value={
+                TYPE_FILTER_OPTIONS.find((o) => o.value === memberTypeFilter)
+                  ?.label
+              }
+              onSelectionChange={(selection) =>
+                filterByType(
+                  TYPE_FILTER_OPTIONS.find((o) => o.label === selection)
+                    ?.value ?? null,
+                )
+              }
+              variant="primary"
+              radius="full"
+              size="small"
+              showClearIcon={false}
+              className="w-72"
+            />
+          </div>
+        )}
         <div ref={settingsRef} className="relative">
           <button
             onClick={() => {
@@ -615,7 +748,7 @@ export default function MembersTable({
                 Information Visibility
               </p>
               <div className="bg-solid-bg-sunken border border-grey-stroke-weak rounded-sm p-1 flex flex-col">
-                {ALL_TOGGLEABLE_KEYS.map((key) => {
+                {toggleableKeys.map((key) => {
                   const col = COLUMNS.find((c) => c.key === key)!;
                   const isContact = key === "contact";
                   return (
@@ -751,6 +884,17 @@ export default function MembersTable({
                 color="var(--color-grey-icon-strong)"
               />
             </button>
+            {memberTypesEnabled && (
+              <BogButton
+                variant="secondary"
+                size="small"
+                onClick={markSelectedAsAttendees}
+                disabled={typeUpdating || selectedNonAdminCount === 0}
+                className="whitespace-nowrap"
+              >
+                Mark as current attendee
+              </BogButton>
+            )}
           </>
         ) : (
           <button
@@ -794,11 +938,11 @@ export default function MembersTable({
         </Dialog.Portal>
       </Dialog.Root>
 
-      {/* Table */}
+      {/* Table: min width so phones scroll it sideways instead of crushing it. */}
       <BogTable
         columnHeaders={filteredColumnHeaders}
         rows={rows}
-        className="w-full [&_.rt-TableRootTable]:table-fixed [&_tbody_span]:text-[13px]! [&_tbody_span]:leading-5! [&_tbody_p]:text-[13px]! [&_tbody_p]:leading-5!"
+        className="w-full min-w-384 mobile:min-w-0 [&_.rt-TableRootTable]:table-fixed [&_tbody_span]:text-[13px]! [&_tbody_span]:leading-5! [&_tbody_p]:text-[13px]! [&_tbody_p]:leading-5!"
         columnHeaderCellStyle={{
           fontSize: 16,
           fontWeight: 700,

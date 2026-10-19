@@ -4,13 +4,17 @@ import { auth } from "@/lib/auth";
 import { redirectIfNotAdmin } from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { OrganizationConfigKey } from "@/lib/schema";
+import {
+  MEMBER_TYPE_VALUES,
+  MemberType,
+  OrganizationConfigKey,
+} from "@/lib/schema";
 import MembersTable from "@/components/MembersTable";
 
 const DEFAULT_PAGE_SIZE = 20;
 
 interface MembersPageProps {
-  searchParams: Promise<{ page?: string; pageSize?: string }>;
+  searchParams: Promise<{ page?: string; pageSize?: string; type?: string }>;
 }
 
 export default async function MembersPage({ searchParams }: MembersPageProps) {
@@ -19,13 +23,25 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
 
   const config = await OrganizationConfigService.getConfig(organizationId, [
     OrganizationConfigKey.MembersPageEnabled,
+    OrganizationConfigKey.MemberTypesEnabled,
   ]);
+  const memberTypesEnabled = Boolean(
+    config[OrganizationConfigKey.MemberTypesEnabled],
+  );
 
   if (!config[OrganizationConfigKey.MembersPageEnabled]) {
     redirect("/");
   }
 
-  const { page: pageParam, pageSize: pageSizeParam } = await searchParams;
+  const {
+    page: pageParam,
+    pageSize: pageSizeParam,
+    type: typeParam,
+  } = await searchParams;
+  const memberType =
+    memberTypesEnabled && MEMBER_TYPE_VALUES.includes(typeParam as MemberType)
+      ? (typeParam as MemberType)
+      : undefined;
 
   const page = Math.max(1, parseInt(pageParam ?? "1") || 1);
   const pageSize = Math.min(
@@ -38,8 +54,12 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
   const offset = (page - 1) * pageSize;
 
   const [memberRows, total] = await Promise.all([
-    MembersService.listMembers(organizationId, { limit: pageSize, offset }),
-    MembersService.countByOrganization(organizationId),
+    MembersService.listMembers(organizationId, {
+      limit: pageSize,
+      offset,
+      memberType,
+    }),
+    MembersService.countByOrganization(organizationId, memberType),
   ]);
 
   async function addMemberDirectly(orgId: string, email: string, name: string) {
@@ -84,6 +104,8 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
         pageSize={pageSize}
         organizationId={organizationId}
         currentUserId={authSession.user.id}
+        memberTypesEnabled={memberTypesEnabled}
+        memberTypeFilter={memberType ?? null}
         onAddDirectly={addMemberDirectly}
       />
     </div>
