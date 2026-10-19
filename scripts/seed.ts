@@ -78,6 +78,8 @@ const VISIONARIES_ORG: SeedOrg = {
     [OrganizationConfigKey.SecondaryColor]: "#C29BDC",
     [OrganizationConfigKey.Tagline]: "Visionaries to the Throne",
     [OrganizationConfigKey.FormsEnabled]: "true",
+    [OrganizationConfigKey.MemberTypesEnabled]: "true",
+    [OrganizationConfigKey.AutoApproveSignups]: "true",
     // TODO: set the LogoUrl once the approved logo is committed to public/.
   },
   extraUsers: [
@@ -179,14 +181,6 @@ export async function main() {
       OrganizationConfigKey.NavbarColor,
       org.navbar.color,
     );
-
-    for (const [key, value] of Object.entries(org.config ?? {})) {
-      await OrganizationConfigService.setConfig(
-        org.id,
-        key as OrganizationConfigKey,
-        value,
-      );
-    }
   }
 
   log("Organizations created with navbar configs.");
@@ -358,6 +352,20 @@ export async function main() {
   }
 
   log("Users and members created.");
+
+  // After the accounts exist, so the signups above don't go through toggles
+  // like AutoApproveSignups.
+  for (const org of ORGS) {
+    for (const [key, value] of Object.entries(org.config ?? {})) {
+      await OrganizationConfigService.setConfig(
+        org.id,
+        key as OrganizationConfigKey,
+        value,
+      );
+    }
+  }
+
+  log("Organization configs set.");
 
   await seedVisionariesApplication(
     userIdsByOrganization.get(VISIONARIES_ORG.id)!.get("admin@example.com")!,
