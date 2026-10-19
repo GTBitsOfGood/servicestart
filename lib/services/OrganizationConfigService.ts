@@ -373,6 +373,80 @@ async function setFormsEnabled(organizationId: string, value: string) {
   }
 }
 
+// Boolean feature toggles that default to off.
+async function getBooleanToggle(
+  organizationId: string,
+  key: OrganizationConfigKey,
+) {
+  const [row] = await db
+    .select({ value: organizationConfig.value })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, key),
+      ),
+    )
+    .limit(1);
+
+  return (row?.value ?? "false") === "true";
+}
+
+async function setBooleanToggle(
+  organizationId: string,
+  key: OrganizationConfigKey,
+  value: string,
+) {
+  if (value !== "true" && value !== "false") {
+    throw new Error("Value must be 'true' or 'false'");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, key),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value })
+      .where(eq(organizationConfig.id, existing.id));
+  } else {
+    await db.insert(organizationConfig).values({
+      id: randomUUID(),
+      organizationId,
+      key,
+      value,
+    });
+  }
+}
+
+const getMemberTypesEnabled = (organizationId: string) =>
+  getBooleanToggle(organizationId, OrganizationConfigKey.MemberTypesEnabled);
+
+const setMemberTypesEnabled = (organizationId: string, value: string) =>
+  setBooleanToggle(
+    organizationId,
+    OrganizationConfigKey.MemberTypesEnabled,
+    value,
+  );
+
+const getAutoApproveSignups = (organizationId: string) =>
+  getBooleanToggle(organizationId, OrganizationConfigKey.AutoApproveSignups);
+
+const setAutoApproveSignups = (organizationId: string, value: string) =>
+  setBooleanToggle(
+    organizationId,
+    OrganizationConfigKey.AutoApproveSignups,
+    value,
+  );
+
 async function getNavbarVariant(organizationId: string) {
   const [row] = await db
     .select({
@@ -989,6 +1063,14 @@ const keyMap = {
     get: getFormsEnabled,
     set: setFormsEnabled,
   },
+  [OrganizationConfigKey.MemberTypesEnabled]: {
+    get: getMemberTypesEnabled,
+    set: setMemberTypesEnabled,
+  },
+  [OrganizationConfigKey.AutoApproveSignups]: {
+    get: getAutoApproveSignups,
+    set: setAutoApproveSignups,
+  },
 } satisfies Partial<Record<OrganizationConfigKey, ConfigHandler>>;
 
 type HandledConfigKey = keyof typeof keyMap;
@@ -1029,6 +1111,8 @@ export const OrganizationConfigService = {
   setAdminDashboardLayout,
   getDashboardLayout,
   setDashboardLayout,
+  getMemberTypesEnabled,
+  getAutoApproveSignups,
 };
 
 export default OrganizationConfigService;
