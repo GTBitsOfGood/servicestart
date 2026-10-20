@@ -138,7 +138,7 @@ test.describe("Accept invitation", () => {
       .getByLabel("Password", { exact: true })
       .fill(someoneElse.password);
     await page.getByRole("button", { name: "Login" }).click();
-    await expect(page).not.toHaveURL(/\/login/);
+    await expect(page).toHaveURL(`${tenantUrl(org.slug)}/joinrequeststatus`);
 
     await page.goto(`${tenantUrl(org.slug)}/accept-invitation/${invitationId}`);
     await expect(

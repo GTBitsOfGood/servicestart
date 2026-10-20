@@ -4,6 +4,7 @@ import styles from "@/components/bog/BogTextInput/styles.module.css";
 import React, { useId, useState, type ReactNode } from "react";
 import type { IconProps } from "@/utils/design-system/types/types";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
+import { useHydrated } from "@/lib/hooks/useHydrated";
 import { cn } from "@/lib/utils";
 
 export interface AuthInputProps {
@@ -68,6 +69,7 @@ export default function AuthInput({
   hint,
   onChange,
 }: AuthInputProps) {
+  const hydrated = useHydrated();
   const generatedId = useId();
   const inputId = idProp ?? generatedId;
   const messageId = `${inputId}-message`;
@@ -117,7 +119,7 @@ export default function AuthInput({
             id={inputId}
             name={name}
             required={required}
-            disabled={disabled}
+            disabled={disabled || !hydrated}
             readOnly={readOnly}
             rows={4}
             placeholder={placeholder}
@@ -133,7 +135,7 @@ export default function AuthInput({
             name={name}
             type={type}
             required={required}
-            disabled={disabled}
+            disabled={disabled || !hydrated}
             readOnly={readOnly}
             autoComplete={autoComplete}
             placeholder={placeholder}

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useHydrated } from "@/lib/hooks/useHydrated";
 import BogButton from "@/components/bog/BogButton/BogButton";
 
 type AuthSubmitButtonProps = {
@@ -18,11 +19,12 @@ export default function AuthSubmitButton({
   type = "submit",
   onClick,
 }: AuthSubmitButtonProps) {
+  const hydrated = useHydrated();
   return (
     <BogButton
       type={type}
       onClick={onClick}
-      disabled={pending}
+      disabled={pending || !hydrated}
       aria-busy={pending || undefined}
       size="large"
       className="w-full rounded-control text-brand-foreground"
