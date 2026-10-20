@@ -230,12 +230,8 @@ export default function DashboardLayoutBuilder({
       {/* ── Left panel ───────────────────────────────────────────── */}
       <div className="flex w-200 shrink-0 flex-col px-20 py-40">
         <div className="flex items-center gap-1.5">
-          <BogIcon
-            name="gear"
-            size={36}
-            color="var(--color-grey-text-strong)"
-          />
-          <h1 className="font-normal text-heading-2 text-grey-text-strong">
+          <BogIcon name="gear" size={36} color="var(--color-page-text)" />
+          <h1 className="font-normal text-heading-2 text-page-text">
             Customize Dashboard
           </h1>
         </div>
@@ -262,7 +258,7 @@ export default function DashboardLayoutBuilder({
               onClick={handleDiscard}
               disabled={!hasChanges}
               type="button"
-              className={`flex items-center gap-1 rounded px-2 py-2 text-paragraph-2 font-semibold transition-colors ${
+              className={`theme-control flex items-center gap-1 rounded px-2 py-2 text-paragraph-2 font-semibold transition-colors ${
                 hasChanges
                   ? "text-brand-text hover:opacity-80"
                   : "text-grey-off-state"
@@ -282,10 +278,10 @@ export default function DashboardLayoutBuilder({
               onClick={handleSave}
               disabled={!hasChanges || isSaving}
               type="button"
-              className={`rounded px-3 py-2 text-paragraph-2 font-semibold text-white transition-colors ${
+              className={`theme-control rounded px-3 py-2 text-paragraph-2 font-semibold transition-colors ${
                 hasChanges
-                  ? "bg-brand-text hover:opacity-90"
-                  : "bg-grey-fill-weak"
+                  ? "bg-brand-text text-brand-foreground hover:opacity-90"
+                  : "bg-grey-fill-weak text-white"
               }`}
             >
               {isSaving ? "Saving..." : "Save Layout"}
@@ -299,7 +295,7 @@ export default function DashboardLayoutBuilder({
 
       {/* ── Right panel: preview ─────────────────────────────────── */}
       <div className="flex flex-1 flex-col bg-media-page-bg px-12 py-40">
-        <p className="font-normal text-heading-2 text-black/40">
+        <p className="font-normal text-heading-2 text-app-strong-text/40">
           Dashboard preview
         </p>
         <div className="mt-9">
@@ -360,7 +356,9 @@ function WidgetCard({
     >
       <div className="flex w-full flex-col gap-1">
         <div className="aspect-[8/5] w-full rounded-xl bg-media-divider" />
-        <p className="text-left text-paragraph-2 text-black">{widget.label}</p>
+        <p className="text-left text-paragraph-2 text-app-strong-text">
+          {widget.label}
+        </p>
       </div>
     </button>
   );
@@ -469,10 +467,10 @@ function MoveTargetColumn({
       } ${
         highlighted
           ? "border-brand-stroke-strong bg-brand-fill"
-          : "border-transparent bg-white"
+          : "border-transparent bg-solid-bg-base"
       }`}
     >
-      <p className="text-paragraph-1 font-semibold text-black/40">
+      <p className="text-paragraph-1 font-semibold text-app-strong-text/40">
         [{label.toLowerCase()} widget here]
       </p>
     </div>
@@ -546,11 +544,11 @@ function PreviewWidget({
           ? "border-dashed border-brand-hover bg-brand-surface"
           : showHighlight
             ? "border-brand-stroke-strong bg-brand-fill"
-            : "border-transparent bg-white"
+            : "border-transparent bg-solid-bg-base"
       }`}
     >
       {isDragSource ? null : (
-        <p className="text-paragraph-1 font-semibold text-black/40">
+        <p className="text-paragraph-1 font-semibold text-app-strong-text/40">
           [{label.toLowerCase()} widget here]
         </p>
       )}
@@ -563,12 +561,12 @@ function PreviewWidget({
 function OverlayCard({ label, isTall }: { label: string; isTall: boolean }) {
   return (
     <div
-      className={`flex items-start rounded-xl border border-brand-hover bg-white p-6 shadow-lg ${
+      className={`flex items-start rounded-xl border border-brand-hover bg-solid-bg-base p-6 shadow-lg ${
         isTall ? "h-[474px]" : "h-[221px]"
       }`}
       style={{ width: "100%" }}
     >
-      <p className="text-paragraph-1 font-semibold text-black/40">
+      <p className="text-paragraph-1 font-semibold text-app-strong-text/40">
         [{label.toLowerCase()} widget here]
       </p>
     </div>

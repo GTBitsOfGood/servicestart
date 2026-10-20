@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import BogButton from "@/components/bog/BogButton/BogButton";
+import BogButton from "@/components/theme/ThemedButton";
 import ExitIcon from "@/components/ExitIcon";
 
 export type AdminActionResult = { ok: boolean; error?: string };
@@ -41,7 +41,7 @@ export default function EventAdminActions({
       <div className="flex items-center gap-3">
         <Link
           href={`/events/${eventId}/edit`}
-          className="inline-flex items-center rounded border border-brand-stroke-strong bg-white px-4 py-2 text-paragraph-2 font-semibold text-brand-text"
+          className="theme-control inline-flex items-center rounded border border-brand-stroke-strong bg-page-bg px-4 py-2 text-paragraph-2 font-semibold text-brand-text"
         >
           Edit
         </Link>
@@ -50,7 +50,7 @@ export default function EventAdminActions({
           variant={isPublished ? "secondary" : "primary"}
           disabled={isPending}
           onClick={() => run(() => onTogglePublish(!isPublished))}
-          className="rounded px-4 py-2 text-paragraph-2 font-semibold"
+          className="px-4 py-2 text-paragraph-2 font-semibold"
         >
           {isPublished
             ? isPending

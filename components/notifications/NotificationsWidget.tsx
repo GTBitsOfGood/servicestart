@@ -22,7 +22,7 @@ export default function NotificationsWidget() {
               className="col-start-1 row-start-1 mt-1"
             />
             {unreadCount > 0 && (
-              <span className="col-start-1 row-start-1 ml-4 inline-flex min-h-6 min-w-6 items-center justify-center rounded-full border-2 border-white bg-brand-text px-1 text-xs font-bold text-white">
+              <span className="col-start-1 row-start-1 ml-4 inline-flex min-h-6 min-w-6 items-center justify-center rounded-full border-2 border-white bg-brand-text px-1 text-xs font-bold text-brand-foreground">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}

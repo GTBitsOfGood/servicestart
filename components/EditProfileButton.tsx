@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import BogButton from "@/components/bog/BogButton/BogButton";
+import BogButton from "@/components/theme/ThemedButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import EditProfileModal from "@/components/EditProfileModal";
 
@@ -23,13 +23,12 @@ export default function EditProfileButton({ user }: EditProfileButtonProps) {
         <BogButton
           variant="primary"
           size="responsive"
-          className="bg-[#FC5B43]"
           onClick={() => setModalOpen(true)}
         >
           Edit Details
         </BogButton>
 
-        <button className="text-[#FC5B43] hover:opacity-70 transition-opacity">
+        <button className="text-brand-text hover:opacity-70 transition-opacity">
           <BogIcon name="gear" size={24} />
         </button>
       </div>

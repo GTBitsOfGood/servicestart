@@ -3,9 +3,9 @@
 import { useState, useRef } from "react";
 import authClient from "@/lib/authClient";
 import { useRouter } from "next/navigation";
-import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
-import BogButton from "@/components/bog/BogButton/BogButton";
-import BogModal from "@/components/bog/BogModal/BogModal";
+import BogTextInput from "@/components/theme/ThemedTextInput";
+import BogButton from "@/components/theme/ThemedButton";
+import BogModal from "@/components/theme/ThemedModal";
 import BogBanner from "@/components/bog/BogBanner/BogBanner";
 
 interface EditProfileModalProps {
@@ -169,7 +169,7 @@ export default function EditProfileModal({
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                 />
-                <p className="text-paragraph-2 text-black/50 mt-5">
+                <p className="mt-5 text-paragraph-2 text-page-text/50">
                   This could be your first name, or a nickname — however you'd
                   like people to refer to you on this platform.
                 </p>
@@ -219,7 +219,7 @@ export default function EditProfileModal({
             <div className="flex-[1] flex flex-col items-start gap-5">
               <span className="text-paragraph-2">Profile photo</span>
 
-              <div className="w-full aspect-square rounded-lg bg-[#D9D9D9] flex items-center justify-center overflow-hidden">
+              <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-media-avatar">
                 {imagePreview ? (
                   <img
                     src={imagePreview}
@@ -227,7 +227,7 @@ export default function EditProfileModal({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-[#aaaaaa] text-[64px] font-light">
+                  <span className="text-[64px] font-light text-media-muted">
                     {fullName?.charAt(0).toUpperCase() ?? "?"}
                   </span>
                 )}
@@ -245,14 +245,14 @@ export default function EditProfileModal({
                 variant="primary"
                 size="medium"
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-[#FC5B43] w-full"
+                className="w-full"
               >
                 Upload photo
               </BogButton>
 
               <button
                 onClick={handleRemovePhoto}
-                className="text-[#FC5B43] font-medium w-full text-center hover:underline text-paragraph-2"
+                className="w-full text-center text-paragraph-2 font-medium text-brand-text hover:underline"
               >
                 Remove photo
               </button>

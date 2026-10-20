@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
-import BogButton from "@/components/bog/BogButton/BogButton";
+import BogTextInput from "@/components/theme/ThemedTextInput";
+import BogButton from "@/components/theme/ThemedButton";
 import BogRadioGroup from "@/components/bog/BogRadioGroup/BogRadioGroup";
 import BogRadioItem from "@/components/bog/BogRadioItem/BogRadioItem";
 import WarningIcon from "@/components/WarningIcon";
@@ -101,7 +101,7 @@ export default function EventForm({
   }
 
   return (
-    <div className="flex w-full px-14 py-12 flex-col items-center gap-12 rounded bg-white">
+    <div className="flex w-full flex-col items-center gap-12 bg-page-bg px-14 py-12">
       <div className="h-[68.717px] w-[90%] flex flex-col justify-between">
         <div className="flex w-full justify-between items-center">
           <h3>{heading}</h3>
@@ -299,7 +299,7 @@ export default function EventForm({
             className="self-stretch"
           />
           <div className="self-stretch flex flex-col gap-2">
-            <label className="text-paragraph-2 font-semibold text-grey-text-strong">
+            <label className="text-paragraph-2 font-semibold text-page-text">
               Tags
             </label>
             <TagInput

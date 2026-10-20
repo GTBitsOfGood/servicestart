@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import Select, { type MultiValue } from "react-select";
 import { Toast } from "radix-ui";
-import BogModal from "@/components/bog/BogModal/BogModal";
-import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
-import BogButton from "@/components/bog/BogButton/BogButton";
+import BogModal from "@/components/theme/ThemedModal";
+import BogTextInput from "@/components/theme/ThemedTextInput";
+import BogButton from "@/components/theme/ThemedButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogBanner from "@/components/bog/BogBanner/BogBanner";
 import type { SendEmailValues } from "@/lib/organizationEmail";
@@ -360,7 +360,7 @@ export default function SendEmailModal({
                   void handleSend();
                 }}
                 disabled={isSending || recipientsUnavailable}
-                className="rounded-md! px-4! py-2!"
+                className="px-4! py-2!"
               >
                 {isSending ? "Sending..." : "Send Email"}
               </BogButton>

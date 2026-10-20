@@ -3,9 +3,9 @@
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { DropdownMenu } from "radix-ui";
 import BogBanner from "@/components/bog/BogBanner/BogBanner";
-import BogButton from "@/components/bog/BogButton/BogButton";
+import BogButton from "@/components/theme/ThemedButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
+import BogTextInput from "@/components/theme/ThemedTextInput";
 import NotificationItem from "@/components/notifications/NotificationItem";
 import { useNotifications } from "@/lib/hooks/useNotifications";
 import { NotificationType } from "@/lib/schema";
@@ -150,7 +150,7 @@ export default function InboxPage() {
                 color="var(--color-grey-text-strong)"
               />
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 inline-flex min-w-6 items-center justify-center rounded-full border-2 border-white bg-brand-text px-1 text-small font-bold leading-5 text-white">
+                <span className="absolute -right-1 -top-1 inline-flex min-w-6 items-center justify-center rounded-full border-2 border-white bg-brand-text px-1 text-small font-bold leading-5 text-brand-foreground">
                   {unreadCount}
                 </span>
               )}

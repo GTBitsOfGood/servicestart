@@ -293,7 +293,7 @@ export default async function JoinRequestStatusPage() {
                 <form action={submitJoinRequest}>
                   <button
                     type="submit"
-                    className="mt-1 h-10 rounded bg-brand-text px-5 text-paragraph-1 font-semibold text-white lg:h-11 lg:px-6"
+                    className="theme-control mt-1 h-10 rounded bg-brand-text px-5 text-paragraph-1 font-semibold text-brand-foreground lg:h-11 lg:px-6"
                   >
                     Submit a request
                   </button>

@@ -92,11 +92,18 @@ jobs:
           retention-days: 30
 
   e2e-all:
+    if: ${{ always() }}
     needs: e2e
     runs-on: ubuntu-latest
     steps:
-      - name: Log
-        run: echo "All E2E test shards completed successfully."
+      - name: Verify all browser shards passed
+        env:
+          E2E_RESULT: ${{ needs.e2e.result }}
+        run: |
+          if [ "$E2E_RESULT" != "success" ]; then
+            echo "::error::Browser shards finished with $E2E_RESULT"
+            exit 1
+          fi
 
   lint:
     runs-on: ubuntu-latest

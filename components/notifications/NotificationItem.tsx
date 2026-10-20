@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import BogButton from "@/components/bog/BogButton/BogButton";
-import BogModal from "@/components/bog/BogModal/BogModal";
+import BogButton from "@/components/theme/ThemedButton";
+import BogModal from "@/components/theme/ThemedModal";
 import { cn, formatTime } from "@/lib/utils";
 import NotificationTag from "./NotificationTag";
 import { JoinRequestStatus } from "@/lib/schema";
@@ -237,7 +237,7 @@ export default function NotificationItem({
                 Required Reasoning
               </label>
               <textarea
-                className="w-full rounded border border-grey-stroke-weak bg-grey-fill-weaker px-3 py-2 text-md text-grey-text-strong placeholder:text-grey-text-weak focus:outline-none focus:ring-1 focus:ring-brand-text"
+                className="theme-control w-full rounded border border-grey-stroke-weak bg-grey-fill-weaker px-3 py-2 text-md text-grey-text-strong placeholder:text-grey-text-weak focus:outline-none focus:ring-1 focus:ring-brand-text"
                 rows={3}
                 placeholder="Enter reasoning for denial here."
                 value={denyReason}
