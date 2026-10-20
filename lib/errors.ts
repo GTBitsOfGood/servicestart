@@ -12,6 +12,12 @@ export class ForbiddenError extends HTTPException {
   }
 }
 
+export class NotFoundError extends HTTPException {
+  constructor(message = "Not found") {
+    super(404, { message });
+  }
+}
+
 export class NoActiveOrganizationError extends HTTPException {
   constructor(message = "No active organization") {
     super(400, { message });

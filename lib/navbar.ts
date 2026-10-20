@@ -55,6 +55,7 @@ export const NO_NAVBAR_PAGES = [
   "/joinrequeststatus",
   "/resetpassword",
   "/forgotpassword",
+  "/forms/",
 ];
 
 /**

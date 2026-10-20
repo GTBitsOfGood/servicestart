@@ -12,6 +12,7 @@ import UnauthenticatedOrganizationLogo from "@/components/UnauthenticatedOrganiz
 import OrganizationNotFound from "@/components/OrganizationNotFound";
 import { OrganizationConfigKey } from "@/lib/schema";
 import { getSlugFromHost } from "@/lib/clientAuthUtils";
+import { getRedirectPath } from "@/lib/utils";
 import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 
 export default function SignupPage() {
@@ -62,12 +63,12 @@ export default function SignupPage() {
           password,
           name: `${firstName} ${lastName}`,
           organizationSlug,
-          callbackURL: "/",
+          callbackURL: getRedirectPath(window.location.search),
         },
         {
           // Don't set headers here; `authClient` sets `x-organization-slug` automatically
           onSuccess: () => {
-            router.push("/");
+            router.push(getRedirectPath(window.location.search));
           },
           onError: (ctx) => {
             alert(ctx.error.message || "Invalid email or password");
@@ -87,7 +88,7 @@ export default function SignupPage() {
       }
 
       if (org?.slug === getSlugFromHost(window.location.host)) {
-        router.replace("/");
+        router.replace(getRedirectPath(window.location.search));
       }
     };
 
@@ -168,7 +169,7 @@ export default function SignupPage() {
           <p className="text-[16px] leading-[20px]">
             Already have an account?{" "}
             <button
-              onClick={() => router.push("/login")}
+              onClick={() => router.push(`/login${window.location.search}`)}
               className="text-[18px] font-bold underline"
             >
               Login
