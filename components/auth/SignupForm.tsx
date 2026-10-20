@@ -128,7 +128,10 @@ export default function SignupForm({
 
     if (invitation) {
       setMessage({ kind: "loading", text: AuthMessage.Loading });
-      await acceptInvitationForSession(invitation.id);
+      if (!(await acceptInvitationForSession(invitation.id))) {
+        setMessage({ kind: "error", text: AuthMessage.AcceptFailed });
+        return;
+      }
     }
 
     setMessage({ kind: "success", text: AuthMessage.AccountCreated });
