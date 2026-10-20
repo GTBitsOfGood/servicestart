@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState, useTransition, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
+import { useHydrated } from "@/lib/hooks/useHydrated";
 import { FormStatus } from "@/lib/schema";
 import {
   FormIdSchema,
@@ -50,7 +50,7 @@ function FormDialog({
   disabled,
 }: {
   form?: FormRow;
-  onSaved: () => void;
+  onSaved: () => Promise<void>;
   disabled: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -101,13 +101,13 @@ function FormDialog({
           })
         : await api.forms.$post({ json: { title, formId } });
       await checkResponse(response);
+      await onSaved();
       setOpen(false);
       if (!form) {
         setTitle("");
         setFormId("");
         setEditedId(false);
       }
-      onSaved();
     } catch (error) {
       setError(error instanceof Error ? error.message : "Unable to save form");
     } finally {
@@ -327,14 +327,27 @@ function DeleteDialog({
 }
 
 export default function FormsClient({ forms }: { forms: FormRow[] }) {
-  const router = useRouter();
-  const [refreshing, startTransition] = useTransition();
+  const hydrated = useHydrated();
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshedForms, setRefreshedForms] = useState<{
+    source: FormRow[];
+    rows: FormRow[];
+  } | null>(null);
+  // A new server snapshot (including an organization switch) supersedes local data.
+  const rows = refreshedForms?.source === forms ? refreshedForms.rows : forms;
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const busy = refreshing || working;
-  function refresh() {
-    startTransition(() => router.refresh());
+  const busy = !hydrated || refreshing || working;
+  async function refresh() {
+    setRefreshing(true);
+    try {
+      const response = await api.forms.$get();
+      await checkResponse(response);
+      setRefreshedForms({ source: forms, rows: await response.json() });
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   async function run(action: () => Promise<void>) {
@@ -364,7 +377,7 @@ export default function FormsClient({ forms }: { forms: FormRow[] }) {
             ? await route.close.$post(args)
             : await route.reopen.$post(args);
       await checkResponse(response);
-      refresh();
+      await refresh();
     }).catch(() => {});
   }
 
@@ -398,7 +411,7 @@ export default function FormsClient({ forms }: { forms: FormRow[] }) {
       <p role="status" aria-live="polite">
         {busy ? "Updating forms…" : notice}
       </p>
-      {!forms.length ? (
+      {!rows.length ? (
         <div className="rounded bg-grey-fill-weak p-8">
           <h2 className="text-heading-3">No forms yet</h2>
           <p>Create your first form to get started.</p>
@@ -421,7 +434,7 @@ export default function FormsClient({ forms }: { forms: FormRow[] }) {
               { content: "Last updated", datatype: "string" },
               { content: "Actions", datatype: "other" },
             ]}
-            rows={forms.map((form) => ({
+            rows={rows.map((form) => ({
               cells: [
                 { content: form.title },
                 { content: form.formId },
@@ -491,7 +504,7 @@ export default function FormsClient({ forms }: { forms: FormRow[] }) {
                                   param: { formId: form.formId },
                                 }),
                               );
-                              refresh();
+                              await refresh();
                             });
                           }}
                         />
