@@ -25,7 +25,7 @@ export class FormError extends Error {
 // Quote every cell, including headers, and neutralize spreadsheet formulas.
 export function csvCell(value: string | number): string {
   const text = String(value);
-  const safe = /^[=+\-@]/.test(text) ? `'${text}` : text;
+  const safe = /^(?:[=+\-@\t\r\n]|\s+[=+\-@])/.test(text) ? `'${text}` : text;
   return `"${safe.replaceAll('"', '""')}"`;
 }
 

@@ -33,6 +33,7 @@ const app = new Hono()
   .route("/profile", profile)
   .route("/tags", tags)
   .route("/forms", formSubmissions)
+  .route("/forms", forms)
   .route("/invitations", invitations);
 
 export const GET = handle(app);

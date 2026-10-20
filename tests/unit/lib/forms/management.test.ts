@@ -3,12 +3,17 @@ import { describe, expect, it } from "vitest";
 import { csvCell, suggestFormId } from "@/lib/forms/management";
 
 describe("CSV serialization", () => {
-  it.each(["=1+1", "+formula", "-formula", "@SUM(A1)"])(
-    "neutralizes %s",
-    (value) => {
-      expect(csvCell(value)).toBe(`"'${value}"`);
-    },
-  );
+  it.each([
+    "=1+1",
+    "+formula",
+    "-formula",
+    "@SUM(A1)",
+    "\t=1+1",
+    "\r=1+1",
+    "  =1+1",
+  ])("neutralizes %s", (value) => {
+    expect(csvCell(value)).toBe(`"'${value}"`);
+  });
   it("quotes commas, newlines and quotes without changing text or leading zeroes", () => {
     expect(csvCell('Hello, "world"\nnext')).toBe('"Hello, ""world""\nnext"');
     expect(csvCell("001234")).toBe('"001234"');

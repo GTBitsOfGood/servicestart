@@ -292,13 +292,7 @@ async function exportCsv(
       email: users.email,
     })
     .from(formSubmissions)
-    .leftJoin(
-      users,
-      and(
-        eq(users.id, formSubmissions.userId),
-        eq(users.organizationId, organizationId),
-      ),
-    )
+    .leftJoin(users, eq(users.id, formSubmissions.userId))
     .where(
       and(
         eq(formSubmissions.organizationId, organizationId),
