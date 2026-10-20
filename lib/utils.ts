@@ -50,8 +50,12 @@ const REDIRECT_BASE = "http://redirect.invalid";
 export function getRedirectPath(search: string) {
   const path = new URLSearchParams(search).get("redirect");
   if (!path?.startsWith("/")) return "/";
-  const url = new URL(path, REDIRECT_BASE);
-  return url.origin === REDIRECT_BASE
-    ? `${url.pathname}${url.search}${url.hash}`
-    : "/";
+  try {
+    const url = new URL(path, REDIRECT_BASE);
+    return url.origin === REDIRECT_BASE
+      ? `${url.pathname}${url.search}${url.hash}`
+      : "/";
+  } catch {
+    return "/";
+  }
 }
