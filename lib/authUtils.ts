@@ -11,6 +11,7 @@ import {
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationsService } from "@/lib/services/OrganizationService";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { InvitationService } from "@/lib/services/InvitationService";
 import { findOrganizationByRequestHost } from "@/lib/organizationFromHost";
 import { UserService } from "@/lib/services/UserService";
@@ -20,7 +21,7 @@ import { users } from "@/lib/schema";
 import { getSlugFromHost, INVITATION_ID_HEADER } from "./clientAuthUtils";
 // import { User } from "better-auth/client";
 import { NotificationService } from "@/lib/services/NotificationService";
-import { NotificationType } from "@/lib/schema";
+import { JoinRequestStatus, MemberType, NotificationType } from "@/lib/schema";
 
 type AppSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 
@@ -91,7 +92,17 @@ export async function afterUserCreated(
       if (role) return;
     }
 
-    await createJoinRequestIfNeeded(userId, organization.id);
+    const autoApprove = await OrganizationConfigService.getAutoApproveSignups(organization.id);
+    const user = await UserService.findById(userId);
+    const pendingInvite = user && await InvitationService.hasPendingForEmail(organization.id, user.email);
+    if (!autoApprove || pendingInvite) {
+      await createJoinRequestIfNeeded(userId, organization.id);
+      return;
+    }
+    const existingRequest = await JoinRequestsService.findByUserAndOrganization(userId, organization.id);
+    if (existingRequest) return;
+    await MembersService.addSignupMember(userId, organization.id);
+    await JoinRequestsService.create(userId, organization.id, JoinRequestStatus.Approved);
   } catch (err) {
     console.error(err);
   }
@@ -154,6 +165,80 @@ export async function requireAdmin(c: Context) {
   );
 
   if (!MembersService.isAdminOrOwner(membership?.role)) {
+    throw new ForbiddenError();
+  }
+
+  return session;
+}
+
+/**
+ * Returns the current session only if the user has an active organization
+ * and is a member of it; otherwise throws an auth-related error.
+ */
+export async function requireMembership(c: Context) {
+  const session = await requireAuth(c);
+  const organizationId = session.session.activeOrganizationId;
+
+  if (!organizationId) {
+    throw new NoActiveOrganizationError();
+  }
+
+  const membership = await MembersService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+
+  if (!membership) {
+    throw new ForbiddenError();
+  }
+
+  return session;
+}
+
+/**
+ * Returns the current session only if the user has an active organization
+ * and is an admin/owner of it; otherwise throws an auth-related error.
+ */
+export async function requireAdmin(c: Context) {
+  const session = await requireAuth(c);
+  const organizationId = session.session.activeOrganizationId;
+
+  if (!organizationId) {
+    throw new NoActiveOrganizationError();
+  }
+
+  const membership = await MembersService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+
+  if (!MembersService.isAdminOrOwner(membership?.role)) {
+    throw new ForbiddenError();
+  }
+
+  return session;
+}
+
+/**
+ * Returns the current session only if the user is a member of the active
+ * organization whose member type is in `allowed`. Admins and owners always
+ * pass, and so does everyone while MemberTypesEnabled is off.
+ */
+export async function requireMemberType(c: Context, allowed: MemberType[]) {
+  const session = await requireMembership(c);
+  const organizationId = session.session.activeOrganizationId!;
+
+  const membership = await MembersService.findByUserAndOrganization(
+    session.user.id,
+    organizationId,
+  );
+  if (MembersService.isAdminOrOwner(membership?.role)) return session;
+
+  const enabled =
+    await OrganizationConfigService.getMemberTypesEnabled(organizationId);
+  if (!enabled) return session;
+
+  if (!membership?.memberType || !allowed.includes(membership.memberType)) {
     throw new ForbiddenError();
   }
 

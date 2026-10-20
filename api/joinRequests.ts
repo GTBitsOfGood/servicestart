@@ -170,6 +170,16 @@ const app = new Hono()
       );
     }
 
+    // Removing a member moves their request back to pending. That row is the
+    // removal record, so withdrawing it would let AutoApproveSignups re-add them.
+    const history = await JoinRequestsService.listHistory(joinRequest.id);
+    if (history.some((entry) => entry.action === "removed")) {
+      return c.json(
+        { error: "Cannot delete a join request after removal" },
+        { status: 403 },
+      );
+    }
+
     await JoinRequestsService.deleteById(joinRequest.id);
 
     return c.json({ success: true });

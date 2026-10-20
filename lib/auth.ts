@@ -3,6 +3,7 @@ import { findUserByEmailOverride } from "@/lib/authUtils";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware, organization } from "better-auth/plugins";
+import { APIError } from "better-auth/api";
 import db from "@/lib/db";
 import { afterUserCreated } from "@/lib/authUtils";
 import { headers } from "next/headers";
@@ -10,6 +11,8 @@ import { getSlugFromHost, getTenantRootDomain } from "./clientAuthUtils";
 import {
   eventRsvps,
   events,
+  joinRequests,
+  JoinRequestStatus,
   sessions,
   shiftRSVPs,
   shifts,
@@ -78,8 +81,38 @@ export const auth = betterAuth({
             organizationSlug: organization.slug,
           });
         },
+        beforeCreateInvitation: async ({ invitation }) => {
+          // Invites are the only way to create admins; never owners.
+          if (invitation.role !== "member" && invitation.role !== "admin") {
+            throw new APIError("FORBIDDEN", {
+              message: "Invitations can only be for the member or admin role.",
+            });
+          }
+        },
         beforeRemoveMember: async ({ member }) => {
           const now = new Date();
+
+          // Records the removal so auto-approve doesn't re-add them on their
+          // next login. Leaves an existing request alone (the join request
+          // "remove" flow has already moved it back to pending).
+          const [existingRequest] = await db
+            .select({ id: joinRequests.id })
+            .from(joinRequests)
+            .where(
+              and(
+                eq(joinRequests.userId, member.userId),
+                eq(joinRequests.organizationId, member.organizationId),
+              ),
+            )
+            .limit(1);
+          if (!existingRequest) {
+            await db.insert(joinRequests).values({
+              id: crypto.randomUUID(),
+              userId: member.userId,
+              organizationId: member.organizationId,
+              status: JoinRequestStatus.Denied,
+            });
+          }
 
           await Promise.all([
             db.delete(eventRsvps).where(

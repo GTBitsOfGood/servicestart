@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/lib/db";
 import { joinRequests, JoinRequestStatus } from "@/lib/schema";
+import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import {
   buildTestUser,
   createJoinRequest,
@@ -186,6 +187,26 @@ describe("DELETE /api/joinRequests/:organizationId", () => {
     );
 
     expect(response.status).toBe(403);
+  });
+
+  it("returns 403 for the pending request a removal leaves behind", async () => {
+    const organization = await createOrganization("acme");
+    const { user: createdUser, headers } =
+      await signUpAndGetHeaders(buildTestUser());
+    const id = await createJoinRequest(createdUser.id, organization.id);
+    await JoinRequestsService.addHistoryEntry(id, "removed", createdUser.id);
+
+    const response = await testApi.joinRequests[":organizationId"].$delete(
+      { param: { organizationId: organization.id } },
+      { headers },
+    );
+
+    expect(response.status).toBe(403);
+    const rows = await db
+      .select()
+      .from(joinRequests)
+      .where(eq(joinRequests.id, id));
+    expect(rows).toHaveLength(1);
   });
 
   it("successfully deletes a pending join request", async () => {

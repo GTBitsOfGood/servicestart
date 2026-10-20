@@ -1,5 +1,9 @@
 // @vitest-environment node
+import { randomUUID } from "node:crypto";
+import { and, eq, inArray } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
+import db from "@/lib/db";
+import { members, MemberType, users } from "@/lib/schema";
 import { MembersService } from "@/lib/services/MemberService";
 import {
   addMember,
@@ -314,5 +318,223 @@ describe("MembersService.countByOrganization", () => {
 
     expect(await MembersService.countByOrganization(org1.id)).toBe(1);
     expect(await MembersService.countByOrganization(org2.id)).toBe(2);
+  });
+});
+
+async function addTypedMembers(
+  organizationId: string,
+  types: (MemberType | null)[],
+  role = "member",
+) {
+  const userIds: string[] = [];
+  for (const memberType of types) {
+    const { user } = await signUpAndGetSession(buildTestUser());
+    await db.insert(members).values({
+      id: randomUUID(),
+      userId: user.id,
+      organizationId,
+      role,
+      memberType,
+    });
+    userIds.push(user.id);
+  }
+  return userIds;
+}
+
+async function getTypes(organizationId: string, userIds: string[]) {
+  const rows = await db
+    .select({ userId: members.userId, memberType: members.memberType })
+    .from(members)
+    .where(
+      and(
+        eq(members.organizationId, organizationId),
+        inArray(members.userId, userIds),
+      ),
+    );
+  return Object.fromEntries(rows.map((row) => [row.userId, row.memberType]));
+}
+
+describe("MembersService.setMemberTypes", () => {
+  it("sets the type for one member", async () => {
+    const org = await createOrganization("types-single");
+    const [userId] = await addTypedMembers(org.id, [MemberType.Applicant]);
+
+    const result = await MembersService.setMemberTypes(
+      org.id,
+      [userId],
+      MemberType.Attendee,
+    );
+
+    expect(result).toEqual({ updated: 1 });
+    expect(await getTypes(org.id, [userId])).toEqual({
+      [userId]: MemberType.Attendee,
+    });
+  });
+
+  it("sets the type for many members, ignoring duplicate IDs", async () => {
+    const org = await createOrganization("types-bulk");
+    const userIds = await addTypedMembers(org.id, [
+      MemberType.Applicant,
+      null,
+      MemberType.Attendee,
+    ]);
+
+    const result = await MembersService.setMemberTypes(
+      org.id,
+      [...userIds, userIds[0]],
+      MemberType.Attendee,
+    );
+
+    expect(result).toEqual({ updated: 3 });
+    expect(Object.values(await getTypes(org.id, userIds))).toEqual([
+      MemberType.Attendee,
+      MemberType.Attendee,
+      MemberType.Attendee,
+    ]);
+  });
+
+  it("returns not_found for another org's members and leaves them unchanged", async () => {
+    const orgA = await createOrganization("types-tenant-a");
+    const orgB = await createOrganization("types-tenant-b");
+    const orgAIds = await addTypedMembers(orgA.id, [MemberType.Applicant]);
+
+    const result = await MembersService.setMemberTypes(
+      orgB.id,
+      orgAIds,
+      MemberType.Attendee,
+    );
+
+    expect(result).toEqual({ error: "not_found" });
+    expect(await getTypes(orgA.id, orgAIds)).toEqual({
+      [orgAIds[0]]: MemberType.Applicant,
+    });
+  });
+
+  it("writes nothing when a batch mixes in an unknown ID", async () => {
+    const org = await createOrganization("types-mixed");
+    const userIds = await addTypedMembers(org.id, [
+      MemberType.Applicant,
+      MemberType.Applicant,
+    ]);
+
+    const result = await MembersService.setMemberTypes(
+      org.id,
+      [...userIds, randomUUID()],
+      MemberType.Attendee,
+    );
+
+    expect(result).toEqual({ error: "not_found" });
+    expect(Object.values(await getTypes(org.id, userIds))).toEqual([
+      MemberType.Applicant,
+      MemberType.Applicant,
+    ]);
+  });
+
+  it("returns not_found when a duplicate row hides an unknown ID", async () => {
+    const org = await createOrganization("types-duplicate");
+    const [userId] = await addTypedMembers(org.id, [MemberType.Applicant]);
+    // members has no unique (user, org), so this user has two rows.
+    await db.insert(members).values({
+      id: randomUUID(),
+      userId,
+      organizationId: org.id,
+      role: "member",
+      memberType: MemberType.Applicant,
+    });
+
+    const result = await MembersService.setMemberTypes(
+      org.id,
+      [userId, randomUUID()],
+      MemberType.Attendee,
+    );
+
+    expect(result).toEqual({ error: "not_found" });
+    expect(await getTypes(org.id, [userId])).toEqual({
+      [userId]: MemberType.Applicant,
+    });
+  });
+
+  it("rejects admins and owners and writes nothing", async () => {
+    const org = await createOrganization("types-admin");
+    const [memberId] = await addTypedMembers(org.id, [MemberType.Applicant]);
+    const [adminId] = await addTypedMembers(org.id, [null], "admin");
+    const [ownerId] = await addTypedMembers(org.id, [null], "owner");
+
+    for (const ids of [[memberId, adminId], [ownerId]]) {
+      const result = await MembersService.setMemberTypes(
+        org.id,
+        ids,
+        MemberType.Attendee,
+      );
+      expect(result).toEqual({ error: "admin" });
+    }
+    expect(await getTypes(org.id, [memberId, adminId, ownerId])).toEqual({
+      [memberId]: MemberType.Applicant,
+      [adminId]: null,
+      [ownerId]: null,
+    });
+  });
+});
+
+describe("MembersService member type filter", () => {
+  it("lists and counts only members of the given type", async () => {
+    const org = await createOrganization("types-filter");
+    const [applicantId] = await addTypedMembers(org.id, [
+      MemberType.Applicant,
+      MemberType.Attendee,
+      null,
+    ]);
+    const otherOrg = await createOrganization("types-filter-other");
+    await addTypedMembers(otherOrg.id, [MemberType.Applicant]);
+
+    const applicants = await MembersService.listMembers(org.id, {
+      limit: 10,
+      offset: 0,
+      memberType: MemberType.Applicant,
+    });
+
+    expect(applicants.map((m) => m.userId)).toEqual([applicantId]);
+    expect(applicants[0].memberType).toBe(MemberType.Applicant);
+    expect(
+      await MembersService.countByOrganization(org.id, MemberType.Applicant),
+    ).toBe(1);
+    expect(
+      await MembersService.countByOrganization(org.id, MemberType.Attendee),
+    ).toBe(1);
+    expect(await MembersService.countByOrganization(org.id)).toBe(3);
+    expect(
+      await MembersService.listMembers(org.id, { limit: 10, offset: 0 }),
+    ).toHaveLength(3);
+  });
+});
+
+describe("MembersService.addMemberDirectly", () => {
+  it("creates a separate user in org B instead of reusing org A's", async () => {
+    const orgA = await createOrganization("direct-tenant-a");
+    const orgB = await createOrganization("direct-tenant-b");
+    const email = `shared-${randomUUID()}@example.com`;
+    const orgAUserId = randomUUID();
+    await db.insert(users).values({
+      id: orgAUserId,
+      name: "Org A User",
+      email,
+      organizationId: orgA.id,
+    });
+
+    const member = await MembersService.addMemberDirectly(
+      email,
+      "Org B User",
+      orgB.id,
+    );
+
+    expect(member.userId).not.toBe(orgAUserId);
+    const [orgBUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, member.userId));
+    expect(orgBUser).toMatchObject({ email, organizationId: orgB.id });
+    expect(
+      await MembersService.findByUserAndOrganization(orgAUserId, orgB.id),
+    ).toBeNull();
   });
 });

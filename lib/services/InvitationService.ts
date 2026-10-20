@@ -108,7 +108,18 @@ async function acceptForUser(
   });
 }
 
+async function hasPendingForEmail(organizationId: string, email: string) {
+  const [invite] = await db.select({ id: invitations.id }).from(invitations).where(and(
+    eq(invitations.organizationId, organizationId),
+    eq(invitations.status, InvitationStatus.Pending),
+    gt(invitations.expiresAt, new Date()),
+    sql`lower(${invitations.email}) = lower(${email})`,
+  )).limit(1);
+  return Boolean(invite);
+}
+
 export const InvitationService = {
+  hasPendingForEmail,
   findByIdAndOrganization,
   acceptForUser,
   isOpen,

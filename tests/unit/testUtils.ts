@@ -57,7 +57,10 @@ async function getOrgSlug() {
     .from(organizations)
     .limit(1);
   if (!org[0]) {
-    const org = await createOrganization(`org-${Date.now()}`);
+    // Random suffix: parallel e2e workers can both find an empty database.
+    const org = await createOrganization(
+      `org-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
+    );
     return org.slug;
   }
   return org[0].slug;
