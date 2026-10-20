@@ -56,6 +56,7 @@ export const NO_NAVBAR_PAGES = [
   "/resetpassword",
   "/forgotpassword",
   "/forms/",
+  "/accept-invitation/",
 ];
 
 /**

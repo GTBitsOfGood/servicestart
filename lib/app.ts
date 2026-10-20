@@ -9,7 +9,8 @@ import members from "@/api/members";
 import messages from "@/api/messages";
 import profile from "@/api/profile";
 import tags from "@/api/tags";
-import formSubmissions from "@/api/formSubmissions";
+import formSubmissions from "@/api/formSubmissions"
+import invitations from "@/api/invitations";
 import { Hono } from "hono";
 import notifications from "@/api/notifications";
 import emails from "@/api/emails";
@@ -29,6 +30,7 @@ export const app = new Hono()
   .route("/emails", emails)
   .route("/profile", profile)
   .route("/tags", tags)
-  .route("/forms", formSubmissions);
+  .route("/forms", formSubmissions)
+  .route("/invitations", invitations);
 
 export type AppType = typeof app;
