@@ -1,6 +1,6 @@
 "use client";
 
-import styles from "@/components/bog/AuthInput/styles.module.css";
+import styles from "@/components/bog/BogTextInput/styles.module.css";
 import React, { useId, useState, type ReactNode } from "react";
 import type { IconProps } from "@/utils/design-system/types/types";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
