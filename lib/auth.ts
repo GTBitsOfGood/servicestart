@@ -3,6 +3,7 @@ import { findUserByEmailOverride } from "@/lib/authUtils";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware, organization } from "better-auth/plugins";
+import { APIError } from "better-auth/api";
 import db from "@/lib/db";
 import { afterUserCreated } from "@/lib/authUtils";
 import { headers } from "next/headers";
@@ -10,6 +11,9 @@ import { getSlugFromHost, getTenantRootDomain } from "./clientAuthUtils";
 import {
   eventRsvps,
   events,
+  joinRequests,
+  joinRequestHistory,
+  JoinRequestStatus,
   sessions,
   shiftRSVPs,
   shifts,
@@ -21,6 +25,7 @@ import { EmailService } from "@/lib/services/EmailService";
 import { getBaseUrl } from "./clientUtils";
 import { requireEnv } from "./env";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./authValidation";
+import { JoinRequestsService } from "./services/JoinRequestService";
 import { OrganizationsService } from "./services/OrganizationService";
 
 const baseURL = process.env.BETTER_AUTH_URL || getBaseUrl();
@@ -78,8 +83,53 @@ export const auth = betterAuth({
             organizationSlug: organization.slug,
           });
         },
+        beforeCreateInvitation: async ({ invitation }) => {
+          // Invites are the only way to create admins; never owners.
+          if (invitation.role !== "member" && invitation.role !== "admin") {
+            throw new APIError("FORBIDDEN", {
+              message: "Invitations can only be for the member or admin role.",
+            });
+          }
+        },
         beforeRemoveMember: async ({ member }) => {
           const now = new Date();
+
+          // Records the removal so auto-approve doesn't re-add them on their
+          // next login. Leaves an existing request alone (the join request
+          // "remove" flow has already moved it back to pending).
+          const [existingRequest] = await db
+            .select({ id: joinRequests.id, status: joinRequests.status })
+            .from(joinRequests)
+            .where(
+              and(
+                eq(joinRequests.userId, member.userId),
+                eq(joinRequests.organizationId, member.organizationId),
+              ),
+            )
+            .limit(1);
+          if (!existingRequest) {
+            await db.insert(joinRequests).values({
+              id: crypto.randomUUID(),
+              userId: member.userId,
+              organizationId: member.organizationId,
+              status: JoinRequestStatus.Denied,
+            });
+          }
+
+          if (existingRequest?.status === JoinRequestStatus.Pending) {
+            const history = await JoinRequestsService.listHistory(
+              existingRequest.id,
+            );
+            if (!history.some((entry) => entry.action === "removed")) {
+              // An invite may have been accepted while a join request was
+              // pending. Preserve removal history when access is revoked.
+              await db.insert(joinRequestHistory).values({
+                id: crypto.randomUUID(),
+                joinRequestId: existingRequest.id,
+                action: "removed",
+              });
+            }
+          }
 
           await Promise.all([
             db.delete(eventRsvps).where(

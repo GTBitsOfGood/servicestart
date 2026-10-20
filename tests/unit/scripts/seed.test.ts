@@ -319,6 +319,24 @@ it("turns on forms for Visionaries only", async () => {
   }
 });
 
+it("turns on member types and auto-approve for Visionaries only", async () => {
+  await main();
+
+  for (const [orgId, enabled] of [
+    ["org_visionariestothethrone", true],
+    ["org_servicestart", false],
+  ] as const) {
+    const config = await OrganizationConfigService.getConfig(orgId, [
+      OrganizationConfigKey.MemberTypesEnabled,
+      OrganizationConfigKey.AutoApproveSignups,
+    ]);
+    expect(config).toEqual({
+      [OrganizationConfigKey.MemberTypesEnabled]: enabled,
+      [OrganizationConfigKey.AutoApproveSignups]: enabled,
+    });
+  }
+});
+
 it("seeds one published copy of the Visionaries application", async () => {
   await main();
   await main();

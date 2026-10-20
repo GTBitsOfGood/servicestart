@@ -322,31 +322,55 @@ describe("OrganizationConfigService - organization theme", () => {
   });
 });
 
-describe("OrganizationConfigService - keys without handlers", () => {
-  // These keys exist for #302, which adds their get/set.
-  it("rejects setting a key that has no handler yet", async () => {
-    const org = await createOrganization("cfg-unhandled-set");
+describe.each([
+  OrganizationConfigKey.MemberTypesEnabled,
+  OrganizationConfigKey.AutoApproveSignups,
+] as const)("OrganizationConfigService - %s", (key) => {
+  it("defaults to false", async () => {
+    const org = await createOrganization(`cfg-${key}-default`);
+
+    const config = await OrganizationConfigService.getConfig(org.id, [key]);
+
+    expect(config[key]).toBe(false);
+  });
+
+  it("turns on and off, keeping one row", async () => {
+    const org = await createOrganization(`cfg-${key}-toggle`);
+
+    await OrganizationConfigService.setConfig(org.id, key, "true");
+    const on = await OrganizationConfigService.getConfig(org.id, [key]);
+    await OrganizationConfigService.setConfig(org.id, key, "false");
+    const off = await OrganizationConfigService.getConfig(org.id, [key]);
+
+    expect(on[key]).toBe(true);
+    expect(off[key]).toBe(false);
+    const rows = await db
+      .select()
+      .from(organizationConfig)
+      .where(eq(organizationConfig.organizationId, org.id));
+    expect(rows).toHaveLength(1);
+  });
+
+  it("rejects values other than 'true' and 'false'", async () => {
+    const org = await createOrganization(`cfg-${key}-invalid`);
 
     await expect(
-      OrganizationConfigService.setConfig(
-        org.id,
-        OrganizationConfigKey.MemberTypesEnabled,
-        "true",
-      ),
-    ).rejects.toThrow("Invalid key");
+      OrganizationConfigService.setConfig(org.id, key, "on"),
+    ).rejects.toThrow("Value must be 'true' or 'false'");
   });
 
-  it("leaves keys without handlers out of getConfig", async () => {
-    const org = await createOrganization("cfg-unhandled-get");
+  it("is scoped to the organization", async () => {
+    const org1 = await createOrganization(`cfg-${key}-org1`);
+    const org2 = await createOrganization(`cfg-${key}-org2`);
 
-    const config = await OrganizationConfigService.getConfig(org.id, [
-      OrganizationConfigKey.MemberTypesEnabled,
-      OrganizationConfigKey.FormsEnabled,
-    ]);
+    await OrganizationConfigService.setConfig(org1.id, key, "true");
 
-    expect(config).toEqual({ [OrganizationConfigKey.FormsEnabled]: false });
+    const config2 = await OrganizationConfigService.getConfig(org2.id, [key]);
+    expect(config2[key]).toBe(false);
   });
+});
 
+describe("OrganizationConfigService - invalid keys", () => {
   it("ignores keys that aren't config keys", async () => {
     const org = await createOrganization("cfg-unhandled-proto");
 

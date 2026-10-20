@@ -78,7 +78,10 @@ export const eventVisibilityEnum = pgEnum(
 
 export type ToggleableOrganizationFeature = Extract<
   OrganizationConfigKey,
-  OrganizationConfigKey.MembersPageEnabled | OrganizationConfigKey.FormsEnabled
+  | OrganizationConfigKey.MembersPageEnabled
+  | OrganizationConfigKey.FormsEnabled
+  | OrganizationConfigKey.MemberTypesEnabled
+  | OrganizationConfigKey.AutoApproveSignups
 >;
 
 // Array of enum values for use with pgEnum and Zod

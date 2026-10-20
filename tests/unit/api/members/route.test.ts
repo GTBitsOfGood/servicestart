@@ -1,5 +1,10 @@
 // @vitest-environment node
+import { randomUUID } from "node:crypto";
+import { and, eq, inArray } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
+import db from "@/lib/db";
+import { members, MemberType, OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import {
   addMember,
   buildTestUser,
@@ -330,5 +335,164 @@ describe("GET /api/members/activity", () => {
     );
 
     expect(response.status).toBe(400);
+  });
+});
+
+describe("PATCH /api/members/type", () => {
+  async function setupTypesOrg(role: "owner" | "admin" | "member" = "admin") {
+    const setup = await setupOrgAndUser(role);
+    await OrganizationConfigService.setConfig(
+      setup.organization.id,
+      OrganizationConfigKey.MemberTypesEnabled,
+      "true",
+    );
+    return setup;
+  }
+
+  async function addApplicants(organizationId: string, count: number) {
+    const userIds: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const { user } = await signUpAndGetSession(buildTestUser());
+      await db.insert(members).values({
+        id: randomUUID(),
+        userId: user.id,
+        organizationId,
+        role: "member",
+        memberType: MemberType.Applicant,
+      });
+      userIds.push(user.id);
+    }
+    return userIds;
+  }
+
+  async function getTypes(organizationId: string, userIds: string[]) {
+    const rows = await db
+      .select({ memberType: members.memberType })
+      .from(members)
+      .where(
+        and(
+          eq(members.organizationId, organizationId),
+          inArray(members.userId, userIds),
+        ),
+      );
+    return rows.map((row) => row.memberType);
+  }
+
+  it("changes one member's type", async () => {
+    const { organization, headers } = await setupTypesOrg();
+    const userIds = await addApplicants(organization.id, 1);
+
+    const response = await testApi.members.type.$patch(
+      { json: { userIds, memberType: MemberType.Attendee } },
+      { headers },
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ updated: 1 });
+    expect(await getTypes(organization.id, userIds)).toEqual([
+      MemberType.Attendee,
+    ]);
+  });
+
+  it("changes many members' types", async () => {
+    const { organization, headers } = await setupTypesOrg("owner");
+    const userIds = await addApplicants(organization.id, 3);
+
+    const response = await testApi.members.type.$patch(
+      { json: { userIds, memberType: MemberType.Attendee } },
+      { headers },
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ updated: 3 });
+    expect(await getTypes(organization.id, userIds)).toEqual([
+      MemberType.Attendee,
+      MemberType.Attendee,
+      MemberType.Attendee,
+    ]);
+  });
+
+  it("returns 401 when not logged in", async () => {
+    const response = await testApi.members.type.$patch({
+      json: { userIds: ["anyone"], memberType: MemberType.Attendee },
+    });
+
+    expect(response.status).toBe(401);
+  });
+
+  it("returns 403 for a regular member", async () => {
+    const { organization, headers } = await setupTypesOrg("member");
+    const userIds = await addApplicants(organization.id, 1);
+
+    const response = await testApi.members.type.$patch(
+      { json: { userIds, memberType: MemberType.Attendee } },
+      { headers },
+    );
+
+    expect(response.status).toBe(403);
+    expect(await getTypes(organization.id, userIds)).toEqual([
+      MemberType.Applicant,
+    ]);
+  });
+
+  it("returns 404 when member types are off", async () => {
+    const { organization, headers } = await setupOrgAndUser("admin");
+    const userIds = await addApplicants(organization.id, 1);
+
+    const response = await testApi.members.type.$patch(
+      { json: { userIds, memberType: MemberType.Attendee } },
+      { headers },
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  it("returns 400 for a type that isn't a MemberType", async () => {
+    const { organization, headers } = await setupTypesOrg();
+    const userIds = await addApplicants(organization.id, 1);
+
+    const response = await testApi.members.type.$patch(
+      { json: { userIds, memberType: "camper" as MemberType } },
+      { headers },
+    );
+
+    expect(response.status).toBe(400);
+  });
+
+  it("returns 400 when a target is an admin", async () => {
+    const { organization, user, headers } = await setupTypesOrg();
+    const userIds = await addApplicants(organization.id, 1);
+
+    const response = await testApi.members.type.$patch(
+      {
+        json: {
+          userIds: [...userIds, user.id],
+          memberType: MemberType.Attendee,
+        },
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await getTypes(organization.id, userIds)).toEqual([
+      MemberType.Applicant,
+    ]);
+  });
+
+  it("doesn't let an org B admin change org A's members", async () => {
+    const orgA = await setupTypesOrg();
+    const orgAUserIds = await addApplicants(orgA.organization.id, 2);
+    const orgB = await setupTypesOrg();
+
+    const response = await testApi.members.type.$patch(
+      { json: { userIds: orgAUserIds, memberType: MemberType.Attendee } },
+      { headers: orgB.headers },
+    );
+
+    expect(response.status).toBe(404);
+    expect(await getTypes(orgA.organization.id, orgAUserIds)).toEqual([
+      MemberType.Applicant,
+      MemberType.Applicant,
+    ]);
   });
 });

@@ -5,17 +5,23 @@ import {
   events,
   eventRsvps,
   members,
+  MemberType,
   shifts,
   shiftRSVPs,
   users,
 } from "@/lib/schema";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 
 async function findByUserAndOrganization(
   userId: string,
   organizationId: string,
 ) {
   const [membership] = await db
-    .select({ id: members.id, role: members.role })
+    .select({
+      id: members.id,
+      role: members.role,
+      memberType: members.memberType,
+    })
     .from(members)
     .where(
       and(
@@ -77,9 +83,20 @@ async function listMemberContacts(organizationId: string) {
   return Array.from(contactsByEmail.values());
 }
 
+function memberFilter(organizationId: string, memberType?: MemberType) {
+  return and(
+    eq(members.organizationId, organizationId),
+    memberType ? eq(members.memberType, memberType) : undefined,
+  );
+}
+
 async function listMembers(
   organizationId: string,
-  { limit, offset }: { limit: number; offset: number },
+  {
+    limit,
+    offset,
+    memberType,
+  }: { limit: number; offset: number; memberType?: MemberType },
 ) {
   return db
     .select({
@@ -88,22 +105,90 @@ async function listMembers(
       email: users.email,
       phoneNumber: users.phoneNumber,
       role: members.role,
+      memberType: members.memberType,
       createdAt: members.createdAt,
     })
     .from(members)
     .innerJoin(users, eq(users.id, members.userId))
-    .where(eq(members.organizationId, organizationId))
+    .where(memberFilter(organizationId, memberType))
     .orderBy(members.id)
     .limit(limit)
     .offset(offset);
 }
 
-async function countByOrganization(organizationId: string) {
+async function countByOrganization(
+  organizationId: string,
+  memberType?: MemberType,
+) {
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(members)
-    .where(eq(members.organizationId, organizationId));
+    .where(memberFilter(organizationId, memberType));
   return row?.count ?? 0;
+}
+
+/**
+ * Sets the member type for one or more members of an organization. Writes
+ * nothing unless every user ID is a non-admin member of the organization.
+ */
+async function setMemberTypes(
+  organizationId: string,
+  userIds: string[],
+  memberType: MemberType,
+): Promise<{ error: "not_found" | "admin" } | { updated: number }> {
+  const uniqueIds = Array.from(new Set(userIds));
+
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .select({ userId: members.userId, role: members.role })
+      .from(members)
+      .where(
+        and(
+          eq(members.organizationId, organizationId),
+          inArray(members.userId, uniqueIds),
+        ),
+      );
+
+    // Distinct IDs: members has no unique (user, org), so a user can have two rows.
+    const foundIds = new Set(rows.map((row) => row.userId));
+    if (foundIds.size < uniqueIds.length)
+      return { error: "not_found" as const };
+    if (rows.some((row) => isAdminOrOwner(row.role))) {
+      return { error: "admin" as const };
+    }
+
+    const updated = await tx
+      .update(members)
+      .set({ memberType })
+      .where(
+        and(
+          eq(members.organizationId, organizationId),
+          inArray(members.userId, uniqueIds),
+        ),
+      )
+      .returning({ id: members.id });
+
+    return { updated: updated.length };
+  });
+}
+
+/**
+ * Adds a user who signed up (auto-approved or an approved join request) as a
+ * plain member. Signup never grants admin.
+ */
+async function addSignupMember(userId: string, organizationId: string) {
+  if (await findByUserAndOrganization(userId, organizationId)) return;
+
+  const memberTypesEnabled =
+    await OrganizationConfigService.getMemberTypesEnabled(organizationId);
+
+  await db.insert(members).values({
+    id: randomUUID(),
+    userId,
+    organizationId,
+    role: "member",
+    memberType: memberTypesEnabled ? MemberType.Applicant : null,
+  });
 }
 
 async function getMemberActivity(
@@ -217,7 +302,12 @@ async function addMemberDirectly(
     let [user] = await tx
       .select()
       .from(users)
-      .where(eq(users.email, normalizedEmail))
+      .where(
+        and(
+          eq(users.email, normalizedEmail),
+          eq(users.organizationId, organizationId),
+        ),
+      )
       .limit(1);
 
     if (!user) {
@@ -227,6 +317,7 @@ async function addMemberDirectly(
           id: randomUUID(),
           name: name.trim() || "Unknown",
           email: normalizedEmail,
+          organizationId,
         })
         .returning();
     }
@@ -258,5 +349,7 @@ export const MembersService = {
   listMemberContacts,
   listMembers,
   countByOrganization,
+  setMemberTypes,
+  addSignupMember,
   addMemberDirectly,
 };
