@@ -1,5 +1,5 @@
 import "@/styles/globals.css";
-import { Suspense, type CSSProperties } from "react";
+import { type CSSProperties } from "react";
 import { headers } from "next/headers";
 import { ActiveOrganizationSync } from "../components/ActiveOrganizationSync";
 import NavbarWrapper from "@/components/navigation/NavbarWrapper";
@@ -42,17 +42,9 @@ export default async function RootLayout({
       <body>
         <ActiveOrganizationSync />
         <NotificationToastProvider />
-        <Suspense
-          fallback={
-            <p role="status" className="p-8">
-              Loading…
-            </p>
-          }
-        >
-          <NavbarWrapper noNavbarChildren={children}>
-            <Navbar>{children}</Navbar>
-          </NavbarWrapper>
-        </Suspense>
+        <NavbarWrapper noNavbarChildren={children}>
+          <Navbar>{children}</Navbar>
+        </NavbarWrapper>
       </body>
     </html>
   );
