@@ -17,6 +17,7 @@ describe("getRedirectPath", () => {
   it.each([
     "",
     "?redirect=",
+    "?redirect=%2F%2F%5B",
     "?redirect=https%3A%2F%2Fevil.com",
     "?redirect=%2F%2Fevil.com",
     "?redirect=%2F%5Cevil.com",
