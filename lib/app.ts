@@ -9,7 +9,7 @@ import members from "@/api/members";
 import messages from "@/api/messages";
 import profile from "@/api/profile";
 import tags from "@/api/tags";
-import formSubmissions from "@/api/formSubmissions"
+import formSubmissions from "@/api/formSubmissions";
 import invitations from "@/api/invitations";
 import { Hono } from "hono";
 import notifications from "@/api/notifications";
