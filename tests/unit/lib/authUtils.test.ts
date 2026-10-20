@@ -742,6 +742,33 @@ describe("auto-approved signups", () => {
     expect(requests.map((r) => r.status)).toEqual([JoinRequestStatus.Pending]);
   });
 
+  it("keeps a pending request from being withdrawn after an invited member is removed", async () => {
+    const org = await createOrganization("auto-removed-pending");
+    const admin = await createOrgAdmin(org.id);
+    const { user, userId } = await signUpOnHost("auto-removed-pending");
+    await addMember(userId, org.id, "member");
+    await setToggles(org.id, { autoApprove: true });
+    await auth.api.removeMember({
+      body: { memberIdOrEmail: user.email, organizationId: org.id },
+      headers: admin.headers,
+    });
+    const signedIn = await auth.api.signInEmail({
+      body: { email: user.email, password: user.password },
+      headers: {
+        host: buildHost("auto-removed-pending"),
+        "x-organization-slug": "auto-removed-pending",
+      },
+      returnHeaders: true,
+    });
+    const withdraw = await testApi.joinRequests[":organizationId"].$delete(
+      { param: { organizationId: org.id } },
+      { headers: { Cookie: signedIn.headers.get("set-cookie")! } },
+    );
+    expect(withdraw.status).toBe(403);
+    await signInOnHost("auto-removed-pending", user);
+    expect(await getMembership(userId, org.id)).toBeNull();
+  });
+
   it("doesn't add a user whose join request was denied", async () => {
     const org = await createOrganization("auto-denied");
     const { user, userId } = await signUpOnHost("auto-denied");

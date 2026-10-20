@@ -12,6 +12,7 @@ import {
   eventRsvps,
   events,
   joinRequests,
+  joinRequestHistory,
   JoinRequestStatus,
   sessions,
   shiftRSVPs,
@@ -24,6 +25,7 @@ import { EmailService } from "@/lib/services/EmailService";
 import { getBaseUrl } from "./clientUtils";
 import { requireEnv } from "./env";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./authValidation";
+import { JoinRequestsService } from "./services/JoinRequestService";
 import { OrganizationsService } from "./services/OrganizationService";
 
 const baseURL = process.env.BETTER_AUTH_URL || getBaseUrl();
@@ -96,7 +98,7 @@ export const auth = betterAuth({
           // next login. Leaves an existing request alone (the join request
           // "remove" flow has already moved it back to pending).
           const [existingRequest] = await db
-            .select({ id: joinRequests.id })
+            .select({ id: joinRequests.id, status: joinRequests.status })
             .from(joinRequests)
             .where(
               and(
@@ -112,6 +114,21 @@ export const auth = betterAuth({
               organizationId: member.organizationId,
               status: JoinRequestStatus.Denied,
             });
+          }
+
+          if (existingRequest?.status === JoinRequestStatus.Pending) {
+            const history = await JoinRequestsService.listHistory(
+              existingRequest.id,
+            );
+            if (!history.some((entry) => entry.action === "removed")) {
+              // An invite may have been accepted while a join request was
+              // pending. Preserve removal history when access is revoked.
+              await db.insert(joinRequestHistory).values({
+                id: crypto.randomUUID(),
+                joinRequestId: existingRequest.id,
+                action: "removed",
+              });
+            }
           }
 
           await Promise.all([

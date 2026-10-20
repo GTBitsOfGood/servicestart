@@ -193,6 +193,9 @@ async function updateStatus(
     .where(eq(joinRequests.id, joinRequestId))
     .limit(1);
 
+  // Record removals before the auth hook checks withdrawal eligibility.
+  await addHistoryEntry(joinRequestId, action, resolvedByUserId, denialReason);
+
   if (jr) {
     if (
       newStatus === JoinRequestStatus.Approved &&
@@ -249,8 +252,6 @@ async function updateStatus(
       );
     }
   }
-
-  await addHistoryEntry(joinRequestId, action, resolvedByUserId, denialReason);
 
   return jr;
 }
