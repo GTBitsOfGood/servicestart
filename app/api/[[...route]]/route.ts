@@ -1,4 +1,5 @@
 import ping from "@/api/ping";
+import forms from "@/api/forms";
 import joinRequests from "@/api/joinRequests";
 import announcements from "@/api/announcements";
 import events from "@/api/events";
@@ -32,6 +33,7 @@ const app = new Hono()
   .route("/profile", profile)
   .route("/tags", tags)
   .route("/forms", formSubmissions)
+  .route("/forms", forms)
   .route("/invitations", invitations);
 
 export const GET = handle(app);
