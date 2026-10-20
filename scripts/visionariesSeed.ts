@@ -1,5 +1,5 @@
 import { deflateSync } from "node:zlib";
-import { and, eq, inArray, like, notInArray } from "drizzle-orm";
+import { and, eq, inArray, like, notInArray, or } from "drizzle-orm";
 import db from "@/lib/db";
 import {
   EventVisibility,
@@ -16,9 +16,11 @@ import type { NavbarConfig } from "@/lib/navbar";
 import type { FormAnswerValue, FormDefinition } from "@/lib/forms/schema";
 import { buildSubmissionSchema } from "@/lib/forms/submission";
 import { FileService } from "@/lib/services/FileService";
+import { InvitationStatus } from "@/lib/services/InvitationService";
 import {
   VISIONARIES_APPLICATION_FORM,
   VISIONARIES_ATTENDEE_FORMS,
+  VISIONARIES_DEMO_FORMS,
   visionariesId,
 } from "@/tests/unit/fixtures/forms";
 import type { SeedOrg } from "./seedTypes";
@@ -29,7 +31,8 @@ import type { SeedOrg } from "./seedTypes";
 // Visionaries to the Throne is the org Sprints 3 and 4 build against, at
 // http://visionariestothethrone.lvh.me:3000. Its config rows are below, and
 // seedVisionaries() adds its forms, a test account at each stage of the camp
-// process (see docs/VISIONARIES_DEVELOPMENT.md), camp events, and an alert.
+// process (see docs/VISIONARIES_DEVELOPMENT.md), invitations, camp events,
+// and an alert.
 // Put new Visionaries config rows and demo data here.
 // ===========================================================================
 
@@ -219,20 +222,31 @@ const WHY_CAMP = `I want to be a part of this camp because I want to grow as a l
 async function seedForm(form: FormDefinition, createdBy: string) {
   const { components, ...values } = form;
   await db.transaction(async (tx) => {
-    const [existing] = await tx
+    // The seeded copy, found by its fixed ID in case a draft's form ID was
+    // changed, and any other form using its form ID.
+    const matches = await tx
       .select({ id: schema.forms.id })
       .from(schema.forms)
       .where(
         and(
           eq(schema.forms.organizationId, ORG_ID),
-          eq(schema.forms.formId, form.formId),
+          or(
+            eq(schema.forms.id, form.id),
+            eq(schema.forms.formId, form.formId),
+          ),
         ),
       );
-    if (existing?.id === form.id) {
+    if (matches.some(({ id }) => id !== form.id)) {
+      throw new Error(
+        `Visionaries already has a form with the ID "${form.formId}" that the seed didn't create. Delete or rename it, then reseed.`,
+      );
+    }
+    if (matches.length > 0) {
       // Questions lock once a form is published, so only its details change.
       await tx
         .update(schema.forms)
         .set({
+          formId: values.formId,
           title: values.title,
           description: values.description,
           status: values.status,
@@ -240,11 +254,6 @@ async function seedForm(form: FormDefinition, createdBy: string) {
         })
         .where(eq(schema.forms.id, form.id));
       return;
-    }
-    if (existing) {
-      throw new Error(
-        `Visionaries already has a form with the ID "${form.formId}" that the seed didn't create. Delete or rename it, then reseed.`,
-      );
     }
 
     await tx
@@ -475,6 +484,94 @@ async function seedSubmissions(userIds: Map<string, string>) {
   }
 }
 
+/**
+ * Seeds the draft and closed demo forms. Their responses only come from trying
+ * them out, so they're deleted, and each form goes back to its seeded status.
+ */
+async function seedDemoForms(createdBy: string) {
+  for (const form of VISIONARIES_DEMO_FORMS) {
+    await db
+      .delete(schema.formSubmissions)
+      .where(
+        and(
+          eq(schema.formSubmissions.organizationId, ORG_ID),
+          eq(schema.formSubmissions.formId, form.id),
+        ),
+      );
+    await seedForm(form, createdBy);
+  }
+}
+
+// Links to the accept-invitation page, one for each state it shows. The IDs
+// are the links' tokens, fixed so the links are too.
+const INVITATIONS = [
+  // No account yet, so the page asks them to create one.
+  {
+    id: "visionaries-invite-counselor",
+    email: "counselor@example.com",
+    name: "Jordan Reed",
+    role: "admin",
+    expired: false,
+  },
+  // An account that isn't a member, so the page asks them to log in.
+  {
+    id: "visionaries-invite-nonmember",
+    email: "nonmember@example.com",
+    name: "Non Member",
+    role: "member",
+    expired: false,
+  },
+  {
+    id: "visionaries-invite-expired",
+    email: "expired-invite@example.com",
+    name: "Sam Lee",
+    role: "member",
+    expired: true,
+  },
+];
+
+/**
+ * Seeds the invitations as pending, undoing any acceptance from a previous
+ * run so each link works again: an account created from an invitation is
+ * deleted, and a membership an existing account gained is removed.
+ */
+async function seedInvitations(userIds: Map<string, string>, now: Date) {
+  for (const { expired, ...invitation } of INVITATIONS) {
+    const seededUserId = userIds.get(invitation.email);
+    if (seededUserId) {
+      await db
+        .delete(schema.members)
+        .where(
+          and(
+            eq(schema.members.userId, seededUserId),
+            eq(schema.members.organizationId, ORG_ID),
+          ),
+        );
+    } else {
+      await db
+        .delete(schema.users)
+        .where(
+          and(
+            eq(schema.users.email, invitation.email),
+            eq(schema.users.organizationId, ORG_ID),
+          ),
+        );
+    }
+
+    const values = {
+      ...invitation,
+      inviterId: userIds.get("admin@example.com")!,
+      organizationId: ORG_ID,
+      status: InvitationStatus.Pending,
+      expiresAt: new Date(now.getTime() + (expired ? -1 : 30) * 864e5),
+    };
+    await db
+      .insert(schema.invitations)
+      .values(values)
+      .onConflictDoUpdate({ target: schema.invitations.id, set: values });
+  }
+}
+
 /** Monday at midnight of the week `date` falls in, in local time. */
 function startOfWeek(date: Date) {
   const monday = new Date(date);
@@ -572,15 +669,19 @@ export async function removeGenericVisionariesNotifications() {
 }
 
 /**
- * Seeds Visionaries' forms, test accounts' responses, camp events, and alert.
- * `userIds` maps each Visionaries account's email to its user ID.
+ * Seeds Visionaries' forms, test accounts' responses, invitations, camp
+ * events, and alert. `userIds` maps each Visionaries account's email to its
+ * user ID.
  */
 export async function seedVisionaries(userIds: Map<string, string>) {
   const now = new Date();
+  const admin = userIds.get("admin@example.com")!;
   for (const form of SEEDED_FORMS) {
-    await seedForm(form, userIds.get("admin@example.com")!);
+    await seedForm(form, admin);
   }
   await seedSubmissions(userIds);
+  await seedDemoForms(admin);
+  await seedInvitations(userIds, now);
   await seedEvents(now);
   await seedAlert(userIds, now);
   await removeGenericVisionariesNotifications();

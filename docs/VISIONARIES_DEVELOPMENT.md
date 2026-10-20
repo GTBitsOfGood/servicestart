@@ -63,16 +63,32 @@ a different stage of the camp process:
 | `member2@example.com`           | member, attendee  | Accepted; 0 of 4 camp forms done              |
 | `member1@example.com`           | member, attendee  | Accepted; 2 of 4 (Emergency Contact, Consent) |
 | `attendee-complete@example.com` | member, attendee  | Accepted; all 4 camp forms done               |
-| `nonmember@example.com`         | none              | Signed-in user without membership             |
+| `nonmember@example.com`         | none              | Not a member; has a pending invitation        |
 
 The owner, admin, member, and nonmember addresses also exist in the other
 seeded organizations, with distinct user IDs and memberships; the rest are
 Visionaries only. Accounts are selected by the tenant hostname. Signing up on
 the Visionaries host makes you an applicant right away (`AutoApproveSignups`).
 
+Each of these invitation links shows a different state of the
+accept-invitation page. Open them signed out:
+
+| Link                                                                                       | Shows                                             |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| <http://visionariestothethrone.lvh.me:3000/accept-invitation/visionaries-invite-counselor> | No account yet: create one, then join as an admin |
+| <http://visionariestothethrone.lvh.me:3000/accept-invitation/visionaries-invite-nonmember> | `nonmember@example.com`'s invite: log in, accept  |
+| <http://visionariestothethrone.lvh.me:3000/accept-invitation/visionaries-invite-expired>   | An expired invitation                             |
+
+Opening the first link while signed in as someone else shows the
+wrong-account state.
+
 **Rerunning the seed resets these student accounts**: their member types, their
 responses to the seeded forms (responses added while testing are deleted), the
 responses' review statuses, and the attendees' alert, which is unread again.
+It also resets the demo forms below (their status, details, and all their
+responses) and the invitations: each is pending again, the account created
+from the counselor invitation (`counselor@example.com`) is deleted, and
+`nonmember@example.com` loses the membership it accepted.
 Use a fresh signup when you want data the seed leaves alone. Seeded forms and
 responses have fixed IDs (`visionariesId` in `tests/unit/fixtures/forms.ts`).
 
@@ -93,6 +109,9 @@ responses have fixed IDs (`visionariesId` in `tests/unit/fixtures/forms.ts`).
   Liability Release Form. The camp application is assigned to applicants, and
   accepting a response makes the student a current attendee
   (`acceptedMemberType`, #316). The forms use only Sprint 3 question types.
+- Demo forms for form management, assigned to no member type: a draft
+  Family Showcase RSVP (`family-showcase-rsvp`) to preview and publish, and a
+  closed Fall 2026 Open House RSVP (`open-house-rsvp-2026`) to reopen.
 - Dashboards: an applicant layout (application status and notifications) and
   an attendee layout (to-do list, weekly calendar, completed forms, and
   progress). Until their tickets land, those widgets show "Coming soon".

@@ -281,7 +281,7 @@ export async function main() {
 
   await seedVisionaries(userIdsByOrganization.get(VISIONARIES_ORG.id)!);
 
-  log("Visionaries forms, responses, events, and alert created.");
+  log("Visionaries forms, responses, invitations, events, and alert created.");
   const joinRequestSeedData = [
     {
       id: "jr_pending_servicestart",

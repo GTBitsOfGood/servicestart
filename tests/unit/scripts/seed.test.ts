@@ -27,8 +27,10 @@ import { FormProgressService } from "@/lib/services/FormProgressService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { hashPassword } from "better-auth/crypto";
 import { main } from "@/scripts/seed";
+import { InvitationService } from "@/lib/services/InvitationService";
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { MembersService } from "@/lib/services/MemberService";
+import { UserService } from "@/lib/services/UserService";
 import { and, asc, count, eq, isNull } from "drizzle-orm";
 import { expect, it } from "vitest";
 import {
@@ -37,6 +39,7 @@ import {
   DEFAULT_TEST_PASSWORD,
   VISIONARIES_APPLICATION_FORM,
   VISIONARIES_ATTENDEE_FORMS,
+  VISIONARIES_DEMO_FORMS,
 } from "../testUtils";
 
 it("should run the seed script without errors", async () => {
@@ -370,7 +373,7 @@ async function storedDefinition(formUuid: string) {
   };
 }
 
-it("seeds one published copy of each Visionaries form", async () => {
+it("seeds one copy of each Visionaries form", async () => {
   await main();
   await main();
 
@@ -381,6 +384,7 @@ it("seeds one published copy of each Visionaries form", async () => {
   const fixtures = [
     VISIONARIES_APPLICATION_FORM,
     ...VISIONARIES_ATTENDEE_FORMS,
+    ...VISIONARIES_DEMO_FORMS,
   ];
   expect(seeded.map(({ id }) => id).sort()).toEqual(
     fixtures.map(({ id }) => id).sort(),
@@ -598,6 +602,104 @@ it("resets the Visionaries accounts' responses when reseeding", async () => {
       ({ required, submission }) => required && submission,
     ),
   ).toHaveLength(0);
+});
+
+it("resets the Visionaries demo forms when reseeding", async () => {
+  await main();
+  const [draft, closed] = VISIONARIES_DEMO_FORMS;
+  const { user: member1 } = await visionariesUser("member1@example.com");
+  // Try them out: rename and publish the draft, answer it, and reopen the
+  // closed form.
+  await db
+    .update(forms)
+    .set({ formId: "renamed-rsvp", status: FormStatus.Published })
+    .where(eq(forms.id, draft.id));
+  await db
+    .update(forms)
+    .set({ status: FormStatus.Published })
+    .where(eq(forms.id, closed.id));
+  await createFormSubmission(
+    { id: draft.id, organizationId: VISIONARIES },
+    { userId: member1.id },
+  );
+
+  await main();
+
+  for (const fixture of VISIONARIES_DEMO_FORMS) {
+    expect((await storedDefinition(fixture.id)).definition).toEqual(fixture);
+  }
+  expect(
+    await db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.formId, draft.id)),
+  ).toEqual([]);
+  // They aren't anyone's required forms.
+  const demoFormIds = VISIONARIES_DEMO_FORMS.map(({ id }) => id);
+  for (const email of ["applicant@example.com", "member1@example.com"]) {
+    expect(
+      (await progressOf(email)).filter(({ form }) =>
+        demoFormIds.includes(form.id),
+      ),
+    ).toEqual([]);
+  }
+});
+
+it("seeds a Visionaries invitation for each accept-page state, open again on reseed", async () => {
+  await main();
+  const isOpen = async (id: string) =>
+    InvitationService.isOpen(
+      (await InvitationService.findByIdAndOrganization(id, VISIONARIES))!,
+    );
+  expect(await isOpen("visionaries-invite-counselor")).toBe(true);
+  expect(await isOpen("visionaries-invite-nonmember")).toBe(true);
+  expect(await isOpen("visionaries-invite-expired")).toBe(false);
+  // One invitee has no account yet; the other has one but isn't a member.
+  expect(
+    await UserService.findByEmailAndOrganization(
+      "counselor@example.com",
+      VISIONARIES,
+    ),
+  ).toBeFalsy();
+  const { user: nonmember, membership } = await visionariesUser(
+    "nonmember@example.com",
+  );
+  expect(membership).toBeUndefined();
+
+  // Accept both, as the invitees would.
+  const { user: counselor } = await auth.api.signUpEmail({
+    headers: new Headers({ host: "visionariestothethrone.lvh.me:3000" }),
+    body: {
+      email: "counselor@example.com",
+      password: DEFAULT_TEST_PASSWORD,
+      name: "Jordan Reed",
+    },
+  });
+  expect(
+    await InvitationService.acceptForUser(
+      "visionaries-invite-counselor",
+      VISIONARIES,
+      counselor,
+    ),
+  ).toBe("admin");
+  expect(
+    await InvitationService.acceptForUser(
+      "visionaries-invite-nonmember",
+      VISIONARIES,
+      nonmember,
+    ),
+  ).toBe("member");
+
+  await main();
+
+  expect(await isOpen("visionaries-invite-counselor")).toBe(true);
+  expect(await isOpen("visionaries-invite-nonmember")).toBe(true);
+  expect(
+    await db.select().from(users).where(eq(users.id, counselor.id)),
+  ).toEqual([]);
+  expect(
+    (await visionariesUser("nonmember@example.com")).membership,
+  ).toBeUndefined();
 });
 
 it("doesn't give a new Visionaries account two memberships", async () => {

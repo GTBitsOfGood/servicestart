@@ -41,6 +41,7 @@ import { app } from "@/lib/app";
 export {
   VISIONARIES_APPLICATION_FORM,
   VISIONARIES_ATTENDEE_FORMS,
+  VISIONARIES_DEMO_FORMS,
   buildSampleAnswers,
   visionariesId,
 } from "@/tests/unit/fixtures/forms";
