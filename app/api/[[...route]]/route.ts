@@ -12,7 +12,7 @@ import messages from "@/api/messages";
 import emails from "@/api/emails";
 import profile from "@/api/profile";
 import tags from "@/api/tags";
-import formSubmissions from "@/api/formSubmissions"
+import formSubmissions from "@/api/formSubmissions";
 import invitations from "@/api/invitations";
 import { Hono } from "hono";
 import { handle } from "hono/netlify";
