@@ -1,13 +1,6 @@
 import { juno } from "@/lib/junoClient";
 import { JunoFileDeletionNotSupportedError } from "@/lib/errors";
-import { media } from "@/lib/schema";
-import type { InferInsertModel } from "drizzle-orm";
 import { buildAzureBlobBaseUrl, parseJunoNumericId } from "./junoFileUtils";
-
-export type MediaUploadInput = Omit<
-  InferInsertModel<typeof media>,
-  "id" | "uploadedAt"
->;
 
 function getBucketPrefix(): string {
   return process.env.JUNO_FILE_BUCKET_PREFIX?.trim() ?? "ServiceStart";
@@ -160,6 +153,29 @@ async function getDownloadPresignedUrl(
   }
 }
 
+// Uploads from the server through a presigned URL, so the server stores the
+// bytes it validated.
+async function upload(
+  location: { organizationId: string; fileName: string },
+  file: File,
+) {
+  const { url } = await getUploadPresignedUrl(
+    location.organizationId,
+    location.fileName,
+  );
+  const response = await fetch(url, {
+    method: "PUT",
+    body: file,
+    headers: {
+      "Content-Type": file.type || "application/octet-stream",
+      "x-ms-blob-type": "BlockBlob",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Blob upload failed (${response.status})`);
+  }
+}
+
 async function readFile(organizationId: string, fileName: string) {
   const { url } = await getDownloadPresignedUrl(organizationId, fileName);
   const download = await fetch(url);
@@ -186,9 +202,5 @@ export const JunoFileService = {
   getDownloadPresignedUrl,
   readFile,
   deleteFile,
-  upload: async (mediaInput: MediaUploadInput, file: File) => {
-    void mediaInput;
-    void file;
-    throw new Error("Direct upload is not supported with JunoFileService");
-  },
+  upload,
 };

@@ -15,7 +15,10 @@ test.describe("Sign Up Page", () => {
     await page.getByPlaceholder("John").fill(user.name.substring(0, 8));
     await page.getByPlaceholder("Smith").fill(user.name.substring(9));
     await page.getByPlaceholder("example@email.com").fill(user.email);
-    await page.getByPlaceholder("Password").fill(user.password);
+    await page.getByLabel("Password", { exact: true }).fill(user.password);
+    await page
+      .getByLabel("Confirm Password", { exact: true })
+      .fill(user.password);
     await page.getByRole("button", { name: "Create Account" }).click();
     await expect(page).toHaveURL(/\//);
   });

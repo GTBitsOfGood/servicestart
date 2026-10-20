@@ -11,6 +11,7 @@ import type { Context } from "hono";
 import { auth } from "@/lib/auth";
 import db from "@/lib/db";
 import { joinRequests, JoinRequestStatus, members } from "@/lib/schema";
+import { INVITATION_ID_HEADER } from "@/lib/clientAuthUtils";
 import {
   ForbiddenError,
   NoActiveOrganizationError,
@@ -28,6 +29,7 @@ import {
   buildHost,
   buildTestUser,
   createOrganization,
+  createInvitation,
   createJoinRequest,
   setActiveOrganization,
   signUpAndGetSession,
@@ -150,6 +152,118 @@ describe("join request hooks", () => {
     );
 
     expect(requests).toHaveLength(1);
+  });
+});
+
+describe("invitation hooks", () => {
+  const HOUR_MS = 60 * 60 * 1000;
+
+  async function signUpOnHost(
+    slug: string,
+    user: ReturnType<typeof buildTestUser>,
+    invitationId?: string,
+  ) {
+    const result = await auth.api.signUpEmail({
+      body: { ...user, organizationSlug: slug },
+      headers: {
+        host: buildHost(slug),
+        "x-organization-slug": slug,
+        ...(invitationId && { [INVITATION_ID_HEADER]: invitationId }),
+      },
+    });
+    return result.user;
+  }
+
+  async function inviteToNewOrg(
+    slug: string,
+    opts: { role?: string; expiresAt?: Date } = {},
+  ) {
+    const organization = await createOrganization(slug);
+    const { user: inviter } = await signUpAndGetSession(buildTestUser());
+    const invitee = buildTestUser();
+    const invitationId = await createInvitation(organization.id, inviter.id, {
+      email: invitee.email,
+      ...opts,
+    });
+    return { organization, invitee, invitationId };
+  }
+
+  async function getRole(userId: string, organizationId: string) {
+    const [membership] = await db
+      .select({ role: members.role })
+      .from(members)
+      .where(
+        and(
+          eq(members.userId, userId),
+          eq(members.organizationId, organizationId),
+        ),
+      );
+    return membership?.role;
+  }
+
+  it("signing up from the invitation joins with the invited role", async () => {
+    const { organization, invitee, invitationId } = await inviteToNewOrg(
+      "invited-org",
+      { role: "admin" },
+    );
+
+    const user = await signUpOnHost("invited-org", invitee, invitationId);
+
+    expect(await getRole(user.id, organization.id)).toBe("admin");
+    expect(await getJoinRequests(user.id, organization.id)).toHaveLength(0);
+  });
+
+  it("signing up without the invitation link doesn't claim it", async () => {
+    const { organization, invitee } = await inviteToNewOrg("unclaimed-org", {
+      role: "admin",
+    });
+
+    const user = await signUpOnHost("unclaimed-org", invitee);
+
+    expect(await getRole(user.id, organization.id)).toBeUndefined();
+    expect(await getJoinRequests(user.id, organization.id)).toHaveLength(1);
+  });
+
+  it("files a join request instead when the invitation expired", async () => {
+    const { organization, invitee, invitationId } = await inviteToNewOrg(
+      "expired-invite-org",
+      { role: "admin", expiresAt: new Date(Date.now() - HOUR_MS) },
+    );
+
+    const user = await signUpOnHost(
+      "expired-invite-org",
+      invitee,
+      invitationId,
+    );
+
+    expect(await getRole(user.id, organization.id)).toBeUndefined();
+    expect(await getJoinRequests(user.id, organization.id)).toHaveLength(1);
+  });
+
+  it("doesn't use another organization's invitation", async () => {
+    const { invitee, invitationId } = await inviteToNewOrg("invite-host-a", {
+      role: "admin",
+    });
+    const orgB = await createOrganization("invite-host-b");
+
+    const user = await signUpOnHost("invite-host-b", invitee, invitationId);
+
+    expect(await getRole(user.id, orgB.id)).toBeUndefined();
+  });
+
+  it("doesn't let someone else use the invitation link", async () => {
+    const { organization, invitationId } = await inviteToNewOrg(
+      "stolen-link-org",
+      { role: "admin" },
+    );
+
+    const user = await signUpOnHost(
+      "stolen-link-org",
+      buildTestUser(),
+      invitationId,
+    );
+
+    expect(await getRole(user.id, organization.id)).toBeUndefined();
   });
 });
 
