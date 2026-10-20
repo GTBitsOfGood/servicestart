@@ -15,7 +15,7 @@ const WIDGET_COMPONENTS: Record<WidgetId, ComponentType> = {
 
 function WidgetFallback() {
   return (
-    <div className="flex h-full animate-pulse items-center justify-center rounded-xl bg-white">
+    <div className="flex h-full animate-pulse items-center justify-center rounded-xl bg-solid-bg-base">
       <div className="h-4 w-24 rounded bg-grey-fill-weak" />
     </div>
   );

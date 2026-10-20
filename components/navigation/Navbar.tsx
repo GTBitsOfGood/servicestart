@@ -90,7 +90,7 @@ export default async function Navbar({ children }: NavbarProps) {
 
   if (variant === "vertical-icon") {
     return (
-      <div className="flex h-screen overflow-hidden bg-brand-fill">
+      <div className="flex h-screen overflow-hidden bg-app-shell-bg">
         <div className="hidden md:block">
           <VerticalIconNav items={navbarItems} />
         </div>
@@ -113,7 +113,7 @@ export default async function Navbar({ children }: NavbarProps) {
           : "center";
 
     return (
-      <div className="flex min-h-screen flex-col bg-brand-fill">
+      <div className="flex min-h-screen flex-col bg-app-shell-bg">
         <div className="hidden md:block">
           <HorizontalNav items={navbarItems} alignment={alignment} />
         </div>
@@ -126,7 +126,7 @@ export default async function Navbar({ children }: NavbarProps) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-brand-fill">
+    <div className="flex h-screen overflow-hidden bg-app-shell-bg">
       <div className="hidden md:block">
         <VerticalSidebarNav items={navbarItems} />
       </div>

@@ -76,6 +76,12 @@ const VISIONARIES_ORG: SeedOrg = {
     // Development defaults from the Figma style guide, not final page designs.
     [OrganizationConfigKey.PrimaryColor]: "#5C218C",
     [OrganizationConfigKey.SecondaryColor]: "#C29BDC",
+    [OrganizationConfigKey.BackgroundColor]: "#FFFEF1",
+    [OrganizationConfigKey.TextColor]: "#373444",
+    [OrganizationConfigKey.DisplayFont]: "fredoka",
+    [OrganizationConfigKey.HeadingFont]: "lexend",
+    [OrganizationConfigKey.BodyFont]: "lexend",
+    [OrganizationConfigKey.CornerStyle]: "pill",
     [OrganizationConfigKey.Tagline]: "Visionaries to the Throne",
     [OrganizationConfigKey.FormsEnabled]: "true",
     // TODO: set the LogoUrl once the approved logo is committed to public/.

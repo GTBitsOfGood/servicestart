@@ -16,9 +16,8 @@ import NotificationCounter from "@/components/navigation/NotificationCounter";
 export type MobileDrawerSide = "left" | "right";
 
 const navItemBase =
-  "flex w-full items-center rounded-md px-4 py-3 text-paragraph-2 text-grey-text-strong transition-colors";
-const navActiveClass =
-  "bg-brand-fill-weaker font-semibold text-grey-text-strong";
+  "flex w-full items-center rounded-md px-4 py-3 text-paragraph-2 text-page-text transition-colors";
+const navActiveClass = "bg-brand-fill font-semibold text-page-text";
 const navInactiveHover = "hover:bg-grey-fill-weaker";
 
 function orderItemsForPinnedDrawer(items: NavbarItem[]): NavbarItem[] {
@@ -77,7 +76,7 @@ function MobileTopBar({
       type="button"
       onClick={onMenuClick}
       aria-label="Open navigation menu"
-      className="rounded-md p-2 text-grey-text-strong transition-colors hover:bg-brand-text/10"
+      className="rounded-md p-2 text-page-text transition-colors hover:bg-brand-text/10"
     >
       <HamburgerIcon />
     </button>
@@ -87,13 +86,13 @@ function MobileTopBar({
     <NotificationCounter
       unreadCount={unreadCount}
       iconSize={24}
-      className="rounded-md p-2 text-grey-text-strong transition-colors hover:bg-brand-text/10"
+      className="rounded-md p-2 text-page-text transition-colors hover:bg-brand-text/10"
       badgeClassName="right-0 top-0"
     />
   );
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 flex h-14 items-center justify-between bg-white px-3 shadow-sm md:hidden">
+    <header className="fixed top-0 left-0 right-0 z-40 flex h-14 items-center justify-between bg-mobile-navbar-bg px-3 shadow-sm md:hidden">
       {menuSide === "left" ? hamburgerButton : bellButton}
       {menuSide === "left" ? bellButton : hamburgerButton}
     </header>
@@ -151,7 +150,7 @@ function DrawerNavList({
                     <BogIcon
                       name={item.icon}
                       size={18}
-                      className="text-grey-text-strong"
+                      className="text-page-text"
                     />
                     {showUnreadBadge && unreadCount > 0 && (
                       <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-status-red-text px-0.5 text-xs font-bold text-white">
@@ -192,7 +191,7 @@ function DrawerNavList({
                     <BogIcon
                       name={item.icon}
                       size={18}
-                      className="text-grey-text-strong"
+                      className="text-page-text"
                     />
                   </span>
                 )}
@@ -204,7 +203,7 @@ function DrawerNavList({
               <BogIcon
                 name={isOpen ? "chevron-down" : "chevron-right"}
                 size={16}
-                className="shrink-0 text-grey-text-strong"
+                className="shrink-0 text-page-text"
               />
             </button>
 
@@ -217,8 +216,8 @@ function DrawerNavList({
                       <div
                         className={
                           isSubpageActive
-                            ? "font-semibold text-grey-text-strong"
-                            : "text-paragraph-2 text-grey-text-weak"
+                            ? "font-semibold text-page-text"
+                            : "text-paragraph-2 text-page-text/70"
                         }
                       >
                         {sub.label}
@@ -247,13 +246,13 @@ function PinnedProfileHeader({
       <ProfileAvatar size="xl" />
       <div className="flex min-w-0 flex-col items-start gap-1 text-left">
         <span
-          className="truncate text-paragraph-1 text-grey-text-strong"
+          className="truncate text-paragraph-1 text-page-text"
           style={{ fontFamily: "var(--font-heading)" }}
         >
           {displayName}
         </span>
         {displayRole ? (
-          <span className="truncate text-paragraph-2 font-normal text-grey-text-strong">
+          <span className="truncate text-paragraph-2 font-normal text-page-text">
             {displayRole}
           </span>
         ) : null}
@@ -332,7 +331,7 @@ export function MobileSidebarNav({
       <nav
         aria-label="Mobile navigation"
         className={cn(
-          "fixed top-0 z-50 flex h-full w-[min(18rem,100vw)] flex-col bg-white shadow-xl transition-transform duration-300 ease-in-out",
+          "fixed top-0 z-50 flex h-full w-[min(18rem,100vw)] flex-col bg-mobile-navbar-bg shadow-xl transition-transform duration-300 ease-in-out",
           isRight ? "right-0" : "left-0",
           isOpen
             ? "translate-x-0"
@@ -353,7 +352,7 @@ export function MobileSidebarNav({
             aria-label="Close navigation menu"
             className="rounded-md p-1 transition-colors hover:bg-grey-fill-weaker"
           >
-            <BogIcon name="x" size={20} className="text-grey-text-strong" />
+            <BogIcon name="x" size={20} className="text-page-text" />
           </button>
         </div>
 

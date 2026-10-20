@@ -265,6 +265,12 @@ it("seeds repeatable Visionaries branding and tenant-scoped development roles", 
   const config = Object.fromEntries(configs.map((row) => [row.key, row.value]));
   expect(config[OrganizationConfigKey.PrimaryColor]).toBe("#5C218C");
   expect(config[OrganizationConfigKey.SecondaryColor]).toBe("#C29BDC");
+  expect(config[OrganizationConfigKey.BackgroundColor]).toBe("#FFFEF1");
+  expect(config[OrganizationConfigKey.TextColor]).toBe("#373444");
+  expect(config[OrganizationConfigKey.DisplayFont]).toBe("fredoka");
+  expect(config[OrganizationConfigKey.HeadingFont]).toBe("lexend");
+  expect(config[OrganizationConfigKey.BodyFont]).toBe("lexend");
+  expect(config[OrganizationConfigKey.CornerStyle]).toBe("pill");
   expect(config[OrganizationConfigKey.Tagline]).toBe(
     "Visionaries to the Throne",
   );

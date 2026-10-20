@@ -59,7 +59,7 @@ export function UserProfileMenu({
     direction === "vertical" && verticalFlyout === "start";
   const compactFlyout = direction === "vertical";
   const flyoutLinkClass = cn(
-    "text-left font-normal hover:text-grey-text-strong",
+    "text-left font-normal hover:text-page-text",
     compactFlyout ? "text-lg" : "text-xl",
   );
 
@@ -100,10 +100,10 @@ export function UserProfileMenu({
           />
           {userLabelsMounted && (displayName || displayRole) ? (
             <div className="flex min-w-0 flex-col gap-0">
-              <span className="min-w-0 truncate leading-none font-normal text-grey-text-strong">
+              <span className="min-w-0 truncate leading-none font-normal text-page-text">
                 {displayName}
               </span>
-              <span className="min-w-0 truncate leading-none font-normal text-grey-text-weak">
+              <span className="min-w-0 truncate leading-none font-normal text-page-text/70">
                 {displayRole}
               </span>
             </div>
@@ -113,7 +113,7 @@ export function UserProfileMenu({
               name={menuIconName}
               size={14}
               weight="regular"
-              className="shrink-0 text-grey-text-strong"
+              className="shrink-0 text-page-text"
             />
           ) : null}
         </div>
@@ -122,7 +122,7 @@ export function UserProfileMenu({
       {open && (
         <div
           className={cn(
-            "absolute z-50 flex flex-col items-stretch rounded border border-grey-stroke-weak bg-solid-bg-sunken p-1 text-grey-text-strong shadow-lg text-small",
+            "absolute z-50 flex flex-col items-stretch rounded border border-grey-stroke-weak bg-solid-bg-sunken p-1 text-page-text shadow-lg text-small",
             compactFlyout ? "w-max max-w-[min(100%,11rem)]" : "w-[214px]",
             direction === "horizontal" && "right-0 top-full mt-2",
             direction === "vertical" &&

@@ -14,6 +14,7 @@
   --text-requests-control: 13px;
 
   --color-brand-text: #fc5b43;
+  --color-brand-secondary: #fb3552;
   --color-brand-stroke-strong: #fc5b43cc;
   --color-brand-stroke-weak: #fc5b4333;
   --color-brand-hover: #fc5b4380;
@@ -111,6 +112,12 @@
   --color-page-text: var(--color-grey-text-strong);
   /* Text on brand-colored surfaces, e.g. a primary button's label. */
   --color-brand-foreground: #ffffff;
+  /* Compatibility tokens preserve today's unconfigured app appearance while
+     custom themes use the configured page colors. */
+  --color-app-shell-bg: var(--color-brand-fill);
+  --color-app-strong-text: #000000;
+  --color-navbar-bg: var(--color-brand-fill);
+  --color-mobile-navbar-bg: #ffffff;
   --font-display: var(--font-heading);
   /* Corner radius for inputs and buttons (Tailwind's `rounded`). */
   --radius-control: 0.25rem;
@@ -160,6 +167,22 @@
   --animate-fade-out: fade-out 0.25s ease-out;
   --animate-slide-in-right: slide-in-right 0.3s ease-out;
   --animate-slide-out-right: slide-out-right 0.2s ease-in forwards;
+}
+
+/* Theme adapters for BoG primitives. These intentionally live outside
+   components/bog so the shared primitives remain untouched. */
+html[data-corner-style] .themed-button,
+html[data-corner-style] .theme-control,
+html[data-corner-style] .themed-dropdown > button,
+html[data-corner-style] .themed-text-input :is(input, textarea) {
+  border-radius: var(--radius-control) !important;
+}
+
+/* BogDropdown's primary trigger assumes white text internally. Use the
+   contrast-safe organization foreground without editing the primitive. */
+.themed-dropdown-primary > button,
+.themed-dropdown-primary > button svg {
+  color: var(--color-brand-foreground) !important;
 }
 
 @keyframes fade-in {
@@ -223,6 +246,8 @@
 
   body {
     padding: 0;
+    background-color: var(--color-page-bg);
+    color: var(--color-page-text);
     font-family: var(--font-paragraph);
   }
 
@@ -304,7 +329,7 @@
   .text-display {
     line-height: var(--text-mobile-display--line-height);
     font-size: var(--text-mobile-display);
-    font-family: var(--font-heading);
+    font-family: var(--font-display);
   }
 
   .text-heading-1 {
@@ -355,7 +380,42 @@
     font-family: var(--font-paragraph);
   }
 
+  /* Configured themes use the typography hierarchy from the organization
+     style guide. Scoping this to themed organizations preserves the exact
+     legacy weights for organizations without theme rows. */
+  html[data-organization-theme="custom"]
+    :is(
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      .text-heading-1,
+      .text-heading-2,
+      .text-heading-3,
+      .text-heading-4
+    ) {
+    font-family: var(--font-heading);
+  }
+
+  html[data-organization-theme="custom"]
+    :is(h1, h2, .text-heading-1, .text-heading-2),
+  html[data-organization-theme="custom"] .text-display {
+    font-weight: 600;
+  }
+
+  html[data-organization-theme="custom"]
+    :is(h3, h4, h5, h6, .text-heading-3, .text-heading-4) {
+    font-weight: 500;
+  }
+
   @media (width >= 1024px) {
+    html[data-organization-theme="custom"]
+      :is(h3, h4, h5, h6, .text-heading-3, .text-heading-4) {
+      font-weight: 600;
+    }
+
     .text-display {
       line-height: var(--text-desktop-display--line-height);
       font-size: var(--text-desktop-display);

@@ -22,11 +22,7 @@ export default function NotificationCounter({
           className={cn("relative cursor-pointer", className)}
         >
           <span className="relative inline-flex">
-            <BogIcon
-              name="bell"
-              size={iconSize}
-              className="text-grey-text-strong"
-            />
+            <BogIcon name="bell" size={iconSize} className="text-page-text" />
             {unreadCount > 0 && (
               <span
                 className={cn(

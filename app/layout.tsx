@@ -1,16 +1,44 @@
 import "@/styles/globals.css";
-import { Suspense } from "react";
+import { Suspense, type CSSProperties } from "react";
+import { headers } from "next/headers";
 import { ActiveOrganizationSync } from "../components/ActiveOrganizationSync";
 import NavbarWrapper from "@/components/navigation/NavbarWrapper";
 import Navbar from "@/components/navigation/Navbar";
 import NotificationToastProvider from "@/components/notifications/NotificationToastProvider";
-export default function RootLayout({
+import { getSlugFromHost } from "@/lib/clientAuthUtils";
+import { OrganizationsService } from "@/lib/services/OrganizationService";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { OrganizationConfigKey } from "@/lib/schema";
+import { getOrganizationThemeCssVariables, isCornerStyle } from "@/lib/theme";
+import { themeFontVariableClassNames } from "@/app/fonts";
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const headerList = await headers();
+  const slug = getSlugFromHost(headerList.get("host") ?? undefined);
+  const organization = await OrganizationsService.findBySlug(slug);
+  const themeConfig = organization
+    ? await OrganizationConfigService.getThemeConfig(organization.id)
+    : {};
+  const themeVariables = getOrganizationThemeCssVariables(themeConfig);
+  const hasConfiguredTheme = Object.keys(themeConfig).length > 0;
+  const configuredCornerStyle = themeConfig[OrganizationConfigKey.CornerStyle];
+  const cornerStyle =
+    configuredCornerStyle && isCornerStyle(configuredCornerStyle)
+      ? configuredCornerStyle
+      : undefined;
+
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={themeFontVariableClassNames}
+      style={themeVariables as CSSProperties}
+      data-organization-theme={hasConfiguredTheme ? "custom" : undefined}
+      data-corner-style={cornerStyle}
+    >
       <body>
         <ActiveOrganizationSync />
         <NotificationToastProvider />
