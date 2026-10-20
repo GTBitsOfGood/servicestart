@@ -42,7 +42,13 @@ export default async function RootLayout({
       <body>
         <ActiveOrganizationSync />
         <NotificationToastProvider />
-        <Suspense fallback={children}>
+        <Suspense
+          fallback={
+            <p role="status" className="p-8">
+              Loading…
+            </p>
+          }
+        >
           <NavbarWrapper noNavbarChildren={children}>
             <Navbar>{children}</Navbar>
           </NavbarWrapper>

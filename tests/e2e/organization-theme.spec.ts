@@ -67,10 +67,13 @@ async function selectNewsletterAndGetSaveButton(page: Page) {
 
 async function openRequestsAndGetTypeFilter(page: Page, baseUrl: string) {
   await page.goto(`${baseUrl}/members`);
-  await page.getByRole("button", { name: "Requests", exact: true }).click();
-
   const typeFilter = page.getByRole("button", { name: "Type", exact: true });
-  await expect(typeFilter).toBeVisible();
+  await expect(async () => {
+    if (!(await typeFilter.isVisible())) {
+      await page.getByRole("button", { name: "Requests", exact: true }).click();
+    }
+    await expect(typeFilter).toBeVisible();
+  }).toPass({ timeout: 10_000 });
   return typeFilter;
 }
 
