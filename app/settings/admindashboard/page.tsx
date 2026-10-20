@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { getWidgetOptions } from "@/lib/dashboard/widgets";
+import { getWidgetOptions, WIDGET_FEATURE_KEYS } from "@/lib/dashboard/widgets";
 import DashboardLayoutBuilder from "@/components/dashboard/DashboardLayoutBuilder";
 import type { DashboardLayout } from "@/lib/dashboard/schema";
 import {
@@ -21,7 +21,12 @@ export default async function AdminDashboardSettingsPage() {
 
   const layout =
     await OrganizationConfigService.getAdminDashboardLayout(organizationId);
-  const widgetOptions = getWidgetOptions();
+  const widgetOptions = getWidgetOptions(
+    await OrganizationConfigService.getConfig(
+      organizationId,
+      WIDGET_FEATURE_KEYS,
+    ),
+  );
 
   async function saveLayout(newLayout: DashboardLayout) {
     "use server";

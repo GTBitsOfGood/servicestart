@@ -23,6 +23,8 @@ import {
   formUploads,
   FormStatus,
   invitations,
+  type MemberType,
+  type SubmissionReviewStatus,
 } from "@/lib/schema";
 import { InvitationStatus } from "@/lib/services/InvitationService";
 import { DEFAULT_FORM_SETTINGS } from "@/lib/forms/constants";
@@ -38,7 +40,10 @@ import { app } from "@/lib/app";
 
 export {
   VISIONARIES_APPLICATION_FORM,
+  VISIONARIES_ATTENDEE_FORMS,
+  VISIONARIES_DEMO_FORMS,
   buildSampleAnswers,
+  visionariesId,
 } from "@/tests/unit/fixtures/forms";
 
 export const testApi = testClient(app).api;
@@ -169,18 +174,21 @@ export async function setActiveOrganization(
 }
 
 /**
- * Adds a user as a member to an organization with a given role.
+ * Adds a user as a member to an organization with a given role, and
+ * optionally a member type.
  */
 export async function addMember(
   userId: string,
   organizationId: string,
   role: string,
+  memberType: MemberType | null = null,
 ) {
   await db.insert(members).values({
     id: randomUUID(),
     userId,
     organizationId,
     role,
+    memberType,
   });
 }
 
@@ -450,6 +458,9 @@ export async function createFormSubmission(
     userId?: string | null;
     answers?: Record<string, FormAnswerValue>;
     submittedAt?: Date;
+    /** When the submitter last edited it; null (never) by default. */
+    updatedAt?: Date | null;
+    reviewStatus?: SubmissionReviewStatus;
   } = {},
 ) {
   return db.transaction(async (tx) => {
@@ -460,6 +471,8 @@ export async function createFormSubmission(
         organizationId: form.organizationId,
         userId: opts.userId ?? null,
         submittedAt: opts.submittedAt ?? new Date(),
+        updatedAt: opts.updatedAt ?? null,
+        reviewStatus: opts.reviewStatus,
       })
       .returning({ id: formSubmissions.id });
 

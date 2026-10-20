@@ -13,6 +13,10 @@ import emails from "@/api/emails";
 import profile from "@/api/profile";
 import tags from "@/api/tags";
 import formSubmissions from "@/api/formSubmissions";
+import formQuestions from "@/api/formQuestions";
+import formResponses from "@/api/formResponses";
+import informationRequests from "@/api/informationRequests";
+import alerts from "@/api/alerts";
 import invitations from "@/api/invitations";
 import { Hono } from "hono";
 import { handle } from "hono/netlify";
@@ -32,8 +36,13 @@ const app = new Hono()
   .route("/emails", emails)
   .route("/profile", profile)
   .route("/tags", tags)
+  // Keep in sync with lib/app.ts, including the order of the /forms mounts.
+  .route("/forms", formQuestions)
   .route("/forms", formSubmissions)
   .route("/forms", forms)
+  .route("/formResponses", formResponses)
+  .route("/informationRequests", informationRequests)
+  .route("/alerts", alerts)
   .route("/invitations", invitations);
 
 export const GET = handle(app);

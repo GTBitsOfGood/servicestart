@@ -1,0 +1,13 @@
+/** A widget that isn't built yet; each one is replaced by its ticket. */
+export default function ComingSoonWidget({ title }: { title: string }) {
+  return (
+    <div className="flex h-full flex-col rounded-xl bg-solid-bg-base p-8">
+      <h3 className="text-heading-3 font-semibold text-app-strong-text">
+        {title}
+      </h3>
+      <div className="mt-4 flex flex-1 items-center justify-center text-paragraph-1 text-grey-text-weak">
+        Coming soon
+      </div>
+    </div>
+  );
+}

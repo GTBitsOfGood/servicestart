@@ -17,6 +17,7 @@ import ImageQuestion from "@/components/forms/questions/ImageQuestion";
 import LongTextQuestion from "@/components/forms/questions/LongTextQuestion";
 import SectionHeader from "@/components/forms/questions/SectionHeader";
 import TextQuestion from "@/components/forms/questions/TextQuestion";
+import UnsupportedQuestion from "@/components/forms/questions/UnsupportedQuestion";
 import type { FieldValue } from "@/components/forms/types";
 import { FORM_UPLOAD_MAX_BYTES } from "@/lib/forms/constants";
 import type { FormComponent, FormComponentOfType } from "@/lib/forms/schema";
@@ -81,6 +82,7 @@ describe("TextQuestion", () => {
         component={question(type, { label: "Answer" })}
         value=""
         disabled={false}
+        readOnly={false}
         {...handlers()}
       />,
     );
@@ -99,6 +101,7 @@ describe("TextQuestion", () => {
         } as Partial<FormComponent>)}
         value=""
         disabled={false}
+        readOnly={false}
         {...handlers()}
       />,
     );
@@ -116,6 +119,7 @@ describe("TextQuestion", () => {
         })}
         value=""
         disabled={false}
+        readOnly={false}
         {...handlers()}
       />,
     );
@@ -134,6 +138,7 @@ describe("TextQuestion", () => {
         value="ada"
         error="Enter a valid email address"
         disabled={false}
+        readOnly={false}
         {...handlers()}
       />,
     );
@@ -157,6 +162,7 @@ describe("TextQuestion", () => {
         component={question(FormComponentType.Phone, { label: "Phone" })}
         value=""
         disabled={false}
+        readOnly={false}
         onChange={onChange}
         onBlur={onBlur}
       />,
@@ -181,6 +187,7 @@ describe("LongTextQuestion", () => {
         } as Partial<FormComponent>)}
         value={value}
         disabled={false}
+        readOnly={false}
         onChange={setValue}
         onBlur={() => {}}
       />
@@ -211,6 +218,7 @@ describe("SectionHeader", () => {
         })}
         value={undefined}
         disabled={false}
+        readOnly={false}
         {...handlers()}
       />,
     );
@@ -244,6 +252,7 @@ describe("ImageQuestion", () => {
           })}
           value={value}
           disabled={false}
+          readOnly={false}
           onChange={(next) => {
             onChange(next);
             setValue(next);
@@ -257,6 +266,8 @@ describe("ImageQuestion", () => {
         value={{
           formId: "camp-application-2027",
           preview: false,
+          readOnly: false,
+          imageSrc: () => null,
           uploadImage,
           setUploading,
           ...context,
@@ -373,6 +384,46 @@ describe("ImageQuestion", () => {
     expect(button.getAttribute("aria-invalid")).toBe("true");
   });
 
+  it("shows a saved image while editing", () => {
+    renderImage(
+      { imageSrc: (id) => `/api/forms/camp-application-2027/my-uploads/${id}` },
+      { uploadId: UPLOAD_ID },
+    );
+    expect(screen.getByRole("img").getAttribute("src")).toBe(
+      `/api/forms/camp-application-2027/my-uploads/${UPLOAD_ID}`,
+    );
+    expect(screen.getByRole("button", { name: "Replace image" })).toBeTruthy();
+  });
+
+  it("shows a saved image without upload controls when read-only", () => {
+    const onChange = vi.fn();
+    render(
+      <DynamicFormContext.Provider
+        value={{
+          formId: "camp-application-2027",
+          preview: false,
+          readOnly: true,
+          imageSrc: (id) => `/uploads/${id}`,
+          uploadImage: vi.fn(),
+          setUploading: vi.fn(),
+        }}
+      >
+        <ImageQuestion
+          component={question(FormComponentType.Image, { label: "Headshot" })}
+          value={{ uploadId: UPLOAD_ID }}
+          disabled={false}
+          readOnly
+          onChange={onChange}
+          onBlur={() => {}}
+        />
+      </DynamicFormContext.Provider>,
+    );
+    expect(
+      screen.getByRole("img", { name: "Headshot" }).getAttribute("src"),
+    ).toBe(`/uploads/${UPLOAD_ID}`);
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
   it("turns off uploads in preview", () => {
     renderImage({ preview: true });
     expect(
@@ -383,5 +434,78 @@ describe("ImageQuestion", () => {
       ).disabled,
     ).toBe(true);
     expect(screen.getByText("Uploads are off in preview")).toBeTruthy();
+  });
+});
+
+describe("read-only questions", () => {
+  it("shows a text answer that can't be edited", () => {
+    render(
+      <TextQuestion
+        component={question(FormComponentType.ShortText, { label: "Name" })}
+        value="Ada"
+        disabled={false}
+        readOnly
+        {...handlers()}
+      />,
+    );
+    const input = screen.getByLabelText("Name") as HTMLInputElement;
+    expect(input.value).toBe("Ada");
+    expect(input.readOnly).toBe(true);
+    expect(input.disabled).toBe(false);
+  });
+
+  it("shows a long answer without the word count", () => {
+    render(
+      <LongTextQuestion
+        component={question(FormComponentType.LongText, {
+          label: "Why?",
+          config: { minWords: 1, maxWords: 5 },
+        } as Partial<FormComponent>)}
+        value="Because."
+        disabled={false}
+        readOnly
+        {...handlers()}
+      />,
+    );
+    const textarea = screen.getByLabelText("Why?") as HTMLTextAreaElement;
+    expect(textarea.value).toBe("Because.");
+    expect(textarea.readOnly).toBe(true);
+    expect(screen.queryByText(/words/)).toBeNull();
+  });
+});
+
+describe("UnsupportedQuestion", () => {
+  it.each<[string, FieldValue | undefined, string]>([
+    ["a yes", true, "Yes"],
+    ["a no", false, "No"],
+    ["a list", ["Mon", "Wed"], "Mon, Wed"],
+    ["text", "Option A", "Option A"],
+    ["no answer", undefined, "No answer"],
+  ])("shows %s when read-only", (_, value, shown) => {
+    render(
+      <UnsupportedQuestion
+        component={question(FormComponentType.YesNo, { label: "Allergies?" })}
+        value={value}
+        disabled={false}
+        readOnly
+        {...handlers()}
+      />,
+    );
+    expect(screen.getByText(shown)).toBeTruthy();
+  });
+
+  it("says it can't be answered yet", () => {
+    render(
+      <UnsupportedQuestion
+        component={question(FormComponentType.Date, { label: "Start date" })}
+        value={undefined}
+        disabled={false}
+        readOnly={false}
+        {...handlers()}
+      />,
+    );
+    expect(
+      screen.getByText("This question can't be answered here yet."),
+    ).toBeTruthy();
   });
 });

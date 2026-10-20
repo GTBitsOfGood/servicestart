@@ -11,6 +11,10 @@ import messages from "@/api/messages";
 import profile from "@/api/profile";
 import tags from "@/api/tags";
 import formSubmissions from "@/api/formSubmissions";
+import formQuestions from "@/api/formQuestions";
+import formResponses from "@/api/formResponses";
+import informationRequests from "@/api/informationRequests";
+import alerts from "@/api/alerts";
 import invitations from "@/api/invitations";
 import { Hono } from "hono";
 import notifications from "@/api/notifications";
@@ -31,8 +35,14 @@ export const app = new Hono()
   .route("/emails", emails)
   .route("/profile", profile)
   .route("/tags", tags)
+  // api/forms.ts runs admin-only middleware for every /api/forms/* route
+  // mounted after it, so mount other /forms sub-apps before it.
+  .route("/forms", formQuestions)
   .route("/forms", formSubmissions)
   .route("/forms", forms)
+  .route("/formResponses", formResponses)
+  .route("/informationRequests", informationRequests)
+  .route("/alerts", alerts)
   .route("/invitations", invitations);
 
 export type AppType = typeof app;

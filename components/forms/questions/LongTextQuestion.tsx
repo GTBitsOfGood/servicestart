@@ -26,6 +26,7 @@ export default function LongTextQuestion({
   value,
   error,
   disabled,
+  readOnly,
   onChange,
   onBlur,
 }: QuestionProps<FormComponentOfType<FormComponentType.LongText>>) {
@@ -42,22 +43,31 @@ export default function LongTextQuestion({
         rows={6}
         required={component.required}
         disabled={disabled}
+        readOnly={readOnly}
         aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(component, error, countId)}
+        aria-describedby={describedBy(
+          component,
+          error,
+          ...(readOnly ? [] : [countId]),
+        )}
         value={text}
         onChange={(event) => onChange(event.target.value)}
         onBlur={onBlur}
         className={cn(
           "w-full resize-y rounded-control border bg-solid-bg-sunken px-4 py-3 text-paragraph-2 text-page-text focus:border-brand-stroke-strong focus:outline-none disabled:cursor-not-allowed disabled:opacity-85",
+          // Shows the whole answer instead of scrolling inside the box.
+          readOnly && "field-sizing-content resize-none",
           error
             ? "border-status-red-stroke-strong"
             : "border-grey-stroke-weak hover:border-brand-stroke-strong",
         )}
       />
-      <p id={countId} className="text-paragraph-2 text-grey-text-weak">
-        {words === 1 ? "1 word" : `${words} words`}
-        {range && ` (${range})`}
-      </p>
+      {!readOnly && (
+        <p id={countId} className="text-paragraph-2 text-grey-text-weak">
+          {words === 1 ? "1 word" : `${words} words`}
+          {range && ` (${range})`}
+        </p>
+      )}
     </QuestionField>
   );
 }

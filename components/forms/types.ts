@@ -1,17 +1,42 @@
 import type { FormComponentType } from "@/lib/schema";
-import type { FormAnswerValueFor, FormComponent } from "@/lib/forms/schema";
+import type {
+  FormAnswerValue,
+  FormAnswerValueFor,
+  FormComponent,
+} from "@/lib/forms/schema";
 
 /** What a question holds while it's being filled out. Numbers stay text. */
-export type FieldValue = string | FormAnswerValueFor<FormComponentType.Image>;
+export type FieldValue =
+  | string
+  | string[]
+  | boolean
+  | FormAnswerValueFor<FormComponentType.Image>;
 
 export type QuestionProps<C extends FormComponent = FormComponent> = {
   component: C;
   value: FieldValue | undefined;
   error?: string;
   disabled: boolean;
+  /**
+   * Shows the answer without letting it change, e.g. on a submitted response.
+   * Keep the control focusable and readable rather than greyed out.
+   */
+  readOnly: boolean;
   onChange: (value: FieldValue | undefined) => void;
   onBlur: () => void;
 };
+
+/** Saved answers as field values, e.g. to prefill a form. */
+export function toFieldValues(
+  answers: Record<string, FormAnswerValue>,
+): Record<string, FieldValue> {
+  return Object.fromEntries(
+    Object.entries(answers).map(([id, value]) => [
+      id,
+      typeof value === "number" ? String(value) : value,
+    ]),
+  );
+}
 
 export function fieldId(componentId: string) {
   return `question-${componentId}`;

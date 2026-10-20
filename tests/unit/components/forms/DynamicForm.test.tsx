@@ -356,4 +356,66 @@ describe("DynamicForm", () => {
       expect(onSubmit).not.toHaveBeenCalled();
     });
   });
+
+  describe("with saved answers", () => {
+    const saved = {
+      [nameId]: "Ada Lovelace",
+      [studentEmailId]: "ada@example.com",
+      [phoneId]: "4045550123",
+      [gradeId]: 9,
+      [headshotId]: { uploadId: UPLOAD_ID },
+    };
+
+    it("starts from them and submits them unchanged", async () => {
+      const onSubmit = vi.fn(
+        async (): Promise<DynamicFormSubmitResult> => ({ ok: true }),
+      );
+      render(
+        <DynamicForm
+          definition={{
+            ...form,
+            components: form.components.map((component) => ({
+              ...component,
+              required: false,
+            })),
+          }}
+          initialValues={saved}
+          submitLabel="Save changes"
+          onSubmit={onSubmit}
+          uploadImage={uploadImage}
+          imageSrc={(id) => `/uploads/${id}`}
+        />,
+      );
+
+      expect(field(/^Student Name/).value).toBe("Ada Lovelace");
+      expect(field(/^What grade/).value).toBe("9");
+      expect(screen.getByRole("img").getAttribute("src")).toBe(
+        `/uploads/${UPLOAD_ID}`,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+      await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+      expect(onSubmit).toHaveBeenCalledWith(saved);
+    });
+
+    it("shows them read-only, without a submit button", () => {
+      const onSubmit = vi.fn();
+      render(
+        <DynamicForm
+          definition={form}
+          initialValues={saved}
+          readOnly
+          onSubmit={onSubmit}
+          imageSrc={(id) => `/uploads/${id}`}
+        />,
+      );
+
+      expect(field(/^Student Name/).readOnly).toBe(true);
+      expect(field(/^Parent Name/).value).toBe("");
+      expect(screen.queryByRole("button")).toBeNull();
+      expect(screen.queryByText(/are required/)).toBeNull();
+      fireEvent.submit(document.querySelector("form")!);
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+  });
 });

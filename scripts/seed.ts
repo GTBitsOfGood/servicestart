@@ -3,17 +3,15 @@ import { EventVisibility, JoinRequestStatus, schema } from "../lib/schema";
 import db from "../lib/db";
 import { auth } from "@/lib/auth";
 import {
-  MemberType,
   joinRequestHistory,
   OrganizationConfigKey,
   NotificationType,
 } from "@/lib/schema";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import {
-  DEFAULT_TEST_PASSWORD,
-  VISIONARIES_APPLICATION_FORM,
-} from "@/tests/unit/testUtils";
+import { DEFAULT_TEST_PASSWORD } from "@/tests/unit/testUtils";
+import type { SeedOrg, SeedUser } from "./seedTypes";
+import { seedVisionaries, VISIONARIES_ORG } from "./visionariesSeed";
 import { and, eq, inArray, isNull, ne, notExists, sql } from "drizzle-orm";
 
 const isTest = require.main !== module; // Check if the script is being run directly or imported in tests
@@ -34,107 +32,7 @@ async function removeRequestNotifications(requests: { id: string }[]) {
   );
 }
 
-type NavbarConfig = {
-  variant: string;
-  color: string;
-};
-
-type SeedUser = {
-  name: string;
-  email: string;
-  role: string | null;
-  phoneNumber: string | null;
-  memberType?: MemberType;
-};
-
-type SeedOrg = {
-  id: string;
-  name: string;
-  slug: string;
-  navbar: NavbarConfig;
-  config?: Partial<Record<OrganizationConfigKey, string>>;
-  // Accounts only this org gets, on top of the shared ones in main().
-  extraUsers?: SeedUser[];
-};
-
-// ===========================================================================
-// Visionaries setup
-//
-// Visionaries to the Throne is the org Sprint 3 builds against, at
-// http://visionariestothethrone.lvh.me:3000. It gets the shared accounts
-// (admin@example.com is its admin), an applicant, and a published copy of
-// its camp application. Put its config rows here, e.g. theme values (#300)
-// and member type toggles (#302).
-// ===========================================================================
-
-const VISIONARIES_ORG: SeedOrg = {
-  id: "org_visionariestothethrone",
-  name: "Visionaries to the Throne",
-  slug: "visionariestothethrone",
-  navbar: { variant: "horizontal-center", color: "white" },
-  config: {
-    // Development defaults from the Figma style guide, not final page designs.
-    [OrganizationConfigKey.PrimaryColor]: "#5C218C",
-    [OrganizationConfigKey.SecondaryColor]: "#C29BDC",
-    [OrganizationConfigKey.BackgroundColor]: "#FFFEF1",
-    [OrganizationConfigKey.TextColor]: "#373444",
-    [OrganizationConfigKey.DisplayFont]: "fredoka",
-    [OrganizationConfigKey.HeadingFont]: "lexend",
-    [OrganizationConfigKey.BodyFont]: "lexend",
-    [OrganizationConfigKey.CornerStyle]: "pill",
-    [OrganizationConfigKey.Tagline]: "Visionaries to the Throne",
-    [OrganizationConfigKey.FormsEnabled]: "true",
-    [OrganizationConfigKey.MemberTypesEnabled]: "true",
-    [OrganizationConfigKey.AutoApproveSignups]: "true",
-    // TODO: set the LogoUrl once the approved logo is committed to public/.
-  },
-  extraUsers: [
-    {
-      name: "Applicant User",
-      email: "applicant@example.com",
-      role: "member",
-      phoneNumber: null,
-      memberType: MemberType.Applicant,
-    },
-  ],
-};
-
-// Inserts the published camp application with the fixture's IDs. Leaves an
-// existing seeded copy as is, and won't overwrite a form someone else created
-// with the same form ID.
-async function seedVisionariesApplication(createdBy: string) {
-  const { components, ...form } = VISIONARIES_APPLICATION_FORM;
-  await db.transaction(async (tx) => {
-    const [existing] = await tx
-      .select({ id: schema.forms.id })
-      .from(schema.forms)
-      .where(
-        and(
-          eq(schema.forms.organizationId, VISIONARIES_ORG.id),
-          eq(schema.forms.formId, form.formId),
-        ),
-      );
-    if (existing?.id === form.id) return;
-    if (existing) {
-      throw new Error(
-        `Visionaries already has a form with the ID "${form.formId}" that the seed didn't create. Delete or rename it, then reseed.`,
-      );
-    }
-
-    await tx
-      .insert(schema.forms)
-      .values({ ...form, organizationId: VISIONARIES_ORG.id, createdBy });
-    await tx.insert(schema.formComponents).values(
-      components.map((component) => ({
-        ...component,
-        formId: form.id,
-        organizationId: VISIONARIES_ORG.id,
-      })),
-    );
-  });
-}
-
-// ===========================================================================
+// The Visionaries setup lives in scripts/visionariesSeed.ts.
 
 const ORGS: SeedOrg[] = [
   {
@@ -249,6 +147,8 @@ export async function main() {
     const orgUserIds = new Map<string, string>();
     userIdsByOrganization.set(org.id, orgUserIds);
     for (const userData of [...usersData, ...(org.extraUsers ?? [])]) {
+      const memberType =
+        userData.memberType ?? org.memberTypes?.[userData.email];
       let [user] = await db
         .select()
         .from(schema.users)
@@ -307,16 +207,22 @@ export async function main() {
         userIdsByEmail.set(userData.email, userId);
 
       if (userData.role) {
-        await db
-          .insert(schema.members)
-          .values({
-            id: `member_${userId}_${org.id}`,
-            userId,
-            organizationId: org.id,
-            role: userData.role,
-            memberType: userData.memberType ?? null,
-          })
-          .onConflictDoNothing();
+        // Signing up on a host with AutoApproveSignups on already makes the
+        // user a member (a new account on a reseed), so add one only if not.
+        const existingMembership =
+          await MembersService.findByUserAndOrganization(userId, org.id);
+        if (!existingMembership) {
+          await db
+            .insert(schema.members)
+            .values({
+              id: `member_${userId}_${org.id}`,
+              userId,
+              organizationId: org.id,
+              role: userData.role,
+              memberType: memberType ?? null,
+            })
+            .onConflictDoNothing();
+        }
         // Signup creates an automatic pending request before we add membership.
         // Remove only unresolved requests without history for seeded members.
         const removedRequests = await db
@@ -342,10 +248,10 @@ export async function main() {
           .returning({ id: schema.joinRequests.id });
         await removeRequestNotifications(removedRequests);
         // Also type a membership that already existed.
-        if (userData.memberType) {
+        if (memberType) {
           await db
             .update(schema.members)
-            .set({ memberType: userData.memberType })
+            .set({ memberType })
             .where(
               and(
                 eq(schema.members.userId, userId),
@@ -373,11 +279,9 @@ export async function main() {
 
   log("Organization configs set.");
 
-  await seedVisionariesApplication(
-    userIdsByOrganization.get(VISIONARIES_ORG.id)!.get("admin@example.com")!,
-  );
+  await seedVisionaries(userIdsByOrganization.get(VISIONARIES_ORG.id)!);
 
-  log("Visionaries camp application created.");
+  log("Visionaries forms, responses, invitations, events, and alert created.");
   const joinRequestSeedData = [
     {
       id: "jr_pending_servicestart",
@@ -672,7 +576,8 @@ export async function main() {
   ];
 
   for (const email of memberEmails) {
-    for (const org of ORGS) {
+    // Visionaries gets its own notifications in seedVisionaries.
+    for (const org of ORGS.filter(({ id }) => id !== VISIONARIES_ORG.id)) {
       const userId = userIdsByOrganization.get(org.id)!.get(email)!;
       // Skip the ones the user already has. Seeds before the IDs below were
       // stable gave them random IDs, which onConflictDoNothing can't match.

@@ -18,6 +18,10 @@ import BogButton from "@/components/theme/ThemedButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogDropdown from "@/components/bog/BogDropdown/BogDropdown";
 import { MemberType } from "@/lib/schema";
+import {
+  MEMBER_TYPE_LABELS,
+  MEMBER_TYPE_PLURAL_LABELS,
+} from "@/lib/memberTypes";
 import { useEmailRecipients } from "@/lib/hooks/useEmailRecipients";
 import SendEmailModal from "@/components/SendEmailModal";
 import {
@@ -91,15 +95,12 @@ const CONTACT_SUB_KEYS = ["phone", "email"] as const;
 
 const DEFAULT_VISIBLE = new Set([...ALL_TOGGLEABLE_KEYS, ...CONTACT_SUB_KEYS]);
 
-const MEMBER_TYPE_LABELS: Record<MemberType, string> = {
-  [MemberType.Applicant]: "Applicant",
-  [MemberType.Attendee]: "Current Attendee",
-};
-
 const TYPE_FILTER_OPTIONS: { label: string; value: MemberType | null }[] = [
   { label: "All types", value: null },
-  { label: "Applicants", value: MemberType.Applicant },
-  { label: "Current Attendees", value: MemberType.Attendee },
+  ...Object.values(MemberType).map((value) => ({
+    label: MEMBER_TYPE_PLURAL_LABELS[value],
+    value,
+  })),
 ];
 
 function isAdminRole(role: string) {

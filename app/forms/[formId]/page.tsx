@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import BogBanner from "@/components/bog/BogBanner/BogBanner";
 import DynamicForm from "@/components/forms/DynamicForm";
@@ -97,7 +98,13 @@ export default async function FormPage({
   } else if (alreadySubmitted) {
     content = (
       <FormMessage title="You've already responded">
-        Thanks! We have your response to this form.
+        Thanks! We have your response to this form.{" "}
+        <Link
+          href={`/forms/${form.formId}/response`}
+          className="font-semibold text-brand-text underline"
+        >
+          View your response
+        </Link>
       </FormMessage>
     );
   } else {
@@ -108,6 +115,7 @@ export default async function FormPage({
     <FormPageLayout
       organizationName={organization.name}
       logoUrl={config[OrganizationConfigKey.LogoUrl]}
+      showHomeLink={membership !== null}
     >
       {isPreview && (
         <BogBanner

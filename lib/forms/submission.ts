@@ -18,6 +18,10 @@ const PHONE_MESSAGE = "Enter a valid US phone number";
 const NUMBER_MESSAGE = "Enter a number";
 const WHOLE_NUMBER_MESSAGE = "Enter a whole number";
 const IMAGE_MESSAGE = "Upload an image";
+const CHOICE_MESSAGE = "Choose an option";
+const CHOICES_MESSAGE = "Choose one or more options";
+const DATE_MESSAGE = "Enter a valid date";
+const YES_NO_MESSAGE = "Choose yes or no";
 
 // A 10-digit US number with an optional +1, e.g. (404) 555-0123,
 // 404-555-0123, 404.555.0123, +1 404 555 0123, or 4045550123.
@@ -42,6 +46,37 @@ export function parseNumberInput(text: string) {
   const trimmed = text.trim();
   if (!trimmed) return undefined;
   return NUMBER_INPUT_PATTERN.test(trimmed) ? Number(trimmed) : NaN;
+}
+
+/** A date like 2027-06-02 as "Jun 2, 2027", for error messages. */
+export function formatDateString(date: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function dateRangeMessage(min?: string, max?: string) {
+  if (min && max) {
+    return `Choose a date from ${formatDateString(min)} to ${formatDateString(max)}`;
+  }
+  return min
+    ? `Choose a date on or after ${formatDateString(min)}`
+    : `Choose a date on or before ${formatDateString(max!)}`;
+}
+
+function selectionMessage(min?: number, max?: number) {
+  if (min !== undefined && max !== undefined) {
+    return min === max
+      ? `Choose ${min} ${min === 1 ? "option" : "options"}`
+      : `Choose ${min} to ${max} options`;
+  }
+  return min !== undefined
+    ? `Choose at least ${min} ${min === 1 ? "option" : "options"}`
+    : `Choose ${max} ${max === 1 ? "option" : "options"} or fewer`;
 }
 
 function rangeMessage(min?: number, max?: number) {
@@ -119,6 +154,43 @@ function answerSchema(component: FormComponent): z.ZodType | null {
       );
     case FormComponentType.SectionHeader:
       return null;
+    case FormComponentType.SingleChoice:
+    case FormComponentType.Dropdown: {
+      const { options } = component.config;
+      return z
+        .string({ error: typeError(CHOICE_MESSAGE) })
+        .refine((value) => options.includes(value), {
+          message: CHOICE_MESSAGE,
+        });
+    }
+    case FormComponentType.Checkboxes: {
+      const { options, minSelected, maxSelected } = component.config;
+      return z
+        .array(z.string(), { error: typeError(CHOICES_MESSAGE) })
+        .refine(
+          (values) =>
+            values.every((value) => options.includes(value)) &&
+            new Set(values).size === values.length,
+          { message: CHOICES_MESSAGE },
+        )
+        .refine(
+          (values) =>
+            (minSelected === undefined || values.length >= minSelected) &&
+            (maxSelected === undefined || values.length <= maxSelected),
+          { message: selectionMessage(minSelected, maxSelected) },
+        );
+    }
+    case FormComponentType.Date: {
+      const { min, max } = component.config;
+      return z
+        .string({ error: typeError(DATE_MESSAGE) })
+        .pipe(z.iso.date(DATE_MESSAGE))
+        .refine((value) => (!min || value >= min) && (!max || value <= max), {
+          message: dateRangeMessage(min, max),
+        });
+    }
+    case FormComponentType.YesNo:
+      return z.boolean({ error: typeError(YES_NO_MESSAGE) });
   }
 }
 
@@ -126,13 +198,15 @@ function isBlank(value: unknown) {
   return (
     value === null ||
     value === undefined ||
-    (typeof value === "string" && value.trim() === "")
+    (typeof value === "string" && value.trim() === "") ||
+    (Array.isArray(value) && value.length === 0)
   );
 }
 
 /**
  * Validates a submission's answers, keyed by component ID, against a form's
- * questions. Blank answers count as unanswered, answers to section headers are
+ * questions. Blank answers, including an empty list of checkboxes, count as
+ * unanswered, answers to section headers are
  * dropped, and other unknown IDs are rejected. Phone numbers come out as
  * digits only.
  */

@@ -4,13 +4,20 @@ import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useHydrated } from "@/lib/hooks/useHydrated";
-import { FormStatus } from "@/lib/schema";
+import { FormStatus, MemberType } from "@/lib/schema";
 import {
   FormIdSchema,
   FormSettingsSchema,
+  getAcceptedMemberType,
+  getAssignedMemberTypes,
+  getDueAt,
   type FormSettings,
 } from "@/lib/forms/schema";
 import { suggestFormId } from "@/lib/forms/management";
+import {
+  MEMBER_TYPE_LABELS,
+  MEMBER_TYPE_PLURAL_LABELS,
+} from "@/lib/memberTypes";
 import type { FormService } from "@/lib/services/FormService";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import BogTable from "@/components/bog/BogTable/BogTable";
@@ -48,10 +55,12 @@ function FormDialog({
   form,
   onSaved,
   disabled,
+  memberTypesEnabled,
 }: {
   form?: FormRow;
   onSaved: () => Promise<void>;
   disabled: boolean;
+  memberTypesEnabled: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(form?.title ?? "");
@@ -249,6 +258,75 @@ function FormDialog({
                     />
                   </label>
                   <label className="block">
+                    Due date
+                    <input
+                      type="datetime-local"
+                      className={inputClass}
+                      value={localDate(getDueAt(settings))}
+                      aria-describedby={`${prefix}-due-help`}
+                      onChange={(event) =>
+                        changeSetting(
+                          "dueAt",
+                          event.target.value
+                            ? new Date(event.target.value).toISOString()
+                            : null,
+                        )
+                      }
+                    />
+                  </label>
+                  <p id={`${prefix}-due-help`} className="text-sm">
+                    Shown on dashboards. The form stays open until it closes.
+                  </p>
+                  {memberTypesEnabled && (
+                    <>
+                      <fieldset className="space-y-2">
+                        <legend>Required for</legend>
+                        {Object.values(MemberType).map((type) => (
+                          <label key={type} className="flex gap-2">
+                            <input
+                              type="checkbox"
+                              checked={getAssignedMemberTypes(
+                                settings,
+                              ).includes(type)}
+                              onChange={(event) => {
+                                const others = getAssignedMemberTypes(
+                                  settings,
+                                ).filter((assigned) => assigned !== type);
+                                changeSetting(
+                                  "assignedMemberTypes",
+                                  event.target.checked
+                                    ? [...others, type]
+                                    : others,
+                                );
+                              }}
+                            />
+                            {MEMBER_TYPE_PLURAL_LABELS[type]}
+                          </label>
+                        ))}
+                      </fieldset>
+                      <label className="block">
+                        When a response is accepted, make the member
+                        <select
+                          className={inputClass}
+                          value={getAcceptedMemberType(settings) ?? ""}
+                          onChange={(event) =>
+                            changeSetting(
+                              "acceptedMemberType",
+                              (event.target.value as MemberType) || null,
+                            )
+                          }
+                        >
+                          <option value="">No change</option>
+                          {Object.values(MemberType).map((type) => (
+                            <option key={type} value={type}>
+                              {MEMBER_TYPE_LABELS[type]}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </>
+                  )}
+                  <label className="block">
                     Confirmation message
                     <textarea
                       required
@@ -326,7 +404,14 @@ function DeleteDialog({
   );
 }
 
-export default function FormsClient({ forms }: { forms: FormRow[] }) {
+export default function FormsClient({
+  forms,
+  memberTypesEnabled = false,
+}: {
+  forms: FormRow[];
+  /** Shows the member type settings (#302's MemberTypesEnabled). */
+  memberTypesEnabled?: boolean;
+}) {
   const hydrated = useHydrated();
   const [refreshing, setRefreshing] = useState(false);
   const [refreshedForms, setRefreshedForms] = useState<{
@@ -404,7 +489,11 @@ export default function FormsClient({ forms }: { forms: FormRow[] }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-heading-2">Forms</h1>
-        <FormDialog onSaved={refresh} disabled={busy} />
+        <FormDialog
+          onSaved={refresh}
+          disabled={busy}
+          memberTypesEnabled={memberTypesEnabled}
+        />
       </div>
       <p>Create forms, manage publication, and export responses.</p>
       {error && <p role="alert">{error}</p>}
@@ -481,6 +570,7 @@ export default function FormsClient({ forms }: { forms: FormRow[] }) {
                         form={form}
                         onSaved={refresh}
                         disabled={busy}
+                        memberTypesEnabled={memberTypesEnabled}
                       />
                       <BogButton
                         variant="secondary"
