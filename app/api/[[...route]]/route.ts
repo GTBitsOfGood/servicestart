@@ -1,4 +1,5 @@
 import ping from "@/api/ping";
+import forms from "@/api/forms";
 import joinRequests from "@/api/joinRequests";
 import announcements from "@/api/announcements";
 import events from "@/api/events";
