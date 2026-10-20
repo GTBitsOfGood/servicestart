@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import OrganizationLogo from "@/components/OrganizationLogo";
 
 type FormPageLayoutProps = {
   organizationName: string;
   logoUrl?: string | null;
+  /** Shows a "Back to home" link, for viewers who can use the app. */
+  showHomeLink?: boolean;
   children: ReactNode;
 };
 
@@ -11,6 +14,7 @@ type FormPageLayoutProps = {
 export default function FormPageLayout({
   organizationName,
   logoUrl,
+  showHomeLink = false,
   children,
 }: FormPageLayoutProps) {
   return (
@@ -26,7 +30,17 @@ export default function FormPageLayout({
         </p>
       </aside>
       <main className="flex-1 px-6 py-10 desktop:px-16 desktop:py-16">
-        <div className="mx-auto flex max-w-5xl flex-col gap-8">{children}</div>
+        <div className="mx-auto flex max-w-5xl flex-col gap-8">
+          {showHomeLink && (
+            <Link
+              href="/"
+              className="self-start text-paragraph-2 font-semibold text-brand-text hover:opacity-80"
+            >
+              <span aria-hidden="true">←</span> Back to home
+            </Link>
+          )}
+          {children}
+        </div>
       </main>
     </div>
   );

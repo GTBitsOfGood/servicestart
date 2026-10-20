@@ -17,6 +17,7 @@ import { headers } from "next/headers";
 import getNavbarItems from "@/lib/getNavbarItems";
 import { getActiveOrganizationIdFromHeaders } from "@/lib/authUtils";
 import { MembersService } from "@/lib/services/MemberService";
+import OrganizationFooter from "@/components/navigation/OrganizationFooter";
 
 interface NavbarProps {
   children: ReactNode;
@@ -79,6 +80,14 @@ export default async function Navbar({ children }: NavbarProps) {
     }
   }
 
+  // Below every page's content, in every layout.
+  const content = (
+    <>
+      {children}
+      {orgId && <OrganizationFooter organizationId={orgId} />}
+    </>
+  );
+
   const mobileNav = {
     items: navbarItems,
     drawerSide: mobileDrawerSide,
@@ -95,7 +104,7 @@ export default async function Navbar({ children }: NavbarProps) {
           <VerticalIconNav items={navbarItems} />
         </div>
         <MobileSidebarNav {...mobileNav} />
-        <main className="flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
+        <main className="flex-1 overflow-auto pt-14 md:pt-0">{content}</main>
       </div>
     );
   }
@@ -119,7 +128,7 @@ export default async function Navbar({ children }: NavbarProps) {
         </div>
         <MobileSidebarNav {...mobileNav} />
         <main className="flex-1 overflow-auto px-6 py-4 pt-20 md:pt-4">
-          {children}
+          {content}
         </main>
       </div>
     );
@@ -131,7 +140,7 @@ export default async function Navbar({ children }: NavbarProps) {
         <VerticalSidebarNav items={navbarItems} />
       </div>
       <MobileSidebarNav {...mobileNav} />
-      <main className="flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
+      <main className="flex-1 overflow-auto pt-14 md:pt-0">{content}</main>
     </div>
   );
 }

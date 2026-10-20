@@ -358,3 +358,104 @@ describe("getFormAvailability", () => {
     ).toBe("closed");
   });
 });
+
+describe("buildSubmissionSchema for choice, date, and yes/no questions", () => {
+  const CHOICE_IDS = {
+    single: "00000000-0000-4000-8000-000000000011",
+    checkboxes: "00000000-0000-4000-8000-000000000012",
+    dropdown: "00000000-0000-4000-8000-000000000013",
+    date: "00000000-0000-4000-8000-000000000014",
+    yesNo: "00000000-0000-4000-8000-000000000015",
+  };
+  const choiceSchema = buildSubmissionSchema({
+    components: [
+      {
+        ...base,
+        id: CHOICE_IDS.single,
+        type: FormComponentType.SingleChoice,
+        label: "Shirt size",
+        position: 0,
+        config: { options: ["S", "M", "L"] },
+      },
+      {
+        ...base,
+        id: CHOICE_IDS.checkboxes,
+        type: FormComponentType.Checkboxes,
+        label: "Days",
+        position: 1,
+        config: {
+          options: ["Mon", "Tue", "Wed"],
+          minSelected: 1,
+          maxSelected: 2,
+        },
+      },
+      {
+        ...base,
+        id: CHOICE_IDS.dropdown,
+        type: FormComponentType.Dropdown,
+        label: "State",
+        position: 2,
+        config: { options: ["GA", "AL"] },
+      },
+      {
+        ...base,
+        id: CHOICE_IDS.date,
+        type: FormComponentType.Date,
+        label: "Start date",
+        position: 3,
+        config: { min: "2027-06-02", max: "2027-08-20" },
+      },
+      {
+        ...base,
+        id: CHOICE_IDS.yesNo,
+        type: FormComponentType.YesNo,
+        label: "Allergies?",
+        position: 4,
+        config: {},
+      },
+    ],
+  });
+  const valid = {
+    [CHOICE_IDS.single]: "M",
+    [CHOICE_IDS.checkboxes]: ["Mon", "Wed"],
+    [CHOICE_IDS.dropdown]: "GA",
+    [CHOICE_IDS.date]: "2027-06-02",
+    [CHOICE_IDS.yesNo]: false,
+  };
+
+  function choiceError(id: string, value: unknown) {
+    const result = choiceSchema.safeParse({ ...valid, [id]: value });
+    return result.success ? undefined : getAnswerErrors(result.error)[id];
+  }
+
+  it("accepts valid answers, including a no", () => {
+    expect(choiceSchema.parse(valid)).toEqual(valid);
+  });
+
+  it("treats no checked boxes as unanswered", () => {
+    expect(choiceError(CHOICE_IDS.checkboxes, [])).toBe(REQUIRED_MESSAGE);
+  });
+
+  it.each([
+    [CHOICE_IDS.single, "XL", "Choose an option"],
+    [CHOICE_IDS.dropdown, "TX", "Choose an option"],
+    [CHOICE_IDS.checkboxes, ["Sun"], "Choose one or more options"],
+    [CHOICE_IDS.checkboxes, ["Mon", "Mon"], "Choose one or more options"],
+    [CHOICE_IDS.checkboxes, ["Mon", "Tue", "Wed"], "Choose 1 to 2 options"],
+    [CHOICE_IDS.date, "06/02/2027", "Enter a valid date"],
+    [CHOICE_IDS.date, "2027-02-30", "Enter a valid date"],
+    [
+      CHOICE_IDS.date,
+      "2027-09-01",
+      "Choose a date from Jun 2, 2027 to Aug 20, 2027",
+    ],
+    [CHOICE_IDS.yesNo, "yes", "Choose yes or no"],
+  ])("rejects %s = %j", (id, value, message) => {
+    expect(choiceError(id, value)).toBe(message);
+  });
+
+  it("requires a yes/no answer but accepts false", () => {
+    expect(choiceError(CHOICE_IDS.yesNo, undefined)).toBe(REQUIRED_MESSAGE);
+    expect(choiceError(CHOICE_IDS.yesNo, false)).toBeUndefined();
+  });
+});

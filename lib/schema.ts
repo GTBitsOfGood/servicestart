@@ -64,6 +64,11 @@ export enum OrganizationConfigKey {
   HeadingFont = "heading_font",
   BodyFont = "body_font",
   CornerStyle = "corner_style",
+  ApplicantDashboardLayout = "applicant_dashboard_layout",
+  AttendeeDashboardLayout = "attendee_dashboard_layout",
+  DashboardHeader = "dashboard_header",
+  NavbarConfig = "navbar_config",
+  OrganizationFooter = "organization_footer",
 }
 
 export enum EventVisibility {
@@ -146,7 +151,8 @@ export const FORM_STATUS_VALUES = Object.values(FormStatus) as [
 export const formStatusEnum = pgEnum("form_status", FORM_STATUS_VALUES);
 
 // Each value needs a config schema and an answer schema in lib/forms/schema.ts,
-// plus an entry in the builder (#298) and renderer (#299) registries.
+// validation in lib/forms/submission.ts, plus an entry in the builder (#321)
+// and renderer (#299) registries.
 export enum FormComponentType {
   ShortText = "short_text",
   LongText = "long_text",
@@ -155,6 +161,11 @@ export enum FormComponentType {
   Number = "number",
   Image = "image",
   SectionHeader = "section_header",
+  SingleChoice = "single_choice",
+  Checkboxes = "checkboxes",
+  Dropdown = "dropdown",
+  Date = "date",
+  YesNo = "yes_no",
 }
 
 export const FORM_COMPONENT_TYPE_VALUES = Object.values(FormComponentType) as [
@@ -164,6 +175,23 @@ export const FORM_COMPONENT_TYPE_VALUES = Object.values(FormComponentType) as [
 export const formComponentTypeEnum = pgEnum(
   "form_component_type",
   FORM_COMPONENT_TYPE_VALUES,
+);
+
+// Where an admin's review of a submission stands. Every submission starts as
+// pending; admins move it along on the responses pages (#316, #317).
+export enum SubmissionReviewStatus {
+  Pending = "pending",
+  UnderReview = "under_review",
+  Accepted = "accepted",
+  Rejected = "rejected",
+}
+
+export const SUBMISSION_REVIEW_STATUS_VALUES = Object.values(
+  SubmissionReviewStatus,
+) as [SubmissionReviewStatus, ...SubmissionReviewStatus[]];
+export const submissionReviewStatusEnum = pgEnum(
+  "submission_review_status",
+  SUBMISSION_REVIEW_STATUS_VALUES,
 );
 
 // Drizzle's jsonb column JSON.parses the value node-postgres has already
@@ -680,10 +708,25 @@ export const formSubmissions = pgTable(
       onDelete: "set null",
     }),
     submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+    // Null until the submitter edits their answers (#319).
+    updatedAt: timestamp("updated_at"),
+    reviewStatus: submissionReviewStatusEnum("review_status")
+      .default(SubmissionReviewStatus.Pending)
+      .notNull(),
+    reviewStatusUpdatedAt: timestamp("review_status_updated_at"),
+    reviewStatusUpdatedBy: text("review_status_updated_by").references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
   },
   (table) => [
     index("form_submissions_form_id_user_id_idx").on(
       table.formId,
+      table.userId,
+    ),
+    // A member's submissions across an org's forms (FormProgressService).
+    index("form_submissions_organization_id_user_id_idx").on(
+      table.organizationId,
       table.userId,
     ),
     // Lets form_answers check that its submission is on the same form.

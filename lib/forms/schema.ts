@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FormComponentType, FormStatus } from "@/lib/schema";
+import { FormComponentType, FormStatus, MemberType } from "@/lib/schema";
 
 /*
  * Shared contract for forms. The builder, the renderer, the submission route,
@@ -25,6 +25,19 @@ export const FormSettingsSchema = z
     opensAt: z.iso.datetime({ offset: true }).nullable(),
     closesAt: z.iso.datetime({ offset: true }).nullable(),
     confirmationMessage: z.string().trim().min(1),
+    // Added in Sprint 4, so forms saved before then don't have them. Read them
+    // through getAssignedMemberTypes, getDueAt, and getAcceptedMemberType.
+    /** Member types this form is required for. Empty means nobody's. */
+    assignedMemberTypes: z
+      .array(z.enum(MemberType))
+      .refine((types) => new Set(types).size === types.length, {
+        message: "Choose each member type once",
+      })
+      .optional(),
+    /** When it's due, shown on dashboards. `closesAt` is when it stops. */
+    dueAt: z.iso.datetime({ offset: true }).nullable().optional(),
+    /** The member type a submitter moves to once their response is accepted. */
+    acceptedMemberType: z.enum(MemberType).nullable().optional(),
   })
   .refine(
     ({ opensAt, closesAt }) =>
@@ -35,6 +48,20 @@ export const FormSettingsSchema = z
     },
   );
 export type FormSettings = z.infer<typeof FormSettingsSchema>;
+
+export function getAssignedMemberTypes(settings: FormSettings): MemberType[] {
+  return settings.assignedMemberTypes ?? [];
+}
+
+export function getDueAt(settings: FormSettings): string | null {
+  return settings.dueAt ?? null;
+}
+
+export function getAcceptedMemberType(
+  settings: FormSettings,
+): MemberType | null {
+  return settings.acceptedMemberType ?? null;
+}
 
 // Per-type component config
 
@@ -67,7 +94,61 @@ export const NumberConfigSchema = z
     { message: "The minimum can't be more than the maximum", path: ["min"] },
   );
 
-// Email, phone, image, and section header have no settings.
+export const CHOICE_OPTIONS_MAX = 50;
+
+// The choices for single choice, checkboxes, and dropdown questions. Answers
+// store the option text, which can't change once the form is published.
+const ChoiceOptionsSchema = z
+  .array(z.string().trim().min(1, "Options can't be blank"))
+  .min(1, "Add at least one option")
+  .max(CHOICE_OPTIONS_MAX, `Use ${CHOICE_OPTIONS_MAX} options or fewer`)
+  .refine((options) => new Set(options).size === options.length, {
+    message: "Each option must be different",
+  });
+
+export const ChoiceConfigSchema = z.strictObject({
+  options: ChoiceOptionsSchema,
+});
+
+export const CheckboxesConfigSchema = z
+  .strictObject({
+    options: ChoiceOptionsSchema,
+    minSelected: z.number().int().nonnegative().optional(),
+    maxSelected: z.number().int().positive().optional(),
+  })
+  .refine(
+    ({ minSelected, maxSelected }) =>
+      minSelected === undefined ||
+      maxSelected === undefined ||
+      minSelected <= maxSelected,
+    {
+      message: "The minimum selected can't be more than the maximum",
+      path: ["minSelected"],
+    },
+  )
+  .refine(
+    ({ options, minSelected }) =>
+      minSelected === undefined || minSelected <= options.length,
+    {
+      message: "The minimum selected can't be more than the number of options",
+      path: ["minSelected"],
+    },
+  );
+
+// A calendar date with no time or time zone, e.g. "2027-06-02".
+export const DateStringSchema = z.iso.date();
+
+export const DateConfigSchema = z
+  .strictObject({
+    min: DateStringSchema.optional(),
+    max: DateStringSchema.optional(),
+  })
+  .refine(({ min, max }) => !min || !max || min <= max, {
+    message: "The earliest date can't be after the latest",
+    path: ["min"],
+  });
+
+// Email, phone, image, section header, and yes/no have no settings.
 export const EmptyConfigSchema = z.strictObject({});
 
 export const FORM_COMPONENT_CONFIG_SCHEMAS = {
@@ -78,6 +159,11 @@ export const FORM_COMPONENT_CONFIG_SCHEMAS = {
   [FormComponentType.Number]: NumberConfigSchema,
   [FormComponentType.Image]: EmptyConfigSchema,
   [FormComponentType.SectionHeader]: EmptyConfigSchema,
+  [FormComponentType.SingleChoice]: ChoiceConfigSchema,
+  [FormComponentType.Checkboxes]: CheckboxesConfigSchema,
+  [FormComponentType.Dropdown]: ChoiceConfigSchema,
+  [FormComponentType.Date]: DateConfigSchema,
+  [FormComponentType.YesNo]: EmptyConfigSchema,
 } as const satisfies Record<FormComponentType, z.ZodType>;
 
 export type FormComponentConfigFor<T extends FormComponentType> = z.infer<
@@ -103,6 +189,13 @@ export const FORM_ANSWER_VALUE_SCHEMAS = {
   [FormComponentType.Image]: ImageAnswerSchema,
   // Section headers take no answer.
   [FormComponentType.SectionHeader]: z.never(),
+  // The chosen option's text.
+  [FormComponentType.SingleChoice]: z.string(),
+  // The chosen options' text.
+  [FormComponentType.Checkboxes]: z.array(z.string()),
+  [FormComponentType.Dropdown]: z.string(),
+  [FormComponentType.Date]: z.string(),
+  [FormComponentType.YesNo]: z.boolean(),
 } as const satisfies Record<FormComponentType, z.ZodType>;
 
 export type FormAnswerValueFor<T extends FormComponentType> = z.infer<
@@ -113,9 +206,17 @@ export type FormAnswerValueFor<T extends FormComponentType> = z.infer<
 export const FormAnswerValueSchema = z.union([
   z.string(),
   z.number(),
+  z.boolean(),
+  z.array(z.string()),
   ImageAnswerSchema,
 ]);
 export type FormAnswerValue = z.infer<typeof FormAnswerValueSchema>;
+
+export function isImageAnswer(
+  value: FormAnswerValue | undefined,
+): value is FormAnswerValueFor<FormComponentType.Image> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 // Components
 
@@ -149,6 +250,11 @@ export const FormComponentConfigSchema = z.discriminatedUnion("type", [
   typedConfig(FormComponentType.Number),
   typedConfig(FormComponentType.Image),
   typedConfig(FormComponentType.SectionHeader),
+  typedConfig(FormComponentType.SingleChoice),
+  typedConfig(FormComponentType.Checkboxes),
+  typedConfig(FormComponentType.Dropdown),
+  typedConfig(FormComponentType.Date),
+  typedConfig(FormComponentType.YesNo),
 ]);
 export type FormComponentConfig = z.infer<typeof FormComponentConfigSchema>;
 
@@ -160,6 +266,11 @@ export const FormComponentSchema = z.discriminatedUnion("type", [
   component(FormComponentType.Number),
   component(FormComponentType.Image),
   component(FormComponentType.SectionHeader),
+  component(FormComponentType.SingleChoice),
+  component(FormComponentType.Checkboxes),
+  component(FormComponentType.Dropdown),
+  component(FormComponentType.Date),
+  component(FormComponentType.YesNo),
 ]);
 export type FormComponent = z.infer<typeof FormComponentSchema>;
 export type FormComponentOfType<T extends FormComponentType> = Extract<

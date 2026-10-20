@@ -33,6 +33,7 @@ const FORM_NOT_FOUND = "Form not found";
 const TOO_LARGE = "Images must be 5 MB or smaller";
 const WRONG_TYPE = "Upload a JPEG, PNG, or WebP image";
 const ALREADY_SUBMITTED = "You've already responded to this form";
+const FILE_NOT_FOUND = "File not found";
 
 // Every 400 from the submit route has this shape, so the client's type does.
 type AnswerErrors = Record<string, string>;
@@ -258,6 +259,48 @@ const app = new Hono()
         return c.json({ error: "Couldn't save the image. Try again." }, 500);
       }
       return c.json({ id }, 201);
+    },
+  )
+  // A member's own uploaded image, e.g. their headshot on their response.
+  // Every other caller gets 404, so it never discloses that a file exists.
+  .get(
+    "/:formId/my-uploads/:uploadId",
+    zValidator(
+      "param",
+      paramSchema.extend({ uploadId: z.uuid() }),
+      (result, c) => {
+        if (!result.success) return c.json({ error: FILE_NOT_FOUND }, 404);
+      },
+    ),
+    requireFormsOrganization,
+    async (c) => {
+      const organizationId = c.get("organizationId");
+      const { formId, uploadId } = c.req.valid("param");
+      const session = await auth.api.getSession({ headers: c.req.raw.headers });
+      const upload = session
+        ? await FormSubmissionService.getMemberUpload(
+            organizationId,
+            formId,
+            uploadId,
+            session.user.id,
+          )
+        : null;
+      if (!upload) return c.json({ error: FILE_NOT_FOUND }, 404);
+
+      let buffer: Buffer;
+      try {
+        buffer = await FileService.readFile(organizationId, upload.fileName);
+      } catch {
+        return c.json({ error: FILE_NOT_FOUND }, 404);
+      }
+      return new Response(new Uint8Array(buffer), {
+        headers: {
+          "Content-Type": upload.contentType,
+          "Content-Length": String(buffer.length),
+          "Cache-Control": "private, no-store",
+          "X-Content-Type-Options": "nosniff",
+        },
+      });
     },
   );
 

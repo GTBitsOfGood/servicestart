@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import BogButton from "@/components/bog/BogButton/BogButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { useDynamicForm } from "@/components/forms/DynamicFormContext";
 import QuestionField from "@/components/forms/questions/QuestionField";
@@ -10,11 +9,12 @@ import {
   fieldId,
   type QuestionProps,
 } from "@/components/forms/types";
+import ThemedButton from "@/components/theme/ThemedButton";
 import {
   FORM_UPLOAD_CONTENT_TYPES,
   FORM_UPLOAD_MAX_BYTES,
 } from "@/lib/forms/constants";
-import type { FormComponentOfType } from "@/lib/forms/schema";
+import { isImageAnswer, type FormComponentOfType } from "@/lib/forms/schema";
 import type { FormComponentType } from "@/lib/schema";
 
 const ACCEPTED_TYPES: readonly string[] = FORM_UPLOAD_CONTENT_TYPES;
@@ -25,15 +25,20 @@ export default function ImageQuestion({
   value,
   error,
   disabled,
+  readOnly,
   onChange,
 }: QuestionProps<FormComponentOfType<FormComponentType.Image>>) {
-  const { formId, preview, uploadImage, setUploading } = useDynamicForm();
+  const { formId, preview, uploadImage, imageSrc, setUploading } =
+    useDynamicForm();
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const uploading = progress !== null;
-  const hasImage = Boolean(value && typeof value === "object");
+  const hasImage = isImageAnswer(value);
+  // A new upload's local preview, or else the saved image's.
+  const shownImage =
+    previewUrl ?? (isImageAnswer(value) ? imageSrc(value.uploadId) : null);
   const shownError = uploadError ?? error;
   const statusId = `${fieldId(component.id)}-status`;
 
@@ -77,13 +82,34 @@ export default function ImageQuestion({
     onChange(undefined);
   }
 
+  if (readOnly) {
+    return (
+      <QuestionField component={component} group>
+        <div className="flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-full bg-grey-fill-weak text-grey-icon-strong">
+          {shownImage ? (
+            <img
+              src={shownImage}
+              alt={component.label}
+              className="size-full object-cover"
+            />
+          ) : (
+            <BogIcon name="user" size={48} />
+          )}
+        </div>
+        {!hasImage && (
+          <p className="text-paragraph-2 text-grey-text-weak">No image</p>
+        )}
+      </QuestionField>
+    );
+  }
+
   return (
     <QuestionField component={component} error={shownError ?? undefined} group>
       <div className="flex flex-wrap items-center gap-6">
         <div className="flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-full bg-grey-fill-weak text-grey-icon-strong">
-          {previewUrl ? (
+          {shownImage ? (
             <img
-              src={previewUrl}
+              src={shownImage}
               alt="Your uploaded image"
               className="size-full object-cover"
             />
@@ -93,7 +119,7 @@ export default function ImageQuestion({
         </div>
         <div className="flex flex-col items-start gap-3">
           <div className="flex flex-wrap gap-3">
-            <BogButton
+            <ThemedButton
               id={fieldId(component.id)}
               type="button"
               variant="secondary"
@@ -107,16 +133,16 @@ export default function ImageQuestion({
               onClick={() => inputRef.current?.click()}
             >
               {hasImage ? "Replace image" : "Upload image"}
-            </BogButton>
+            </ThemedButton>
             {hasImage && !uploading && (
-              <BogButton
+              <ThemedButton
                 type="button"
                 variant="tertiary"
                 disabled={disabled}
                 onClick={handleRemove}
               >
                 Remove
-              </BogButton>
+              </ThemedButton>
             )}
           </div>
           <p id={statusId} className="text-paragraph-2 text-grey-text-weak">

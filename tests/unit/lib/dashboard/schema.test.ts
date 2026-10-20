@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { DashboardLayoutSchema } from "@/lib/dashboard/schema";
+import {
+  ApplicationStatusWidgetConfigSchema,
+  DashboardLayoutSchema,
+  DEFAULT_APPLICATION_STATUS_STEPS,
+} from "@/lib/dashboard/schema";
 
 describe("DashboardLayoutSchema", () => {
   describe("valid layouts", () => {
@@ -201,5 +205,69 @@ describe("DashboardLayoutSchema", () => {
       };
       expect(() => DashboardLayoutSchema.parse(layout)).toThrow();
     });
+  });
+});
+
+describe("widget settings", () => {
+  const statusWidget = (config: unknown) => ({
+    layout: "horizontal",
+    widgets: [{ id: "application_status", size: "tall", config }],
+  });
+  const steps = [
+    { label: "Submitted", description: "We got it." },
+    { label: "Interview", description: "" },
+    { label: "Decision", description: "You'll hear from us." },
+  ];
+
+  it("accepts a status widget that follows a form", () => {
+    const layout = statusWidget({ formId: "camp-application-2027", steps });
+    expect(DashboardLayoutSchema.parse(layout)).toEqual(layout);
+  });
+
+  it("accepts the default steps", () => {
+    expect(
+      ApplicationStatusWidgetConfigSchema.safeParse({
+        formId: "camp-application-2027",
+        steps: DEFAULT_APPLICATION_STATUS_STEPS,
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts widgets without settings", () => {
+    expect(
+      DashboardLayoutSchema.safeParse({
+        layout: "horizontal",
+        widgets: [{ id: "application_status", size: "tall" }],
+      }).success,
+    ).toBe(true);
+  });
+
+  it.each([
+    ["a bad form ID", { formId: "Camp App", steps }],
+    ["two steps", { formId: "camp-application-2027", steps: steps.slice(1) }],
+    [
+      "a blank step name",
+      {
+        formId: "camp-application-2027",
+        steps: [{ label: " ", description: "" }, ...steps.slice(1)],
+      },
+    ],
+  ])("rejects a status widget with %s", (_, config) => {
+    const result = DashboardLayoutSchema.safeParse(statusWidget(config));
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].path.slice(0, 3)).toEqual([
+      "widgets",
+      0,
+      "config",
+    ]);
+  });
+
+  it("rejects settings on a widget that takes none", () => {
+    expect(
+      DashboardLayoutSchema.safeParse({
+        layout: "horizontal",
+        widgets: [{ id: "events", size: "tall", config: { limit: 3 } }],
+      }).success,
+    ).toBe(false);
   });
 });

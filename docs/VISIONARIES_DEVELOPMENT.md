@@ -1,8 +1,11 @@
 # Visionaries to the Throne development
 
-This development tenant is the organization Sprint 3 builds against: forms
-(#298, #299, #303), theming (#300), the auth pages (#301), and member types
-(#302). It does not provision a production deployment.
+This development tenant is the organization Sprints 3 and 4 build against.
+Sprint 3 built forms (#299, #303), theming (#300), the auth pages (#301), and
+member types (#302). Sprint 4 builds application review (#316, #317), the
+applicant and attendee portals (#318, #319), the configurable dashboard (#320),
+and the question builder (#321) on the pre-sprint setup (#315). It does not
+provision a production deployment.
 
 ## First-time setup
 
@@ -47,22 +50,31 @@ known test passwords. Existing contributors can pull this change and rerun
 `lvh.me` resolves to loopback; no hosts-file entry is normally needed. Use the
 tenant hostname, not `localhost`, which selects the default ServiceStart tenant.
 
-All these development accounts use `password123`:
+All these development accounts use `password123`. Each student account is at
+a different stage of the camp process:
 
-| Email                   | Existing ServiceStart role | Use                                   |
-| ----------------------- | -------------------------- | ------------------------------------- |
-| `owner@example.com`     | owner                      | Organization owner controls           |
-| `admin@example.com`     | admin                      | Staff access; created the application |
-| `member1@example.com`   | member                     | Student/member access                 |
-| `member2@example.com`   | member                     | Second student/member                 |
-| `applicant@example.com` | member (`applicant` type)  | Student applying to camp              |
-| `nonmember@example.com` | none                       | Signed-in user without membership     |
+| Email                           | Role and type     | State                                         |
+| ------------------------------- | ----------------- | --------------------------------------------- |
+| `owner@example.com`             | owner             | Organization owner controls                   |
+| `admin@example.com`             | admin             | Staff access; created the forms               |
+| `applicant@example.com`         | member, applicant | Hasn't started the camp application           |
+| `applicant-pending@example.com` | member, applicant | Application submitted, Pending                |
+| `applicant-review@example.com`  | member, applicant | Application Under Review                      |
+| `member2@example.com`           | member, attendee  | Accepted; 0 of 4 camp forms done              |
+| `member1@example.com`           | member, attendee  | Accepted; 2 of 4 (Emergency Contact, Consent) |
+| `attendee-complete@example.com` | member, attendee  | Accepted; all 4 camp forms done               |
+| `nonmember@example.com`         | none              | Signed-in user without membership             |
 
-Except for `applicant@example.com`, which only Visionaries has, the same email
-addresses exist in other seeded organizations, with distinct user IDs and
-memberships. Accounts are selected by the tenant hostname. Public signup
-continues to use existing ServiceStart behavior; a member fixture does not imply
-camp acceptance or automatic membership for new signups.
+The owner, admin, member, and nonmember addresses also exist in the other
+seeded organizations, with distinct user IDs and memberships; the rest are
+Visionaries only. Accounts are selected by the tenant hostname. Signing up on
+the Visionaries host makes you an applicant right away (`AutoApproveSignups`).
+
+**Rerunning the seed resets these student accounts**: their member types, their
+responses to the seeded forms (responses added while testing are deleted), the
+responses' review statuses, and the attendees' alert, which is unread again.
+Use a fresh signup when you want data the seed leaves alone. Seeded forms and
+responses have fixed IDs (`visionariesId` in `tests/unit/fixtures/forms.ts`).
 
 ## Configuration and scope
 
@@ -72,30 +84,39 @@ camp acceptance or automatic membership for new signups.
 - Development tagline: `Visionaries to the Throne`.
 - Initial navbar: horizontal-center, white.
 - Forms: `FormsEnabled` is on, with a published copy of the camp application
-  (form ID `camp-application-2027`; its questions are in
-  `tests/unit/fixtures/forms.ts`). #299 builds its page,
-  `/forms/camp-application-2027`.
+  at `/forms/camp-application-2027` (its questions are in
+  `tests/unit/fixtures/forms.ts`).
+- Member types: `MemberTypesEnabled` and `AutoApproveSignups` are on.
+- Logo: `public/organizations/visionaries-logo.png` (`LogoUrl`), from the Figma.
+- Required forms: four published forms assigned to current attendees, with due
+  dates: Emergency Contact Information, Consent Form, Medical History, and
+  Liability Release Form. The camp application is assigned to applicants, and
+  accepting a response makes the student a current attendee
+  (`acceptedMemberType`, #316). The forms use only Sprint 3 question types.
+- Dashboards: an applicant layout (application status and notifications) and
+  an attendee layout (to-do list, weekly calendar, completed forms, and
+  progress). Until their tickets land, those widgets show "Coming soon".
+- Dashboard header, navbar, and footer config rows (#318, #320), with
+  development copy from the Figma.
+- Camp events this week and next, dated from when the seed runs, and an alert
+  for accepted campers.
 
-These are organization configuration rows, not organization-name checks in app
-code. They live in the "Visionaries setup" section of `scripts/seed.ts`; add
-new Visionaries config rows there. Rerunning the seed reapplies these
+These are organization configuration rows and seed data, not organization-name
+checks in app code. They live in `scripts/visionariesSeed.ts`; add new
+Visionaries config rows and demo data there. Rerunning the seed reapplies these
 configuration defaults while retaining existing account IDs and credentials.
-The seed does not set `LogoUrl`: until an approved logo is configured, the
-existing ServiceStart/Sunset fallback appears. Configure the approved asset
-through the existing `LogoUrl` setting when available.
-
-The current shared login/signup UI is intentional. The final layout, logo, copy,
-student/admin landing destinations, and account-versus-membership approval flow
-are covered by #301 and #302. Use the existing home page to exercise
-development accounts until those destinations are built. The applicant's
-member type takes effect once #302 turns on `MemberTypesEnabled`.
+Headshots for the seeded applications are stored through the configured
+`FileService`; without file storage (for example in CI) they're skipped and
+the images don't load.
 
 ## Verify your setup
 
-1. Open signup while signed out; verify the Visionaries name and purple background.
-2. Sign in as `member1@example.com`, then sign out and sign in as `admin@example.com`.
-3. Check the existing member and admin experiences using their respective accounts.
-4. Rerun the seed and confirm the same accounts still work.
+1. Open signup while signed out; verify the Visionaries name, logo, and purple background.
+2. Sign in as `applicant-pending@example.com`; the dashboard has the applicant
+   layout. Open `/forms/camp-application-2027/response` to see the response.
+3. Sign in as `member1@example.com`; the dashboard has the attendee layout.
+4. Sign in as `admin@example.com` and open **Settings → Forms**.
+5. Rerun the seed and confirm the same accounts still work.
 
 The seed integration suite checks repeatability, branding, roles, and login across
 all seeded tenants. With the local test database running on port 5433:

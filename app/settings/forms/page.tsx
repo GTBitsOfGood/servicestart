@@ -12,6 +12,7 @@ export default async function FormsPage() {
   const { organizationId } = await redirectIfNotAdmin();
   const config = await OrganizationConfigService.getConfig(organizationId, [
     OrganizationConfigKey.FormsEnabled,
+    OrganizationConfigKey.MemberTypesEnabled,
   ]);
   if (!config[OrganizationConfigKey.FormsEnabled]) notFound();
   // Start streaming only after access checks, so disabled forms return HTTP 404.
@@ -23,15 +24,27 @@ export default async function FormsPage() {
         </p>
       }
     >
-      <FormsList organizationId={organizationId} />
+      <FormsList
+        organizationId={organizationId}
+        memberTypesEnabled={Boolean(
+          config[OrganizationConfigKey.MemberTypesEnabled],
+        )}
+      />
     </Suspense>
   );
 }
 
-async function FormsList({ organizationId }: { organizationId: string }) {
+async function FormsList({
+  organizationId,
+  memberTypesEnabled,
+}: {
+  organizationId: string;
+  memberTypesEnabled: boolean;
+}) {
   const forms = await FormService.list(organizationId);
   return (
     <FormsClient
+      memberTypesEnabled={memberTypesEnabled}
       forms={forms.map((form) => ({
         ...form,
         createdAt: form.createdAt.toISOString(),

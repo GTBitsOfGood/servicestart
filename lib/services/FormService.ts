@@ -340,6 +340,8 @@ async function exportCsv(
       ...components.map((component) => {
         const value = values.get(`${submission.id}:${component.id}`);
         if (value === undefined) return "";
+        if (typeof value === "boolean") return value ? "Yes" : "No";
+        if (Array.isArray(value)) return value.join("; ");
         if (typeof value === "object")
           return new URL(
             `/api/forms/${encodeURIComponent(formId)}/uploads/${value.uploadId}`,

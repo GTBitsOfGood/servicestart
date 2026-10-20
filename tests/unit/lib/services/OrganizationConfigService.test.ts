@@ -637,3 +637,123 @@ describe("OrganizationConfigService - branding defaults", () => {
     );
   });
 });
+
+describe("OrganizationConfigService - Sprint 4 dashboard config", () => {
+  const layout = (id: "forms_todo" | "events") => ({
+    layout: "horizontal" as const,
+    widgets: [{ id, size: "tall" as const }],
+  });
+
+  it("falls back to the member layout for applicants and attendees", async () => {
+    const org = await createOrganization("camp");
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.DashboardLayout,
+      JSON.stringify(layout("events")),
+    );
+
+    for (const audience of ["member", "applicant", "attendee"] as const) {
+      expect(
+        await OrganizationConfigService.getDashboardLayoutFor(org.id, audience),
+      ).toEqual(layout("events"));
+    }
+    expect(
+      await OrganizationConfigService.getDashboardLayoutFor(org.id, "admin"),
+    ).toEqual(DEFAULT_ADMIN_LAYOUT);
+  });
+
+  it("uses the attendee layout once it's set, until it's cleared", async () => {
+    const org = await createOrganization("camp");
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.AttendeeDashboardLayout,
+      JSON.stringify(layout("forms_todo")),
+    );
+
+    expect(
+      await OrganizationConfigService.getDashboardLayoutFor(org.id, "attendee"),
+    ).toEqual(layout("forms_todo"));
+    expect(
+      await OrganizationConfigService.getDashboardLayoutFor(
+        org.id,
+        "applicant",
+      ),
+    ).toEqual(DEFAULT_MEMBER_LAYOUT);
+
+    await OrganizationConfigService.clearConfig(
+      org.id,
+      OrganizationConfigKey.AttendeeDashboardLayout,
+    );
+    expect(
+      await OrganizationConfigService.getDashboardLayoutFor(org.id, "attendee"),
+    ).toEqual(DEFAULT_MEMBER_LAYOUT);
+  });
+
+  it.each([
+    [
+      OrganizationConfigKey.DashboardHeader,
+      { attendee: { title: "My Camp Dashboard" } },
+      { default: { banner: "x" } },
+    ],
+    [
+      OrganizationConfigKey.NavbarConfig,
+      { applicant: { hidden: ["/events"] } },
+      { applicant: { hidden: ["/nowhere"] } },
+    ],
+    [
+      OrganizationConfigKey.OrganizationFooter,
+      { email: "hello@example.com", ein: "84-4516921" },
+      { ein: "844516921" },
+    ],
+    [
+      OrganizationConfigKey.ApplicantDashboardLayout,
+      layout("forms_todo"),
+      { layout: "horizontal", widgets: [{ id: "nope", size: "tall" }] },
+    ],
+  ])("validates %s", async (key, valid, invalid) => {
+    const org = await createOrganization("camp");
+
+    await OrganizationConfigService.setConfig(
+      org.id,
+      key,
+      JSON.stringify(valid),
+    );
+    expect(
+      (await OrganizationConfigService.getConfig(org.id, [key]))[key],
+    ).toEqual(valid);
+
+    await expect(
+      OrganizationConfigService.setConfig(org.id, key, JSON.stringify(invalid)),
+    ).rejects.toThrow(/Invalid/);
+    await expect(
+      OrganizationConfigService.setConfig(org.id, key, "{not json"),
+    ).rejects.toThrow(/Invalid JSON/);
+    expect(
+      (await OrganizationConfigService.getConfig(org.id, [key]))[key],
+    ).toEqual(valid);
+  });
+
+  it("returns empty header, navbar, and footer config by default", async () => {
+    const org = await createOrganization("camp");
+    expect(await OrganizationConfigService.getDashboardHeader(org.id)).toEqual(
+      {},
+    );
+    expect(await OrganizationConfigService.getNavbarConfig(org.id)).toEqual({});
+    expect(
+      await OrganizationConfigService.getOrganizationFooter(org.id),
+    ).toEqual({});
+  });
+
+  it("keeps one org's config away from another", async () => {
+    const orgA = await createOrganization("camp-a");
+    const orgB = await createOrganization("camp-b");
+    await OrganizationConfigService.setConfig(
+      orgA.id,
+      OrganizationConfigKey.OrganizationFooter,
+      JSON.stringify({ email: "a@example.com" }),
+    );
+    expect(
+      await OrganizationConfigService.getOrganizationFooter(orgB.id),
+    ).toEqual({});
+  });
+});

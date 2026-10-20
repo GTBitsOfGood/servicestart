@@ -664,3 +664,70 @@ describe("POST /api/forms/:formId/uploads", () => {
     expect(await db.select().from(formUploads)).toHaveLength(0);
   });
 });
+
+describe("GET /api/forms/:formId/my-uploads/:uploadId", () => {
+  function getUpload(
+    slug: string,
+    formId: string,
+    uploadId: string,
+    cookie?: string,
+  ) {
+    return app.request(`/api/forms/${formId}/my-uploads/${uploadId}`, {
+      headers: headersFor(slug, cookie),
+    });
+  }
+
+  it("returns the member's own upload", async () => {
+    const org = await createOrg("uploads-own");
+    const { userId, cookie } = await signIn(org.id);
+    const form = await publishedForm(org.id);
+    const uploadId = await createFormUpload(form, {
+      uploadedBy: userId,
+      fileName: "me.png",
+    });
+    vi.mocked(FileService.readFile).mockResolvedValueOnce(PNG);
+
+    const res = await getUpload(org.slug, form.formId, uploadId, cookie);
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toBe("image/png");
+    expect(res.headers.get("Cache-Control")).toBe("private, no-store");
+    expect(Buffer.from(await res.arrayBuffer())).toEqual(PNG);
+    expect(FileService.readFile).toHaveBeenCalledWith(org.id, "me.png");
+  });
+
+  it("is not found for someone else's upload, a guest, or another org", async () => {
+    const org = await createOrg("uploads-other");
+    const otherOrg = await createOrg("uploads-elsewhere");
+    const owner = await signIn(org.id);
+    const stranger = await signIn(org.id);
+    const form = await publishedForm(org.id);
+    const uploadId = await createFormUpload(form, {
+      uploadedBy: owner.userId,
+    });
+
+    for (const [slug, cookie] of [
+      [org.slug, stranger.cookie],
+      [org.slug, undefined],
+      [otherOrg.slug, owner.cookie],
+    ] as const) {
+      expect(
+        (await getUpload(slug, form.formId, uploadId, cookie)).status,
+      ).toBe(404);
+    }
+  });
+
+  it("is not found when the file is missing from storage", async () => {
+    const org = await createOrg("uploads-missing");
+    const { userId, cookie } = await signIn(org.id);
+    const form = await publishedForm(org.id);
+    const uploadId = await createFormUpload(form, { uploadedBy: userId });
+    vi.mocked(FileService.readFile).mockRejectedValueOnce(
+      Object.assign(new Error("missing"), { code: "ENOENT" }),
+    );
+
+    expect(
+      (await getUpload(org.slug, form.formId, uploadId, cookie)).status,
+    ).toBe(404);
+  });
+});
