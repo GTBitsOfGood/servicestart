@@ -1,9 +1,15 @@
 import { expect, test } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
 import db from "@/lib/db";
-import { invitations, members, users } from "@/lib/schema";
+import {
+  invitations,
+  members,
+  users,
+  OrganizationConfigKey,
+} from "@/lib/schema";
 import { AuthMessage } from "@/components/auth/authConstants";
 import { InvitationStatus } from "@/lib/services/InvitationService";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { auth } from "@/lib/auth";
 import {
   buildHost,
@@ -67,6 +73,11 @@ test.describe("Accept invitation", () => {
       role: "admin",
     });
 
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.AutoApproveSignups,
+      "true",
+    );
     await page.goto(`${tenantUrl(org.slug)}/accept-invitation/${invitationId}`);
     await expect(
       page.getByRole("heading", {

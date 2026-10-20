@@ -214,17 +214,25 @@ describe("invitation hooks", () => {
     return membership?.role;
   }
 
-  it("signing up from the invitation joins with the invited role", async () => {
-    const { organization, invitee, invitationId } = await inviteToNewOrg(
-      "invited-org",
-      { role: "admin" },
-    );
+  it.each([false, true])(
+    "signing up from the invitation keeps the invited role with auto-approve %s",
+    async (autoApprove) => {
+      const { organization, invitee, invitationId } = await inviteToNewOrg(
+        "invited-org",
+        { role: "admin" },
+      );
 
-    const user = await signUpOnHost("invited-org", invitee, invitationId);
+      await OrganizationConfigService.setConfig(
+        organization.id,
+        OrganizationConfigKey.AutoApproveSignups,
+        String(autoApprove),
+      );
+      const user = await signUpOnHost("invited-org", invitee, invitationId);
 
-    expect(await getRole(user.id, organization.id)).toBe("admin");
-    expect(await getJoinRequests(user.id, organization.id)).toHaveLength(0);
-  });
+      expect(await getRole(user.id, organization.id)).toBe("admin");
+      expect(await getJoinRequests(user.id, organization.id)).toHaveLength(0);
+    },
+  );
 
   it("signing up without the invitation link doesn't claim it", async () => {
     const { organization, invitee } = await inviteToNewOrg("unclaimed-org", {

@@ -92,17 +92,28 @@ export async function afterUserCreated(
       if (role) return;
     }
 
-    const autoApprove = await OrganizationConfigService.getAutoApproveSignups(organization.id);
+    const autoApprove = await OrganizationConfigService.getAutoApproveSignups(
+      organization.id,
+    );
     const user = await UserService.findById(userId);
-    const pendingInvite = user && await InvitationService.hasPendingForEmail(organization.id, user.email);
+    const pendingInvite =
+      user &&
+      (await InvitationService.hasPendingForEmail(organization.id, user.email));
     if (!autoApprove || pendingInvite) {
       await createJoinRequestIfNeeded(userId, organization.id);
       return;
     }
-    const existingRequest = await JoinRequestsService.findByUserAndOrganization(userId, organization.id);
+    const existingRequest = await JoinRequestsService.findByUserAndOrganization(
+      userId,
+      organization.id,
+    );
     if (existingRequest) return;
     await MembersService.addSignupMember(userId, organization.id);
-    await JoinRequestsService.create(userId, organization.id, JoinRequestStatus.Approved);
+    await JoinRequestsService.create(
+      userId,
+      organization.id,
+      JoinRequestStatus.Approved,
+    );
   } catch (err) {
     console.error(err);
   }
@@ -118,54 +129,6 @@ export async function requireAuth(c: Context) {
 
   if (!session?.user) {
     throw new UnauthorizedError();
-  }
-
-  return session;
-}
-
-/**
- * Returns the current session only if the user has an active organization
- * and is a member of it; otherwise throws an auth-related error.
- */
-export async function requireMembership(c: Context) {
-  const session = await requireAuth(c);
-  const organizationId = session.session.activeOrganizationId;
-
-  if (!organizationId) {
-    throw new NoActiveOrganizationError();
-  }
-
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
-
-  if (!membership) {
-    throw new ForbiddenError();
-  }
-
-  return session;
-}
-
-/**
- * Returns the current session only if the user has an active organization
- * and is an admin/owner of it; otherwise throws an auth-related error.
- */
-export async function requireAdmin(c: Context) {
-  const session = await requireAuth(c);
-  const organizationId = session.session.activeOrganizationId;
-
-  if (!organizationId) {
-    throw new NoActiveOrganizationError();
-  }
-
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
-
-  if (!MembersService.isAdminOrOwner(membership?.role)) {
-    throw new ForbiddenError();
   }
 
   return session;

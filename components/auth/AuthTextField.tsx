@@ -1,8 +1,6 @@
 "use client";
 
-import AuthInput, {
-  type AuthInputProps,
-} from "@/components/auth/AuthInput";
+import AuthInput, { type AuthInputProps } from "@/components/auth/AuthInput";
 import { AUTH_FIELD_CLASS } from "@/components/auth/authStyles";
 
 export type AuthTextFieldProps = Pick<

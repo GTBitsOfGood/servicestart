@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/lib/db";
 import {
@@ -310,9 +310,7 @@ describe("FormService", () => {
     expect(
       await FormService.exportCsv(a.id, form.formId, "https://example.com"),
     ).toContain(`"${user.name}","${user.email}"`);
-    await db
-      .delete(users)
-      .where(and(eq(users.id, user.id), eq(users.organizationId, a.id)));
+    await db.delete(users).where(eq(users.id, user.id));
     expect(
       (
         await FormService.exportCsv(a.id, form.formId, "https://example.com")

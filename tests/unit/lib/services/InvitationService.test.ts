@@ -2,7 +2,7 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/lib/db";
-import { invitations } from "@/lib/schema";
+import { invitations, members } from "@/lib/schema";
 import {
   InvitationService,
   InvitationStatus,
@@ -140,13 +140,18 @@ describe("InvitationService.acceptForUser", () => {
     expect(membership?.role).toBe("admin");
   });
 
-  it("accepts an invitation only once", async () => {
+  it("allows acceptance retries without adding membership twice", async () => {
     const { organization, user, id } = await setupInvitee("invite-once");
     await InvitationService.acceptForUser(id, organization.id, user);
 
     expect(
       await InvitationService.acceptForUser(id, organization.id, user),
-    ).toBe(undefined);
+    ).toBe("member");
+    const rows = await db
+      .select()
+      .from(members)
+      .where(eq(members.userId, user.id));
+    expect(rows).toHaveLength(1);
   });
 
   it("rejects an expired invitation", async () => {

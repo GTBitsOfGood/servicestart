@@ -289,6 +289,18 @@ function DeleteDialog({
   onDelete: () => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState("");
+  async function handleDelete() {
+    setError("");
+    try {
+      await onDelete();
+      setOpen(false);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Unable to delete form",
+      );
+    }
+  }
   return (
     <BogModal
       openState={{ open, setOpen }}
@@ -298,14 +310,17 @@ function DeleteDialog({
         </BogButton>
       }
       title={<h2>Delete form?</h2>}
-      description={<p>Delete “{form.title}”? This cannot be undone.</p>}
+      description={
+        <div>
+          <p>Delete “{form.title}”? This cannot be undone.</p>
+          {error && <p role="alert">{error}</p>}
+        </div>
+      }
       primaryLabel="Delete form"
       secondaryLabel="Cancel"
       primaryDisabled={disabled}
       onPrimary={() => {
-        void onDelete()
-          .then(() => setOpen(false))
-          .catch(() => {});
+        void handleDelete();
       }}
     />
   );

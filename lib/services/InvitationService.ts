@@ -68,7 +68,7 @@ async function acceptForUser(
   user: { id: string; email: string },
 ): Promise<string | undefined> {
   const [existing] = await db
-    .select({ id: members.id })
+    .select({ id: members.id, role: members.role })
     .from(members)
     .where(
       and(
@@ -77,7 +77,15 @@ async function acceptForUser(
       ),
     )
     .limit(1);
-  if (existing) return undefined;
+  if (existing) {
+    // Signup may already have consumed this token. Retrying acceptance must
+    // still allow the new session to activate its organization.
+    const invite = await findByIdAndOrganization(invitationId, organizationId);
+    return invite?.status === InvitationStatus.Accepted &&
+      invite.email.toLowerCase() === user.email.toLowerCase()
+      ? existing.role
+      : undefined;
+  }
 
   const now = new Date();
 
@@ -109,12 +117,18 @@ async function acceptForUser(
 }
 
 async function hasPendingForEmail(organizationId: string, email: string) {
-  const [invite] = await db.select({ id: invitations.id }).from(invitations).where(and(
-    eq(invitations.organizationId, organizationId),
-    eq(invitations.status, InvitationStatus.Pending),
-    gt(invitations.expiresAt, new Date()),
-    sql`lower(${invitations.email}) = lower(${email})`,
-  )).limit(1);
+  const [invite] = await db
+    .select({ id: invitations.id })
+    .from(invitations)
+    .where(
+      and(
+        eq(invitations.organizationId, organizationId),
+        eq(invitations.status, InvitationStatus.Pending),
+        gt(invitations.expiresAt, new Date()),
+        sql`lower(${invitations.email}) = lower(${email})`,
+      ),
+    )
+    .limit(1);
   return Boolean(invite);
 }
 
