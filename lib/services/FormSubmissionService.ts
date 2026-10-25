@@ -1,18 +1,21 @@
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, type SQL } from "drizzle-orm";
 import db from "@/lib/db";
 import {
   FormComponentType,
   FormStatus,
+  type SubmissionReviewStatus,
   formAnswers,
   formComponents,
   formSubmissions,
   formUploads,
   forms,
+  users,
 } from "@/lib/schema";
-import type {
-  FormAnswerValue,
-  FormComponent,
-  FormDefinition,
+import {
+  isImageAnswer,
+  type FormAnswerValue,
+  type FormComponent,
+  type FormDefinition,
 } from "@/lib/forms/schema";
 
 export class DuplicateSubmissionError extends Error {
@@ -35,6 +38,13 @@ async function getDefinition(
   organizationId: string,
   formId: string,
 ): Promise<FormDefinition | null> {
+  return getDefinitionWhere(organizationId, eq(forms.formId, formId));
+}
+
+async function getDefinitionWhere(
+  organizationId: string,
+  where: SQL,
+): Promise<FormDefinition | null> {
   const [form] = await db
     .select({
       id: forms.id,
@@ -45,9 +55,7 @@ async function getDefinition(
       settings: forms.settings,
     })
     .from(forms)
-    .where(
-      and(eq(forms.organizationId, organizationId), eq(forms.formId, formId)),
-    )
+    .where(and(eq(forms.organizationId, organizationId), where))
     .limit(1);
   if (!form) return null;
 
@@ -135,9 +143,7 @@ async function submit({
 
     const imageAnswers = form.components.flatMap((component) => {
       const answer = answers[component.id];
-      return component.type === FormComponentType.Image &&
-        answer &&
-        typeof answer === "object"
+      return component.type === FormComponentType.Image && isImageAnswer(answer)
         ? [{ componentId: component.id, uploadId: answer.uploadId }]
         : [];
     });
@@ -209,6 +215,164 @@ async function deleteUpload(id: string, organizationId: string) {
     );
 }
 
+/** A submission with its form, answers, and submitter. */
+export type SubmissionDetail = {
+  submission: {
+    id: string;
+    userId: string | null;
+    submittedAt: Date;
+    /** Null until the submitter edits their answers. */
+    updatedAt: Date | null;
+    reviewStatus: SubmissionReviewStatus;
+    reviewStatusUpdatedAt: Date | null;
+  };
+  /** Null for a guest, or once the submitter's account is deleted. */
+  submitter: { id: string; name: string; email: string } | null;
+  definition: FormDefinition;
+  /** Keyed by component ID. Unanswered questions are left out. */
+  answers: Record<string, FormAnswerValue>;
+};
+
+const submissionColumns = {
+  id: formSubmissions.id,
+  formId: formSubmissions.formId,
+  userId: formSubmissions.userId,
+  submittedAt: formSubmissions.submittedAt,
+  updatedAt: formSubmissions.updatedAt,
+  reviewStatus: formSubmissions.reviewStatus,
+  reviewStatusUpdatedAt: formSubmissions.reviewStatusUpdatedAt,
+  submitterName: users.name,
+  submitterEmail: users.email,
+};
+
+async function toDetail(
+  organizationId: string,
+  row: {
+    id: string;
+    formId: string;
+    userId: string | null;
+    submittedAt: Date;
+    updatedAt: Date | null;
+    reviewStatus: SubmissionReviewStatus;
+    reviewStatusUpdatedAt: Date | null;
+    submitterName: string | null;
+    submitterEmail: string | null;
+  },
+  definition?: FormDefinition,
+): Promise<SubmissionDetail | null> {
+  const form =
+    definition ??
+    (await getDefinitionWhere(organizationId, eq(forms.id, row.formId)));
+  if (!form) return null;
+
+  const answerRows = await db
+    .select({ componentId: formAnswers.componentId, value: formAnswers.value })
+    .from(formAnswers)
+    .where(
+      and(
+        eq(formAnswers.submissionId, row.id),
+        eq(formAnswers.formId, row.formId),
+      ),
+    );
+
+  return {
+    submission: {
+      id: row.id,
+      userId: row.userId,
+      submittedAt: row.submittedAt,
+      updatedAt: row.updatedAt,
+      reviewStatus: row.reviewStatus,
+      reviewStatusUpdatedAt: row.reviewStatusUpdatedAt,
+    },
+    submitter:
+      row.userId && row.submitterName !== null && row.submitterEmail !== null
+        ? { id: row.userId, name: row.submitterName, email: row.submitterEmail }
+        : null,
+    definition: form,
+    answers: Object.fromEntries(
+      answerRows.map(({ componentId, value }) => [componentId, value]),
+    ),
+  };
+}
+
+/**
+ * Any submission in the org, for admins (#317). Null when it doesn't exist or
+ * belongs to another org.
+ */
+async function getSubmissionDetail(
+  organizationId: string,
+  submissionId: string,
+): Promise<SubmissionDetail | null> {
+  const [row] = await db
+    .select(submissionColumns)
+    .from(formSubmissions)
+    .leftJoin(users, eq(users.id, formSubmissions.userId))
+    .where(
+      and(
+        eq(formSubmissions.id, submissionId),
+        eq(formSubmissions.organizationId, organizationId),
+      ),
+    )
+    .limit(1);
+  return row ? toDetail(organizationId, row) : null;
+}
+
+/**
+ * A member's latest submission to a form, by its human-assigned form ID, for
+ * showing them their own response (#318, #319). Null when they haven't
+ * responded.
+ */
+async function getMemberSubmission(
+  organizationId: string,
+  formId: string,
+  userId: string,
+): Promise<SubmissionDetail | null> {
+  const definition = await getDefinition(organizationId, formId);
+  if (!definition) return null;
+
+  const [row] = await db
+    .select(submissionColumns)
+    .from(formSubmissions)
+    .leftJoin(users, eq(users.id, formSubmissions.userId))
+    .where(
+      and(
+        eq(formSubmissions.formId, definition.id),
+        eq(formSubmissions.organizationId, organizationId),
+        eq(formSubmissions.userId, userId),
+      ),
+    )
+    .orderBy(desc(formSubmissions.submittedAt), desc(formSubmissions.id))
+    .limit(1);
+  return row ? toDetail(organizationId, row, definition) : null;
+}
+
+/** An upload the user made to one of the org's forms, by its form ID. */
+async function getMemberUpload(
+  organizationId: string,
+  formId: string,
+  uploadId: string,
+  userId: string,
+) {
+  const [upload] = await db
+    .select({
+      fileName: formUploads.fileName,
+      contentType: formUploads.contentType,
+    })
+    .from(formUploads)
+    .innerJoin(forms, eq(forms.id, formUploads.formId))
+    .where(
+      and(
+        eq(formUploads.id, uploadId),
+        eq(formUploads.organizationId, organizationId),
+        eq(formUploads.uploadedBy, userId),
+        eq(forms.organizationId, organizationId),
+        eq(forms.formId, formId),
+      ),
+    )
+    .limit(1);
+  return upload ?? null;
+}
+
 export const FormSubmissionService = {
   getDefinition,
   getPublishedDefinition,
@@ -216,4 +380,7 @@ export const FormSubmissionService = {
   submit,
   createUpload,
   deleteUpload,
+  getSubmissionDetail,
+  getMemberSubmission,
+  getMemberUpload,
 };

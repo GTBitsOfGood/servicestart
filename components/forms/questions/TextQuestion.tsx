@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import BogTextInput from "@/components/bog/BogTextInput/BogTextInput";
 import QuestionField from "@/components/forms/questions/QuestionField";
 import {
   describedBy,
   fieldId,
   type QuestionProps,
 } from "@/components/forms/types";
+import ThemedTextInput from "@/components/theme/ThemedTextInput";
 import type { FormComponentOfType } from "@/lib/forms/schema";
 import { FormComponentType } from "@/lib/schema";
 
@@ -36,6 +36,7 @@ export default function TextQuestion({
   value,
   error,
   disabled,
+  readOnly,
   onChange,
   onBlur,
 }: QuestionProps<FormComponentOfType<TextType>>) {
@@ -48,7 +49,7 @@ export default function TextQuestion({
         : "decimal"
       : undefined;
 
-  // BogTextInput doesn't take an id, ARIA attributes, or inputMode.
+  // BogTextInput doesn't take an id, ARIA attributes, inputMode, or readOnly.
   useEffect(() => {
     const input = containerRef.current?.querySelector("input");
     if (!input) return;
@@ -56,12 +57,13 @@ export default function TextQuestion({
     setAttribute(input, "aria-describedby", descriptionIds);
     setAttribute(input, "aria-invalid", error ? "true" : undefined);
     setAttribute(input, "inputmode", inputMode);
-  }, [component.id, descriptionIds, error, inputMode]);
+    setAttribute(input, "readonly", readOnly ? "" : undefined);
+  }, [component.id, descriptionIds, error, inputMode, readOnly]);
 
   return (
     <QuestionField component={component} error={error}>
       <div ref={containerRef} onBlur={onBlur}>
-        <BogTextInput
+        <ThemedTextInput
           name={component.id}
           type={INPUT_TYPES[component.type]}
           placeholder=""

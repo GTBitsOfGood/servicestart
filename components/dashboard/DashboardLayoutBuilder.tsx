@@ -202,7 +202,12 @@ export default function DashboardLayoutBuilder({
     try {
       await onSave({
         layout: "horizontal",
-        widgets: columnsToWidgets(columns),
+        widgets: columnsToWidgets(columns).map((widget) => {
+          const original = initialLayout.widgets.find(
+            ({ id }) => id === widget.id,
+          );
+          return original ? { ...original, ...widget } : widget;
+        }),
       });
       setHasChanges(false);
     } catch (err) {
@@ -212,7 +217,7 @@ export default function DashboardLayoutBuilder({
     } finally {
       setIsSaving(false);
     }
-  }, [columns, onSave]);
+  }, [columns, initialLayout.widgets, onSave]);
 
   const handleDiscard = useCallback(() => {
     setColumns(splitInitialLayout(initialLayout.widgets));

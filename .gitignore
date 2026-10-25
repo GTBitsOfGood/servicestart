@@ -36,6 +36,7 @@ yarn-error.log*
 !.env.template
 !.env.test
 /storage/
+/personal/
 
 # vercel
 .vercel

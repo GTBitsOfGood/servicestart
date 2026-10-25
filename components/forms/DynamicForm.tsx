@@ -10,14 +10,15 @@ import {
   type FormEvent,
 } from "react";
 import BogBanner from "@/components/bog/BogBanner/BogBanner";
-import BogButton from "@/components/bog/BogButton/BogButton";
 import { DynamicFormContext } from "@/components/forms/DynamicFormContext";
 import { FORM_RENDERERS } from "@/components/forms/renderers";
 import {
   fieldId,
+  toFieldValues,
   type FieldValue,
   type QuestionProps,
 } from "@/components/forms/types";
+import ThemedButton from "@/components/theme/ThemedButton";
 import { uploadFormImage } from "@/components/forms/uploadFormImage";
 import type { FormAnswerValue, FormDefinition } from "@/lib/forms/schema";
 import {
@@ -35,11 +36,24 @@ type DynamicFormProps = {
   definition: Pick<FormDefinition, "formId" | "components">;
   /** Shows the questions without a submit button or uploads. */
   preview?: boolean;
+  /** Saved answers to start from, e.g. when editing a response. */
+  initialValues?: Record<string, FormAnswerValue>;
+  /**
+   * Shows `initialValues` as a finished response: nothing can change and
+   * there's no submit button.
+   */
+  readOnly?: boolean;
+  submitLabel?: string;
+  submittingLabel?: string;
   onSubmit?: (
     answers: Record<string, FormAnswerValue>,
   ) => Promise<DynamicFormSubmitResult>;
   uploadImage?: typeof uploadFormImage;
+  /** Where an already-uploaded image loads from; without it, none is shown. */
+  imageSrc?: (uploadId: string) => string | null;
 };
+
+const noImageSrc = () => null;
 
 const FORM_ERROR_ID = "form-error";
 
@@ -47,10 +61,17 @@ const FORM_ERROR_ID = "form-error";
 export default function DynamicForm({
   definition,
   preview = false,
+  initialValues,
+  readOnly = false,
+  submitLabel = "Submit",
+  submittingLabel = "Submitting…",
   onSubmit,
   uploadImage = uploadFormImage,
+  imageSrc = noImageSrc,
 }: DynamicFormProps) {
-  const [values, setValues] = useState<Record<string, FieldValue>>({});
+  const [values, setValues] = useState<Record<string, FieldValue>>(() =>
+    toFieldValues(initialValues ?? {}),
+  );
   // The latest answers, for callbacks that finish later, like an upload's.
   const valuesRef = useRef(values);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -136,7 +157,7 @@ export default function DynamicForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (preview || !onSubmit || submittingRef.current) return;
+    if (preview || readOnly || !onSubmit || submittingRef.current) return;
 
     const { answers, errors: fieldErrors } = validate(valuesRef.current);
     setErrors(fieldErrors);
@@ -163,17 +184,26 @@ export default function DynamicForm({
   }
 
   const context = useMemo(
-    () => ({ formId: definition.formId, preview, uploadImage, setUploading }),
-    [definition.formId, preview, uploadImage, setUploading],
+    () => ({
+      formId: definition.formId,
+      preview,
+      readOnly,
+      uploadImage,
+      imageSrc,
+      setUploading,
+    }),
+    [definition.formId, preview, readOnly, uploadImage, imageSrc, setUploading],
   );
 
   return (
     <DynamicFormContext.Provider value={context}>
       <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-8">
-        <p className="text-paragraph-2 text-grey-text-weak">
-          Questions marked <span aria-hidden="true">*</span>
-          <span className="sr-only">with an asterisk</span> are required.
-        </p>
+        {!readOnly && (
+          <p className="text-paragraph-2 text-grey-text-weak">
+            Questions marked <span aria-hidden="true">*</span>
+            <span className="sr-only">with an asterisk</span> are required.
+          </p>
+        )}
         {formError && (
           <div id={FORM_ERROR_ID} tabIndex={-1} className="outline-none">
             <BogBanner
@@ -195,20 +225,21 @@ export default function DynamicForm({
               value={values[component.id]}
               error={errors[component.id]}
               disabled={submitting}
+              readOnly={readOnly}
               onChange={(value) => handleChange(component.id, value)}
               onBlur={() => handleBlur(component.id)}
             />
           );
         })}
-        {!preview && (
-          <BogButton
+        {!preview && !readOnly && (
+          <ThemedButton
             type="submit"
             disabled={submitting || uploadingIds.length > 0}
             aria-busy={submitting}
             className="self-start"
           >
-            {submitting ? "Submitting…" : "Submit"}
-          </BogButton>
+            {submitting ? submittingLabel : submitLabel}
+          </ThemedButton>
         )}
       </form>
     </DynamicFormContext.Provider>

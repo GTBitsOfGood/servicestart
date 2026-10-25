@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { FormComponentType } from "@/lib/schema";
+import { FormComponentType, MemberType } from "@/lib/schema";
 import { DEFAULT_FORM_SETTINGS } from "@/lib/forms/constants";
 import {
   FORM_ANSWER_VALUE_SCHEMAS,
@@ -11,6 +11,10 @@ import {
   FormIdSchema,
   FormSettingsSchema,
   FormSubmissionPayloadSchema,
+  getAcceptedMemberType,
+  getAssignedMemberTypes,
+  getDueAt,
+  isImageAnswer,
 } from "@/lib/forms/schema";
 import { VISIONARIES_APPLICATION_FORM } from "@/tests/unit/fixtures/forms";
 
@@ -53,6 +57,48 @@ const CONFIG_EXAMPLES: Record<
     valid: [{}],
     invalid: [{ level: 2 }],
   },
+  [FormComponentType.SingleChoice]: {
+    valid: [{ options: ["Small", "Medium", "Large"] }, { options: ["Only"] }],
+    invalid: [
+      {},
+      { options: [] },
+      { options: ["Same", "Same"] },
+      { options: ["  "] },
+      { options: Array.from({ length: 51 }, (_, i) => `Option ${i}`) },
+    ],
+  },
+  [FormComponentType.Checkboxes]: {
+    valid: [
+      { options: ["Mon", "Wed", "Fri"] },
+      { options: ["Mon", "Wed", "Fri"], minSelected: 1, maxSelected: 2 },
+    ],
+    invalid: [
+      { options: ["Mon"], minSelected: 2 },
+      { options: ["Mon", "Wed"], minSelected: 2, maxSelected: 1 },
+      { options: ["Mon"], maxSelected: 0 },
+      { minSelected: 1 },
+    ],
+  },
+  [FormComponentType.Dropdown]: {
+    valid: [{ options: ["Georgia", "Alabama"] }],
+    invalid: [{ options: [] }, { options: ["GA"], multiple: true }],
+  },
+  [FormComponentType.Date]: {
+    valid: [
+      {},
+      { min: "2027-06-02", max: "2027-08-20" },
+      { max: "2027-01-01" },
+    ],
+    invalid: [
+      { min: "2027-08-20", max: "2027-06-02" },
+      { min: "06/02/2027" },
+      { min: "2027-06-02T00:00:00Z" },
+    ],
+  },
+  [FormComponentType.YesNo]: {
+    valid: [{}],
+    invalid: [{ options: ["Yes", "No"] }],
+  },
 };
 
 const ANSWER_EXAMPLES: Record<
@@ -92,13 +138,34 @@ const ANSWER_EXAMPLES: Record<
     valid: [],
     invalid: ["Contact Information", null, undefined, {}],
   },
+  [FormComponentType.SingleChoice]: {
+    valid: ["Medium"],
+    invalid: [["Medium"], 1, true],
+  },
+  [FormComponentType.Checkboxes]: {
+    valid: [["Mon", "Wed"], []],
+    invalid: ["Mon", [1], { 0: "Mon" }],
+  },
+  [FormComponentType.Dropdown]: {
+    valid: ["Georgia"],
+    invalid: [["Georgia"], null],
+  },
+  [FormComponentType.Date]: {
+    valid: ["2027-06-02"],
+    invalid: [20270602, new Date("2027-06-02")],
+  },
+  [FormComponentType.YesNo]: {
+    valid: [true, false],
+    invalid: ["yes", 1, null],
+  },
 };
 
 describe("component config schemas", () => {
   describe.each(Object.values(FormComponentType))("%s", (type) => {
-    const { valid, invalid } = CONFIG_EXAMPLES[type];
+    const valid = CONFIG_EXAMPLES[type].valid.map((config) => ({ config }));
+    const invalid = CONFIG_EXAMPLES[type].invalid.map((config) => ({ config }));
 
-    it.each(valid)("accepts %j", (config) => {
+    it.each(valid)("accepts $config", ({ config }) => {
       expect(
         FORM_COMPONENT_CONFIG_SCHEMAS[type].safeParse(config).success,
       ).toBe(true);
@@ -107,7 +174,7 @@ describe("component config schemas", () => {
       ).toBe(true);
     });
 
-    it.each(invalid)("rejects %j", (config) => {
+    it.each(invalid)("rejects $config", ({ config }) => {
       expect(
         FORM_COMPONENT_CONFIG_SCHEMAS[type].safeParse(config).success,
       ).toBe(false);
@@ -134,7 +201,7 @@ describe("component config schemas", () => {
 
   it("rejects an unknown type", () => {
     expect(
-      FormComponentConfigSchema.safeParse({ type: "dropdown", config: {} })
+      FormComponentConfigSchema.safeParse({ type: "signature", config: {} })
         .success,
     ).toBe(false);
   });
@@ -142,15 +209,17 @@ describe("component config schemas", () => {
 
 describe("answer value schemas", () => {
   describe.each(Object.values(FormComponentType))("%s", (type) => {
-    const { valid, invalid } = ANSWER_EXAMPLES[type];
+    // Wrapped, so it.each doesn't spread list answers into arguments.
+    const valid = ANSWER_EXAMPLES[type].valid.map((value) => ({ value }));
+    const invalid = ANSWER_EXAMPLES[type].invalid.map((value) => ({ value }));
 
-    it.each(valid)("accepts %j", (value) => {
+    it.each(valid)("accepts $value", ({ value }) => {
       expect(FORM_ANSWER_VALUE_SCHEMAS[type].safeParse(value).success).toBe(
         true,
       );
     });
 
-    it.each(invalid)("rejects %j", (value) => {
+    it.each(invalid)("rejects $value", ({ value }) => {
       expect(FORM_ANSWER_VALUE_SCHEMAS[type].safeParse(value).success).toBe(
         false,
       );
@@ -241,6 +310,47 @@ describe("FormSettingsSchema", () => {
         ...DEFAULT_FORM_SETTINGS,
         opensAt: "next Tuesday",
       }).success,
+    ).toBe(false);
+  });
+
+  it("accepts forms saved before the Sprint 4 settings", () => {
+    const old = {
+      requireLogin: true,
+      allowMultipleSubmissions: false,
+      opensAt: null,
+      closesAt: null,
+      confirmationMessage: "Thanks!",
+    };
+    const settings = FormSettingsSchema.parse(old);
+    expect(getAssignedMemberTypes(settings)).toEqual([]);
+    expect(getDueAt(settings)).toBeNull();
+    expect(getAcceptedMemberType(settings)).toBeNull();
+  });
+
+  it("accepts assigned member types, a due date, and an accepted type", () => {
+    const settings = FormSettingsSchema.parse({
+      ...DEFAULT_FORM_SETTINGS,
+      assignedMemberTypes: [MemberType.Applicant],
+      dueAt: "2027-04-01T04:00:00Z",
+      acceptedMemberType: MemberType.Attendee,
+    });
+    expect(getAssignedMemberTypes(settings)).toEqual([MemberType.Applicant]);
+    expect(getDueAt(settings)).toBe("2027-04-01T04:00:00Z");
+    expect(getAcceptedMemberType(settings)).toBe(MemberType.Attendee);
+  });
+
+  it.each([
+    ["an unknown member type", { assignedMemberTypes: ["camper"] }],
+    [
+      "a repeated member type",
+      { assignedMemberTypes: [MemberType.Applicant, MemberType.Applicant] },
+    ],
+    ["a due date that isn't a datetime", { dueAt: "April 1" }],
+    ["an unknown accepted type", { acceptedMemberType: "admin" }],
+  ])("rejects %s", (_, settings) => {
+    expect(
+      FormSettingsSchema.safeParse({ ...DEFAULT_FORM_SETTINGS, ...settings })
+        .success,
     ).toBe(false);
   });
 
@@ -370,8 +480,20 @@ describe("FormSubmissionPayloadSchema", () => {
   it("rejects values that no type accepts", () => {
     expect(
       FormSubmissionPayloadSchema.safeParse({
-        answers: { [studentName.id]: true },
+        answers: { [studentName.id]: { value: "Ada" } },
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("isImageAnswer", () => {
+  it.each<[unknown, boolean]>([
+    [{ uploadId: UPLOAD_ID }, true],
+    [["a"], false],
+    ["text", false],
+    [true, false],
+    [undefined, false],
+  ])("%j is %s", (value, expected) => {
+    expect(isImageAnswer(value as never)).toBe(expected);
   });
 });

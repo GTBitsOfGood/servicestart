@@ -65,9 +65,11 @@ function HamburgerIcon() {
 function MobileTopBar({
   onMenuClick,
   menuSide,
+  desktopVisible = false,
 }: {
   onMenuClick: () => void;
   menuSide: "left" | "right";
+  desktopVisible?: boolean;
 }) {
   const { count: unreadCount } = useUnreadNotificationCount();
 
@@ -92,7 +94,12 @@ function MobileTopBar({
   );
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 flex h-14 items-center justify-between bg-mobile-navbar-bg px-3 shadow-sm md:hidden">
+    <header
+      className={cn(
+        "fixed top-0 left-0 right-0 z-40 flex h-14 items-center justify-between bg-mobile-navbar-bg px-3 shadow-sm",
+        !desktopVisible && "md:hidden",
+      )}
+    >
       {menuSide === "left" ? hamburgerButton : bellButton}
       {menuSide === "left" ? bellButton : hamburgerButton}
     </header>
@@ -268,12 +275,14 @@ export function MobileSidebarNav({
   showIcons = drawerSide === "right",
   pinnedProfileDisplayName = "",
   pinnedProfileRole = "",
+  desktopVisible = false,
 }: NavbarProps & {
   drawerSide: MobileDrawerSide;
   pinnedUser?: boolean;
   showIcons?: boolean;
   pinnedProfileDisplayName?: string;
   pinnedProfileRole?: string;
+  desktopVisible?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
@@ -312,10 +321,11 @@ export function MobileSidebarNav({
   }
 
   return (
-    <div className="md:hidden">
+    <div className={desktopVisible ? undefined : "md:hidden"}>
       <MobileTopBar
         onMenuClick={() => setIsOpen(true)}
         menuSide={isRight ? "right" : "left"}
+        desktopVisible={desktopVisible}
       />
 
       <div

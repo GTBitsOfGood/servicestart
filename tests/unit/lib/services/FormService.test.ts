@@ -302,6 +302,40 @@ describe("FormService", () => {
     ).toContain('"Headshot","Optional","\'=Name"');
   });
 
+  it("exports checkbox lists and yes/no answers as text", async () => {
+    const a = await org();
+    const form = await createForm(a.id, {
+      components: [
+        {
+          type: FormComponentType.Checkboxes,
+          label: "Days",
+          helpText: null,
+          required: true,
+          config: { options: ["Mon", "Wed", "Fri"] },
+        },
+        {
+          type: FormComponentType.YesNo,
+          label: "Allergies?",
+          helpText: null,
+          required: true,
+          config: {},
+        },
+      ],
+    });
+    await createFormSubmission(form, {
+      submittedAt: new Date("2030-01-01T12:00:00Z"),
+      answers: {
+        [form.components[0].id]: ["Mon", "Fri"],
+        [form.components[1].id]: false,
+      },
+    });
+    expect(
+      (
+        await FormService.exportCsv(a.id, form.formId, "https://example.com")
+      ).split("\r\n")[1],
+    ).toBe('"","","2030-01-01T12:00:00.000Z","Mon; Fri","No"');
+  });
+
   it("exports submitter identity and retains responses after user deletion", async () => {
     const a = await org();
     const { user } = await signUpAndGetSession(buildTestUser());

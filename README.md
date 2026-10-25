@@ -91,6 +91,9 @@ Use Node.js compatible with the installed Next.js version and pnpm 10.17.1 (`npm
 
    Seeding creates the default ServiceStart organization, sample data, and accounts. Sign in with `owner@example.com` or `admin@example.com`, password `password123`. These credentials are for local development only.
 
+   The regular seed includes [VolunteerStart and ApplicationStart development sites](docs/DEVELOPMENT_TENANTS.md),
+   with separate accounts, themes, and fixtures for sprint reviews and feature testing.
+
 6. Start the application:
 
    ```bash

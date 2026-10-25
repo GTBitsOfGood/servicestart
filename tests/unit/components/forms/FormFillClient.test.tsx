@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import FormFillClient from "@/components/forms/FormFillClient";
+import type { FormDefinition } from "@/lib/forms/schema";
 import { FormComponentType } from "@/lib/schema";
 
 const $post = vi.hoisted(() => vi.fn());
@@ -10,7 +11,7 @@ vi.mock("@/lib/api", () => ({
 }));
 
 const NAME_ID = "00000000-0000-4000-8000-000000000001";
-const definition = {
+const definition: Pick<FormDefinition, "formId" | "components"> = {
   formId: "camp-application-2027",
   components: [
     {
