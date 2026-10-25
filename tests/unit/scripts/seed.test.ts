@@ -12,6 +12,7 @@ import {
   forms,
   formComponents,
   formSubmissions,
+  formUploads,
   FormStatus,
   MemberType,
   NotificationType,
@@ -24,6 +25,7 @@ import {
 } from "@/lib/schema";
 import { FormDefinitionSchema } from "@/lib/forms/schema";
 import { FormProgressService } from "@/lib/services/FormProgressService";
+import { FormSubmissionService } from "@/lib/services/FormSubmissionService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { hashPassword } from "better-auth/crypto";
 import { main } from "@/scripts/seed";
@@ -31,7 +33,7 @@ import { InvitationService } from "@/lib/services/InvitationService";
 import { JoinRequestsService } from "@/lib/services/JoinRequestService";
 import { MembersService } from "@/lib/services/MemberService";
 import { UserService } from "@/lib/services/UserService";
-import { and, asc, count, eq, isNull } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
 import { expect, it } from "vitest";
 import {
   createForm,
@@ -241,8 +243,8 @@ it("creates distinct admin accounts that can sign in to each seeded tenant", asy
     .select()
     .from(users)
     .where(eq(users.email, "admin@example.com"));
-  expect(admins).toHaveLength(5);
-  expect(new Set(admins.map((user) => user.organizationId)).size).toBe(5);
+  expect(admins).toHaveLength(7);
+  expect(new Set(admins.map((user) => user.organizationId)).size).toBe(7);
   expect(
     await db.select().from(users).where(isNull(users.organizationId)),
   ).toHaveLength(0);
@@ -410,7 +412,7 @@ it("won't overwrite another form with the application's form ID", async () => {
   });
 
   await expect(main()).rejects.toThrow(
-    `Visionaries already has a form with the ID "${VISIONARIES_APPLICATION_FORM.formId}"`,
+    `Visionaries to the Throne already has a form with the ID "${VISIONARIES_APPLICATION_FORM.formId}"`,
   );
   const [stored] = await db.select().from(forms).where(eq(forms.id, draft.id));
   expect(stored.status).toBe(FormStatus.Draft);
@@ -450,7 +452,12 @@ it("seeds a Visionaries applicant who can sign in", async () => {
     await db
       .select()
       .from(users)
-      .where(eq(users.email, "applicant@example.com")),
+      .where(
+        and(
+          eq(users.email, "applicant@example.com"),
+          eq(users.organizationId, "org_visionariestothethrone"),
+        ),
+      ),
   ).toHaveLength(1);
 });
 
@@ -702,11 +709,21 @@ it("seeds a Visionaries invitation for each accept-page state, open again on res
   ).toBeUndefined();
 });
 
-it("doesn't give a new Visionaries account two memberships", async () => {
+it("restores recreated Visionaries students' membership, responses, and image access", async () => {
   // AutoApproveSignups is on after the first seed, so signing a new account
   // up makes it a member before the seed adds its membership.
   await main();
   const { user } = await visionariesUser("attendee-complete@example.com");
+  const originalResponses = await db
+    .select()
+    .from(formSubmissions)
+    .where(eq(formSubmissions.userId, user.id));
+  const [headshot] = await db
+    .select()
+    .from(formUploads)
+    .where(eq(formUploads.uploadedBy, user.id));
+  expect(originalResponses.length).toBeGreaterThan(0);
+  expect(headshot).toBeDefined();
   await db.delete(users).where(eq(users.id, user.id));
 
   await main();
@@ -725,6 +742,63 @@ it("doesn't give a new Visionaries account two memberships", async () => {
         ),
       ),
   ).toHaveLength(1);
+  const restoredResponses = await db
+    .select()
+    .from(formSubmissions)
+    .where(eq(formSubmissions.userId, recreated.id));
+  expect(restoredResponses.map((row) => row.id).sort()).toEqual(
+    originalResponses.map((row) => row.id).sort(),
+  );
+  expect(
+    await FormSubmissionService.getMemberSubmission(
+      VISIONARIES,
+      VISIONARIES_APPLICATION_FORM.formId,
+      recreated.id,
+    ),
+  ).not.toBeNull();
+  expect(
+    await FormSubmissionService.getMemberUpload(
+      VISIONARIES,
+      VISIONARIES_APPLICATION_FORM.formId,
+      headshot.id,
+      recreated.id,
+    ),
+  ).not.toBeNull();
+  expect(
+    await FormSubmissionService.getMemberUpload(
+      "org_servicestart",
+      VISIONARIES_APPLICATION_FORM.formId,
+      headshot.id,
+      recreated.id,
+    ),
+  ).toBeNull();
+});
+
+it("restores recreated Visionaries owner and admin roles without duplicate memberships", async () => {
+  await main();
+  for (const email of ["owner@example.com", "admin@example.com"]) {
+    const { user } = await visionariesUser(email);
+    await db.delete(users).where(eq(users.id, user.id));
+  }
+  await main();
+  for (const [email, role] of [
+    ["owner@example.com", "owner"],
+    ["admin@example.com", "admin"],
+  ]) {
+    const { user, membership } = await visionariesUser(email);
+    expect(membership.role).toBe(role);
+    expect(
+      await db
+        .select()
+        .from(members)
+        .where(
+          and(
+            eq(members.userId, user.id),
+            eq(members.organizationId, VISIONARIES),
+          ),
+        ),
+    ).toHaveLength(1);
+  }
 });
 
 it("configures Visionaries' logo, dashboards, header, navbar, and footer", async () => {
@@ -836,4 +910,147 @@ it("gives Visionaries' accepted campers one unread alert and no sample notificat
       .from(notifications)
       .where(eq(notifications.userId, applicant.id)),
   ).toHaveLength(0);
+});
+
+it("seeds independent development tenants with useful volunteer and application workflows", async () => {
+  await main();
+  for (const slug of ["volunteerstart", "applicationstart"]) {
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.slug, slug));
+    expect(org).toBeDefined();
+    const login = await auth.api.signInEmail({
+      headers: new Headers({ host: `${slug}.lvh.me:3000` }),
+      body: { email: "admin@example.com", password: DEFAULT_TEST_PASSWORD },
+    });
+    const [storedUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, login.user.id));
+    expect(storedUser.organizationId).toBe(org.id);
+    const tenantForms = await db
+      .select()
+      .from(forms)
+      .where(eq(forms.organizationId, org.id));
+    expect(new Set(tenantForms.map((form) => form.status))).toEqual(
+      new Set([FormStatus.Published, FormStatus.Draft, FormStatus.Closed]),
+    );
+    const tenantEvents = await db
+      .select()
+      .from(events)
+      .where(eq(events.organizationId, org.id));
+    expect(tenantEvents.length).toBeGreaterThanOrEqual(3);
+    expect(
+      tenantEvents.some(
+        (event) =>
+          event.publishedAt &&
+          event.startTimestamp &&
+          event.startTimestamp > new Date(),
+      ),
+    ).toBe(true);
+  }
+  const requests = await db
+    .select()
+    .from(joinRequests)
+    .where(
+      and(
+        eq(joinRequests.organizationId, "org_volunteerstart"),
+        inArray(joinRequests.id, [
+          "jr_pending_volunteerstart",
+          "jr_approved_volunteerstart",
+          "jr_denied_volunteerstart",
+        ]),
+      ),
+    );
+  expect(requests.map((request) => request.status).sort()).toEqual([
+    "approved",
+    "denied",
+    "pending",
+  ]);
+  const statuses = await db
+    .select()
+    .from(formSubmissions)
+    .where(eq(formSubmissions.organizationId, "org_applicationstart"));
+  expect(
+    new Set(statuses.map((submission) => submission.reviewStatus)),
+  ).toEqual(new Set(Object.values(SubmissionReviewStatus)));
+  for (const [email, completed] of [
+    ["member2@example.com", 0],
+    ["member1@example.com", 2],
+    ["attendee-complete@example.com", 4],
+  ] as const) {
+    const [member] = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.organizationId, "org_applicationstart"),
+          eq(users.email, email),
+        ),
+      );
+    const progress = await FormProgressService.listForMember(
+      "org_applicationstart",
+      member.id,
+      MemberType.Attendee,
+    );
+    expect(progress.filter((item) => item.required)).toHaveLength(4);
+    expect(
+      progress.filter((item) => item.required && item.submission),
+    ).toHaveLength(completed);
+    expect(
+      progress
+        .filter((item) => item.required)
+        .every((item) => item.form.availability === "open"),
+    ).toBe(true);
+    expect(
+      await FormProgressService.listForMember(
+        "org_volunteerstart",
+        member.id,
+        MemberType.Attendee,
+      ),
+    ).toEqual([]);
+  }
+});
+
+it("reseed restores development fixtures without deleting unrelated work or changing account IDs", async () => {
+  await main();
+  const [applicant] = await db
+    .select()
+    .from(users)
+    .where(
+      and(
+        eq(users.organizationId, "org_applicationstart"),
+        eq(users.email, "applicant-pending@example.com"),
+      ),
+    );
+  expect(applicant).toBeDefined();
+  const custom = await createForm("org_applicationstart", {
+    createdBy: applicant.id,
+  });
+  await db
+    .update(formSubmissions)
+    .set({ reviewStatus: SubmissionReviewStatus.Rejected })
+    .where(eq(formSubmissions.userId, applicant.id));
+  const before = await db
+    .select()
+    .from(formSubmissions)
+    .where(eq(formSubmissions.organizationId, "org_applicationstart"));
+  await main();
+  const after = await db
+    .select()
+    .from(formSubmissions)
+    .where(eq(formSubmissions.organizationId, "org_applicationstart"));
+  expect(after).toHaveLength(before.length);
+  expect(after.find((row) => row.userId === applicant.id)?.reviewStatus).toBe(
+    SubmissionReviewStatus.Pending,
+  );
+  expect(
+    await db.select().from(forms).where(eq(forms.id, custom.id)),
+  ).toHaveLength(1);
+  const login = await auth.api.signInEmail({
+    headers: new Headers({ host: "applicationstart.lvh.me:3000" }),
+    body: { email: applicant.email, password: DEFAULT_TEST_PASSWORD },
+  });
+  expect(login.user.id).toBe(applicant.id);
 });

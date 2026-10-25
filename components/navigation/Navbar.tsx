@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { VerticalSidebarNav } from "@/components/navigation/VerticalSidebarNav";
 import { VerticalIconNav } from "@/components/navigation/VerticalIconNav";
-import { HorizontalNav } from "@/components/navigation/HorizontalNav";
+import { HorizontalNavLayout } from "@/components/navigation/HorizontalNavLayout";
 import {
   MobileSidebarNav,
   type MobileDrawerSide,
@@ -122,15 +122,9 @@ export default async function Navbar({ children }: NavbarProps) {
           : "center";
 
     return (
-      <div className="flex min-h-screen flex-col bg-app-shell-bg">
-        <div className="hidden md:block">
-          <HorizontalNav items={navbarItems} alignment={alignment} />
-        </div>
-        <MobileSidebarNav {...mobileNav} />
-        <main className="flex-1 overflow-auto px-6 py-4 pt-20 md:pt-4">
-          {content}
-        </main>
-      </div>
+      <HorizontalNavLayout alignment={alignment} mobileNav={mobileNav}>
+        {content}
+      </HorizontalNavLayout>
     );
   }
 

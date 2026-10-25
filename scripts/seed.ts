@@ -14,6 +14,13 @@ import type { SeedOrg, SeedUser } from "./seedTypes";
 import { seedVisionaries, VISIONARIES_ORG } from "./visionariesSeed";
 import { and, eq, inArray, isNull, ne, notExists, sql } from "drizzle-orm";
 
+import {
+  APPLICATION_ORG,
+  VOLUNTEER_ORG,
+  seedApplicationStart,
+  seedVolunteerStart,
+} from "./developmentSeed";
+
 const isTest = require.main !== module; // Check if the script is being run directly or imported in tests
 
 function log(...args: unknown[]) {
@@ -42,6 +49,8 @@ const ORGS: SeedOrg[] = [
     navbar: { variant: "horizontal-center", color: "red" },
   },
   VISIONARIES_ORG,
+  VOLUNTEER_ORG,
+  APPLICATION_ORG,
   {
     id: "org_vertical_icon",
     name: "Vertical Icon Org",
@@ -211,7 +220,17 @@ export async function main() {
         // user a member (a new account on a reseed), so add one only if not.
         const existingMembership =
           await MembersService.findByUserAndOrganization(userId, org.id);
-        if (!existingMembership) {
+        if (existingMembership) {
+          await db
+            .update(schema.members)
+            .set({ role: userData.role })
+            .where(
+              and(
+                eq(schema.members.id, existingMembership.id),
+                eq(schema.members.organizationId, org.id),
+              ),
+            );
+        } else {
           await db
             .insert(schema.members)
             .values({
@@ -281,7 +300,10 @@ export async function main() {
 
   await seedVisionaries(userIdsByOrganization.get(VISIONARIES_ORG.id)!);
 
-  log("Visionaries forms, responses, invitations, events, and alert created.");
+  await seedVolunteerStart(userIdsByOrganization.get(VOLUNTEER_ORG.id)!);
+  await seedApplicationStart(userIdsByOrganization.get(APPLICATION_ORG.id)!);
+
+  log("Development tenant fixtures created.");
   const joinRequestSeedData = [
     {
       id: "jr_pending_servicestart",
@@ -368,7 +390,7 @@ export async function main() {
 
   log("Join requests created for pending, approved, and denied states.");
   log(
-    "Seed accounts use password123. Sign in at localhost:3000 for ServiceStart or <org-slug>.lvh.me:3000 for visionariestothethrone, vertical-icon, horizontal-left, or horizontal-center. Each organization has separate accounts.",
+    "Seed accounts use password123. Sign in at localhost:3000 for ServiceStart or <org-slug>.lvh.me:3000 for volunteerstart, applicationstart, visionariestothethrone, vertical-icon, horizontal-left, or horizontal-center. Each organization has separate accounts.",
   );
 
   const orgId = "org_servicestart";
@@ -577,7 +599,12 @@ export async function main() {
 
   for (const email of memberEmails) {
     // Visionaries gets its own notifications in seedVisionaries.
-    for (const org of ORGS.filter(({ id }) => id !== VISIONARIES_ORG.id)) {
+    for (const org of ORGS.filter(
+      ({ id }) =>
+        ![VISIONARIES_ORG.id, VOLUNTEER_ORG.id, APPLICATION_ORG.id].includes(
+          id,
+        ),
+    )) {
       const userId = userIdsByOrganization.get(org.id)!.get(email)!;
       // Skip the ones the user already has. Seeds before the IDs below were
       // stable gave them random IDs, which onConflictDoNothing can't match.

@@ -31,6 +31,38 @@ type FormRow = Omit<
 const inputClass =
   "w-full rounded border border-grey-stroke-weak bg-white p-2 text-grey-text-strong";
 
+async function copyFormLink(link: string) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(link);
+      return;
+    } catch {
+      // Try the fallback when clipboard permission is denied.
+    }
+  }
+
+  // The Clipboard API is unavailable on HTTP tenant subdomains in local dev.
+  const previousFocus = document.activeElement;
+  const textarea = document.createElement("textarea");
+  textarea.value = link;
+  textarea.readOnly = true;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  try {
+    textarea.select();
+    textarea.setSelectionRange(0, link.length);
+    if (!document.execCommand("copy")) {
+      throw new Error(
+        "Unable to copy automatically. Open the form and copy its URL from the address bar.",
+      );
+    }
+  } finally {
+    textarea.remove();
+    if (previousFocus instanceof HTMLElement) previousFocus.focus();
+  }
+}
+
 async function checkResponse(response: Response) {
   if (response.ok) return;
   const body = await response.json().catch(() => null);
@@ -604,7 +636,7 @@ export default function FormsClient({
                         disabled={busy}
                         onClick={() => {
                           void run(async () => {
-                            await navigator.clipboard.writeText(
+                            await copyFormLink(
                               new URL(
                                 `/forms/${form.formId}`,
                                 window.location.origin,

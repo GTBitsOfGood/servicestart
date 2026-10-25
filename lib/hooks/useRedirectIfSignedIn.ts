@@ -29,6 +29,7 @@ export function useRedirectIfSignedIn() {
 
       if (org?.slug === getSlugFromHost(window.location.host)) {
         router.replace(getRedirectPath());
+        router.refresh();
       }
     };
 

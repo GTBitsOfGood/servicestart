@@ -1,8 +1,21 @@
 // @vitest-environment happy-dom
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  act,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import DashboardLayoutBuilder from "@/components/dashboard/DashboardLayoutBuilder";
 import type { DashboardLayout, WidgetId } from "@/lib/dashboard/schema";
+
+type DragEndEvent = {
+  operation: { source: { id: string }; target: { id: string } };
+};
+const dragHandlers = vi.hoisted(() => ({
+  onDragEnd: undefined as ((event: DragEndEvent) => void) | undefined,
+}));
 
 vi.mock("@/components/bog/BogIcon/BogIcon", () => ({
   default: ({ name }: { name: string }) => (
@@ -11,9 +24,16 @@ vi.mock("@/components/bog/BogIcon/BogIcon", () => ({
 }));
 
 vi.mock("@dnd-kit/react", () => ({
-  DragDropProvider: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+  DragDropProvider: ({
+    children,
+    onDragEnd,
+  }: {
+    children: React.ReactNode;
+    onDragEnd: (event: DragEndEvent) => void;
+  }) => {
+    dragHandlers.onDragEnd = onDragEnd;
+    return <div>{children}</div>;
+  },
   DragOverlay: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -158,6 +178,51 @@ describe("DashboardLayoutBuilder", () => {
   it("renders the settings gear icon", () => {
     renderBuilder();
     expect(screen.getByTestId("icon-gear")).toBeTruthy();
+  });
+
+  it("preserves widget settings when saving a changed layout", () => {
+    const config = {
+      formId: "camp-application",
+      steps: [
+        { label: "Submitted", description: "Received" },
+        { label: "Review", description: "In review" },
+        { label: "Decision", description: "Decided" },
+      ],
+    };
+    let saved: DashboardLayout | undefined;
+    renderBuilder({
+      availableWidgets: [
+        ...AVAILABLE_WIDGETS,
+        { id: "application_status", label: "Application status" },
+      ],
+      initialLayout: {
+        layout: "horizontal",
+        widgets: [
+          { id: "application_status", size: "tall", config },
+          { id: "events", size: "tall" },
+        ],
+      },
+      onSave: async (layout) => {
+        saved = layout;
+      },
+    });
+    act(() =>
+      dragHandlers.onDragEnd!({
+        operation: {
+          source: { id: "application_status" },
+          target: { id: "events__mid" },
+        },
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save Layout" }));
+    expect(
+      saved?.widgets.find((widget) => widget.id === "application_status")
+        ?.config,
+    ).toEqual(config);
+    expect(saved?.widgets.map(({ id }) => id)).toEqual([
+      "events",
+      "application_status",
+    ]);
   });
 
   it("renders dashboard preview label", () => {

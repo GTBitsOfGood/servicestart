@@ -28,7 +28,7 @@ function NavTabs({
   );
 
   return (
-    <nav className="flex h-full max-w-full items-stretch gap-2 text-nav font-normal text-page-text mobile:gap-8">
+    <nav className="flex h-full w-max shrink-0 items-stretch gap-2 whitespace-nowrap text-nav font-normal text-page-text mobile:gap-8">
       {items.map((item) => {
         const isActive =
           item.href === "/"
@@ -61,7 +61,7 @@ function NavTabs({
         const isOpen = openDropdownLabel === item.label;
 
         return (
-          <div key={item.href} className="relative">
+          <div key={item.href} className="relative shrink-0">
             <button
               className="relative flex h-full shrink-0 cursor-pointer items-center gap-1 px-2 mobile:px-4"
               onClick={() =>
@@ -134,7 +134,7 @@ export function HorizontalNav({
   const navBgClass = "bg-navbar-bg";
 
   const tabs = <NavTabs items={items} pathname={pathname} />;
-  const logo = <SunsetLogo size="sm" />;
+  const logo = <SunsetLogo size="sm" className="shrink-0" />;
   const right = <RightSide />;
 
   let leftContent: React.ReactNode;
@@ -143,7 +143,9 @@ export function HorizontalNav({
 
   if (alignment === "left") {
     leftContent = tabs;
-    middleContent = <div className="flex flex-1 justify-center">{logo}</div>;
+    middleContent = (
+      <div className="flex min-w-max flex-1 justify-center">{logo}</div>
+    );
     rightContent = right;
   } else if (alignment === "right") {
     leftContent = (
@@ -158,7 +160,7 @@ export function HorizontalNav({
     // center
     leftContent = logo;
     middleContent = (
-      <div className="flex h-full min-w-0 flex-1 items-stretch justify-center">
+      <div className="flex h-full min-w-max flex-1 items-stretch justify-center">
         {tabs}
       </div>
     );
@@ -167,7 +169,7 @@ export function HorizontalNav({
 
   return (
     <header
-      className={`relative z-50 flex h-16 items-center px-3 shadow-sm mobile:h-20 mobile:px-6 desktop:px-10 ${navBgClass}`}
+      className={`relative z-50 flex h-16 items-center gap-4 px-3 shadow-sm mobile:h-20 mobile:px-6 desktop:px-10 ${navBgClass}`}
     >
       {leftContent}
       {middleContent}

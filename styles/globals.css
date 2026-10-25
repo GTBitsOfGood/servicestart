@@ -12,7 +12,7 @@
   --spacing-requests-actions: 120px;
   --spacing-requests-close-icon: 22px;
   /* The dashboard's two-column grid fills the screen below the header. */
-  --spacing-dashboard-grid: min(696px, calc(100dvh - 200px));
+  --spacing-dashboard-grid: min(69.6rem, calc(100dvh - 20rem));
   --text-requests-control: 13px;
 
   --color-brand-text: #fc5b43;
