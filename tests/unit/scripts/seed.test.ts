@@ -26,6 +26,7 @@ import {
 import { FormDefinitionSchema } from "@/lib/forms/schema";
 import { FormProgressService } from "@/lib/services/FormProgressService";
 import { FormSubmissionService } from "@/lib/services/FormSubmissionService";
+import { InformationRequestService } from "@/lib/services/InformationRequestService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { hashPassword } from "better-auth/crypto";
 import { main } from "@/scripts/seed";
@@ -609,6 +610,29 @@ it("resets the Visionaries accounts' responses when reseeding", async () => {
       ({ required, submission }) => required && submission,
     ),
   ).toHaveLength(0);
+});
+
+it("removes requests to complete the seeded forms when reseeding", async () => {
+  await main();
+  const { user: admin } = await visionariesUser("admin@example.com");
+  const { user: member1 } = await visionariesUser("member1@example.com");
+  await InformationRequestService.request({
+    organizationId: VISIONARIES,
+    userId: member1.id,
+    formId: VISIONARIES_ATTENDEE_FORMS[2].formId,
+    requestedBy: admin.id,
+  });
+
+  await main();
+
+  await expect(
+    InformationRequestService.request({
+      organizationId: VISIONARIES,
+      userId: member1.id,
+      formId: VISIONARIES_ATTENDEE_FORMS[2].formId,
+      requestedBy: admin.id,
+    }),
+  ).resolves.toBeTruthy();
 });
 
 it("resets the Visionaries demo forms when reseeding", async () => {

@@ -84,7 +84,8 @@ wrong-account state.
 
 **Rerunning the seed resets these student accounts**: their member types, their
 responses to the seeded forms (responses added while testing are deleted), the
-responses' review statuses, and the attendees' alert, which is unread again.
+responses' review statuses, admins' requests to complete the seeded forms,
+and the attendees' alert, which is unread again.
 It also resets the demo forms below (their status, details, and all their
 responses) and the invitations: each is pending again, the account created
 from the counselor invitation (`counselor@example.com`) is deleted, and

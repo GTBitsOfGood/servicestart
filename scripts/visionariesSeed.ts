@@ -1,5 +1,5 @@
 import { deflateSync } from "node:zlib";
-import { and, eq, inArray, like, notInArray, or } from "drizzle-orm";
+import { and, eq, inArray, like, notInArray, or, sql } from "drizzle-orm";
 import db from "@/lib/db";
 import {
   EventVisibility,
@@ -711,6 +711,26 @@ export function createApplicationSeed(options: {
     }
   }
 
+  /**
+   * Removes requests to complete a seeded form that admins sent the test
+   * accounts (#317), so they can be asked again.
+   */
+  async function resetInformationRequests(userIds: Map<string, string>) {
+    await db.delete(schema.notifications).where(
+      and(
+        eq(schema.notifications.organizationId, ORG_ID),
+        inArray(
+          schema.notifications.userId,
+          PERSONAS.map(({ email }) => userIds.get(email)!),
+        ),
+        inArray(
+          sql<string>`${schema.notifications.metadata}->>'informationRequestFormId'`,
+          SEEDED_FORMS.map(({ id }) => id),
+        ),
+      ),
+    );
+  }
+
   /** Removes the generic sample notifications earlier seeds gave Visionaries. */
   async function removeGenericVisionariesNotifications() {
     await db
@@ -734,6 +754,7 @@ export function createApplicationSeed(options: {
     await seedInvitations(userIds, now);
     await seedEvents(now);
     await seedAlert(userIds, now);
+    await resetInformationRequests(userIds);
     await removeGenericVisionariesNotifications();
   }
 

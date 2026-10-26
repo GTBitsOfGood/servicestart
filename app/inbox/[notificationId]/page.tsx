@@ -59,6 +59,10 @@ export default async function NotificationDetailPage({
     await NotificationService.updateReadStatus(notificationId, true);
   }
 
+  const link = (notification.metadata as { link?: unknown } | null)?.link;
+  const formLink =
+    typeof link === "string" && link.startsWith("/forms/") ? link : null;
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <Link
@@ -80,6 +84,16 @@ export default async function NotificationDetailPage({
         <div className="whitespace-pre-wrap text-paragraph-1 leading-6 text-grey-text-strong">
           {notification.text}
         </div>
+
+        {formLink && (
+          <Link
+            href={formLink}
+            className="mt-6 inline-flex items-center gap-2 text-paragraph-2 font-semibold text-brand-text hover:opacity-80"
+          >
+            Open form
+            <BogIcon name="arrow-right" size={18} />
+          </Link>
+        )}
       </div>
     </div>
   );
