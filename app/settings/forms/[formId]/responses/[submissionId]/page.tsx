@@ -92,7 +92,7 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
       });
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 text-grey-text-strong tablet:px-8">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 text-grey-text-strong tablet:px-8">
       <Link
         href={`/settings/forms/${formPath}/responses`}
         className="inline-flex items-center gap-2 self-start text-paragraph-2 text-grey-text-weak hover:text-grey-text-strong"
@@ -167,6 +167,6 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
           />
         )}
       </div>
-    </main>
+    </div>
   );
 }
