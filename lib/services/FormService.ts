@@ -22,7 +22,7 @@ import {
 
 const scope = (organizationId: string, formId: string) =>
   and(eq(forms.organizationId, organizationId), eq(forms.formId, formId));
-type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+export type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 async function lockedForm(
   tx: Transaction,
@@ -362,4 +362,5 @@ export const FormService = {
   remove,
   getUpload,
   exportCsv,
+  lockedForm,
 };

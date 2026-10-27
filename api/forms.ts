@@ -2,15 +2,13 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/authUtils";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { handleFormsError, requireFormsAdmin } from "@/lib/forms/adminRoutes";
 import { FormIdSchema } from "@/lib/forms/schema";
 import {
   CreateFormSchema,
   UpdateFormSchema,
   FormError,
 } from "@/lib/forms/management";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { FormService } from "@/lib/services/FormService";
 import { FileService } from "@/lib/services/FileService";
 
@@ -18,41 +16,19 @@ const formParam = z.object({ formId: FormIdSchema });
 const app = new Hono<{
   Variables: { organizationId: string; userId: string };
 }>()
-  .onError((error, c) => {
-    if (error instanceof FormError)
-      return c.json(
-        { error: error.message, field: error.field },
-        error.reason === "not-found"
-          ? 404
-          : error.reason === "conflict"
-            ? 409
-            : 400,
-      );
-    if (error instanceof HTTPException)
-      return c.json({ error: error.message }, error.status);
-    if (error instanceof z.ZodError)
-      return c.json({ error: "Invalid request", issues: error.issues }, 400);
-    console.error(error);
-    return c.json({ error: "Unable to complete the form request" }, 500);
-  })
+  .onError(handleFormsError)
   .use("*", async (c, next) => {
-    let session;
+    let admin;
     try {
-      session = await requireAdmin(c);
+      admin = await requireFormsAdmin(c);
     } catch (error) {
       // Headshots must never disclose whether a private file exists.
       if (c.req.path.includes("/uploads/") && error instanceof HTTPException)
         throw new HTTPException(404, { message: "File not found" });
       throw error;
     }
-    const organizationId = session.session.activeOrganizationId!;
-    const config = await OrganizationConfigService.getConfig(organizationId, [
-      OrganizationConfigKey.FormsEnabled,
-    ]);
-    if (!config[OrganizationConfigKey.FormsEnabled])
-      throw new HTTPException(404, { message: "Not found" });
-    c.set("organizationId", organizationId);
-    c.set("userId", session.user.id);
+    c.set("organizationId", admin.organizationId);
+    c.set("userId", admin.userId);
     await next();
   })
   .get("/", async (c) =>

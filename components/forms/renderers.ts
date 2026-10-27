@@ -1,9 +1,13 @@
 import type { ComponentType } from "react";
+import CheckboxesQuestion from "@/components/forms/questions/CheckboxesQuestion";
+import DateQuestion from "@/components/forms/questions/DateQuestion";
+import DropdownQuestion from "@/components/forms/questions/DropdownQuestion";
 import ImageQuestion from "@/components/forms/questions/ImageQuestion";
 import LongTextQuestion from "@/components/forms/questions/LongTextQuestion";
 import SectionHeader from "@/components/forms/questions/SectionHeader";
+import SingleChoiceQuestion from "@/components/forms/questions/SingleChoiceQuestion";
 import TextQuestion from "@/components/forms/questions/TextQuestion";
-import UnsupportedQuestion from "@/components/forms/questions/UnsupportedQuestion";
+import YesNoQuestion from "@/components/forms/questions/YesNoQuestion";
 import type { QuestionProps } from "@/components/forms/types";
 import type { FormComponentOfType } from "@/lib/forms/schema";
 import { FormComponentType } from "@/lib/schema";
@@ -24,10 +28,9 @@ export const FORM_RENDERERS: {
   [FormComponentType.Number]: TextQuestion,
   [FormComponentType.Image]: ImageQuestion,
   [FormComponentType.SectionHeader]: SectionHeader,
-  // Placeholders until #321 builds these.
-  [FormComponentType.SingleChoice]: UnsupportedQuestion,
-  [FormComponentType.Checkboxes]: UnsupportedQuestion,
-  [FormComponentType.Dropdown]: UnsupportedQuestion,
-  [FormComponentType.Date]: UnsupportedQuestion,
-  [FormComponentType.YesNo]: UnsupportedQuestion,
+  [FormComponentType.SingleChoice]: SingleChoiceQuestion,
+  [FormComponentType.Checkboxes]: CheckboxesQuestion,
+  [FormComponentType.Dropdown]: DropdownQuestion,
+  [FormComponentType.Date]: DateQuestion,
+  [FormComponentType.YesNo]: YesNoQuestion,
 };

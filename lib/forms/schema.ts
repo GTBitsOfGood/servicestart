@@ -278,6 +278,39 @@ export type FormComponentOfType<T extends FormComponentType> = Extract<
   { type: T }
 >;
 
+// A question as the builder saves it: no position (the list order sets it),
+// and no ID for a new question.
+const questionInputFields = {
+  id: z.uuid().optional(),
+  label: z.string().trim().min(1, "Add a label"),
+  helpText: z
+    .string()
+    .trim()
+    .nullable()
+    .transform((text) => text || null),
+  required: z.boolean(),
+};
+
+function questionInput<T extends FormComponentType>(type: T) {
+  return typedConfig(type).extend(questionInputFields);
+}
+
+export const FormQuestionInputSchema = z.discriminatedUnion("type", [
+  questionInput(FormComponentType.ShortText),
+  questionInput(FormComponentType.LongText),
+  questionInput(FormComponentType.Email),
+  questionInput(FormComponentType.Phone),
+  questionInput(FormComponentType.Number),
+  questionInput(FormComponentType.Image),
+  questionInput(FormComponentType.SectionHeader),
+  questionInput(FormComponentType.SingleChoice),
+  questionInput(FormComponentType.Checkboxes),
+  questionInput(FormComponentType.Dropdown),
+  questionInput(FormComponentType.Date),
+  questionInput(FormComponentType.YesNo),
+]);
+export type FormQuestionInput = z.input<typeof FormQuestionInputSchema>;
+
 // A form plus its non-archived components, in position order.
 export const FormDefinitionSchema = z
   .object({
