@@ -44,6 +44,7 @@ function tenantUrl(slug: string, baseURL: string | undefined) {
 test("an admin builds a form with every question type and a member submits it", async ({
   page,
   browser,
+  browserName,
   baseURL,
 }) => {
   const { org } = await createTestAdminAndSignIn(page);
@@ -58,7 +59,13 @@ test("an admin builds a form with every question type and a member submits it", 
     components: [],
   });
 
-  await page.goto(`/settings/forms/${form.formId}`);
+  // Open it from the forms list, so Back has somewhere to go.
+  await page.goto("/settings/forms");
+  await page
+    .getByRole("row")
+    .filter({ hasText: form.formId })
+    .getByRole("link", { name: "Edit questions" })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Edit questions" }),
   ).toBeVisible();
@@ -138,7 +145,25 @@ test("an admin builds a form with every question type and a member submits it", 
   await page.goBack();
   await expect(page).toHaveURL(new RegExp(`/settings/forms/${form.formId}$`));
   await expect(shortText.getByLabel("Required")).toBeChecked();
+  // Once nothing is unsaved, the guard drops its extra history entry...
+  const guardEntryRemoved = page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        window.addEventListener("popstate", resolve, { once: true }),
+      ),
+  );
   await page.getByRole("button", { name: "Discard changes" }).click();
+  await guardEntryRemoved;
+  // ...so Back leaves in one step and doesn't ask. (Skipped in Firefox, where
+  // Back after the reload above stays on this page even without the guard.)
+  if (browserName !== "firefox") {
+    await page.goBack();
+    await expect(page).toHaveURL(/\/settings\/forms$/);
+    await page.goForward();
+    await expect(
+      page.getByRole("heading", { name: "Edit questions" }),
+    ).toBeVisible();
+  }
 
   // Publish from the forms list; the builder is then read-only.
   await page.getByRole("link", { name: "Back to forms" }).click();

@@ -9,13 +9,56 @@ import { useEffect, useRef } from "react";
  */
 export function useUnsavedChangesGuard(dirty: boolean, message: string) {
   const messageRef = useRef(message);
+  const dirtyRef = useRef(dirty);
+  // Whether this page has added its extra history entry (see below).
+  const guardEntry = useRef(false);
+  // Set while the hook itself goes back, so that popstate is ignored.
+  const skipPop = useRef(false);
+
   useEffect(() => {
     messageRef.current = message;
-  }, [message]);
+    dirtyRef.current = dirty;
+  }, [message, dirty]);
+
+  // Back with unsaved changes first lands on an extra copy of this page's
+  // history entry, which is restored if the admin chooses to stay. There's at
+  // most one, and it's removed once nothing is unsaved, so Back still leaves
+  // the page in one step.
+  useEffect(() => {
+    const onPopState = () => {
+      if (skipPop.current) {
+        skipPop.current = false;
+        return;
+      }
+      if (!guardEntry.current) return;
+      if (dirtyRef.current && !window.confirm(messageRef.current)) {
+        window.history.pushState(
+          window.history.state,
+          "",
+          window.location.href,
+        );
+        return;
+      }
+      guardEntry.current = false;
+      window.history.back();
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
+    if (dirty && !guardEntry.current) {
+      window.history.pushState(window.history.state, "", window.location.href);
+      guardEntry.current = true;
+    } else if (!dirty && guardEntry.current) {
+      guardEntry.current = false;
+      skipPop.current = true;
+      window.history.back();
+    }
+  }, [dirty]);
 
   useEffect(() => {
     if (!dirty) return;
-    const confirmLeave = () => window.confirm(messageRef.current);
 
     const onBeforeUnload = (event: BeforeUnloadEvent) => event.preventDefault();
 
@@ -40,37 +83,17 @@ export function useUnsavedChangesGuard(dirty: boolean, message: string) {
         url.search === window.location.search
       )
         return;
-      if (!confirmLeave()) {
+      if (!window.confirm(messageRef.current)) {
         event.preventDefault();
         event.stopPropagation();
       }
     };
 
-    // An extra history entry on this page, so Back first lands here and can
-    // be undone if the admin chooses to stay.
-    window.history.pushState(window.history.state, "", window.location.href);
-    let leaving = false;
-    const onPopState = () => {
-      if (leaving) return;
-      if (confirmLeave()) {
-        leaving = true;
-        window.history.back();
-      } else {
-        window.history.pushState(
-          window.history.state,
-          "",
-          window.location.href,
-        );
-      }
-    };
-
     window.addEventListener("beforeunload", onBeforeUnload);
     document.addEventListener("click", onClick, true);
-    window.addEventListener("popstate", onPopState);
     return () => {
       window.removeEventListener("beforeunload", onBeforeUnload);
       document.removeEventListener("click", onClick, true);
-      window.removeEventListener("popstate", onPopState);
     };
   }, [dirty]);
 }
