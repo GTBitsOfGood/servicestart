@@ -292,7 +292,7 @@ const questionInputFields = {
 };
 
 function questionInput<T extends FormComponentType>(type: T) {
-  return typedConfig(type).extend(questionInputFields);
+  return typedConfig(type).extend(questionInputFields).strict();
 }
 
 export const FormQuestionInputSchema = z.discriminatedUnion("type", [

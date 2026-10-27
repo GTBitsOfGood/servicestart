@@ -224,6 +224,10 @@ describe("form questions API", () => {
       } as unknown as QuestionInput,
     ],
     ["a blank label", shortText("  ")],
+    [
+      "question with an unknown field",
+      { ...shortText("Q"), position: 3 } as unknown as QuestionInput,
+    ],
   ])("rejects an invalid %s question", async (_, question) => {
     const { org, headers } = await setup();
     const form = await createForm(org.id, {

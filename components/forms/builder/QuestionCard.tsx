@@ -26,6 +26,8 @@ type QuestionCardProps = {
   count: number;
   errors: QuestionErrors;
   readOnly: boolean;
+  /** False once the form has the most questions it can. */
+  canDuplicate: boolean;
   onChange: (question: DraftQuestion) => void;
   onMove: (offset: -1 | 1) => void;
   onDuplicate: () => void;
@@ -42,6 +44,7 @@ export default function QuestionCard({
   count,
   errors,
   readOnly,
+  canDuplicate,
   onChange,
   onMove,
   onDuplicate,
@@ -101,6 +104,7 @@ export default function QuestionCard({
               className={actionClass}
               aria-label={`Duplicate question ${index + 1}`}
               title="Duplicate"
+              disabled={!canDuplicate}
               onClick={onDuplicate}
             >
               <Copy size={18} aria-hidden />

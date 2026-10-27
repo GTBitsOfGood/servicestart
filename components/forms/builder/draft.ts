@@ -25,15 +25,19 @@ export type DraftQuestion = {
 export type QuestionErrors = Record<string, string>;
 
 let lastKey = 0;
-// crypto.randomUUID needs a secure context, which local tenants aren't.
+/**
+ * A key for a question added in the browser. Saved questions use their ID,
+ * so server and client render the same element IDs.
+ */
 export function newKey() {
+  // crypto.randomUUID needs a secure context, which local tenants aren't.
   lastKey += 1;
-  return `question-${lastKey}`;
+  return `new-question-${lastKey}`;
 }
 
 export function toDraft(question: FormComponent): DraftQuestion {
   return {
-    key: newKey(),
+    key: question.id,
     id: question.id,
     type: question.type,
     label: question.label,

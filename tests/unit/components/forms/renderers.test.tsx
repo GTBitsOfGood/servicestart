@@ -743,3 +743,78 @@ describe("YesNoQuestion", () => {
     expect(props.onChange).not.toHaveBeenCalled();
   });
 });
+
+describe("clearing optional answers", () => {
+  it.each([
+    [
+      "single choice",
+      SingleChoiceQuestion,
+      question(FormComponentType.SingleChoice, {
+        label: "Color",
+        config: { options: ["Red", "Blue"] },
+      }),
+      "Red",
+    ],
+    [
+      "yes/no",
+      YesNoQuestion,
+      question(FormComponentType.YesNo, { label: "Color" }),
+      true,
+    ],
+  ] as const)(
+    "clears an optional %s answer",
+    (_, Renderer, component, value) => {
+      const props = handlers();
+      const Question = Renderer as typeof YesNoQuestion;
+      render(
+        <Question
+          component={component as never}
+          value={value}
+          disabled={false}
+          readOnly={false}
+          {...props}
+        />,
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: "Clear the answer to Color" }),
+      );
+      expect(props.onChange).toHaveBeenCalledWith(undefined);
+    },
+  );
+
+  it("doesn't offer to clear required, unanswered, or read-only answers", () => {
+    const yesNo = question(FormComponentType.YesNo, { label: "Color" });
+    const { rerender } = render(
+      <YesNoQuestion
+        component={{ ...yesNo, required: true }}
+        value
+        disabled={false}
+        readOnly={false}
+        {...handlers()}
+      />,
+    );
+    const clear = () =>
+      screen.queryByRole("button", { name: /Clear the answer/ });
+    expect(clear()).toBeNull();
+    rerender(
+      <YesNoQuestion
+        component={yesNo}
+        value={undefined}
+        disabled={false}
+        readOnly={false}
+        {...handlers()}
+      />,
+    );
+    expect(clear()).toBeNull();
+    rerender(
+      <YesNoQuestion
+        component={yesNo}
+        value
+        disabled={false}
+        readOnly
+        {...handlers()}
+      />,
+    );
+    expect(clear()).toBeNull();
+  });
+});

@@ -1,5 +1,6 @@
 "use client";
 
+import ClearAnswerButton from "@/components/forms/questions/ClearAnswerButton";
 import QuestionField from "@/components/forms/questions/QuestionField";
 import {
   describedBy,
@@ -63,6 +64,12 @@ export default function YesNoQuestion({
           );
         })}
       </div>
+      {!component.required && !readOnly && !disabled && value !== undefined && (
+        <ClearAnswerButton
+          label={component.label}
+          onClear={() => onChange(undefined)}
+        />
+      )}
     </QuestionField>
   );
 }

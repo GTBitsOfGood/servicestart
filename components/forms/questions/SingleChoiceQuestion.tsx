@@ -1,6 +1,7 @@
 "use client";
 
 import ChoiceOption from "@/components/forms/questions/ChoiceOption";
+import ClearAnswerButton from "@/components/forms/questions/ClearAnswerButton";
 import QuestionField from "@/components/forms/questions/QuestionField";
 import {
   describedBy,
@@ -57,6 +58,12 @@ export default function SingleChoiceQuestion({
           />
         ))}
       </div>
+      {!component.required && !readOnly && !disabled && value !== undefined && (
+        <ClearAnswerButton
+          label={component.label}
+          onClear={() => onChange(undefined)}
+        />
+      )}
     </QuestionField>
   );
 }

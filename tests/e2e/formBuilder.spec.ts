@@ -129,6 +129,17 @@ test("an admin builds a form with every question type and a member submits it", 
     "Second choice",
   );
 
+  // Unsaved changes ask before leaving through a link or the back button.
+  await shortText.getByLabel("Required").check();
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByRole("link", { name: "Back to forms" }).click();
+  await expect(page).toHaveURL(new RegExp(`/settings/forms/${form.formId}$`));
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.goBack();
+  await expect(page).toHaveURL(new RegExp(`/settings/forms/${form.formId}$`));
+  await expect(shortText.getByLabel("Required")).toBeChecked();
+  await page.getByRole("button", { name: "Discard changes" }).click();
+
   // Publish from the forms list; the builder is then read-only.
   await page.getByRole("link", { name: "Back to forms" }).click();
   const row = page.getByRole("row").filter({ hasText: form.formId });

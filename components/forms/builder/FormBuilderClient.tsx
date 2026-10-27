@@ -21,6 +21,7 @@ import {
   QUESTION_TYPES,
 } from "@/components/forms/builder/questionTypes";
 import api from "@/lib/api";
+import { useUnsavedChangesGuard } from "@/lib/hooks/useUnsavedChangesGuard";
 import { FORM_QUESTIONS_MAX } from "@/lib/forms/management";
 import type { FormComponent } from "@/lib/forms/schema";
 import { FormComponentType, FormStatus } from "@/lib/schema";
@@ -83,13 +84,11 @@ export default function FormBuilderClient({
     [drafts],
   );
 
-  // Warn before leaving the page with unsaved changes.
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  useUnsavedChangesGuard(dirty, UNSAVED_MESSAGE);
+  const atLimit = drafts.length >= FORM_QUESTIONS_MAX;
+  // Nothing changes while a save is in flight, so its response can't
+  // overwrite newer edits.
+  const locked = readOnly || saving;
 
   // Moves focus once the change that needs it has rendered.
   useEffect(() => {
@@ -216,9 +215,6 @@ export default function FormBuilderClient({
       <Link
         href="/settings/forms"
         className="flex items-center gap-1 self-start text-paragraph-2 font-semibold text-brand-text hover:underline"
-        onClick={(event) => {
-          if (dirty && !window.confirm(UNSAVED_MESSAGE)) event.preventDefault();
-        }}
       >
         <ArrowLeft size={16} aria-hidden />
         Back to forms
@@ -297,8 +293,8 @@ export default function FormBuilderClient({
         {announcement}
       </p>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
-        <section aria-labelledby="questions-heading" className="min-w-0">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <section aria-labelledby="questions-heading" className="min-w-0 flex-1">
           <h2 id="questions-heading" className="sr-only">
             Questions
           </h2>
@@ -310,7 +306,7 @@ export default function FormBuilderClient({
             </p>
           ) : (
             // A disabled fieldset makes every control read-only at once.
-            <fieldset disabled={readOnly} className="min-w-0">
+            <fieldset disabled={locked} className="min-w-0">
               <ol className="flex flex-col gap-4">
                 {drafts.map((draft, index) => (
                   <li key={draft.key}>
@@ -320,6 +316,7 @@ export default function FormBuilderClient({
                       count={drafts.length}
                       errors={showErrors ? errors[draft.key] : {}}
                       readOnly={readOnly}
+                      canDuplicate={!atLimit}
                       onChange={(question) =>
                         update(
                           drafts.map((item, i) =>
@@ -341,7 +338,7 @@ export default function FormBuilderClient({
         {!readOnly && (
           <aside
             aria-labelledby="add-question-heading"
-            className="flex flex-col gap-3 self-start rounded-control border border-grey-stroke-weak bg-page-bg p-4 lg:sticky lg:top-4"
+            className="flex flex-col gap-3 rounded-control border border-grey-stroke-weak bg-page-bg p-4 lg:sticky lg:top-4 lg:w-64 lg:shrink-0"
           >
             <h2
               id="add-question-heading"
@@ -356,7 +353,7 @@ export default function FormBuilderClient({
                   <button
                     type="button"
                     onClick={() => add(type)}
-                    disabled={drafts.length >= FORM_QUESTIONS_MAX}
+                    disabled={atLimit || saving}
                     aria-label={`Add ${QUESTION_TYPES[type].name}`}
                     className="w-full rounded-control border border-grey-stroke-weak px-3 py-2 text-left text-paragraph-2 text-page-text hover:border-brand-stroke-strong hover:bg-brand-fill disabled:cursor-not-allowed disabled:text-grey-off-state"
                   >

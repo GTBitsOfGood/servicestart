@@ -264,6 +264,56 @@ describe("FormBuilderClient", () => {
     );
   });
 
+  it("locks editing while a save is in flight", async () => {
+    let finish!: () => void;
+    $put.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = () =>
+          resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ questions: [QUESTIONS[1], QUESTIONS[0]] }),
+          });
+      }),
+    );
+    renderBuilder();
+    fireEvent.click(screen.getByRole("button", { name: "Move question 2 up" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save questions" }));
+    await waitFor(() =>
+      expect(screen.getAllByLabelText("Question")[0].matches(":disabled")).toBe(
+        true,
+      ),
+    );
+    expect(
+      (screen.getByRole("button", { name: "Add Date" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+    finish();
+    await screen.findByText("Changes were saved successfully!");
+    expect(screen.getAllByLabelText("Question")[0].matches(":disabled")).toBe(
+      false,
+    );
+  });
+
+  it("asks before following a link with unsaved changes", () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderBuilder();
+    fireEvent.click(screen.getByRole("button", { name: "Remove question 1" }));
+    const link = document.createElement("a");
+    link.href = "/members";
+    document.body.append(link);
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true });
+    link.dispatchEvent(event);
+    expect(confirm).toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(true);
+    link.remove();
+  });
+
+  it("uses saved question IDs for element IDs", () => {
+    renderBuilder();
+    expect(screen.getAllByLabelText("Question")[0].id).toBe(`${ID_1}-label`);
+  });
+
   it("links to the preview and back to the forms list", () => {
     renderBuilder();
     const preview = screen.getByRole("link", { name: /Preview/ });
@@ -285,6 +335,7 @@ describe("question settings editors", () => {
         count={1}
         errors={showErrors ? validateQuestion(question) : {}}
         readOnly={false}
+        canDuplicate
         onChange={onChange}
         onMove={vi.fn()}
         onDuplicate={vi.fn()}
@@ -293,6 +344,30 @@ describe("question settings editors", () => {
     );
     return onChange;
   }
+
+  it("can't duplicate once the form is at the question limit", () => {
+    render(
+      <QuestionCard
+        question={draft(FormComponentType.Email)}
+        index={0}
+        count={1}
+        errors={{}}
+        readOnly={false}
+        canDuplicate={false}
+        onChange={vi.fn()}
+        onMove={vi.fn()}
+        onDuplicate={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+    expect(
+      (
+        screen.getByRole("button", {
+          name: "Duplicate question 1",
+        }) as HTMLButtonElement
+      ).disabled,
+    ).toBe(true);
+  });
 
   it("has an entry for every question type", () => {
     expect(Object.keys(QUESTION_TYPES).sort()).toEqual(
