@@ -90,9 +90,7 @@ test("an admin builds a form with every question type and a member submits it", 
     .check();
 
   // A blank label blocks the save and focuses the field.
-  const shortText = page.getByRole("region", {
-    name: /Short text: Short text question/,
-  });
+  const shortText = page.getByRole("region", { name: /^2\. Short text:/ });
   await shortText.getByLabel("Question", { exact: true }).fill("");
   await page.getByRole("button", { name: "Save questions" }).click();
   await expect(shortText.getByText("Add a label")).toBeVisible();
@@ -111,11 +109,21 @@ test("an admin builds a form with every question type and a member submits it", 
 
   const expected = [...TYPES];
   [expected[2], expected[3]] = [expected[3], expected[2]];
-  await expect(
-    page.getByRole("region", { name: "Questions", exact: true }).locator("h3"),
-  ).toHaveText(
-    expected.map((type, index) => `${index + 1}. ${type}: ${labelFor(type)}`),
+  const list = page.getByRole("region", { name: "Questions", exact: true });
+  await expect(list.locator("h3")).toHaveText(
+    expected.map((type, index) => `${index + 1}. ${type}`),
   );
+  await expect(
+    list.getByRole("heading", { name: `3. Email: ${labelFor("Email")}` }),
+  ).toBeVisible();
+  for (const [index, type] of expected.entries())
+    await expect(
+      list
+        .getByLabel(type === "Section header" ? "Title" : "Question", {
+          exact: true,
+        })
+        .nth(type === "Section header" ? 0 : index - 1),
+    ).toHaveValue(labelFor(type));
   await expect(date.getByLabel("Earliest date")).toHaveValue("2027-06-01");
   await expect(dropdown.getByLabel("Option 2", { exact: true })).toHaveValue(
     "Second choice",
@@ -152,7 +160,7 @@ test("an admin builds a form with every question type and a member submits it", 
 
   // Yes/no is required.
   await member.getByRole("button", { name: "Submit" }).click();
-  await expect(member.getByText("Choose yes or no")).toBeVisible();
+  await expect(member.getByText("This question is required")).toBeVisible();
   await expect(member.getByRole("button", { name: "Yes" })).toBeFocused();
 
   await member.getByLabel(labelFor("Short text")).fill("Ada Lovelace");

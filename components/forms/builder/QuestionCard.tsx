@@ -68,12 +68,11 @@ export default function QuestionCard({
         <h3
           id={headingId}
           tabIndex={-1}
-          className="text-paragraph-1 font-semibold text-page-text focus:outline-none"
+          // Names the card for screen readers, e.g. "2. Date: Arrival day".
+          aria-label={`${index + 1}. ${definition.name}: ${title}`}
+          className="text-paragraph-1 font-semibold text-grey-text-weak focus:outline-none"
         >
-          <span className="text-grey-text-weak">
-            {index + 1}. {definition.name}
-          </span>
-          <span className="sr-only">: {title}</span>
+          {index + 1}. {definition.name}
         </h3>
         {!readOnly && (
           <div className="flex gap-1">
