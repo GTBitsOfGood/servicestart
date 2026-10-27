@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { FormIdSchema, FormSettingsSchema } from "@/lib/forms/schema";
+import {
+  FormIdSchema,
+  FormQuestionInputSchema,
+  FormSettingsSchema,
+} from "@/lib/forms/schema";
 
 export const CreateFormSchema = z.strictObject({
   title: z.string().trim().min(1, "Title is required"),
@@ -38,3 +42,24 @@ export function suggestFormId(title: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 64);
 }
+
+export const FORM_QUESTIONS_MAX = 200;
+
+export const SaveQuestionsSchema = z.strictObject({
+  questions: z
+    .array(FormQuestionInputSchema)
+    .max(FORM_QUESTIONS_MAX, `Use ${FORM_QUESTIONS_MAX} questions or fewer`)
+    .superRefine((questions, ctx) => {
+      const ids = new Set<string>();
+      questions.forEach(({ id }, index) => {
+        if (!id) return;
+        if (ids.has(id))
+          ctx.addIssue({
+            code: "custom",
+            message: "Question IDs must be unique",
+            path: [index, "id"],
+          });
+        ids.add(id);
+      });
+    }),
+});

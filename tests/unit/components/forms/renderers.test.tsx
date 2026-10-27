@@ -17,7 +17,11 @@ import ImageQuestion from "@/components/forms/questions/ImageQuestion";
 import LongTextQuestion from "@/components/forms/questions/LongTextQuestion";
 import SectionHeader from "@/components/forms/questions/SectionHeader";
 import TextQuestion from "@/components/forms/questions/TextQuestion";
-import UnsupportedQuestion from "@/components/forms/questions/UnsupportedQuestion";
+import CheckboxesQuestion from "@/components/forms/questions/CheckboxesQuestion";
+import DateQuestion from "@/components/forms/questions/DateQuestion";
+import DropdownQuestion from "@/components/forms/questions/DropdownQuestion";
+import SingleChoiceQuestion from "@/components/forms/questions/SingleChoiceQuestion";
+import YesNoQuestion from "@/components/forms/questions/YesNoQuestion";
 import type { FieldValue } from "@/components/forms/types";
 import { FORM_UPLOAD_MAX_BYTES } from "@/lib/forms/constants";
 import type { FormComponent, FormComponentOfType } from "@/lib/forms/schema";
@@ -474,38 +478,343 @@ describe("read-only questions", () => {
   });
 });
 
-describe("UnsupportedQuestion", () => {
-  it.each<[string, FieldValue | undefined, string]>([
-    ["a yes", true, "Yes"],
-    ["a no", false, "No"],
-    ["a list", ["Mon", "Wed"], "Mon, Wed"],
-    ["text", "Option A", "Option A"],
-    ["no answer", undefined, "No answer"],
-  ])("shows %s when read-only", (_, value, shown) => {
+describe("SingleChoiceQuestion", () => {
+  const component = question(FormComponentType.SingleChoice, {
+    label: "Shirt size",
+    helpText: "Pick one.",
+    config: { options: ["S", "M", "L"] },
+  });
+
+  it("renders a labeled radio group and reports the chosen option", () => {
+    const props = handlers();
     render(
-      <UnsupportedQuestion
-        component={question(FormComponentType.YesNo, { label: "Allergies?" })}
-        value={value}
+      <SingleChoiceQuestion
+        component={component}
+        value={undefined}
+        error="Choose an option"
+        disabled={false}
+        readOnly={false}
+        {...props}
+      />,
+    );
+    const group = screen.getByRole("radiogroup");
+    expect(group.getAttribute("aria-describedby")).toBe(
+      `question-${ID}-help question-${ID}-error`,
+    );
+    expect(screen.getAllByRole("radio")).toHaveLength(3);
+    // Errors focus the first option.
+    expect(screen.getByLabelText("S").id).toBe(`question-${ID}`);
+    fireEvent.click(screen.getByLabelText("M"));
+    expect(props.onChange).toHaveBeenCalledWith("M");
+  });
+
+  it("shows a saved answer read-only and focusable", () => {
+    const props = handlers();
+    render(
+      <SingleChoiceQuestion
+        component={component}
+        value="L"
+        disabled={false}
+        readOnly
+        {...props}
+      />,
+    );
+    const large = screen.getByLabelText("L") as HTMLInputElement;
+    expect(large.checked).toBe(true);
+    expect(large.disabled).toBe(false);
+    expect(large.id).toBe(`question-${ID}`);
+    expect(screen.getByRole("radiogroup").getAttribute("aria-readonly")).toBe(
+      "true",
+    );
+    fireEvent.click(screen.getByLabelText("S"));
+    expect(props.onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("CheckboxesQuestion", () => {
+  const component = question(FormComponentType.Checkboxes, {
+    label: "Activities",
+    config: {
+      options: ["Art", "Music", "Sports"],
+      minSelected: 1,
+      maxSelected: 2,
+    },
+  });
+
+  it("adds and removes options in option order", () => {
+    const props = handlers();
+    const { rerender } = render(
+      <CheckboxesQuestion
+        component={component}
+        value={["Sports"]}
+        disabled={false}
+        readOnly={false}
+        {...props}
+      />,
+    );
+    expect(screen.getByText("Choose 1 to 2.")).toBeTruthy();
+    fireEvent.click(screen.getByLabelText("Art"));
+    expect(props.onChange).toHaveBeenLastCalledWith(["Art", "Sports"]);
+    rerender(
+      <CheckboxesQuestion
+        component={component}
+        value={["Sports"]}
+        disabled={false}
+        readOnly={false}
+        {...props}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText("Sports"));
+    expect(props.onChange).toHaveBeenLastCalledWith(undefined);
+  });
+
+  it("links the hint and error to each checkbox", () => {
+    render(
+      <CheckboxesQuestion
+        component={component}
+        value={undefined}
+        error="Choose 1 to 2 options"
+        disabled={false}
+        readOnly={false}
+        {...handlers()}
+      />,
+    );
+    for (const checkbox of screen.getAllByRole("checkbox")) {
+      expect(checkbox.getAttribute("aria-describedby")).toBe(
+        `question-${ID}-error question-${ID}-hint`,
+      );
+      expect(checkbox.getAttribute("aria-invalid")).toBe("true");
+    }
+  });
+
+  it("shows saved answers read-only", () => {
+    const props = handlers();
+    render(
+      <CheckboxesQuestion
+        component={component}
+        value={["Art", "Music"]}
+        disabled={false}
+        readOnly
+        {...props}
+      />,
+    );
+    expect((screen.getByLabelText("Art") as HTMLInputElement).checked).toBe(
+      true,
+    );
+    expect((screen.getByLabelText("Sports") as HTMLInputElement).checked).toBe(
+      false,
+    );
+    expect(screen.queryByText("Choose 1 to 2.")).toBeNull();
+    fireEvent.click(screen.getByLabelText("Sports"));
+    expect(props.onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("DropdownQuestion", () => {
+  const component = question(FormComponentType.Dropdown, {
+    label: "Grade",
+    helpText: "Your grade this fall.",
+    config: { options: ["9th", "10th"] },
+  });
+
+  it("labels the dropdown trigger and links its help text", async () => {
+    render(
+      <DropdownQuestion
+        component={component}
+        value="10th"
+        disabled={false}
+        readOnly={false}
+        {...handlers()}
+      />,
+    );
+    const trigger = await waitFor(() => {
+      const element = screen.getByLabelText("Grade");
+      expect(element.tagName).toBe("BUTTON");
+      return element;
+    });
+    expect(trigger.textContent).toContain("10th");
+    expect(trigger.getAttribute("aria-describedby")).toBe(
+      `question-${ID}-help`,
+    );
+  });
+
+  it("shows a saved answer read-only", () => {
+    render(
+      <DropdownQuestion
+        component={component}
+        value="9th"
         disabled={false}
         readOnly
         {...handlers()}
       />,
     );
-    expect(screen.getByText(shown)).toBeTruthy();
+    const input = screen.getByLabelText("Grade") as HTMLInputElement;
+    expect(input.value).toBe("9th");
+    expect(input.readOnly).toBe(true);
+  });
+});
+
+describe("DateQuestion", () => {
+  const component = question(FormComponentType.Date, {
+    label: "Arrival",
+    config: { min: "2027-06-01", max: "2027-06-30" },
   });
 
-  it("says it can't be answered yet", () => {
+  it("limits the date to the configured range", () => {
+    const props = handlers();
     render(
-      <UnsupportedQuestion
-        component={question(FormComponentType.Date, { label: "Start date" })}
+      <DateQuestion
+        component={component}
+        value={undefined}
+        error="Enter a valid date"
+        disabled={false}
+        readOnly={false}
+        {...props}
+      />,
+    );
+    const input = screen.getByLabelText("Arrival") as HTMLInputElement;
+    expect(input.type).toBe("date");
+    expect(input.min).toBe("2027-06-01");
+    expect(input.max).toBe("2027-06-30");
+    expect(input.getAttribute("aria-describedby")).toBe(`question-${ID}-error`);
+    fireEvent.change(input, { target: { value: "2027-06-02" } });
+    expect(props.onChange).toHaveBeenCalledWith("2027-06-02");
+  });
+
+  it("shows a saved answer read-only", () => {
+    render(
+      <DateQuestion
+        component={component}
+        value="2027-06-15"
+        disabled={false}
+        readOnly
+        {...handlers()}
+      />,
+    );
+    const input = screen.getByLabelText("Arrival") as HTMLInputElement;
+    expect(input.value).toBe("2027-06-15");
+    expect(input.readOnly).toBe(true);
+  });
+});
+
+describe("YesNoQuestion", () => {
+  const component = question(FormComponentType.YesNo, {
+    label: "Any allergies?",
+    helpText: "Food or medicine.",
+  });
+
+  it("answers true for yes and false for no", () => {
+    const props = handlers();
+    render(
+      <YesNoQuestion
+        component={component}
+        value={undefined}
+        disabled={false}
+        readOnly={false}
+        {...props}
+      />,
+    );
+    const yes = screen.getByRole("button", { name: "Yes" });
+    expect(yes.id).toBe(`question-${ID}`);
+    expect(yes.getAttribute("aria-describedby")).toBe(`question-${ID}-help`);
+    fireEvent.click(yes);
+    expect(props.onChange).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getByRole("button", { name: "No" }));
+    expect(props.onChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it("shows a saved answer read-only", () => {
+    const props = handlers();
+    render(
+      <YesNoQuestion
+        component={component}
+        value={false}
+        disabled={false}
+        readOnly
+        {...props}
+      />,
+    );
+    const no = screen.getByRole("button", { name: "No" });
+    expect(no.getAttribute("aria-pressed")).toBe("true");
+    expect(
+      screen.getByRole("button", { name: "Yes" }).getAttribute("aria-pressed"),
+    ).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+    expect(props.onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("clearing optional answers", () => {
+  it.each([
+    [
+      "single choice",
+      SingleChoiceQuestion,
+      question(FormComponentType.SingleChoice, {
+        label: "Color",
+        config: { options: ["Red", "Blue"] },
+      }),
+      "Red",
+    ],
+    [
+      "yes/no",
+      YesNoQuestion,
+      question(FormComponentType.YesNo, { label: "Color" }),
+      true,
+    ],
+  ] as const)(
+    "clears an optional %s answer",
+    (_, Renderer, component, value) => {
+      const props = handlers();
+      const Question = Renderer as typeof YesNoQuestion;
+      render(
+        <Question
+          component={component as never}
+          value={value}
+          disabled={false}
+          readOnly={false}
+          {...props}
+        />,
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: "Clear the answer to Color" }),
+      );
+      expect(props.onChange).toHaveBeenCalledWith(undefined);
+    },
+  );
+
+  it("doesn't offer to clear required, unanswered, or read-only answers", () => {
+    const yesNo = question(FormComponentType.YesNo, { label: "Color" });
+    const { rerender } = render(
+      <YesNoQuestion
+        component={{ ...yesNo, required: true }}
+        value
+        disabled={false}
+        readOnly={false}
+        {...handlers()}
+      />,
+    );
+    const clear = () =>
+      screen.queryByRole("button", { name: /Clear the answer/ });
+    expect(clear()).toBeNull();
+    rerender(
+      <YesNoQuestion
+        component={yesNo}
         value={undefined}
         disabled={false}
         readOnly={false}
         {...handlers()}
       />,
     );
-    expect(
-      screen.getByText("This question can't be answered here yet."),
-    ).toBeTruthy();
+    expect(clear()).toBeNull();
+    rerender(
+      <YesNoQuestion
+        component={yesNo}
+        value
+        disabled={false}
+        readOnly
+        {...handlers()}
+      />,
+    );
+    expect(clear()).toBeNull();
   });
 });
