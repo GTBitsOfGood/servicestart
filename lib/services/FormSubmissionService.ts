@@ -17,6 +17,7 @@ import {
   type FormComponent,
   type FormDefinition,
 } from "@/lib/forms/schema";
+import { canEditSubmission, getFormAvailability } from "@/lib/forms/submission";
 
 export class DuplicateSubmissionError extends Error {
   constructor() {
@@ -30,6 +31,14 @@ export class InvalidUploadError extends Error {
   constructor(readonly componentId: string) {
     super("The image upload doesn't belong to this submission");
     this.name = "InvalidUploadError";
+  }
+}
+
+/** The submission can't be edited: it's been reviewed or the form isn't open. */
+export class SubmissionNotEditableError extends Error {
+  constructor() {
+    super("This submission can no longer be edited");
+    this.name = "SubmissionNotEditableError";
   }
 }
 
@@ -106,6 +115,87 @@ async function hasSubmitted(formId: string, userId: string) {
 }
 
 /**
+ * Whether the member's latest submission to the form can still be edited,
+ * or null when they haven't responded.
+ */
+async function isMemberSubmissionEditable({
+  form,
+  organizationId,
+  userId,
+}: {
+  form: Pick<FormDefinition, "id" | "status" | "settings">;
+  organizationId: string;
+  userId: string;
+}) {
+  const [latest] = await db
+    .select({ reviewStatus: formSubmissions.reviewStatus })
+    .from(formSubmissions)
+    .where(
+      and(
+        eq(formSubmissions.formId, form.id),
+        eq(formSubmissions.organizationId, organizationId),
+        eq(formSubmissions.userId, userId),
+      ),
+    )
+    .orderBy(desc(formSubmissions.submittedAt), desc(formSubmissions.id))
+    .limit(1);
+  if (!latest) return null;
+  return canEditSubmission({
+    availability: getFormAvailability(form),
+    reviewStatus: latest.reviewStatus,
+  });
+}
+
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Throws InvalidUploadError unless every image answer's upload was made by
+ * `userId` (or a guest, when null) to this form in this org.
+ */
+async function assertOwnedUploads(
+  tx: Transaction,
+  {
+    form,
+    organizationId,
+    userId,
+    answers,
+  }: {
+    form: Pick<FormDefinition, "id" | "components">;
+    organizationId: string;
+    userId: string | null;
+    answers: Record<string, FormAnswerValue>;
+  },
+) {
+  const imageAnswers = form.components.flatMap((component) => {
+    const answer = answers[component.id];
+    return component.type === FormComponentType.Image && isImageAnswer(answer)
+      ? [{ componentId: component.id, uploadId: answer.uploadId }]
+      : [];
+  });
+  if (imageAnswers.length === 0) return;
+
+  const uploads = await tx
+    .select({ id: formUploads.id })
+    .from(formUploads)
+    .where(
+      and(
+        inArray(
+          formUploads.id,
+          imageAnswers.map(({ uploadId }) => uploadId),
+        ),
+        eq(formUploads.formId, form.id),
+        eq(formUploads.organizationId, organizationId),
+        userId
+          ? eq(formUploads.uploadedBy, userId)
+          : isNull(formUploads.uploadedBy),
+      ),
+    );
+  const validIds = new Set(uploads.map(({ id }) => id));
+  const invalid = imageAnswers.find(({ uploadId }) => !validIds.has(uploadId));
+  if (invalid) throw new InvalidUploadError(invalid.componentId);
+}
+
+/**
  * Saves a submission and its answers, which must already be validated with
  * buildSubmissionSchema. `userId` is null for a guest.
  */
@@ -141,35 +231,7 @@ async function submit({
       if (existing) throw new DuplicateSubmissionError();
     }
 
-    const imageAnswers = form.components.flatMap((component) => {
-      const answer = answers[component.id];
-      return component.type === FormComponentType.Image && isImageAnswer(answer)
-        ? [{ componentId: component.id, uploadId: answer.uploadId }]
-        : [];
-    });
-    if (imageAnswers.length > 0) {
-      const uploads = await tx
-        .select({ id: formUploads.id })
-        .from(formUploads)
-        .where(
-          and(
-            inArray(
-              formUploads.id,
-              imageAnswers.map(({ uploadId }) => uploadId),
-            ),
-            eq(formUploads.formId, form.id),
-            eq(formUploads.organizationId, organizationId),
-            userId
-              ? eq(formUploads.uploadedBy, userId)
-              : isNull(formUploads.uploadedBy),
-          ),
-        );
-      const validIds = new Set(uploads.map(({ id }) => id));
-      const invalid = imageAnswers.find(
-        ({ uploadId }) => !validIds.has(uploadId),
-      );
-      if (invalid) throw new InvalidUploadError(invalid.componentId);
-    }
+    await assertOwnedUploads(tx, { form, organizationId, userId, answers });
 
     const [submission] = await tx
       .insert(formSubmissions)
@@ -185,6 +247,78 @@ async function submit({
     if (rows.length > 0) await tx.insert(formAnswers).values(rows);
 
     return submission.id;
+  });
+}
+
+/**
+ * Replaces a member's latest submission's answers with ones already validated
+ * with buildSubmissionSchema, and stamps `updatedAt`. The review status is
+ * left alone. Returns the submission ID, or null when they haven't responded.
+ * Throws SubmissionNotEditableError unless canEditSubmission allows it.
+ */
+async function updateMemberSubmission({
+  form,
+  organizationId,
+  userId,
+  answers,
+}: {
+  form: Pick<FormDefinition, "id" | "status" | "settings" | "components">;
+  organizationId: string;
+  userId: string;
+  answers: Record<string, FormAnswerValue>;
+}) {
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({
+        id: formSubmissions.id,
+        reviewStatus: formSubmissions.reviewStatus,
+      })
+      .from(formSubmissions)
+      .where(
+        and(
+          eq(formSubmissions.formId, form.id),
+          eq(formSubmissions.organizationId, organizationId),
+          eq(formSubmissions.userId, userId),
+        ),
+      )
+      .orderBy(desc(formSubmissions.submittedAt), desc(formSubmissions.id))
+      .limit(1)
+      .for("update");
+    if (!existing) return null;
+    const editable = canEditSubmission({
+      availability: getFormAvailability(form),
+      reviewStatus: existing.reviewStatus,
+    });
+    if (!editable) throw new SubmissionNotEditableError();
+
+    await assertOwnedUploads(tx, { form, organizationId, userId, answers });
+
+    await tx
+      .update(formSubmissions)
+      .set({ updatedAt: new Date() })
+      .where(
+        and(
+          eq(formSubmissions.id, existing.id),
+          eq(formSubmissions.organizationId, organizationId),
+        ),
+      );
+    await tx
+      .delete(formAnswers)
+      .where(
+        and(
+          eq(formAnswers.submissionId, existing.id),
+          eq(formAnswers.formId, form.id),
+        ),
+      );
+    const rows = Object.entries(answers).map(([componentId, value]) => ({
+      formId: form.id,
+      submissionId: existing.id,
+      componentId,
+      value,
+    }));
+    if (rows.length > 0) await tx.insert(formAnswers).values(rows);
+
+    return existing.id;
   });
 }
 
@@ -377,7 +511,9 @@ export const FormSubmissionService = {
   getDefinition,
   getPublishedDefinition,
   hasSubmitted,
+  isMemberSubmissionEditable,
   submit,
+  updateMemberSubmission,
   createUpload,
   deleteUpload,
   getSubmissionDetail,
