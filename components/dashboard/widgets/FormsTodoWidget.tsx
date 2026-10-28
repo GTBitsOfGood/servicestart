@@ -26,7 +26,7 @@ function TodoCard({ card }: { card: FormTodoCard }) {
   const statusLabel = availabilityLabel(card.action);
 
   return (
-    <article className="border-b border-grey-stroke-weak px-1 py-4 first:pt-0 last:border-b-0">
+    <li className="border-b border-grey-stroke-weak px-1 py-4 first:pt-0 last:border-b-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h4 className="text-paragraph-1 font-semibold text-app-strong-text">
@@ -59,7 +59,7 @@ function TodoCard({ card }: { card: FormTodoCard }) {
           {statusLabel}
         </p>
       )}
-    </article>
+    </li>
   );
 }
 
@@ -80,7 +80,11 @@ export function FormsTodoWidgetView({ cards }: { cards: FormTodoCard[] }) {
             </p>
           </div>
         ) : (
-          cards.map((card) => <TodoCard key={card.formUuid} card={card} />)
+          <ul>
+            {cards.map((card) => (
+              <TodoCard key={card.formUuid} card={card} />
+            ))}
+          </ul>
         )}
       </div>
     </div>

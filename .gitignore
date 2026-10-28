@@ -52,3 +52,6 @@ next-env.d.ts
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Playwright MCP screenshots and snapshots
+.playwright-mcp/
