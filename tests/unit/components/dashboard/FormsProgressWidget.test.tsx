@@ -47,6 +47,52 @@ describe("FormsProgressView", () => {
     expect(screen.queryByText("No required forms yet")).toBeNull();
   });
 
+  describe("progress arc", () => {
+    const progressArcs = (container: HTMLElement) =>
+      container.querySelectorAll('path[stroke^="url(#"]');
+
+    it("draws no filled arc when nothing is completed", () => {
+      const { container } = render(
+        <FormsProgressView gauge={{ done: 0, total: 4 }} />,
+      );
+
+      expect(progressArcs(container)).toHaveLength(0);
+    });
+
+    it("draws the filled arc once any form is completed", () => {
+      const { container } = render(
+        <FormsProgressView gauge={{ done: 2, total: 4 }} />,
+      );
+
+      expect(progressArcs(container)).toHaveLength(1);
+    });
+
+    it("points the arc stroke at a gradient defined in the same svg", () => {
+      const { container } = render(
+        <FormsProgressView gauge={{ done: 2, total: 4 }} />,
+      );
+
+      const stroke = progressArcs(container)[0]?.getAttribute("stroke") ?? "";
+      const gradientId = stroke.slice("url(#".length, -1);
+      expect(container.querySelector(`[id="${gradientId}"]`)).not.toBeNull();
+    });
+
+    it("gives each gauge its own gradient id", () => {
+      const { container } = render(
+        <>
+          <FormsProgressView gauge={{ done: 1, total: 4 }} />
+          <FormsProgressView gauge={{ done: 3, total: 4 }} />
+        </>,
+      );
+
+      const ids = [...container.querySelectorAll("linearGradient")].map(
+        (gradient) => gradient.id,
+      );
+      expect(ids).toHaveLength(2);
+      expect(new Set(ids).size).toBe(2);
+    });
+  });
+
   it('shows "No required forms yet" when total is zero', () => {
     render(<FormsProgressView gauge={{ done: 0, total: 0 }} />);
 
