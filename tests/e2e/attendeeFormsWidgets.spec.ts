@@ -6,12 +6,14 @@ import {
   FormStatus,
   MemberType,
   OrganizationConfigKey,
+  SubmissionReviewStatus,
 } from "@/lib/schema";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import {
   addMember,
   buildTestUser,
   createForm,
+  createFormSubmission,
   createOrganization,
   setActiveOrganization,
   signUpAndGetSession,
@@ -128,7 +130,7 @@ async function createAttendeeMemberAndSignIn(
     },
   ]);
 
-  return { user };
+  return { user, userId: session.userId };
 }
 
 async function expectGauge(page: Page, done: number, total: number) {
@@ -218,5 +220,68 @@ test.describe("Attendee forms dashboard widgets", () => {
         }),
       ).toBeVisible();
     }
+  });
+
+  test("lets a member edit a pending response from the dashboard", async ({
+    page,
+    baseURL,
+  }) => {
+    const { org, forms } = await createAttendeeWidgetsOrg();
+    const origin = tenantUrl(org.slug, baseURL);
+    const { userId } = await createAttendeeMemberAndSignIn(
+      page,
+      org.id,
+      origin,
+    );
+    const form = forms[0]!;
+    await createFormSubmission(form, {
+      userId,
+      answers: { [form.components[0]!.id]: "Original answer" },
+    });
+
+    await page.goto(`${origin}/`);
+    await page
+      .getByRole("link", { name: `Edit ${form.title} response` })
+      .click();
+
+    await expect(page).toHaveURL(`${origin}/forms/${form.formId}/edit`);
+    const answer = page.getByRole("textbox", { name: "Response" });
+    await expect(answer).toHaveValue("Original answer");
+    await answer.fill("Updated answer");
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByRole("status")).toContainText("Changes saved");
+
+    await page.goto(`${origin}/forms/${form.formId}/response`);
+    await expect(page.getByRole("textbox", { name: "Response" })).toHaveValue(
+      "Updated answer",
+    );
+  });
+
+  test("hides the edit action once a response is reviewed", async ({
+    page,
+    baseURL,
+  }) => {
+    const { org, forms } = await createAttendeeWidgetsOrg();
+    const origin = tenantUrl(org.slug, baseURL);
+    const { userId } = await createAttendeeMemberAndSignIn(
+      page,
+      org.id,
+      origin,
+    );
+    const form = forms[0]!;
+    await createFormSubmission(form, {
+      userId,
+      answers: { [form.components[0]!.id]: "Reviewed answer" },
+      reviewStatus: SubmissionReviewStatus.Accepted,
+    });
+
+    await page.goto(`${origin}/`);
+
+    await expect(
+      page.getByRole("link", { name: `View ${form.title} response` }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: `Edit ${form.title} response` }),
+    ).toHaveCount(0);
   });
 });
