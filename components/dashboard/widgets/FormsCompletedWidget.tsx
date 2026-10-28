@@ -1,10 +1,14 @@
 import Link from "next/link";
+import { EyeIcon, PencilSimpleIcon } from "@phosphor-icons/react/ssr";
 import LocalDateTime from "@/components/forms/LocalDateTime";
 import {
   loadFormProgress,
   type FormCompletedCard,
 } from "@/lib/dashboard/formProgress";
 import type { WidgetProps } from "@/lib/dashboard/widgets";
+
+const ICON_LINK_CLASS =
+  "inline-flex size-12 items-center justify-center rounded-full text-brand-text hover:bg-grey-fill-weak";
 
 export function FormsCompletedWidgetView({
   cards,
@@ -30,9 +34,9 @@ export function FormsCompletedWidgetView({
                 className="flex items-start justify-between gap-4 border-t border-grey-stroke-weak px-8 py-4 first:border-t-0"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-paragraph-1 font-semibold text-app-strong-text">
+                  <h4 className="text-paragraph-1 font-semibold text-app-strong-text">
                     {card.title}
-                  </p>
+                  </h4>
                   <p className="mt-1 text-small text-grey-text-weak">
                     Submitted{" "}
                     <LocalDateTime
@@ -47,21 +51,23 @@ export function FormsCompletedWidgetView({
                     ) : null}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-3">
+                <div className="flex shrink-0 items-center gap-1">
                   <Link
                     href={`/forms/${card.formId}/response`}
                     aria-label={`View ${card.title} response`}
-                    className="text-paragraph-2 font-semibold text-brand-text hover:underline"
+                    title="View response"
+                    className={ICON_LINK_CLASS}
                   >
-                    View
+                    <EyeIcon size={20} aria-hidden />
                   </Link>
                   {card.canEdit ? (
                     <Link
                       href={`/forms/${card.formId}/edit`}
                       aria-label={`Edit ${card.title} response`}
-                      className="text-paragraph-2 font-semibold text-brand-text hover:underline"
+                      title="Edit response"
+                      className={ICON_LINK_CLASS}
                     >
-                      Edit
+                      <PencilSimpleIcon size={20} aria-hidden />
                     </Link>
                   ) : null}
                 </div>
