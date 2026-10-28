@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { FormComponentType, FormStatus } from "@/lib/schema";
+import {
+  FormComponentType,
+  FormStatus,
+  SubmissionReviewStatus,
+} from "@/lib/schema";
 import type {
   FormAnswerValue,
   FormComponent,
@@ -265,4 +269,17 @@ export function getFormAvailability(
   if (opensAt && now < new Date(opensAt)) return "not_yet_open";
   if (closesAt && now >= new Date(closesAt)) return "closed";
   return "open";
+}
+
+/** Whether a member may change answers on an existing submission (Appendix A). */
+export function canEditSubmission({
+  availability,
+  reviewStatus,
+}: {
+  availability: FormAvailability;
+  reviewStatus: SubmissionReviewStatus;
+}) {
+  return (
+    availability === "open" && reviewStatus === SubmissionReviewStatus.Pending
+  );
 }
