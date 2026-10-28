@@ -1,3 +1,4 @@
+import { useId } from "react";
 import {
   loadFormProgress,
   type FormProgressGauge,
@@ -25,6 +26,7 @@ function gaugeAriaLabel(gauge: FormProgressGauge): string {
 }
 
 export function FormsProgressView({ gauge }: { gauge: FormProgressGauge }) {
+  const gradientId = useId();
   const progressLength =
     gauge.total === 0 ? 0 : (gauge.done / gauge.total) * GAUGE_ARC_LENGTH;
 
@@ -43,13 +45,7 @@ export function FormsProgressView({ gauge }: { gauge: FormProgressGauge }) {
           className="absolute inset-0 size-full"
         >
           <defs>
-            <linearGradient
-              id="forms-progress-gauge-fill"
-              x1="0%"
-              y1="0%"
-              x2="100%"
-              y2="0%"
-            >
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
               <stop
                 offset="0%"
                 stopColor="var(--color-forms-gauge-fill-start)"
@@ -72,7 +68,7 @@ export function FormsProgressView({ gauge }: { gauge: FormProgressGauge }) {
             <path
               d={GAUGE_ARC_PATH}
               fill="none"
-              stroke="url(#forms-progress-gauge-fill)"
+              stroke={`url(#${gradientId})`}
               strokeWidth={GAUGE_STROKE}
               strokeLinecap="round"
               strokeDasharray={`${progressLength} ${GAUGE_ARC_LENGTH}`}
