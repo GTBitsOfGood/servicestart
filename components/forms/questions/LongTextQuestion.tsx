@@ -1,6 +1,7 @@
 "use client";
 
 import QuestionField from "@/components/forms/questions/QuestionField";
+import { textControlClassName } from "@/components/forms/questions/textControlClassName";
 import {
   describedBy,
   fieldId,
@@ -9,7 +10,6 @@ import {
 import { countWords } from "@/lib/forms/submission";
 import type { FormComponentOfType } from "@/lib/forms/schema";
 import type { FormComponentType } from "@/lib/schema";
-import { cn } from "@/lib/utils";
 
 function wordRange(minWords?: number, maxWords?: number) {
   if (minWords !== undefined && maxWords !== undefined) {
@@ -53,13 +53,11 @@ export default function LongTextQuestion({
         value={text}
         onChange={(event) => onChange(event.target.value)}
         onBlur={onBlur}
-        className={cn(
-          "w-full resize-y rounded-control border bg-solid-bg-sunken px-4 py-3 text-paragraph-2 text-page-text focus:border-brand-stroke-strong focus:outline-none disabled:cursor-not-allowed disabled:opacity-85",
+        className={textControlClassName(
+          Boolean(error),
+          "resize-y",
           // Shows the whole answer instead of scrolling inside the box.
           readOnly && "field-sizing-content resize-none",
-          error
-            ? "border-status-red-stroke-strong"
-            : "border-grey-stroke-weak hover:border-brand-stroke-strong",
         )}
       />
       {!readOnly && (

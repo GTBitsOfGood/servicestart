@@ -1,11 +1,16 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { FormComponentType, FormStatus } from "@/lib/schema";
+import {
+  FormComponentType,
+  FormStatus,
+  SubmissionReviewStatus,
+} from "@/lib/schema";
 import { DEFAULT_FORM_SETTINGS } from "@/lib/forms/constants";
 import type { FormComponent } from "@/lib/forms/schema";
 import {
   REQUIRED_MESSAGE,
   buildSubmissionSchema,
+  canEditSubmission,
   countWords,
   getAnswerErrors,
   getFormAvailability,
@@ -317,6 +322,27 @@ describe("parseNumberInput", () => {
 
   it.each(["abc", "1e3", "0x10", "1,000"])("rejects %j", (text) => {
     expect(parseNumberInput(text)).toBeNaN();
+  });
+});
+
+describe("canEditSubmission", () => {
+  it("is true only when the form is open and the submission is pending", () => {
+    expect(
+      canEditSubmission({
+        availability: "open",
+        reviewStatus: SubmissionReviewStatus.Pending,
+      }),
+    ).toBe(true);
+  });
+
+  it.each([
+    ["closed", SubmissionReviewStatus.Pending],
+    ["not_yet_open", SubmissionReviewStatus.Pending],
+    ["open", SubmissionReviewStatus.UnderReview],
+    ["open", SubmissionReviewStatus.Accepted],
+    ["open", SubmissionReviewStatus.Rejected],
+  ] as const)("is false for %s with %s", (availability, reviewStatus) => {
+    expect(canEditSubmission({ availability, reviewStatus })).toBe(false);
   });
 });
 

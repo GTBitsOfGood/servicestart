@@ -79,6 +79,10 @@
   --color-join-step-pending: #ffbe4c;
   --width-join-step: 220px;
 
+  --color-forms-gauge-track: var(--color-grey-fill-weak);
+  --color-forms-gauge-fill-start: var(--color-brand-text);
+  --color-forms-gauge-fill-end: var(--color-status-green-text);
+
   --color-notif-action-required: #c73a3a;
   --color-notif-action-required-bg: #ffe3e3;
   --color-notif-announcement: #0051cc;
