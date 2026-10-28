@@ -117,9 +117,13 @@ describe("FormSubmissionService.submit", () => {
     expect(
       Object.fromEntries(rows.map((row) => [row.componentId, row.value])),
     ).toEqual(answers);
-    expect(await FormSubmissionService.hasSubmitted(form.id, userId)).toBe(
-      true,
-    );
+    expect(
+      await FormSubmissionService.isMemberSubmissionEditable({
+        form,
+        organizationId: org.id,
+        userId,
+      }),
+    ).toBe(true);
   });
 
   it("throws on a second submission from the same user", async () => {
@@ -163,6 +167,86 @@ describe("FormSubmissionService.submit", () => {
     expect((error as InvalidUploadError).componentId).toBe(image.id);
     expect(await db.select().from(formSubmissions)).toHaveLength(0);
     expect(await db.select().from(formAnswers)).toHaveLength(0);
+  });
+});
+
+describe("FormSubmissionService.isMemberSubmissionEditable", () => {
+  it("is null when the member hasn't responded", async () => {
+    const org = await createOrganization("acme");
+    const form = await createForm(org.id, { status: FormStatus.Published });
+    const userId = await createUser();
+
+    expect(
+      await FormSubmissionService.isMemberSubmissionEditable({
+        form,
+        organizationId: org.id,
+        userId,
+      }),
+    ).toBeNull();
+  });
+
+  it("is true for a pending response to an open form", async () => {
+    const org = await createOrganization("acme");
+    const form = await createForm(org.id, { status: FormStatus.Published });
+    const userId = await createUser();
+    await createFormSubmission(form, { userId });
+
+    expect(
+      await FormSubmissionService.isMemberSubmissionEditable({
+        form,
+        organizationId: org.id,
+        userId,
+      }),
+    ).toBe(true);
+  });
+
+  it("is false once the response has been reviewed", async () => {
+    const org = await createOrganization("acme");
+    const form = await createForm(org.id, { status: FormStatus.Published });
+    const userId = await createUser();
+    await createFormSubmission(form, {
+      userId,
+      reviewStatus: SubmissionReviewStatus.Accepted,
+    });
+
+    expect(
+      await FormSubmissionService.isMemberSubmissionEditable({
+        form,
+        organizationId: org.id,
+        userId,
+      }),
+    ).toBe(false);
+  });
+
+  it("is false when the form is closed", async () => {
+    const org = await createOrganization("acme");
+    const form = await createForm(org.id, { status: FormStatus.Closed });
+    const userId = await createUser();
+    await createFormSubmission(form, { userId });
+
+    expect(
+      await FormSubmissionService.isMemberSubmissionEditable({
+        form,
+        organizationId: org.id,
+        userId,
+      }),
+    ).toBe(false);
+  });
+
+  it("ignores another organization's submission", async () => {
+    const org = await createOrganization("acme");
+    const other = await createOrganization("other");
+    const form = await createForm(org.id, { status: FormStatus.Published });
+    const userId = await createUser();
+    await createFormSubmission(form, { userId });
+
+    expect(
+      await FormSubmissionService.isMemberSubmissionEditable({
+        form,
+        organizationId: other.id,
+        userId,
+      }),
+    ).toBeNull();
   });
 });
 

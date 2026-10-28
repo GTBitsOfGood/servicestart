@@ -100,20 +100,6 @@ async function getPublishedDefinition(organizationId: string, formId: string) {
   return definition?.status === FormStatus.Draft ? null : definition;
 }
 
-async function hasSubmitted(formId: string, userId: string) {
-  const [submission] = await db
-    .select({ id: formSubmissions.id })
-    .from(formSubmissions)
-    .where(
-      and(
-        eq(formSubmissions.formId, formId),
-        eq(formSubmissions.userId, userId),
-      ),
-    )
-    .limit(1);
-  return Boolean(submission);
-}
-
 /**
  * Whether the member's latest submission to the form can still be edited,
  * or null when they haven't responded.
@@ -510,7 +496,6 @@ async function getMemberUpload(
 export const FormSubmissionService = {
   getDefinition,
   getPublishedDefinition,
-  hasSubmitted,
   isMemberSubmissionEditable,
   submit,
   updateMemberSubmission,
