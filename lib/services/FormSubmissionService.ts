@@ -254,6 +254,18 @@ async function updateMemberSubmission({
   answers: Record<string, FormAnswerValue>;
 }) {
   return db.transaction(async (tx) => {
+    // Lock the form before the submission, same order as submit, and decide
+    // availability from this row. The form argument can be stale if an admin
+    // closed it or moved the schedule after the caller loaded it.
+    const [currentForm] = await tx
+      .select({ status: forms.status, settings: forms.settings })
+      .from(forms)
+      .where(
+        and(eq(forms.id, form.id), eq(forms.organizationId, organizationId)),
+      )
+      .for("update");
+    if (!currentForm) return null;
+
     const [existing] = await tx
       .select({
         id: formSubmissions.id,
@@ -272,7 +284,7 @@ async function updateMemberSubmission({
       .for("update");
     if (!existing) return null;
     const editable = canEditSubmission({
-      availability: getFormAvailability(form),
+      availability: getFormAvailability(currentForm),
       reviewStatus: existing.reviewStatus,
     });
     if (!editable) throw new SubmissionNotEditableError();

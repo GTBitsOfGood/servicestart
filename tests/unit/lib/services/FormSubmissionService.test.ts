@@ -9,6 +9,7 @@ import {
   formAnswers,
   formComponents,
   formSubmissions,
+  forms,
 } from "@/lib/schema";
 import type { FormSettings } from "@/lib/forms/schema";
 import {
@@ -334,6 +335,27 @@ describe("FormSubmissionService.updateMemberSubmission", () => {
     expect(row.reviewStatus).toBe(SubmissionReviewStatus.Pending);
     expect(row.reviewStatus).toBe(before.reviewStatus);
     expect(row.reviewStatusUpdatedAt).toEqual(before.reviewStatusUpdatedAt);
+  });
+
+  it("rejects a close that landed after the caller loaded the form", async () => {
+    const { org, form, userId, submissionId, original } = await setup();
+    await db
+      .update(forms)
+      .set({ status: FormStatus.Closed })
+      .where(eq(forms.id, form.id));
+    const shortText = form.components.find(
+      ({ type }) => type === FormComponentType.ShortText,
+    )!;
+
+    await expect(
+      FormSubmissionService.updateMemberSubmission({
+        form,
+        organizationId: org.id,
+        userId,
+        answers: { ...original, [shortText.id]: "Changed" },
+      }),
+    ).rejects.toBeInstanceOf(SubmissionNotEditableError);
+    expect(await answersOf(submissionId)).toEqual(original);
   });
 
   it("throws and changes nothing once the submission is reviewed", async () => {
