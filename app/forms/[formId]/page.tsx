@@ -69,13 +69,18 @@ export default async function FormPage({
   }
 
   const availability = getFormAvailability(form);
-  const alreadySubmitted =
+  const submissionEditable =
     !isPreview &&
     availability === "open" &&
     session !== null &&
     membership !== null &&
-    !form.settings.allowMultipleSubmissions &&
-    (await FormSubmissionService.hasSubmitted(form.id, session.user.id));
+    !form.settings.allowMultipleSubmissions
+      ? await FormSubmissionService.isMemberSubmissionEditable({
+          form,
+          organizationId: organization.id,
+          userId: session.user.id,
+        })
+      : null;
 
   // Plain data for the client components.
   const definition = { formId: form.formId, components: form.components };
@@ -95,7 +100,7 @@ export default async function FormPage({
         It's no longer accepting responses.
       </FormMessage>
     );
-  } else if (alreadySubmitted) {
+  } else if (submissionEditable !== null) {
     content = (
       <FormMessage title="You've already responded">
         Thanks! We have your response to this form.{" "}
@@ -104,13 +109,18 @@ export default async function FormPage({
           className="font-semibold text-brand-text underline"
         >
           View your response
-        </Link>{" "}
-        <Link
-          href={`/forms/${form.formId}/edit`}
-          className="font-semibold text-brand-text underline"
-        >
-          Edit response
         </Link>
+        {submissionEditable && (
+          <>
+            {" "}
+            <Link
+              href={`/forms/${form.formId}/edit`}
+              className="font-semibold text-brand-text underline"
+            >
+              Edit response
+            </Link>
+          </>
+        )}
       </FormMessage>
     );
   } else {
