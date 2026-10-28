@@ -104,6 +104,12 @@ export default async function FormPage({
           className="font-semibold text-brand-text underline"
         >
           View your response
+        </Link>{" "}
+        <Link
+          href={`/forms/${form.formId}/edit`}
+          className="font-semibold text-brand-text underline"
+        >
+          Edit response
         </Link>
       </FormMessage>
     );
