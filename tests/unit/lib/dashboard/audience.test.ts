@@ -1,6 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { getDashboardAudience } from "@/lib/dashboard/audience";
+import {
+  getDashboardAudience,
+  memberTypeFromAudience,
+} from "@/lib/dashboard/audience";
 import { getWidgetOptions } from "@/lib/dashboard/widgets";
 import { MemberType, OrganizationConfigKey } from "@/lib/schema";
 
@@ -58,5 +61,16 @@ describe("getWidgetOptions", () => {
       [OrganizationConfigKey.FormsEnabled]: true,
     }).map(({ id }) => id);
     for (const id of formWidgets) expect(ids).toContain(id);
+  });
+});
+
+describe("memberTypeFromAudience", () => {
+  it.each([
+    ["applicant", MemberType.Applicant],
+    ["attendee", MemberType.Attendee],
+    ["member", null],
+    ["admin", null],
+  ] as const)("maps %s to %s", (audience, memberType) => {
+    expect(memberTypeFromAudience(audience)).toBe(memberType);
   });
 });
