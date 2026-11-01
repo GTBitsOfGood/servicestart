@@ -8,7 +8,11 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import DashboardLayoutBuilder from "@/components/dashboard/DashboardLayoutBuilder";
-import type { DashboardLayout, WidgetId } from "@/lib/dashboard/schema";
+import {
+  DEFAULT_APPLICATION_STATUS_STEPS,
+  type DashboardLayout,
+  type WidgetId,
+} from "@/lib/dashboard/schema";
 
 type DragEndEvent = {
   operation: { source: { id: string }; target: { id: string } };
@@ -74,12 +78,14 @@ function renderBuilder(
     availableWidgets: typeof AVAILABLE_WIDGETS;
     initialLayout: DashboardLayout;
     onSave: (layout: DashboardLayout) => Promise<void>;
+    forms: { formId: string; title: string }[];
   }> = {},
 ) {
   const props = {
     availableWidgets: overrides.availableWidgets ?? AVAILABLE_WIDGETS,
     initialLayout: overrides.initialLayout ?? DEFAULT_LAYOUT,
     onSave: overrides.onSave ?? vi.fn(),
+    forms: overrides.forms,
   };
   return render(<DashboardLayoutBuilder {...props} />);
 }
@@ -228,5 +234,166 @@ describe("DashboardLayoutBuilder", () => {
   it("renders dashboard preview label", () => {
     renderBuilder();
     expect(screen.getByText("Dashboard preview")).toBeTruthy();
+  });
+
+  describe("application status settings", () => {
+    const WIDGETS = [
+      ...AVAILABLE_WIDGETS,
+      { id: "application_status" as const, label: "Application Status" },
+    ];
+    const FORMS = [
+      { formId: "camp-application", title: "Camp Application" },
+      { formId: "volunteer", title: "Volunteer Form" },
+    ];
+    const settingsPanel = () =>
+      screen.queryByRole("region", { name: "Application Status settings" });
+    const save = () => screen.getByRole("button", { name: "Save Layout" });
+
+    it("shows only with forms and with the widget selected", () => {
+      renderBuilder({
+        availableWidgets: WIDGETS,
+        initialLayout: EMPTY_LAYOUT,
+        forms: FORMS,
+      });
+      expect(settingsPanel()).toBeNull();
+      fireEvent.click(
+        screen.getByRole("button", { name: "Application Status" }),
+      );
+      expect(settingsPanel()).toBeTruthy();
+      // Prefilled from the default steps.
+      expect(screen.getAllByLabelText("Label")).toHaveLength(3);
+      expect(
+        (screen.getAllByLabelText("Label")[0] as HTMLInputElement).value,
+      ).toBe("Submitted");
+    });
+
+    it("is absent without forms, as on the admin dashboard page", () => {
+      renderBuilder({
+        availableWidgets: WIDGETS,
+        initialLayout: {
+          layout: "horizontal",
+          widgets: [{ id: "application_status", size: "tall" }],
+        },
+      });
+      expect(settingsPanel()).toBeNull();
+      expect(screen.queryByLabelText("Application form")).toBeNull();
+    });
+
+    it("saves the chosen form and edited steps as the widget's config", async () => {
+      const onSave = vi.fn().mockResolvedValue(undefined);
+      renderBuilder({
+        availableWidgets: WIDGETS,
+        initialLayout: EMPTY_LAYOUT,
+        forms: FORMS,
+        onSave,
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Application Status" }),
+      );
+      fireEvent.change(screen.getByLabelText("Application form"), {
+        target: { value: "volunteer" },
+      });
+      fireEvent.change(screen.getAllByLabelText("Label")[1], {
+        target: { value: "Interview" },
+      });
+      await act(async () => fireEvent.click(save()));
+      expect(onSave).toHaveBeenCalledWith({
+        layout: "horizontal",
+        widgets: [
+          {
+            id: "application_status",
+            size: "tall",
+            config: {
+              formId: "volunteer",
+              steps: [
+                DEFAULT_APPLICATION_STATUS_STEPS[0],
+                { ...DEFAULT_APPLICATION_STATUS_STEPS[1], label: "Interview" },
+                DEFAULT_APPLICATION_STATUS_STEPS[2],
+              ],
+            },
+          },
+        ],
+      });
+    });
+
+    it("saves the widget without config when no form is chosen", async () => {
+      const onSave = vi.fn().mockResolvedValue(undefined);
+      renderBuilder({
+        availableWidgets: WIDGETS,
+        initialLayout: EMPTY_LAYOUT,
+        forms: FORMS,
+        onSave,
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Application Status" }),
+      );
+      await act(async () => fireEvent.click(save()));
+      expect(onSave.mock.calls[0][0].widgets).toEqual([
+        { id: "application_status", size: "tall" },
+      ]);
+    });
+
+    it("blocks saving an empty step label and says why", () => {
+      const onSave = vi.fn();
+      renderBuilder({
+        availableWidgets: WIDGETS,
+        initialLayout: {
+          layout: "horizontal",
+          widgets: [
+            {
+              id: "application_status",
+              size: "tall",
+              config: {
+                formId: "camp-application",
+                steps: DEFAULT_APPLICATION_STATUS_STEPS,
+              },
+            },
+          ],
+        },
+        forms: FORMS,
+        onSave,
+      });
+      expect(
+        (screen.getByLabelText("Application form") as HTMLSelectElement).value,
+      ).toBe("camp-application");
+      fireEvent.change(screen.getAllByLabelText("Label")[2], {
+        target: { value: "  " },
+      });
+      expect(screen.getByRole("alert").textContent).toBe(
+        "Give the step a name",
+      );
+      expect((save() as HTMLButtonElement).disabled).toBe(true);
+      fireEvent.click(save());
+      expect(onSave).not.toHaveBeenCalled();
+    });
+
+    it("drops the settings when the widget is deselected, and discard restores them", async () => {
+      const config = {
+        formId: "camp-application",
+        steps: DEFAULT_APPLICATION_STATUS_STEPS,
+      };
+      const onSave = vi.fn().mockResolvedValue(undefined);
+      renderBuilder({
+        availableWidgets: WIDGETS,
+        initialLayout: {
+          layout: "horizontal",
+          widgets: [{ id: "application_status", size: "tall", config }],
+        },
+        forms: FORMS,
+        onSave,
+      });
+      const card = () =>
+        screen.getByRole("button", { name: "Application Status" });
+      fireEvent.click(card());
+      fireEvent.click(card());
+      expect(
+        (screen.getByLabelText("Application form") as HTMLSelectElement).value,
+      ).toBe("");
+
+      fireEvent.click(screen.getByRole("button", { name: /Discard/ }));
+      expect(
+        (screen.getByLabelText("Application form") as HTMLSelectElement).value,
+      ).toBe("camp-application");
+    });
   });
 });

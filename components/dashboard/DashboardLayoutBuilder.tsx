@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, type ReactNode } from "react";
 import {
   DragDropProvider,
   DragOverlay,
@@ -9,10 +9,14 @@ import {
 } from "@dnd-kit/react";
 import { ArrowCounterClockwise } from "@phosphor-icons/react";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import type {
-  DashboardLayout,
-  DashboardWidget,
-  WidgetId,
+import {
+  ApplicationStatusWidgetConfigSchema,
+  DEFAULT_APPLICATION_STATUS_STEPS,
+  WIDGET_CONFIG_SCHEMAS,
+  type ApplicationStatusWidgetConfig,
+  type DashboardLayout,
+  type DashboardWidget,
+  type WidgetId,
 } from "@/lib/dashboard/schema";
 
 interface WidgetOption {
@@ -24,7 +28,35 @@ interface DashboardLayoutBuilderProps {
   availableWidgets: WidgetOption[];
   initialLayout: DashboardLayout;
   onSave: (layout: DashboardLayout) => Promise<void>;
+  /**
+   * The org's published forms. Passing them turns on widget settings (the
+   * application status widget's form and steps); without them the builder
+   * keeps whatever settings the saved layout has.
+   */
+  forms?: { formId: string; title: string }[];
+  /** Shown under the description, e.g. an audience picker. */
+  children?: ReactNode;
 }
+
+/** The application status settings being edited; formId "" means none. */
+type ApplicationStatusDraft = {
+  formId: string;
+  steps: ApplicationStatusWidgetConfig["steps"];
+};
+
+function initialApplicationStatus(
+  widgets: DashboardWidget[],
+): ApplicationStatusDraft {
+  const saved = ApplicationStatusWidgetConfigSchema.safeParse(
+    widgets.find(({ id }) => id === "application_status")?.config,
+  );
+  return saved.success
+    ? saved.data
+    : { formId: "", steps: DEFAULT_APPLICATION_STATUS_STEPS };
+}
+
+const inputClass =
+  "w-full rounded border border-grey-stroke-weak bg-solid-bg-base p-2 text-paragraph-2 text-grey-text-strong";
 
 interface ColumnState {
   col1: WidgetId[];
@@ -78,7 +110,12 @@ export default function DashboardLayoutBuilder({
   availableWidgets,
   initialLayout,
   onSave,
+  forms,
+  children,
 }: DashboardLayoutBuilderProps) {
+  const [applicationStatus, setApplicationStatus] = useState(() =>
+    initialApplicationStatus(initialLayout.widgets),
+  );
   const [columns, setColumns] = useState<ColumnState>(() =>
     splitInitialLayout(initialLayout.widgets),
   );
@@ -106,31 +143,52 @@ export default function DashboardLayoutBuilder({
     [col1, col2],
   );
 
-  const toggleWidget = useCallback((widgetId: WidgetId) => {
-    setColumns((prev) => {
-      const { col1, col2 } = prev;
+  const showApplicationStatusSettings =
+    forms !== undefined && selectedIds.has("application_status");
+  // Settings are only saved with a form, so only then do they need to pass.
+  const configError =
+    showApplicationStatusSettings && applicationStatus.formId
+      ? WIDGET_CONFIG_SCHEMAS.application_status?.safeParse(applicationStatus)
+          .error?.issues[0]?.message
+      : undefined;
 
-      if (col1.includes(widgetId) || col2.includes(widgetId)) {
-        return rebalance({
-          col1: col1.filter((id) => id !== widgetId),
-          col2: col2.filter((id) => id !== widgetId),
-        });
-      }
-
-      if (col1.length + col2.length >= MAX_WIDGETS) return prev;
-
-      // First widget goes to col1; after that, tiebreak favors col2
-      // so the natural progression is: 1→col1, 2→col2, 3→col2, 4→col1
-      if (col1.length + col2.length === 0) {
-        return { col1: [widgetId], col2 };
-      }
-      if (col1.length < col2.length) {
-        return { col1: [...col1, widgetId], col2 };
-      }
-      return { col1, col2: [...col2, widgetId] };
-    });
+  const editApplicationStatus = (draft: ApplicationStatusDraft) => {
+    setApplicationStatus(draft);
     setHasChanges(true);
-  }, []);
+  };
+
+  const toggleWidget = useCallback(
+    (widgetId: WidgetId) => {
+      // Deselecting the widget drops its settings.
+      if (widgetId === "application_status" && selectedIds.has(widgetId)) {
+        setApplicationStatus(initialApplicationStatus([]));
+      }
+      setColumns((prev) => {
+        const { col1, col2 } = prev;
+
+        if (col1.includes(widgetId) || col2.includes(widgetId)) {
+          return rebalance({
+            col1: col1.filter((id) => id !== widgetId),
+            col2: col2.filter((id) => id !== widgetId),
+          });
+        }
+
+        if (col1.length + col2.length >= MAX_WIDGETS) return prev;
+
+        // First widget goes to col1; after that, tiebreak favors col2
+        // so the natural progression is: 1→col1, 2→col2, 3→col2, 4→col1
+        if (col1.length + col2.length === 0) {
+          return { col1: [widgetId], col2 };
+        }
+        if (col1.length < col2.length) {
+          return { col1: [...col1, widgetId], col2 };
+        }
+        return { col1, col2: [...col2, widgetId] };
+      });
+      setHasChanges(true);
+    },
+    [selectedIds],
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleDragStart = useCallback((event: any) => {
@@ -203,6 +261,11 @@ export default function DashboardLayoutBuilder({
       await onSave({
         layout: "horizontal",
         widgets: columnsToWidgets(columns).map((widget) => {
+          if (forms && widget.id === "application_status") {
+            return applicationStatus.formId
+              ? { ...widget, config: applicationStatus }
+              : widget;
+          }
           const original = initialLayout.widgets.find(
             ({ id }) => id === widget.id,
           );
@@ -217,10 +280,11 @@ export default function DashboardLayoutBuilder({
     } finally {
       setIsSaving(false);
     }
-  }, [columns, initialLayout.widgets, onSave]);
+  }, [applicationStatus, columns, forms, initialLayout.widgets, onSave]);
 
   const handleDiscard = useCallback(() => {
     setColumns(splitInitialLayout(initialLayout.widgets));
+    setApplicationStatus(initialApplicationStatus(initialLayout.widgets));
     setHasChanges(false);
     setSaveError(null);
   }, [initialLayout.widgets]);
@@ -244,6 +308,7 @@ export default function DashboardLayoutBuilder({
           Select up to {MAX_WIDGETS} widgets for your dashboard and drag them to
           reorder.
         </p>
+        {children}
 
         <div className="mt-9 grid grid-cols-2 gap-6">
           {availableWidgets.map((widget) => (
@@ -256,6 +321,15 @@ export default function DashboardLayoutBuilder({
             />
           ))}
         </div>
+
+        {showApplicationStatusSettings && (
+          <ApplicationStatusSettings
+            forms={forms}
+            value={applicationStatus}
+            error={configError}
+            onChange={editApplicationStatus}
+          />
+        )}
 
         <div className="mt-8 flex flex-col items-end gap-2">
           <div className="flex items-center gap-3">
@@ -281,10 +355,10 @@ export default function DashboardLayoutBuilder({
             </button>
             <button
               onClick={handleSave}
-              disabled={!hasChanges || isSaving}
+              disabled={!hasChanges || isSaving || configError !== undefined}
               type="button"
               className={`theme-control rounded px-3 py-2 text-paragraph-2 font-semibold transition-colors ${
-                hasChanges
+                hasChanges && configError === undefined
                   ? "bg-brand-text text-brand-foreground hover:opacity-90"
                   : "bg-grey-fill-weak text-white"
               }`}
@@ -330,6 +404,99 @@ export default function DashboardLayoutBuilder({
         </div>
       </div>
     </div>
+  );
+}
+
+// ── ApplicationStatusSettings ────────────────────────────────────────────────
+
+function ApplicationStatusSettings({
+  forms,
+  value,
+  error,
+  onChange,
+}: {
+  forms: { formId: string; title: string }[];
+  value: ApplicationStatusDraft;
+  error: string | undefined;
+  onChange: (value: ApplicationStatusDraft) => void;
+}) {
+  const setStep = (
+    index: number,
+    field: "label" | "description",
+    text: string,
+  ) =>
+    onChange({
+      ...value,
+      steps: value.steps.map((step, i) =>
+        i === index ? { ...step, [field]: text } : step,
+      ) as ApplicationStatusDraft["steps"],
+    });
+
+  return (
+    <section
+      aria-labelledby="application-status-settings"
+      className="mt-9 flex flex-col gap-4 rounded-xl border border-grey-stroke-weak p-6"
+    >
+      <h2
+        id="application-status-settings"
+        className="text-paragraph-1 font-semibold text-app-strong-text"
+      >
+        Application Status settings
+      </h2>
+      <label className="flex flex-col gap-1 text-paragraph-2 text-grey-text-strong">
+        Application form
+        <select
+          className={inputClass}
+          value={value.formId}
+          onChange={(event) =>
+            onChange({ ...value, formId: event.target.value })
+          }
+        >
+          <option value="">No form (the widget shows an empty state)</option>
+          {forms.map((form) => (
+            <option key={form.formId} value={form.formId}>
+              {form.title}
+            </option>
+          ))}
+          {value.formId &&
+            !forms.some((form) => form.formId === value.formId) && (
+              <option value={value.formId}>
+                {value.formId} (not published)
+              </option>
+            )}
+        </select>
+      </label>
+      {value.steps.map((step, index) => (
+        <fieldset key={index} className="flex flex-col gap-2">
+          <legend className="text-paragraph-2 font-semibold text-grey-text-strong">
+            Step {index + 1}
+          </legend>
+          <label className="flex flex-col gap-1 text-paragraph-2 text-grey-text-strong">
+            Label
+            <input
+              className={inputClass}
+              value={step.label}
+              onChange={(event) => setStep(index, "label", event.target.value)}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-paragraph-2 text-grey-text-strong">
+            Description
+            <input
+              className={inputClass}
+              value={step.description}
+              onChange={(event) =>
+                setStep(index, "description", event.target.value)
+              }
+            />
+          </label>
+        </fieldset>
+      ))}
+      {error && (
+        <p role="alert" className="text-paragraph-2 text-status-red-text">
+          {error}
+        </p>
+      )}
+    </section>
   );
 }
 
