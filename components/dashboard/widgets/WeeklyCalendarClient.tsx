@@ -9,6 +9,7 @@ import {
   isSameCalendarDay,
   startOfDashboardWeek,
 } from "@/lib/dashboard/calendar";
+import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
 
 export type CalendarEvent = {
   id: string;
@@ -24,12 +25,13 @@ function eventTime(timestamp: string) {
 }
 
 export default function WeeklyCalendarClient() {
+  const { organization } = useActiveOrganization();
+  const organizationId = organization.data?.id ?? null;
   const [weekStart, setWeekStart] = useState<Date | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const requestIdRef = useRef(0);
-  const hasInitializedRef = useRef(false);
 
   const days = useMemo(
     () =>
@@ -70,15 +72,25 @@ export default function WeeklyCalendarClient() {
   }, []);
 
   useEffect(() => {
-    if (hasInitializedRef.current) return;
-    hasInitializedRef.current = true;
+    // Invalidate a request from the previous organization before clearing or
+    // loading the calendar for the next active organization.
+    requestIdRef.current += 1;
+
+    if (!organizationId) {
+      setWeekStart(null);
+      setEvents([]);
+      setErrorMessage(null);
+      setIsLoading(false);
+      return;
+    }
 
     const currentWeekStart = startOfDashboardWeek(new Date());
     // This state must be initialized in the browser because the server does
     // not know the viewer's timezone.
     setWeekStart(currentWeekStart);
+    setEvents([]);
     void loadWeek(currentWeekStart);
-  }, [loadWeek]);
+  }, [loadWeek, organizationId]);
 
   function moveWeek(offset: number) {
     if (!weekStart) return;

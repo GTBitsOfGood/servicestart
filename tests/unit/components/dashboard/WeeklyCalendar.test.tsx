@@ -17,6 +17,9 @@ import {
 
 const mocks = vi.hoisted(() => ({
   getCalendar: vi.fn(),
+  activeOrganization: {
+    data: null as { id: string } | null,
+  },
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -27,6 +30,10 @@ vi.mock("@/lib/api", () => ({
       },
     },
   },
+}));
+
+vi.mock("@/lib/hooks/useActiveOrganization", () => ({
+  useActiveOrganization: () => ({ organization: mocks.activeOrganization }),
 }));
 
 function eventOn(date: Date, id: string, name: string): CalendarEvent {
@@ -40,6 +47,7 @@ describe("WeeklyCalendarClient", () => {
 
   beforeEach(() => {
     mocks.getCalendar.mockReset();
+    mocks.activeOrganization.data = { id: "org_current" };
   });
 
   afterEach(() => {
@@ -141,5 +149,27 @@ describe("WeeklyCalendarClient", () => {
         end: addCalendarDays(monday, 7).toISOString(),
       },
     });
+  });
+
+  it("waits for the active organization and reloads when it changes", async () => {
+    mocks.activeOrganization.data = null;
+    mocks.getCalendar.mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [] }),
+    });
+
+    const { rerender } = render(<WeeklyCalendarClient />);
+
+    expect(mocks.getCalendar).not.toHaveBeenCalled();
+
+    mocks.activeOrganization.data = { id: "org_first" };
+    rerender(<WeeklyCalendarClient />);
+
+    await waitFor(() => expect(mocks.getCalendar).toHaveBeenCalledTimes(1));
+
+    mocks.activeOrganization.data = { id: "org_second" };
+    rerender(<WeeklyCalendarClient />);
+
+    await waitFor(() => expect(mocks.getCalendar).toHaveBeenCalledTimes(2));
   });
 });
