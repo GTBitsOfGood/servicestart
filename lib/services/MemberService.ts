@@ -48,19 +48,6 @@ function isAdminOrOwner(role: string | undefined): boolean {
   return role !== undefined && ADMIN_ROLES.includes(role);
 }
 
-async function isAdminOrderOwnerFromUserAndOrgId(
-  userId: string | undefined | null,
-  organizationId: string | undefined | null,
-) {
-  if (!userId || !organizationId) {
-    return false;
-  }
-
-  return findByUserAndOrganization(userId, organizationId).then((membership) =>
-    isAdminOrOwner(membership?.role),
-  );
-}
-
 async function listMemberContacts(organizationId: string) {
   const rows = await db
     .select({ userId: members.userId, email: users.email, name: users.name })
@@ -345,7 +332,6 @@ export const MembersService = {
   getMemberActivity,
   getUserIdsByOrganization,
   isAdminOrOwner,
-  isAdminOrderOwnerFromUserAndOrgId,
   listMemberContacts,
   listMembers,
   countByOrganization,

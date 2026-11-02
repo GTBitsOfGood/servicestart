@@ -4,25 +4,21 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { MEMBER_AUDIENCES } from "@/lib/dashboard/audience";
+import {
+  MEMBER_AUDIENCES,
+  MEMBER_TYPE_LAYOUT_KEYS,
+} from "@/lib/dashboard/audience";
 import type { DashboardLayout } from "@/lib/dashboard/schema";
 import {
   ForbiddenError,
   NoActiveOrganizationError,
   UnauthorizedError,
 } from "@/lib/errors";
-import { OrganizationConfigKey } from "@/lib/schema";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 
 const AudienceSchema = z.enum(MEMBER_AUDIENCES);
 const TypedAudienceSchema = AudienceSchema.exclude(["member"]);
-
-/** Where applicants' and attendees' own layouts are stored. */
-const LAYOUT_KEYS = {
-  applicant: OrganizationConfigKey.ApplicantDashboardLayout,
-  attendee: OrganizationConfigKey.AttendeeDashboardLayout,
-} as const;
 
 /** The active org of a signed-in admin or owner; throws otherwise. */
 async function getAdminOrganizationId() {
@@ -55,7 +51,7 @@ export async function saveDashboardLayout(
   } else {
     await OrganizationConfigService.setConfig(
       orgId,
-      LAYOUT_KEYS[parsed],
+      MEMBER_TYPE_LAYOUT_KEYS[parsed],
       value,
     );
   }
@@ -69,6 +65,9 @@ export async function saveDashboardLayout(
 export async function clearDashboardLayout(audience: unknown) {
   const orgId = await getAdminOrganizationId();
   const parsed = TypedAudienceSchema.parse(audience);
-  await OrganizationConfigService.clearConfig(orgId, LAYOUT_KEYS[parsed]);
+  await OrganizationConfigService.clearConfig(
+    orgId,
+    MEMBER_TYPE_LAYOUT_KEYS[parsed],
+  );
   revalidatePath("/settings/dashboard");
 }

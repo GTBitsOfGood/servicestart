@@ -27,30 +27,26 @@ export default async function getNavbarItems(
   session: Awaited<ReturnType<typeof auth.api.getSession>>,
   orgId: string | undefined | null = session?.session.activeOrganizationId,
 ): Promise<NavbarItem[]> {
-  const orgConfig = orgId
-    ? await OrganizationConfigService.getConfig(
-        orgId,
-        getRelevantOrgConfigKeys(),
-      )
-    : {};
-
-  const membership =
-    session?.user.id && orgId
-      ? await MembersService.findByUserAndOrganization(session.user.id, orgId)
-      : null;
+  const userId = session?.user.id;
+  const [orgConfig, membership, navbarConfig, memberTypesEnabled] = orgId
+    ? await Promise.all([
+        OrganizationConfigService.getConfig(orgId, getRelevantOrgConfigKeys()),
+        userId ? MembersService.findByUserAndOrganization(userId, orgId) : null,
+        OrganizationConfigService.getNavbarConfig(orgId),
+        OrganizationConfigService.getMemberTypesEnabled(orgId),
+      ])
+    : [{}, null, {}, false];
   const admin = MembersService.isAdminOrOwner(membership?.role);
 
   // How this audience's navbar differs (#318). Admins always get the full
-  // navbar, so the audience here is never "admin". Hiding is presentation
+  // navbar, so the audience here is never "admin", and visitors who aren't
+  // members get the plain navbar. Hiding is presentation
   // only; pages keep their own guards. Renamed labels can't break the navs'
   // dropdown state (keyed by label) because only admin items have subpages.
   const { hidden = [], labels = {} } =
-    !admin && orgId
-      ? ((await OrganizationConfigService.getNavbarConfig(orgId))[
-          getDashboardAudience(
-            membership,
-            await OrganizationConfigService.getMemberTypesEnabled(orgId),
-          ) as MemberAudience
+    membership && !admin
+      ? (navbarConfig[
+          getDashboardAudience(membership, memberTypesEnabled) as MemberAudience
         ] ?? {})
       : {};
 

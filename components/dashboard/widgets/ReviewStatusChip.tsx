@@ -8,8 +8,9 @@ import {
 import { SubmissionReviewStatus } from "@/lib/schema";
 
 /**
- * An applicant's own review status. Rejected is grey here rather than the
- * admins' red, so the decision doesn't read as an error (#318).
+ * An applicant's own review status. Rejected uses the chip's default grey
+ * rather than the admins' red, so the decision doesn't read as an error
+ * (#318).
  */
 export default function ReviewStatusChip({
   status,
@@ -20,7 +21,7 @@ export default function ReviewStatusChip({
     <BogChip
       color={
         status === SubmissionReviewStatus.Rejected
-          ? "gray"
+          ? undefined
           : REVIEW_STATUS_CHIP_COLORS[status]
       }
       className="px-3 py-1"

@@ -11,6 +11,7 @@ import {
   type TimelineStep,
 } from "@/lib/dashboard/applicationStatus";
 import { memberTypeFromAudience } from "@/lib/dashboard/audience";
+import { ApplicationStatusWidgetConfigSchema } from "@/lib/dashboard/schema";
 import type { WidgetProps } from "@/lib/dashboard/widgets";
 import { OrganizationConfigKey, SubmissionReviewStatus } from "@/lib/schema";
 import { FormProgressService } from "@/lib/services/FormProgressService";
@@ -27,11 +28,11 @@ const STEP_STATE_TEXT: Record<TimelineStep["state"], string> = {
 function Timeline({ steps }: { steps: TimelineStep[] }) {
   return (
     <section
-      aria-labelledby="application-timeline"
+      aria-labelledby="application-status-timeline"
       className="flex flex-col gap-6"
     >
       <h4
-        id="application-timeline"
+        id="application-status-timeline"
         className="text-paragraph-1 font-semibold text-app-strong-text"
       >
         Application timeline
@@ -109,12 +110,12 @@ function NextSteps({ items }: { items: NextStep[] }) {
   const allDone = done === items.length;
   return (
     <section
-      aria-labelledby="next-steps"
+      aria-labelledby="application-status-next-steps"
       className="flex flex-col gap-4 border-t border-grey-stroke-weak p-8 @6xl:w-2/5 @6xl:shrink-0 @6xl:border-t-0 @6xl:border-l"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h4
-          id="next-steps"
+          id="application-status-next-steps"
           className="text-paragraph-1 font-semibold text-app-strong-text"
         >
           Your next steps
@@ -161,10 +162,10 @@ function NextSteps({ items }: { items: NextStep[] }) {
                 {!item.done && (
                   <Link
                     href={`/forms/${encodeURIComponent(item.formId)}`}
-                    aria-label={`Open ${item.title}`}
                     className="theme-control rounded border border-brand-stroke-strong px-3 py-2 text-center text-paragraph-2 font-semibold text-brand-text hover:bg-brand-fill"
                   >
                     Open form
+                    <span className="sr-only">: {item.title}</span>
                   </Link>
                 )}
               </div>
@@ -275,12 +276,12 @@ export function ApplicationStatusWidgetView({
       <div className="@container shrink-0 rounded-xl bg-solid-bg-base">
         <div className="flex flex-col @6xl:flex-row">
           <section
-            aria-labelledby="application-title"
+            aria-labelledby="application-status-title"
             className="flex min-w-0 flex-1 flex-col gap-8 p-8"
           >
             <div className="flex flex-wrap items-center gap-3">
               <h3
-                id="application-title"
+                id="application-status-title"
                 className="text-heading-3 font-semibold text-app-strong-text"
               >
                 {view.title}
@@ -316,6 +317,13 @@ export default async function ApplicationStatusWidget({
   audience,
   config,
 }: WidgetProps) {
+  const empty: ApplicationStatusView = {
+    kind: "empty",
+    message: NO_APPLICATION_MESSAGE,
+  };
+  if (!ApplicationStatusWidgetConfigSchema.safeParse(config).success) {
+    return <ApplicationStatusWidgetView view={empty} />;
+  }
   const [rows, features] = await Promise.all([
     FormProgressService.listForMember(
       organizationId,
@@ -326,11 +334,9 @@ export default async function ApplicationStatusWidget({
       OrganizationConfigKey.FormsEnabled,
     ]),
   ]);
-  const view: ApplicationStatusView = features[
-    OrganizationConfigKey.FormsEnabled
-  ]
+  const view = features[OrganizationConfigKey.FormsEnabled]
     ? getApplicationStatusView(config, rows)
-    : { kind: "empty", message: NO_APPLICATION_MESSAGE };
+    : empty;
   const firstName =
     view.kind === "application" &&
     view.status === SubmissionReviewStatus.Accepted

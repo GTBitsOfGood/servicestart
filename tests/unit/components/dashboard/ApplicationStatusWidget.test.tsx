@@ -144,7 +144,8 @@ describe("ApplicationStatusWidgetView", () => {
       progressRow("medical"),
     ]);
     expect(chip()?.textContent).toBe("Rejected");
-    expect(chip()?.className).toMatch(/_gray_/);
+    // BogChip's default grey: no color class at all.
+    expect(chip()?.className).not.toMatch(/_(red|gray|amber|blue|green)_/);
     expect(container.innerHTML).not.toMatch(/-red-|_red_/);
     expect(screen.getByText(/Thank you for applying/)).toBeTruthy();
     expect(screen.queryByText("Your next steps")).toBeNull();
@@ -186,7 +187,7 @@ describe("ApplicationStatusWidgetView", () => {
       expect(screen.getByText("1 of 2 completed")).toBeTruthy();
       expect(
         screen
-          .getByRole("link", { name: "Open Title medical" })
+          .getByRole("link", { name: /^Open form\W+Title medical$/ })
           .getAttribute("href"),
       ).toBe("/forms/medical");
       expect(screen.getByText(/Complete this form by/)).toBeTruthy();
@@ -195,9 +196,7 @@ describe("ApplicationStatusWidgetView", () => {
       expect(within(done).queryByRole("link")).toBeNull();
       // The application itself and not-yet-open forms aren't next steps.
       expect(screen.queryByText("Title later")).toBeNull();
-      expect(
-        screen.queryByRole("link", { name: "Open Title camp-app" }),
-      ).toBeNull();
+      expect(screen.queryByRole("link", { name: /Title camp-app/ })).toBeNull();
       expect(screen.queryByText("All caught up!")).toBeNull();
     });
 

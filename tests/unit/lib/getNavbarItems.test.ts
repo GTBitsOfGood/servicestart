@@ -16,7 +16,7 @@ type Session = Parameters<typeof getNavbarItems>[0];
 const CONFIG: NavbarConfig = {
   member: { labels: { "/inbox": "Messages" } },
   applicant: { hidden: ["/events"], labels: { "/": "My Application" } },
-  attendee: { labels: { "/": "My Camp" } },
+  attendee: { hidden: ["/inbox"], labels: { "/": "My Camp" } },
 };
 
 async function setup({
@@ -61,11 +61,10 @@ describe("getNavbarItems with NavbarConfig", () => {
     ]);
   });
 
-  it("renames items for an attendee", async () => {
+  it("hides and renames items for an attendee", async () => {
     const { org, session } = await setup({ memberType: MemberType.Attendee });
     expect(view(await getNavbarItems(session, org.id))).toEqual([
       { href: "/", label: "My Camp", subpages: undefined },
-      { href: "/inbox", label: "Inbox", subpages: undefined },
       { href: "/events", label: "Events", subpages: undefined },
     ]);
   });
@@ -118,20 +117,13 @@ describe("getNavbarItems with NavbarConfig", () => {
     },
   );
 
-  it("drops hidden hrefs from subpages as well as top-level items", async () => {
-    // Only admins see subpages today, so check the filter through a member
-    // whose config hides a subpage href alongside a top-level one: neither
-    // may appear anywhere in the output.
-    const { org, session } = await setup({
-      navbarConfig: { member: { hidden: ["/settings/dashboard", "/inbox"] } },
-    });
-    const items = await getNavbarItems(session, org.id);
-    const hrefs = items.flatMap((i) => [
-      i.href,
-      ...(i.subpages ?? []).map((s) => s.href),
+  it("doesn't apply the member entry to signed-out visitors", async () => {
+    const { org } = await setup();
+    expect(view(await getNavbarItems(null, org.id))).toEqual([
+      { href: "/", label: "Home", subpages: undefined },
+      { href: "/inbox", label: "Inbox", subpages: undefined },
+      { href: "/events", label: "Events", subpages: undefined },
     ]);
-    expect(hrefs).not.toContain("/inbox");
-    expect(hrefs).not.toContain("/settings/dashboard");
   });
 
   it("ignores another org's config", async () => {

@@ -4,6 +4,7 @@ import { FormService } from "@/lib/services/FormService";
 import { getWidgetOptions, WIDGET_FEATURE_KEYS } from "@/lib/dashboard/widgets";
 import {
   MEMBER_AUDIENCES,
+  MEMBER_TYPE_LAYOUT_KEYS,
   type MemberAudience,
 } from "@/lib/dashboard/audience";
 import DashboardLayoutBuilder from "@/components/dashboard/DashboardLayoutBuilder";
@@ -15,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { clearDashboardLayout, saveDashboardLayout } from "./actions";
 
 export const metadata = {
-  title: "Customize Member Dashboard",
+  title: "Customize Dashboards",
 };
 
 const AUDIENCE_LABELS: Record<MemberAudience, string> = {
@@ -23,11 +24,6 @@ const AUDIENCE_LABELS: Record<MemberAudience, string> = {
   applicant: MEMBER_TYPE_PLURAL_LABELS[MemberType.Applicant],
   attendee: MEMBER_TYPE_PLURAL_LABELS[MemberType.Attendee],
 };
-
-const LAYOUT_KEYS = {
-  applicant: OrganizationConfigKey.ApplicantDashboardLayout,
-  attendee: OrganizationConfigKey.AttendeeDashboardLayout,
-} as const;
 
 type DashboardSettingsPageProps = {
   searchParams: Promise<{ audience?: string | string[] }>;
@@ -42,7 +38,14 @@ export default async function DashboardSettingsPage({
     await Promise.all([
       OrganizationConfigService.getMemberTypesEnabled(organizationId),
       OrganizationConfigService.getConfig(organizationId, WIDGET_FEATURE_KEYS),
-      FormService.list(organizationId),
+      // Only the application status widget's settings need forms.
+      OrganizationConfigService.getConfig(organizationId, [
+        OrganizationConfigKey.FormsEnabled,
+      ]).then((config) =>
+        config[OrganizationConfigKey.FormsEnabled]
+          ? FormService.list(organizationId)
+          : [],
+      ),
       searchParams,
     ]);
   const audience: MemberAudience =
@@ -56,9 +59,9 @@ export default async function DashboardSettingsPage({
       ? null
       : (
           await OrganizationConfigService.getConfig(organizationId, [
-            LAYOUT_KEYS[audience],
+            MEMBER_TYPE_LAYOUT_KEYS[audience],
           ])
-        )[LAYOUT_KEYS[audience]];
+        )[MEMBER_TYPE_LAYOUT_KEYS[audience]];
   const layout =
     ownLayout ??
     (await OrganizationConfigService.getDashboardLayout(organizationId));
