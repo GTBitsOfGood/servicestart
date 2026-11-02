@@ -21,7 +21,7 @@ import { MemberType, OrganizationConfigKey } from "@/lib/schema";
 import SaveBanner from "@/components/SaveBanner";
 import BogButton from "@/components/theme/ThemedButton";
 
-type EditableAudience = "default" | "applicant" | "attendee";
+type EditableAudience = "member" | "applicant" | "attendee";
 type HeaderField = keyof DashboardHeaderContent;
 type FieldErrors = Record<string, string>;
 
@@ -74,14 +74,18 @@ type FooterForm = {
   address: string;
   ein: string;
   socialUrls: Record<SocialPlatform, string>;
+  preservedSocialLinks: NonNullable<OrganizationFooter["socialLinks"]>;
 };
 
 function footerToForm(footer: OrganizationFooter): FooterForm {
   const socialUrls = Object.fromEntries(
     SOCIAL_PLATFORMS.map((platform) => [platform, ""]),
   ) as Record<SocialPlatform, string>;
+  const preservedSocialLinks: NonNullable<OrganizationFooter["socialLinks"]> =
+    [];
   for (const link of footer.socialLinks ?? []) {
     if (!socialUrls[link.platform]) socialUrls[link.platform] = link.url;
+    else preservedSocialLinks.push(link);
   }
 
   return {
@@ -90,6 +94,7 @@ function footerToForm(footer: OrganizationFooter): FooterForm {
     address: footer.address ?? "",
     ein: footer.ein ?? "",
     socialUrls,
+    preservedSocialLinks,
   };
 }
 
@@ -110,10 +115,13 @@ function cleanHeader(config: DashboardHeaderConfig): DashboardHeaderConfig {
 }
 
 function cleanFooter(form: FooterForm): OrganizationFooter {
-  const socialLinks = SOCIAL_PLATFORMS.flatMap((platform) => {
-    const url = form.socialUrls[platform].trim();
-    return url ? [{ platform, url }] : [];
-  });
+  const socialLinks = [
+    ...SOCIAL_PLATFORMS.flatMap((platform) => {
+      const url = form.socialUrls[platform].trim();
+      return url ? [{ platform, url }] : [];
+    }),
+    ...form.preservedSocialLinks,
+  ];
 
   return {
     ...(form.email.trim() && { email: form.email.trim() }),
@@ -213,7 +221,7 @@ export default function DashboardContentSettings({
           { value: "applicant", label: "Applicants" },
           { value: "attendee", label: "Current Attendees" },
         ]
-      : [{ value: "default", label: "All Members" }];
+      : [{ value: "member", label: "All Members" }];
 
   const [activeAudience, setActiveAudience] = useState<EditableAudience>(
     audiences[0].value,
@@ -262,7 +270,10 @@ export default function DashboardContentSettings({
     setHeader((current) => ({
       ...current,
       [activeAudience]: {
-        ...current[activeAudience],
+        ...(current[activeAudience] ??
+          (!memberTypesEnabled && activeAudience === "member"
+            ? current.default
+            : undefined)),
         [field]: value,
       },
     }));
@@ -275,7 +286,7 @@ export default function DashboardContentSettings({
   }
 
   function updateFooter(
-    field: keyof Omit<FooterForm, "socialUrls">,
+    field: keyof Omit<FooterForm, "socialUrls" | "preservedSocialLinks">,
     value: string,
   ) {
     setFooter((current) => ({ ...current, [field]: value }));
@@ -439,7 +450,11 @@ export default function DashboardContentSettings({
     }
   }
 
-  const activeContent = header[activeAudience] ?? {};
+  const activeContent =
+    header[activeAudience] ??
+    (!memberTypesEnabled && activeAudience === "member"
+      ? (header.default ?? {})
+      : {});
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-8 text-page-text mobile:px-10 mobile:py-12">

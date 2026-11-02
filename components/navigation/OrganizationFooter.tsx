@@ -56,7 +56,7 @@ export default async function OrganizationFooter({
   const logoUrl = logoConfig[OrganizationConfigKey.LogoUrl];
 
   return (
-    <footer className="flex flex-col gap-8 border border-grey-stroke-weak bg-solid-bg-base px-6 py-8 text-small text-grey-text-weak mobile:flex-row mobile:items-center mobile:justify-between desktop:px-(--organization-footer-inline-padding) desktop:py-(--organization-footer-block-padding)">
+    <footer className="flex w-full flex-col gap-8 border border-grey-stroke-weak bg-solid-bg-base px-6 py-8 text-small text-grey-text-weak mobile:flex-row mobile:items-center mobile:justify-between desktop:px-(--organization-footer-inline-padding) desktop:py-(--organization-footer-block-padding)">
       <div className="flex flex-col gap-(--organization-footer-section-gap)">
         <address className="flex flex-col gap-(--organization-footer-contact-gap) not-italic">
           {footer.email && (

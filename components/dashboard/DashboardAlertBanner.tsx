@@ -12,8 +12,13 @@ function notificationMessage(text: string) {
 }
 
 export default function DashboardAlertBanner() {
-  const { unreadNotifications, isLoading, refreshNotifications } =
-    useNotifications(NotificationType.Announcement);
+  const {
+    unreadNotifications,
+    isLoading,
+    isRefreshing,
+    errorMessage,
+    refreshNotifications,
+  } = useNotifications(NotificationType.Announcement);
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [isDismissing, setIsDismissing] = useState(false);
   const [dismissError, setDismissError] = useState<string | null>(null);
@@ -26,7 +31,36 @@ export default function DashboardAlertBanner() {
     [dismissedIds, unreadNotifications],
   );
 
-  if (isLoading || visibleAlerts.length === 0) return null;
+  if (isLoading) return null;
+
+  if (visibleAlerts.length === 0) {
+    if (!errorMessage) return null;
+
+    return (
+      <section
+        aria-label="Dashboard alerts"
+        className="mb-8 flex items-start gap-4 rounded-lg border border-status-amber-stroke-strong bg-status-amber-fill px-6 py-6 desktop:mb-40 desktop:gap-13 desktop:px-13 desktop:py-13"
+      >
+        <span
+          aria-hidden="true"
+          className="mt-1 size-8 shrink-0 rounded-full bg-status-amber-text/80"
+        />
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-3 font-paragraph!">
+          <p role="status" className="text-paragraph-2 text-page-text">
+            {errorMessage}
+          </p>
+          <button
+            type="button"
+            disabled={isRefreshing}
+            onClick={() => void refreshNotifications()}
+            className="theme-control rounded-full border border-brand-text px-4 py-2 text-small font-semibold text-brand-text hover:bg-brand-fill disabled:cursor-wait disabled:opacity-50"
+          >
+            {isRefreshing ? "Retrying…" : "Retry"}
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   const dismissAlerts = async () => {
     const alertIds = visibleAlerts.map(({ id }) => id);
@@ -76,6 +110,21 @@ export default function DashboardAlertBanner() {
           <p role="status" className="mt-2 text-small text-status-red-text">
             {dismissError}
           </p>
+        )}
+        {errorMessage && (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <p role="status" className="text-small text-status-red-text">
+              {errorMessage}
+            </p>
+            <button
+              type="button"
+              disabled={isRefreshing}
+              onClick={() => void refreshNotifications()}
+              className="theme-control rounded-full border border-brand-text px-3 py-1 text-small font-semibold text-brand-text hover:bg-brand-fill disabled:cursor-wait disabled:opacity-50"
+            >
+              {isRefreshing ? "Retrying…" : "Retry"}
+            </button>
+          </div>
         )}
       </div>
       <button

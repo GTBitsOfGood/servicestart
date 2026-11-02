@@ -36,7 +36,7 @@ export const eventsQuerySchema = paginationQuerySchema.extend({
 });
 
 const calendarQuerySchema = z
-  .object({
+  .strictObject({
     start: timestampSchema,
     end: timestampSchema,
   })

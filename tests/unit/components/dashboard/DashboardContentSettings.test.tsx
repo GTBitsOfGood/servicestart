@@ -126,6 +126,41 @@ describe("DashboardContentSettings", () => {
     expect(mocks.putConfig).not.toHaveBeenCalled();
   });
 
+  it("preserves additional links for a social platform when saving", async () => {
+    const footerWithAdditionalLink = {
+      ...initialFooter,
+      socialLinks: [
+        ...initialFooter.socialLinks,
+        {
+          platform: "instagram" as const,
+          url: "https://instagram.com/camp-volunteers",
+        },
+      ],
+    };
+    render(
+      <DashboardContentSettings
+        initialHeader={initialHeader}
+        initialFooter={footerWithAdditionalLink}
+        memberTypesEnabled
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Updated applicant dashboard" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save dashboard content" }),
+    );
+
+    await waitFor(() => expect(mocks.putConfig).toHaveBeenCalledTimes(2));
+    expect(mocks.putConfig).toHaveBeenCalledWith({
+      json: {
+        key: OrganizationConfigKey.OrganizationFooter,
+        value: JSON.stringify(footerWithAdditionalLink),
+      },
+    });
+  });
+
   it("posts an alert to selected member types", async () => {
     render(
       <DashboardContentSettings
@@ -161,14 +196,44 @@ describe("DashboardContentSettings", () => {
   it("uses one header and all-member alerts when member types are disabled", async () => {
     render(
       <DashboardContentSettings
-        initialHeader={{ default: { title: "Community Dashboard" } }}
+        initialHeader={{
+          default: {
+            title: "Community Dashboard",
+            subtitle: "Default subtitle",
+          },
+          member: { title: "Existing member dashboard" },
+        }}
         initialFooter={{}}
         memberTypesEnabled={false}
       />,
     );
 
     expect(screen.getByRole("tab", { name: "All Members" })).toBeTruthy();
+    expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe(
+      "Existing member dashboard",
+    );
     expect(screen.queryByText("Recipients")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Updated member dashboard" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save dashboard content" }),
+    );
+
+    await waitFor(() => expect(mocks.putConfig).toHaveBeenCalledTimes(2));
+    expect(mocks.putConfig).toHaveBeenCalledWith({
+      json: {
+        key: OrganizationConfigKey.DashboardHeader,
+        value: JSON.stringify({
+          default: {
+            title: "Community Dashboard",
+            subtitle: "Default subtitle",
+          },
+          member: { title: "Updated member dashboard" },
+        }),
+      },
+    });
+
     fireEvent.change(screen.getByLabelText("Alert title"), {
       target: { value: "Reminder" },
     });

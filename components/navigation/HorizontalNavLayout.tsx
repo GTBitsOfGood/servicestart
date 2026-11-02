@@ -14,10 +14,12 @@ export function HorizontalNavLayout({
   alignment,
   mobileNav,
   children,
+  footer,
 }: {
   alignment: ComponentProps<typeof HorizontalNav>["alignment"];
   mobileNav: ComponentProps<typeof MobileSidebarNav>;
   children: ReactNode;
+  footer?: ReactNode;
 }) {
   const desktopRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -67,14 +69,17 @@ export function HorizontalNavLayout({
         </div>
         <MobileSidebarNav {...mobileNav} desktopVisible={collapsed} />
       </div>
-      <main
-        className={
-          collapsed
-            ? "flex-1 overflow-auto px-6 py-4 pt-20"
-            : "flex-1 overflow-auto px-6 py-4 pt-20 md:pt-4"
-        }
-      >
-        {children}
+      <main className="flex flex-1 flex-col overflow-auto">
+        <div
+          className={
+            collapsed
+              ? "flex-1 px-6 py-4 pt-20"
+              : "flex-1 px-6 py-4 pt-20 md:pt-4"
+          }
+        >
+          {children}
+        </div>
+        {footer}
       </main>
     </div>
   );

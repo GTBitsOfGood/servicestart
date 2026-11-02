@@ -44,7 +44,7 @@ function ProgramDetails({
   const datesAndSchedule = [dates, schedule].filter(Boolean).join(" | ");
 
   return (
-    <dl className="mt-8 flex flex-col gap-3 text-[11px]! leading-6! font-paragraph! text-page-text/70">
+    <dl className="mt-8 flex flex-col gap-3 text-program-detail! leading-6! font-paragraph! text-page-text/70">
       {location && (
         <ProgramDetail icon={MapPinIcon} label="Location" value={location} />
       )}
@@ -79,7 +79,7 @@ export default async function DashboardHeader({
     <header
       className={
         hasDetails
-          ? "mb-8 text-page-text desktop:mb-40"
+          ? "mb-8 text-page-text desktop:mb-dashboard-header-gap"
           : "mb-4 text-page-text desktop:mb-8"
       }
     >

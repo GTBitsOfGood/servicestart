@@ -40,7 +40,9 @@ describe("OrganizationFooter", () => {
       ],
     });
 
-    render(await OrganizationFooter({ organizationId: "org_camp" }));
+    const { container } = render(
+      await OrganizationFooter({ organizationId: "org_camp" }),
+    );
 
     expect(mocks.getOrganizationFooter).toHaveBeenCalledWith("org_camp");
     expect(mocks.getConfig).toHaveBeenCalledWith("org_camp", [
@@ -63,6 +65,10 @@ describe("OrganizationFooter", () => {
         .getByRole("img", { name: "Organization logo" })
         .getAttribute("src"),
     ).toBe("/organizations/camp-logo.png");
+    expect(container.querySelector("footer")?.className).toContain(
+      "border-grey-stroke-weak",
+    );
+    expect(container.querySelector("footer")?.className).toContain("w-full");
   });
 
   it("renders a partial footer without empty labels", async () => {

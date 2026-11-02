@@ -50,6 +50,8 @@ function notificationState(overrides: Record<string, unknown> = {}) {
       alert("older", "Older camp alert"),
     ],
     isLoading: false,
+    isRefreshing: false,
+    errorMessage: null,
     refreshNotifications: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };
@@ -90,6 +92,23 @@ describe("DashboardAlertBanner", () => {
       ).toBeNull();
     },
   );
+
+  it("shows a load error and lets the member retry", () => {
+    const refreshNotifications = vi.fn().mockResolvedValue(undefined);
+    mocks.useNotifications.mockReturnValue(
+      notificationState({
+        unreadNotifications: [],
+        errorMessage: "Unable to load notifications.",
+        refreshNotifications,
+      }),
+    );
+
+    render(<DashboardAlertBanner />);
+
+    expect(screen.getByText("Unable to load notifications.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(refreshNotifications).toHaveBeenCalledTimes(1);
+  });
 
   it("marks every displayed alert read, refreshes the shared count, and hides", async () => {
     const state = notificationState();

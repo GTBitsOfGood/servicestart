@@ -77,4 +77,17 @@ describe("GET /api/events/calendar", () => {
 
     expect(response.status).toBe(400);
   });
+
+  it("rejects unsupported query fields", async () => {
+    const queryWithUnsupportedField = {
+      ...query,
+      unsupported: "value",
+    };
+
+    const response = await testApi.events.calendar.$get({
+      query: queryWithUnsupportedField,
+    });
+
+    expect(response.status).toBe(400);
+  });
 });
