@@ -279,18 +279,20 @@ export function ApplicationStatusWidgetView({
             aria-labelledby="application-status-title"
             className="flex min-w-0 flex-1 flex-col gap-8 p-8"
           >
-            <div className="flex flex-wrap items-center gap-3">
-              <h3
-                id="application-status-title"
-                className="text-heading-3 font-semibold text-app-strong-text"
-              >
-                {view.title}
-              </h3>
-              {view.status && <ReviewStatusChip status={view.status} />}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 flex-wrap items-center gap-3">
+                <h3
+                  id="application-status-title"
+                  className="text-heading-3 font-semibold break-words text-app-strong-text"
+                >
+                  {view.title}
+                </h3>
+                {view.status && <ReviewStatusChip status={view.status} />}
+              </div>
               {view.status && (
                 <Link
                   href={`/forms/${encodeURIComponent(view.formId)}/response`}
-                  className="ml-auto text-paragraph-2 font-semibold text-brand-text hover:underline"
+                  className="shrink-0 text-paragraph-2 font-semibold text-brand-text hover:underline"
                 >
                   View Application
                 </Link>

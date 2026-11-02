@@ -149,7 +149,7 @@ export default function DashboardLayoutBuilder({
   const configError =
     showApplicationStatusSettings && applicationStatus.formId
       ? WIDGET_CONFIG_SCHEMAS.application_status?.safeParse(applicationStatus)
-          .error?.issues[0]?.message
+          .error?.issues[0]
       : undefined;
 
   const editApplicationStatus = (draft: ApplicationStatusDraft) => {
@@ -417,9 +417,22 @@ function ApplicationStatusSettings({
 }: {
   forms: { formId: string; title: string }[];
   value: ApplicationStatusDraft;
-  error: string | undefined;
+  error: { message: string; path: PropertyKey[] } | undefined;
   onChange: (value: ApplicationStatusDraft) => void;
 }) {
+  const errorId = "application-status-settings-error";
+  const errorMessage = error && (
+    <p
+      id={errorId}
+      role="alert"
+      className="text-paragraph-2 text-status-red-text"
+    >
+      {error.message}
+    </p>
+  );
+  // Shown under the step field it's about; anything else goes at the end.
+  const isStepError = error?.path[0] === "steps";
+
   const setStep = (
     index: number,
     field: "label" | "description",
@@ -471,31 +484,30 @@ function ApplicationStatusSettings({
           <legend className="text-paragraph-2 font-semibold text-grey-text-strong">
             Step {index + 1}
           </legend>
-          <label className="flex flex-col gap-1 text-paragraph-2 text-grey-text-strong">
-            Label
-            <input
-              className={inputClass}
-              value={step.label}
-              onChange={(event) => setStep(index, "label", event.target.value)}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-paragraph-2 text-grey-text-strong">
-            Description
-            <input
-              className={inputClass}
-              value={step.description}
-              onChange={(event) =>
-                setStep(index, "description", event.target.value)
-              }
-            />
-          </label>
+          {(["label", "description"] as const).map((field) => {
+            const invalid =
+              isStepError && error.path[1] === index && error.path[2] === field;
+            return (
+              <div key={field} className="flex flex-col gap-1">
+                <label className="flex flex-col gap-1 text-paragraph-2 text-grey-text-strong">
+                  {field === "label" ? "Label" : "Description"}
+                  <input
+                    className={`${inputClass} aria-invalid:border-status-red-text`}
+                    value={step[field]}
+                    aria-invalid={invalid || undefined}
+                    aria-describedby={invalid ? errorId : undefined}
+                    onChange={(event) =>
+                      setStep(index, field, event.target.value)
+                    }
+                  />
+                </label>
+                {invalid && errorMessage}
+              </div>
+            );
+          })}
         </fieldset>
       ))}
-      {error && (
-        <p role="alert" className="text-paragraph-2 text-status-red-text">
-          {error}
-        </p>
-      )}
+      {!isStepError && errorMessage}
     </section>
   );
 }

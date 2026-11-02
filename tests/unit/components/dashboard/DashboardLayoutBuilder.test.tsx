@@ -362,6 +362,15 @@ describe("DashboardLayoutBuilder", () => {
       expect(screen.getByRole("alert").textContent).toBe(
         "Give the step a name",
       );
+      // Under, and tied to, the field it's about.
+      const label3 = screen.getAllByLabelText("Label")[2];
+      expect(label3.getAttribute("aria-invalid")).toBe("true");
+      expect(label3.getAttribute("aria-describedby")).toBe(
+        screen.getByRole("alert").id,
+      );
+      expect(
+        screen.getAllByLabelText("Label")[0].getAttribute("aria-invalid"),
+      ).toBeNull();
       expect((save() as HTMLButtonElement).disabled).toBe(true);
       fireEvent.click(save());
       expect(onSave).not.toHaveBeenCalled();

@@ -94,7 +94,9 @@ describe("ApplicationStatusWidgetView", () => {
 
   it("pending: chip, review text, step 1 complete, View Application", () => {
     renderView([app(SubmissionReviewStatus.Pending)]);
-    expect(screen.getByText("Pending")).toBeTruthy();
+    expect(chip()?.textContent).toBe("Pending");
+    // Token colors, not BogChip's faint gold "amber".
+    expect(chip()?.getAttribute("style")).toContain("status-amber-text");
     expect(
       screen.getByText(/currently being reviewed by our team/).textContent,
     ).toMatch(/Check back again later/);
