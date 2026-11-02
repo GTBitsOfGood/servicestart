@@ -1,7 +1,30 @@
-import ComingSoonWidget from "@/components/dashboard/widgets/ComingSoonWidget";
+import type { WidgetProps } from "@/lib/dashboard/widgets";
+import {
+  addCalendarDays,
+  startOfDashboardWeek,
+} from "@/lib/dashboard/calendar";
+import { EventService } from "@/lib/services/EventService";
+import WeeklyCalendarClient from "@/components/dashboard/widgets/WeeklyCalendarClient";
 
-// Placeholder until #320 builds it. Like every widget, it's rendered with
-// WidgetProps (lib/dashboard/widgets.ts).
-export default async function WeeklyCalendarWidget() {
-  return <ComingSoonWidget title="Weekly Calendar" />;
+export default async function WeeklyCalendarWidget({
+  organizationId,
+}: WidgetProps) {
+  const weekStart = startOfDashboardWeek(new Date());
+  const weekEnd = addCalendarDays(weekStart, 7);
+  const events = await EventService.listPublishedInRange(
+    organizationId,
+    weekStart,
+    weekEnd,
+  );
+
+  return (
+    <WeeklyCalendarClient
+      initialWeekStart={weekStart.toISOString()}
+      initialEvents={events.map((event) => ({
+        id: event.id,
+        name: event.name,
+        startTimestamp: event.startTimestamp!.toISOString(),
+      }))}
+    />
+  );
 }

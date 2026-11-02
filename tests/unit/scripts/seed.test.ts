@@ -846,6 +846,12 @@ it("configures Visionaries' logo, dashboards, header, navbar, and footer", async
   expect(config[OrganizationConfigKey.OrganizationFooter].ein).toBe(
     "84-4516921",
   );
+  expect(config[OrganizationConfigKey.OrganizationFooter].socialLinks).toEqual([
+    {
+      platform: "instagram",
+      url: "https://www.instagram.com/vttt.inc/",
+    },
+  ]);
 
   const defaults = await OrganizationConfigService.getConfig(
     "org_servicestart",

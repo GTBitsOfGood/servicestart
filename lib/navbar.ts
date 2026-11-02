@@ -49,6 +49,11 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
       },
       { label: "Admin Dashboard", href: "/settings/admindashboard" },
       { label: "Dashboard", href: "/settings/dashboard" },
+      {
+        label: "Dashboard Content",
+        href: "/settings/dashboard-content",
+        requireAdmin: true,
+      },
     ],
   },
   { label: "Events", href: "/events", icon: "calendar" },

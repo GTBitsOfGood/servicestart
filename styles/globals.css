@@ -13,6 +13,8 @@
   --spacing-requests-close-icon: 22px;
   /* The dashboard's two-column grid fills the screen below the header. */
   --spacing-dashboard-grid: min(69.6rem, calc(100dvh - 20rem));
+  /* The weekly calendar needs room for its five day cells and navigation. */
+  --spacing-weekly-calendar: 430px;
   --text-requests-control: 13px;
 
   --color-brand-text: #fc5b43;
@@ -169,6 +171,14 @@
   --animate-fade-out: fade-out 0.25s ease-out;
   --animate-slide-in-right: slide-in-right 0.3s ease-out;
   --animate-slide-out-right: slide-out-right 0.2s ease-in forwards;
+}
+
+:root {
+  --organization-footer-logo-height: 127px;
+  --organization-footer-inline-padding: 78px;
+  --organization-footer-block-padding: 32px;
+  --organization-footer-contact-gap: 8px;
+  --organization-footer-section-gap: 20px;
 }
 
 /* Theme adapters for BoG primitives. These intentionally live outside

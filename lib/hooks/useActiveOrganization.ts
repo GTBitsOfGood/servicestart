@@ -49,17 +49,21 @@ export function useActiveOrganization() {
   useEffect(() => {
     const hasSession = !!session?.data;
     const activeSlug = organization?.data?.slug ?? null;
+    const activeOrganizationId = organization?.data?.id ?? null;
+    const sessionOrganizationId =
+      session?.data?.session.activeOrganizationId ?? null;
 
     if (!hasSession) return;
     if (shouldSkipHostSlugSync()) return;
-    if (activeSlug === slug) return;
+    if (activeSlug === slug && activeOrganizationId === sessionOrganizationId)
+      return;
     if (lastSetSlugRef.current === slug) return;
 
     lastSetSlugRef.current = slug;
     authClient.organization.setActive({ organizationSlug: slug }).catch(() => {
       lastSetSlugRef.current = null;
     });
-  }, [slug, session?.data, organization?.data?.slug]);
+  }, [slug, session?.data, organization?.data?.id, organization?.data?.slug]);
 
   return { slug, organization };
 }

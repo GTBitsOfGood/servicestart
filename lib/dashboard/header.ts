@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { DashboardAudience } from "@/lib/dashboard/audience";
 
 /*
  * The text above an org's dashboard (#320): a title, a subtitle, a
@@ -33,3 +34,35 @@ export type DashboardHeaderConfig = z.infer<typeof DashboardHeaderConfigSchema>;
 
 /** With no config, every audience gets today's built-in heading. */
 export const DEFAULT_DASHBOARD_HEADER_CONFIG: DashboardHeaderConfig = {};
+
+export type ResolvedDashboardHeader = DashboardHeaderContent & {
+  title: string;
+};
+
+function builtInTitle(audience: DashboardAudience) {
+  return audience === "admin" ? "Admin Dashboard" : "Dashboard";
+}
+
+function firstName(name: string) {
+  return name.trim().split(/\s+/)[0] ?? "";
+}
+
+/**
+ * Selects the viewer's audience entry, then the default entry. A configured
+ * entry is intentionally not merged with the default: fields omitted by an
+ * organization stay omitted. The title is the one exception because every
+ * dashboard still needs its existing built-in heading.
+ */
+export function resolveDashboardHeader(
+  config: DashboardHeaderConfig,
+  audience: DashboardAudience,
+  userName: string,
+): ResolvedDashboardHeader {
+  const content = config[audience] ?? config.default ?? {};
+  const title = content.title ?? builtInTitle(audience);
+
+  return {
+    ...content,
+    title: title.replaceAll("{firstName}", firstName(userName)),
+  };
+}

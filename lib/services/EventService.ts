@@ -1,7 +1,9 @@
 import {
   and,
+  asc,
   count,
   eq,
+  gte,
   gt,
   lt,
   isNull,
@@ -207,6 +209,31 @@ async function listByPublic(options: { limit: number; offset: number }) {
     )
     .limit(options.limit)
     .offset(options.offset);
+}
+
+async function listPublishedInRange(
+  organizationId: string,
+  start: Date,
+  end: Date,
+) {
+  if (start.getTime() >= end.getTime()) return [];
+
+  return db
+    .select({
+      id: events.id,
+      name: events.name,
+      startTimestamp: events.startTimestamp,
+    })
+    .from(events)
+    .where(
+      and(
+        eq(events.organizationId, organizationId),
+        isNotNull(events.publishedAt),
+        gte(events.startTimestamp, start),
+        lt(events.startTimestamp, end),
+      ),
+    )
+    .orderBy(asc(events.startTimestamp), asc(events.name));
 }
 
 const eventColumns = {
@@ -474,6 +501,7 @@ export const EventService = {
   findById,
   listByOrganization,
   listByPublic,
+  listPublishedInRange,
   updateEvent,
   register,
   withdraw,
