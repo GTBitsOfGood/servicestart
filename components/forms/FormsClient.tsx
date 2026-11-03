@@ -597,6 +597,12 @@ export default function FormsClient({
                           Edit questions
                         </Link>
                       )}
+                      <Link
+                        className="self-center underline"
+                        href={`/settings/forms/${form.formId}/responses`}
+                      >
+                        Responses
+                      </Link>
                       <FormDialog
                         key={`${form.formId}-${form.updatedAt}`}
                         form={form}

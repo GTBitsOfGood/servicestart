@@ -4,6 +4,7 @@ import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import NotificationTag from "@/components/notifications/NotificationTag";
 import { NotificationService } from "@/lib/services/NotificationService";
 import { redirectIfNotMember } from "@/lib/authUtils";
+import { ReviewNotificationMetadataSchema } from "@/lib/forms/review";
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
@@ -58,6 +59,9 @@ export default async function NotificationDetailPage({
   if (!notification.read) {
     await NotificationService.updateReadStatus(notificationId, true);
   }
+  const reviewMetadata = ReviewNotificationMetadataSchema.safeParse(
+    notification.metadata,
+  );
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -80,6 +84,14 @@ export default async function NotificationDetailPage({
         <div className="whitespace-pre-wrap text-paragraph-1 leading-6 text-grey-text-strong">
           {notification.text}
         </div>
+        {reviewMetadata.success && (
+          <Link
+            href={reviewMetadata.data.href}
+            className="mt-4 inline-block text-brand-text underline"
+          >
+            View dashboard
+          </Link>
+        )}
       </div>
     </div>
   );

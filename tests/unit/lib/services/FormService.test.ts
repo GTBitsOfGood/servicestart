@@ -289,7 +289,7 @@ describe("FormService", () => {
       "https://tenant.example",
     );
     expect(csv).toBe(
-      `"Submitter name","Submitter email","Submitted at","'=Name","Headshot","Optional"\r\n"","","2030-01-01T12:00:00.000Z","'+Hello, ""world""\nnext","https://tenant.example/api/forms/${form.formId}/uploads/${uploadId}",""\r\n`,
+      `"Submitter name","Submitter email","Submitted at","Review status","'=Name","Headshot","Optional"\r\n"","","2030-01-01T12:00:00.000Z","Pending","'+Hello, ""world""\nnext","https://tenant.example/api/forms/${form.formId}/uploads/${uploadId}",""\r\n`,
     );
     await db
       .update(formComponents)
@@ -333,7 +333,7 @@ describe("FormService", () => {
       (
         await FormService.exportCsv(a.id, form.formId, "https://example.com")
       ).split("\r\n")[1],
-    ).toBe('"","","2030-01-01T12:00:00.000Z","Mon; Fri","No"');
+    ).toBe('"","","2030-01-01T12:00:00.000Z","Pending","Mon; Fri","No"');
   });
 
   it("exports submitter identity and retains responses after user deletion", async () => {

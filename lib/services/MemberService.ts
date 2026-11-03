@@ -12,6 +12,8 @@ import {
 } from "@/lib/schema";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 async function findByUserAndOrganization(
   userId: string,
   organizationId: string,
@@ -135,10 +137,12 @@ async function setMemberTypes(
   organizationId: string,
   userIds: string[],
   memberType: MemberType,
+  transaction?: Transaction,
 ): Promise<{ error: "not_found" | "admin" } | { updated: number }> {
   const uniqueIds = Array.from(new Set(userIds));
+  if (uniqueIds.length === 0) return { updated: 0 };
 
-  return db.transaction(async (tx) => {
+  const update = async (tx: Transaction) => {
     const rows = await tx
       .select({ userId: members.userId, role: members.role })
       .from(members)
@@ -169,7 +173,8 @@ async function setMemberTypes(
       .returning({ id: members.id });
 
     return { updated: updated.length };
-  });
+  };
+  return transaction ? update(transaction) : db.transaction(update);
 }
 
 /**
