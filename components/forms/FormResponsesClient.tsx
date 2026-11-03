@@ -116,13 +116,8 @@ export default function FormResponsesClient({
   }, [formId, query]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void refresh();
-    }, 0);
-    return () => {
-      clearTimeout(timer);
-      invalidate();
-    };
+    void refresh();
+    return invalidate;
   }, [refresh, invalidate]);
 
   useEffect(() => {

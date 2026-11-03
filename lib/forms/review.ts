@@ -6,8 +6,8 @@ export const ReviewStatusSchema = z.object({
 });
 export const BulkReviewStatusSchema = ReviewStatusSchema.extend({
   submissionIds: z.array(z.uuid()).min(1).max(100),
-});
-export const ResponseListQuerySchema = z.object({
+}).strict();
+export const ResponseListQuerySchema = z.strictObject({
   status: z.enum(SubmissionReviewStatus).optional(),
   search: z.string().trim().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(25),

@@ -81,17 +81,19 @@ export default async function NotificationDetailPage({
           </span>
         </div>
 
-        <div className="whitespace-pre-wrap text-paragraph-1 leading-6 text-grey-text-strong">
-          {notification.text}
+        <div className="flex flex-col gap-4">
+          <div className="whitespace-pre-wrap text-paragraph-1 leading-6 text-grey-text-strong">
+            {notification.text}
+          </div>
+          {reviewMetadata.success && (
+            <Link
+              href={reviewMetadata.data.href}
+              className="self-start text-brand-text underline"
+            >
+              View dashboard
+            </Link>
+          )}
         </div>
-        {reviewMetadata.success && (
-          <Link
-            href={reviewMetadata.data.href}
-            className="mt-4 inline-block text-brand-text underline"
-          >
-            View dashboard
-          </Link>
-        )}
       </div>
     </div>
   );

@@ -254,6 +254,49 @@ describe("response list, bulk status, and preview API", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects unknown query parameters instead of silently ignoring them", async () => {
+    const { org, form, headers } = await setup();
+    const res = await testApi.formResponses[":formId"].$get(
+      {
+        param: { formId: form.formId },
+        query: { statsu: SubmissionReviewStatus.Accepted } as never,
+      },
+      { headers },
+    );
+    expect(res.status).toBe(400);
+    const unchanged = await FormReviewService.listResponses(
+      org.id,
+      form.formId,
+      { limit: 25, offset: 0 },
+    );
+    expect(unchanged.rows[0].reviewStatus).toBe(SubmissionReviewStatus.Pending);
+  });
+
+  it("rejects unknown bulk and preview fields without changing statuses", async () => {
+    const { org, form, headers, submissionId } = await setup();
+    const json = {
+      submissionIds: [submissionId],
+      status: SubmissionReviewStatus.Accepted,
+      unsupported: true,
+    };
+    const preview = await testApi.formResponses.status.preview.$post(
+      { json },
+      { headers },
+    );
+    const bulk = await testApi.formResponses.status.$patch(
+      { json },
+      { headers },
+    );
+    expect(preview.status).toBe(400);
+    expect(bulk.status).toBe(400);
+    const remaining = await FormReviewService.listResponses(
+      org.id,
+      form.formId,
+      { limit: 25, offset: 0 },
+    );
+    expect(remaining.rows[0].reviewStatus).toBe(SubmissionReviewStatus.Pending);
+  });
+
   it("returns 404 for missing forms and mixed-tenant bulk IDs without partial writes", async () => {
     const a = await setup();
     const b = await setup();
