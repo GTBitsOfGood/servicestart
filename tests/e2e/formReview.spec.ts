@@ -72,6 +72,10 @@ async function createUser(
 /** Signs the browser in with a session cookie from `createUser`. */
 async function signIn(page: Page, origin: string, cookie: string) {
   const [name, ...value] = cookie.split(";")[0].split("=");
+  // A page load can call set-active, whose response sets the session cookie.
+  // Leave the previous user's page first so a response still in flight can't
+  // land after the swap and sign that user back in.
+  await page.goto("about:blank");
   await page.context().clearCookies();
   await page.context().addCookies([
     {
