@@ -76,4 +76,28 @@ describe("DashboardGrid", () => {
     );
     expect(tree[0].props.children).toBe("No widgets configured");
   });
+
+  it("lets the grid grow and gives the weekly calendar enough room", () => {
+    const tree = elements(
+      DashboardGrid({
+        layout: {
+          layout: "horizontal",
+          widgets: [
+            { id: "forms_todo", size: "small" },
+            { id: "weekly_calendar", size: "small" },
+          ],
+        },
+        organizationId: "org_1",
+        userId: "user_1",
+        audience: "attendee",
+      }),
+    );
+
+    expect(tree[0].props.className).toContain("mobile:min-h-dashboard-grid");
+    expect(tree[0].props.className).not.toContain("mobile:h-dashboard-grid");
+    const calendarSlot = tree.find(
+      (element) => element.props["data-widget-id"] === "weekly_calendar",
+    );
+    expect(calendarSlot?.props.className).toContain("min-h-weekly-calendar");
+  });
 });

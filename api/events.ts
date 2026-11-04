@@ -17,6 +17,7 @@ import {
   eventCreateSchema,
   eventUpdateSchema,
   registrationBlockMessages,
+  timestampSchema,
   validateEventDates,
   validateReadyToPublish,
   type RegistrationBlock,
@@ -33,6 +34,23 @@ export const eventsQuerySchema = paginationQuerySchema.extend({
       return undefined;
     }),
 });
+
+const calendarQuerySchema = z
+  .strictObject({
+    start: timestampSchema,
+    end: timestampSchema,
+  })
+  .refine(({ start, end }) => Date.parse(start) < Date.parse(end), {
+    message: "End must be after start",
+    path: ["end"],
+  })
+  .refine(
+    ({ start, end }) => Date.parse(end) - Date.parse(start) <= 8 * 86_400_000,
+    {
+      message: "Calendar ranges cannot exceed eight days",
+      path: ["end"],
+    },
+  );
 
 const NOT_FOUND_BLOCKS: RegistrationBlock[] = ["not-visible", "not-a-member"];
 
@@ -199,6 +217,23 @@ const app = new Hono()
       data: eventsList,
       page,
       pageSize,
+    });
+  })
+  .get("/calendar", zValidator("query", calendarQuerySchema), async (c) => {
+    const session = await requireMembership(c);
+    const organizationId = session.session.activeOrganizationId!;
+    const { start, end } = c.req.valid("query");
+    const calendarEvents = await EventService.listPublishedInRange(
+      organizationId,
+      new Date(start),
+      new Date(end),
+    );
+
+    return c.json({
+      data: calendarEvents.map((event) => ({
+        ...event,
+        startTimestamp: event.startTimestamp!.toISOString(),
+      })),
     });
   })
   .get("/:eventId", async (c) => {

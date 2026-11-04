@@ -12,6 +12,8 @@ import {
 } from "@/lib/schema";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 async function findByUserAndOrganization(
   userId: string,
   organizationId: string,
@@ -34,11 +36,21 @@ async function findByUserAndOrganization(
   return membership ?? null;
 }
 
-async function getUserIdsByOrganization(organizationId: string) {
+async function getUserIdsByOrganization(
+  organizationId: string,
+  memberTypes?: MemberType[],
+) {
   const organizationMembers = await db
     .select({ userId: members.userId })
     .from(members)
-    .where(eq(members.organizationId, organizationId));
+    .where(
+      and(
+        eq(members.organizationId, organizationId),
+        memberTypes?.length
+          ? inArray(members.memberType, memberTypes)
+          : undefined,
+      ),
+    );
 
   return organizationMembers.map((member) => member.userId);
 }
@@ -46,19 +58,6 @@ async function getUserIdsByOrganization(organizationId: string) {
 function isAdminOrOwner(role: string | undefined): boolean {
   const ADMIN_ROLES = ["admin", "owner"];
   return role !== undefined && ADMIN_ROLES.includes(role);
-}
-
-async function isAdminOrderOwnerFromUserAndOrgId(
-  userId: string | undefined | null,
-  organizationId: string | undefined | null,
-) {
-  if (!userId || !organizationId) {
-    return false;
-  }
-
-  return findByUserAndOrganization(userId, organizationId).then((membership) =>
-    isAdminOrOwner(membership?.role),
-  );
 }
 
 async function listMemberContacts(organizationId: string) {
@@ -135,10 +134,12 @@ async function setMemberTypes(
   organizationId: string,
   userIds: string[],
   memberType: MemberType,
+  transaction?: Transaction,
 ): Promise<{ error: "not_found" | "admin" } | { updated: number }> {
   const uniqueIds = Array.from(new Set(userIds));
+  if (uniqueIds.length === 0) return { updated: 0 };
 
-  return db.transaction(async (tx) => {
+  const update = async (tx: Transaction) => {
     const rows = await tx
       .select({ userId: members.userId, role: members.role })
       .from(members)
@@ -169,7 +170,8 @@ async function setMemberTypes(
       .returning({ id: members.id });
 
     return { updated: updated.length };
-  });
+  };
+  return transaction ? update(transaction) : db.transaction(update);
 }
 
 /**
@@ -345,7 +347,6 @@ export const MembersService = {
   getMemberActivity,
   getUserIdsByOrganization,
   isAdminOrOwner,
-  isAdminOrderOwnerFromUserAndOrgId,
   listMemberContacts,
   listMembers,
   countByOrganization,

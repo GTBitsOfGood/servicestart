@@ -4,6 +4,7 @@ import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import NotificationTag from "@/components/notifications/NotificationTag";
 import { NotificationService } from "@/lib/services/NotificationService";
 import { redirectIfNotMember } from "@/lib/authUtils";
+import { ReviewNotificationMetadataSchema } from "@/lib/forms/review";
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
@@ -58,6 +59,13 @@ export default async function NotificationDetailPage({
   if (!notification.read) {
     await NotificationService.updateReadStatus(notificationId, true);
   }
+  const reviewMetadata = ReviewNotificationMetadataSchema.safeParse(
+    notification.metadata,
+  );
+
+  const link = (notification.metadata as { link?: unknown } | null)?.link;
+  const formLink =
+    typeof link === "string" && link.startsWith("/forms/") ? link : null;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -77,9 +85,29 @@ export default async function NotificationDetailPage({
           </span>
         </div>
 
-        <div className="whitespace-pre-wrap text-paragraph-1 leading-6 text-grey-text-strong">
-          {notification.text}
+        <div className="flex flex-col gap-4">
+          <div className="whitespace-pre-wrap text-paragraph-1 leading-6 text-grey-text-strong">
+            {notification.text}
+          </div>
+          {reviewMetadata.success && (
+            <Link
+              href={reviewMetadata.data.href}
+              className="self-start text-brand-text underline"
+            >
+              View dashboard
+            </Link>
+          )}
         </div>
+
+        {formLink && (
+          <Link
+            href={formLink}
+            className="mt-6 inline-flex items-center gap-2 text-paragraph-2 font-semibold text-brand-text hover:opacity-80"
+          >
+            Open form
+            <BogIcon name="arrow-right" size={18} />
+          </Link>
+        )}
       </div>
     </div>
   );

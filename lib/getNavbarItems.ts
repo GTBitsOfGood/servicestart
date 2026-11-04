@@ -1,4 +1,8 @@
-import { NAVBAR_ITEMS, NavbarItem } from "@/lib/navbar";
+import { NAVBAR_ITEMS, NavbarItem, Page } from "@/lib/navbar";
+import {
+  getDashboardAudience,
+  type MemberAudience,
+} from "@/lib/dashboard/audience";
 import { OrganizationConfigKey } from "./schema";
 import { auth } from "./auth";
 import { MembersService } from "./services/MemberService";
@@ -23,45 +27,45 @@ export default async function getNavbarItems(
   session: Awaited<ReturnType<typeof auth.api.getSession>>,
   orgId: string | undefined | null = session?.session.activeOrganizationId,
 ): Promise<NavbarItem[]> {
-  const orgConfig = orgId
-    ? await OrganizationConfigService.getConfig(
-        orgId,
-        getRelevantOrgConfigKeys(),
-      )
-    : {};
+  const userId = session?.user.id;
+  const [orgConfig, membership, navbarConfig, memberTypesEnabled] = orgId
+    ? await Promise.all([
+        OrganizationConfigService.getConfig(orgId, getRelevantOrgConfigKeys()),
+        userId ? MembersService.findByUserAndOrganization(userId, orgId) : null,
+        OrganizationConfigService.getNavbarConfig(orgId),
+        OrganizationConfigService.getMemberTypesEnabled(orgId),
+      ])
+    : [{}, null, {}, false];
+  const admin = MembersService.isAdminOrOwner(membership?.role);
 
-  const admin = await MembersService.isAdminOrderOwnerFromUserAndOrgId(
-    session?.user.id,
-    orgId,
-  );
+  // How this audience's navbar differs (#318). Admins always get the full
+  // navbar, so the audience here is never "admin", and visitors who aren't
+  // members get the plain navbar. Hiding is presentation
+  // only; pages keep their own guards. Renamed labels can't break the navs'
+  // dropdown state (keyed by label) because only admin items have subpages.
+  const { hidden = [], labels = {} } =
+    membership && !admin
+      ? (navbarConfig[
+          getDashboardAudience(membership, memberTypesEnabled) as MemberAudience
+        ] ?? {})
+      : {};
 
-  const navbarItems = NAVBAR_ITEMS.filter((item) => {
-    if (item.requireAdmin && !admin) {
+  const isVisible = (page: Page) => {
+    if (page.requireAdmin && !admin) {
       return false;
     }
-    if (item.requireConfig) {
-      const configValue = orgConfig[item.requireConfig];
-      if (!configValue) {
-        return false;
-      }
+    if (page.requireConfig && !orgConfig[page.requireConfig]) {
+      return false;
     }
-    return true;
-  }).map((item) => {
-    const filteredSubpages = item.subpages?.filter((sub) => {
-      if (sub.requireAdmin && !admin) {
-        return false;
-      }
-      if (sub.requireConfig) {
-        const configValue = orgConfig[sub.requireConfig];
-        if (!configValue) {
-          return false;
-        }
-      }
-      return true;
-    });
+    return !hidden.includes(page.href);
+  };
+  const relabel = <T extends Page>(page: T): T =>
+    labels[page.href] ? { ...page, label: labels[page.href] } : page;
 
-    return { ...item, subpages: filteredSubpages };
-  });
-
-  return navbarItems;
+  return NAVBAR_ITEMS.filter(isVisible).map((item) =>
+    relabel({
+      ...item,
+      subpages: item.subpages?.filter(isVisible).map(relabel),
+    }),
+  );
 }

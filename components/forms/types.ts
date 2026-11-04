@@ -1,3 +1,4 @@
+import type { FocusEvent } from "react";
 import type { FormComponentType } from "@/lib/schema";
 import type {
   FormAnswerValue,
@@ -62,4 +63,12 @@ export function describedBy(
     ...extra,
   ].filter(Boolean);
   return ids.length > 0 ? ids.join(" ") : undefined;
+}
+
+/** Calls `onBlur` once focus leaves a group of controls, not between them. */
+export function groupBlur(onBlur: () => void) {
+  return (event: FocusEvent<HTMLElement>) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+      onBlur();
+  };
 }

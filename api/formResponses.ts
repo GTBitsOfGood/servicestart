@@ -4,24 +4,27 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/authUtils";
 import { NotFoundError } from "@/lib/errors";
-import { OrganizationConfigKey, SubmissionReviewStatus } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/lib/schema";
+import { FormIdSchema } from "@/lib/forms/schema";
+import { FormError } from "@/lib/forms/management";
+import {
+  BulkReviewStatusSchema,
+  ResponseListQuerySchema,
+  ReviewStatusSchema,
+} from "@/lib/forms/review";
 import {
   FormReviewService,
   SubmissionNotFoundError,
 } from "@/lib/services/FormReviewService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 
-// Admins reviewing form responses. #316 owns this sub-app and adds the
-// responses list and bulk status changes; the single status change below is
-// here from the pre-sprint (#315) so #317's status dropdown works on its own.
-
-const statusSchema = z.object({ status: z.enum(SubmissionReviewStatus) });
-
 const app = new Hono<{
   Variables: { organizationId: string; userId: string };
 }>()
   .onError((error, c) => {
     if (error instanceof SubmissionNotFoundError)
+      return c.json({ error: error.message }, 404);
+    if (error instanceof FormError && error.reason === "not-found")
       return c.json({ error: error.message }, 404);
     if (error instanceof HTTPException)
       return c.json({ error: error.message }, error.status);
@@ -39,10 +42,43 @@ const app = new Hono<{
     c.set("userId", session.user.id);
     await next();
   })
+  .get(
+    "/:formId",
+    zValidator("param", z.object({ formId: FormIdSchema })),
+    zValidator("query", ResponseListQuerySchema),
+    async (c) =>
+      c.json(
+        await FormReviewService.listResponses(
+          c.get("organizationId"),
+          c.req.valid("param").formId,
+          c.req.valid("query"),
+        ),
+      ),
+  )
+  .post(
+    "/status/preview",
+    zValidator("json", BulkReviewStatusSchema),
+    async (c) =>
+      c.json(
+        await FormReviewService.previewStatusChange({
+          organizationId: c.get("organizationId"),
+          ...c.req.valid("json"),
+        }),
+      ),
+  )
+  .patch("/status", zValidator("json", BulkReviewStatusSchema), async (c) =>
+    c.json(
+      await FormReviewService.setReviewStatus({
+        organizationId: c.get("organizationId"),
+        actorId: c.get("userId"),
+        ...c.req.valid("json"),
+      }),
+    ),
+  )
   .patch(
     "/:submissionId/status",
     zValidator("param", z.object({ submissionId: z.uuid() })),
-    zValidator("json", statusSchema),
+    zValidator("json", ReviewStatusSchema),
     async (c) => {
       const [change] = await FormReviewService.setReviewStatus({
         organizationId: c.get("organizationId"),

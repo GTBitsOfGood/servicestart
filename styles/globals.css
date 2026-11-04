@@ -13,7 +13,16 @@
   --spacing-requests-close-icon: 22px;
   /* The dashboard's two-column grid fills the screen below the header. */
   --spacing-dashboard-grid: min(69.6rem, calc(100dvh - 20rem));
+  /* The submission page's required forms panel, beside the answers. */
+  --spacing-submission-sidebar: 20rem;
+  --spacing-dashboard-header-gap: 6rem;
+  /* The weekly calendar needs room for its five day cells and navigation. */
+  --spacing-weekly-calendar: 43rem;
   --text-requests-control: 13px;
+  /* Compact dashboard program metadata. */
+  --text-program-detail: 11px;
+  --text-calendar-empty: 14px;
+  --text-calendar-empty--line-height: 18px;
 
   --color-brand-text: #fc5b43;
   --color-brand-secondary: #fb3552;
@@ -78,6 +87,10 @@
   --color-join-step-complete: #13b461;
   --color-join-step-pending: #ffbe4c;
   --width-join-step: 220px;
+
+  --color-forms-gauge-track: var(--color-grey-fill-weak);
+  --color-forms-gauge-fill-start: var(--color-brand-text);
+  --color-forms-gauge-fill-end: var(--color-status-green-text);
 
   --color-notif-action-required: #c73a3a;
   --color-notif-action-required-bg: #ffe3e3;
@@ -169,6 +182,14 @@
   --animate-fade-out: fade-out 0.25s ease-out;
   --animate-slide-in-right: slide-in-right 0.3s ease-out;
   --animate-slide-out-right: slide-out-right 0.2s ease-in forwards;
+}
+
+:root {
+  --organization-footer-logo-height: 12.7rem;
+  --organization-footer-inline-padding: 7.8rem;
+  --organization-footer-block-padding: 3.2rem;
+  --organization-footer-contact-gap: 0.8rem;
+  --organization-footer-section-gap: 2rem;
 }
 
 /* Theme adapters for BoG primitives. These intentionally live outside

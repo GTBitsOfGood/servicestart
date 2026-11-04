@@ -5,6 +5,7 @@ import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/authUtils";
 import { getSlugFromHost } from "@/lib/clientAuthUtils";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "@/lib/errors";
 import {
@@ -24,6 +25,7 @@ import {
   DuplicateSubmissionError,
   FormSubmissionService,
   InvalidUploadError,
+  SubmissionNotEditableError,
 } from "@/lib/services/FormSubmissionService";
 import { MembersService } from "@/lib/services/MemberService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
@@ -33,6 +35,8 @@ const FORM_NOT_FOUND = "Form not found";
 const TOO_LARGE = "Images must be 5 MB or smaller";
 const WRONG_TYPE = "Upload a JPEG, PNG, or WebP image";
 const ALREADY_SUBMITTED = "You've already responded to this form";
+const NO_SUBMISSION = "You haven't responded to this form";
+const NOT_EDITABLE = "This response can no longer be edited";
 const FILE_NOT_FOUND = "File not found";
 
 // Every 400 from the submit route has this shape, so the client's type does.
@@ -126,6 +130,20 @@ async function getRespondentId(
   return session && membership ? session.user.id : null;
 }
 
+const submissionJsonValidator = zValidator(
+  "json",
+  FormSubmissionPayloadSchema,
+  (result, c) => {
+    if (!result.success) {
+      const fieldErrors: AnswerErrors = {};
+      return c.json(
+        { error: "Answers are in the wrong format", fieldErrors },
+        400,
+      );
+    }
+  },
+);
+
 const app = new Hono()
   .post(
     "/:formId/submissions",
@@ -133,15 +151,7 @@ const app = new Hono()
       if (!result.success) return c.json({ error: FORM_NOT_FOUND }, 404);
     }),
     requireFormsOrganization,
-    zValidator("json", FormSubmissionPayloadSchema, (result, c) => {
-      if (!result.success) {
-        const fieldErrors: AnswerErrors = {};
-        return c.json(
-          { error: "Answers are in the wrong format", fieldErrors },
-          400,
-        );
-      }
-    }),
+    submissionJsonValidator,
     async (c) => {
       const organizationId = c.get("organizationId");
       const form = await getOpenForm(
@@ -191,6 +201,64 @@ const app = new Hono()
       }
     },
   )
+  .put(
+    "/:formId/submissions/mine",
+    zValidator("param", paramSchema, (result, c) => {
+      if (!result.success) return c.json({ error: FORM_NOT_FOUND }, 404);
+    }),
+    requireFormsOrganization,
+    submissionJsonValidator,
+    async (c) => {
+      const organizationId = c.get("organizationId");
+      const form = await getOpenForm(
+        organizationId,
+        c.req.valid("param").formId,
+      );
+      const session = await requireAuth(c);
+      const membership = await MembersService.findByUserAndOrganization(
+        session.user.id,
+        organizationId,
+      );
+      if (!membership) throw new ForbiddenError();
+
+      const parsed = buildSubmissionSchema(form).safeParse(
+        c.req.valid("json").answers,
+      );
+      if (!parsed.success) {
+        return c.json(
+          {
+            error: "Some answers need attention",
+            fieldErrors: getAnswerErrors(parsed.error),
+          },
+          400,
+        );
+      }
+
+      try {
+        const id = await FormSubmissionService.updateMemberSubmission({
+          form,
+          organizationId,
+          userId: session.user.id,
+          answers: parsed.data,
+        });
+        if (!id) return c.json({ error: NO_SUBMISSION }, 404);
+        return c.json(
+          { id, confirmationMessage: form.settings.confirmationMessage },
+          200,
+        );
+      } catch (err) {
+        if (err instanceof SubmissionNotEditableError) {
+          throw new ForbiddenError(NOT_EDITABLE);
+        }
+        if (err instanceof InvalidUploadError) {
+          const message = "Upload this image again";
+          const fieldErrors: AnswerErrors = { [err.componentId]: message };
+          return c.json({ error: message, fieldErrors }, 400);
+        }
+        throw err;
+      }
+    },
+  )
   .post(
     "/:formId/uploads",
     zValidator("param", paramSchema, (result, c) => {
@@ -230,7 +298,11 @@ const app = new Hono()
       if (
         userId &&
         !form.settings.allowMultipleSubmissions &&
-        (await FormSubmissionService.hasSubmitted(form.id, userId))
+        (await FormSubmissionService.isMemberSubmissionEditable({
+          form,
+          organizationId,
+          userId,
+        })) === false
       ) {
         return c.json({ error: ALREADY_SUBMITTED }, 409);
       }

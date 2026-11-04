@@ -9,11 +9,14 @@ import {
   formAnswers,
   formComponents,
   formSubmissions,
+  forms,
 } from "@/lib/schema";
+import type { FormSettings } from "@/lib/forms/schema";
 import {
   DuplicateSubmissionError,
   FormSubmissionService,
   InvalidUploadError,
+  SubmissionNotEditableError,
 } from "@/lib/services/FormSubmissionService";
 import {
   VISIONARIES_APPLICATION_FORM,
@@ -115,9 +118,13 @@ describe("FormSubmissionService.submit", () => {
     expect(
       Object.fromEntries(rows.map((row) => [row.componentId, row.value])),
     ).toEqual(answers);
-    expect(await FormSubmissionService.hasSubmitted(form.id, userId)).toBe(
-      true,
-    );
+    expect(
+      await FormSubmissionService.isMemberSubmissionEditable({
+        form,
+        organizationId: org.id,
+        userId,
+      }),
+    ).toBe(true);
   });
 
   it("throws on a second submission from the same user", async () => {
@@ -161,6 +168,293 @@ describe("FormSubmissionService.submit", () => {
     expect((error as InvalidUploadError).componentId).toBe(image.id);
     expect(await db.select().from(formSubmissions)).toHaveLength(0);
     expect(await db.select().from(formAnswers)).toHaveLength(0);
+  });
+});
+
+describe("FormSubmissionService.isMemberSubmissionEditable", () => {
+  it("is null when the member hasn't responded", async () => {
+    const org = await createOrganization("acme");
+    const form = await createForm(org.id, { status: FormStatus.Published });
+    const userId = await createUser();
+
+    expect(
+      await FormSubmissionService.isMemberSubmissionEditable({
+        form,
+        organizationId: org.id,
+        userId,
+      }),
+    ).toBeNull();
+  });
+
+  it("is true for a pending response to an open form", async () => {
+    const org = await createOrganization("acme");
+    const form = await createForm(org.id, { status: FormStatus.Published });
+    const userId = await createUser();
+    await createFormSubmission(form, { userId });
+
+    expect(
+      await FormSubmissionService.isMemberSubmissionEditable({
+        form,
+        organizationId: org.id,
+        userId,
+      }),
+    ).toBe(true);
+  });
+
+  it("is false once the response has been reviewed", async () => {
+    const org = await createOrganization("acme");
+    const form = await createForm(org.id, { status: FormStatus.Published });
+    const userId = await createUser();
+    await createFormSubmission(form, {
+      userId,
+      reviewStatus: SubmissionReviewStatus.Accepted,
+    });
+
+    expect(
+      await FormSubmissionService.isMemberSubmissionEditable({
+        form,
+        organizationId: org.id,
+        userId,
+      }),
+    ).toBe(false);
+  });
+
+  it("is false when the form is closed", async () => {
+    const org = await createOrganization("acme");
+    const form = await createForm(org.id, { status: FormStatus.Closed });
+    const userId = await createUser();
+    await createFormSubmission(form, { userId });
+
+    expect(
+      await FormSubmissionService.isMemberSubmissionEditable({
+        form,
+        organizationId: org.id,
+        userId,
+      }),
+    ).toBe(false);
+  });
+
+  it("ignores another organization's submission", async () => {
+    const org = await createOrganization("acme");
+    const other = await createOrganization("other");
+    const form = await createForm(org.id, { status: FormStatus.Published });
+    const userId = await createUser();
+    await createFormSubmission(form, { userId });
+
+    expect(
+      await FormSubmissionService.isMemberSubmissionEditable({
+        form,
+        organizationId: other.id,
+        userId,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("FormSubmissionService.updateMemberSubmission", () => {
+  async function setup(settings: Partial<FormSettings> = {}) {
+    const org = await createOrganization("acme");
+    const form = await createForm(org.id, {
+      status: FormStatus.Published,
+      settings,
+    });
+    const userId = await createUser();
+    const oldUpload = await createFormUpload(form, { uploadedBy: userId });
+    const original = buildSampleAnswers(form, { uploadId: oldUpload });
+    const submissionId = await FormSubmissionService.submit({
+      form,
+      organizationId: org.id,
+      userId,
+      answers: original,
+    });
+    return { org, form, userId, submissionId, original };
+  }
+
+  async function answersOf(submissionId: string) {
+    const rows = await db
+      .select()
+      .from(formAnswers)
+      .where(eq(formAnswers.submissionId, submissionId));
+    return Object.fromEntries(rows.map((row) => [row.componentId, row.value]));
+  }
+
+  it("replaces the answers and sets updatedAt", async () => {
+    const { org, form, userId, submissionId } = await setup();
+    const uploadId = await createFormUpload(form, { uploadedBy: userId });
+    const shortText = form.components.find(
+      ({ type }) => type === FormComponentType.ShortText,
+    )!;
+    const answers = {
+      ...buildSampleAnswers(form, { uploadId }),
+      [shortText.id]: "Changed",
+    };
+
+    const id = await FormSubmissionService.updateMemberSubmission({
+      form,
+      organizationId: org.id,
+      userId,
+      answers,
+    });
+
+    expect(id).toBe(submissionId);
+    expect(await answersOf(submissionId)).toEqual(answers);
+    const [row] = await db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, submissionId));
+    expect(row.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it("keeps updatedAt null until the first edit", async () => {
+    const { submissionId } = await setup();
+    const [row] = await db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, submissionId));
+    expect(row.updatedAt).toBeNull();
+  });
+
+  it("keeps the review status", async () => {
+    const { org, form, userId, submissionId, original } = await setup();
+    const [before] = await db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, submissionId));
+
+    await FormSubmissionService.updateMemberSubmission({
+      form,
+      organizationId: org.id,
+      userId,
+      answers: original,
+    });
+
+    const [row] = await db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, submissionId));
+    expect(row.reviewStatus).toBe(SubmissionReviewStatus.Pending);
+    expect(row.reviewStatus).toBe(before.reviewStatus);
+    expect(row.reviewStatusUpdatedAt).toEqual(before.reviewStatusUpdatedAt);
+  });
+
+  it("rejects a close that landed after the caller loaded the form", async () => {
+    const { org, form, userId, submissionId, original } = await setup();
+    await db
+      .update(forms)
+      .set({ status: FormStatus.Closed })
+      .where(eq(forms.id, form.id));
+    const shortText = form.components.find(
+      ({ type }) => type === FormComponentType.ShortText,
+    )!;
+
+    await expect(
+      FormSubmissionService.updateMemberSubmission({
+        form,
+        organizationId: org.id,
+        userId,
+        answers: { ...original, [shortText.id]: "Changed" },
+      }),
+    ).rejects.toBeInstanceOf(SubmissionNotEditableError);
+    expect(await answersOf(submissionId)).toEqual(original);
+  });
+
+  it("throws and changes nothing once the submission is reviewed", async () => {
+    const { org, form, userId, submissionId, original } = await setup();
+    await db
+      .update(formSubmissions)
+      .set({ reviewStatus: SubmissionReviewStatus.Rejected })
+      .where(eq(formSubmissions.id, submissionId));
+    const shortText = form.components.find(
+      ({ type }) => type === FormComponentType.ShortText,
+    )!;
+
+    await expect(
+      FormSubmissionService.updateMemberSubmission({
+        form,
+        organizationId: org.id,
+        userId,
+        answers: { ...original, [shortText.id]: "Changed" },
+      }),
+    ).rejects.toBeInstanceOf(SubmissionNotEditableError);
+    expect(await answersOf(submissionId)).toEqual(original);
+  });
+
+  it("returns null when the member hasn't responded", async () => {
+    const { org, form, original } = await setup();
+
+    const id = await FormSubmissionService.updateMemberSubmission({
+      form,
+      organizationId: org.id,
+      userId: await createUser(),
+      answers: original,
+    });
+
+    expect(id).toBeNull();
+  });
+
+  it("edits the latest submission when the form allows several", async () => {
+    const { org, form, userId, submissionId, original } = await setup({
+      allowMultipleSubmissions: true,
+    });
+    const latestId = await createFormSubmission(form, {
+      userId,
+      answers: original,
+      submittedAt: new Date(Date.now() + 60_000),
+    });
+    const shortText = form.components.find(
+      ({ type }) => type === FormComponentType.ShortText,
+    )!;
+
+    const id = await FormSubmissionService.updateMemberSubmission({
+      form,
+      organizationId: org.id,
+      userId,
+      answers: { ...original, [shortText.id]: "Changed" },
+    });
+
+    expect(id).toBe(latestId);
+    expect((await answersOf(latestId))[shortText.id]).toBe("Changed");
+    expect((await answersOf(submissionId))[shortText.id]).not.toBe("Changed");
+  });
+
+  it("doesn't touch another org's submission", async () => {
+    const { form, userId, original } = await setup();
+    const otherOrg = await createOrganization("other");
+
+    const id = await FormSubmissionService.updateMemberSubmission({
+      form,
+      organizationId: otherOrg.id,
+      userId,
+      answers: original,
+    });
+
+    expect(id).toBeNull();
+  });
+
+  it("rejects an upload from another user and changes nothing", async () => {
+    const { org, form, userId, submissionId, original } = await setup();
+    const foreign = await createFormUpload(form, {
+      uploadedBy: await createUser(),
+    });
+    const image = form.components.find(
+      ({ type }) => type === FormComponentType.Image,
+    )!;
+
+    const error = await FormSubmissionService.updateMemberSubmission({
+      form,
+      organizationId: org.id,
+      userId,
+      answers: buildSampleAnswers(form, { uploadId: foreign }),
+    }).catch((err: unknown) => err);
+
+    expect(error).toBeInstanceOf(InvalidUploadError);
+    expect((error as InvalidUploadError).componentId).toBe(image.id);
+    expect(await answersOf(submissionId)).toEqual(original);
+    const [row] = await db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, submissionId));
+    expect(row.updatedAt).toBeNull();
   });
 });
 

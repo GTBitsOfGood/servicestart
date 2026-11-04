@@ -1,8 +1,9 @@
 import { deflateSync } from "node:zlib";
-import { and, eq, inArray, like, notInArray, or } from "drizzle-orm";
+import { and, eq, inArray, like, notInArray, or, sql } from "drizzle-orm";
 import db from "@/lib/db";
 import {
   EventVisibility,
+  FormStatus,
   MemberType,
   NotificationType,
   OrganizationConfigKey,
@@ -120,6 +121,12 @@ export function createApplicationSeed(options: {
   const FOOTER: OrganizationFooter = {
     email: "visionariesttt19@gmail.com",
     ein: "84-4516921",
+    socialLinks: [
+      {
+        platform: "instagram",
+        url: "https://www.instagram.com/vttt.inc/",
+      },
+    ],
   };
 
   const organization: SeedOrg = {
@@ -275,7 +282,6 @@ export function createApplicationSeed(options: {
         );
       }
       if (matches.length > 0) {
-        // Questions lock once a form is published, so only its details change.
         await tx
           .update(schema.forms)
           .set({
@@ -286,12 +292,18 @@ export function createApplicationSeed(options: {
             settings: values.settings,
           })
           .where(eq(schema.forms.id, form.id));
-        return;
+        // Questions lock once a form is published, so only a draft's change.
+        // Its questions may have been edited in the builder, so reset them.
+        if (form.status !== FormStatus.Draft) return;
+        await tx
+          .delete(schema.formComponents)
+          .where(eq(schema.formComponents.formId, form.id));
+      } else {
+        await tx
+          .insert(schema.forms)
+          .values({ ...values, organizationId: ORG_ID, createdBy });
       }
 
-      await tx
-        .insert(schema.forms)
-        .values({ ...values, organizationId: ORG_ID, createdBy });
       await tx.insert(schema.formComponents).values(
         components.map((component) => ({
           ...component,
@@ -535,8 +547,9 @@ export function createApplicationSeed(options: {
   }
 
   /**
-   * Seeds the draft and closed demo forms. Their responses only come from trying
-   * them out, so they're deleted, and each form goes back to its seeded status.
+   * Seeds the demo forms. Their responses only come from trying them out, so
+   * they're deleted, and each form goes back to its seeded status (and a
+   * draft to its seeded questions).
    */
   async function seedDemoForms(createdBy: string) {
     for (const form of VISIONARIES_DEMO_FORMS) {
@@ -711,6 +724,26 @@ export function createApplicationSeed(options: {
     }
   }
 
+  /**
+   * Removes requests to complete a seeded form that admins sent the test
+   * accounts (#317), so they can be asked again.
+   */
+  async function resetInformationRequests(userIds: Map<string, string>) {
+    await db.delete(schema.notifications).where(
+      and(
+        eq(schema.notifications.organizationId, ORG_ID),
+        inArray(
+          schema.notifications.userId,
+          PERSONAS.map(({ email }) => userIds.get(email)!),
+        ),
+        inArray(
+          sql<string>`${schema.notifications.metadata}->>'informationRequestFormId'`,
+          SEEDED_FORMS.map(({ id }) => id),
+        ),
+      ),
+    );
+  }
+
   /** Removes the generic sample notifications earlier seeds gave Visionaries. */
   async function removeGenericVisionariesNotifications() {
     await db
@@ -734,6 +767,7 @@ export function createApplicationSeed(options: {
     await seedInvitations(userIds, now);
     await seedEvents(now);
     await seedAlert(userIds, now);
+    await resetInformationRequests(userIds);
     await removeGenericVisionariesNotifications();
   }
 

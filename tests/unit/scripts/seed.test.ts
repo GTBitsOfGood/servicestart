@@ -13,6 +13,7 @@ import {
   formComponents,
   formSubmissions,
   formUploads,
+  FormComponentType,
   FormStatus,
   MemberType,
   NotificationType,
@@ -25,7 +26,9 @@ import {
 } from "@/lib/schema";
 import { FormDefinitionSchema } from "@/lib/forms/schema";
 import { FormProgressService } from "@/lib/services/FormProgressService";
+import { FormQuestionService } from "@/lib/services/FormQuestionService";
 import { FormSubmissionService } from "@/lib/services/FormSubmissionService";
+import { InformationRequestService } from "@/lib/services/InformationRequestService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 import { hashPassword } from "better-auth/crypto";
 import { main } from "@/scripts/seed";
@@ -611,6 +614,29 @@ it("resets the Visionaries accounts' responses when reseeding", async () => {
   ).toHaveLength(0);
 });
 
+it("removes requests to complete the seeded forms when reseeding", async () => {
+  await main();
+  const { user: admin } = await visionariesUser("admin@example.com");
+  const { user: member1 } = await visionariesUser("member1@example.com");
+  await InformationRequestService.request({
+    organizationId: VISIONARIES,
+    userId: member1.id,
+    formId: VISIONARIES_ATTENDEE_FORMS[2].formId,
+    requestedBy: admin.id,
+  });
+
+  await main();
+
+  await expect(
+    InformationRequestService.request({
+      organizationId: VISIONARIES,
+      userId: member1.id,
+      formId: VISIONARIES_ATTENDEE_FORMS[2].formId,
+      requestedBy: admin.id,
+    }),
+  ).resolves.toBeTruthy();
+});
+
 it("resets the Visionaries demo forms when reseeding", async () => {
   await main();
   const [draft, closed] = VISIONARIES_DEMO_FORMS;
@@ -650,6 +676,41 @@ it("resets the Visionaries demo forms when reseeding", async () => {
       ),
     ).toEqual([]);
   }
+});
+
+it("resets the builder demo form's edited questions when reseeding", async () => {
+  await main();
+  const builderDemo = VISIONARIES_DEMO_FORMS.find(
+    ({ formId }) => formId === "camper-health-2027",
+  )!;
+  expect(builderDemo.status).toBe(FormStatus.Draft);
+  // Every type the question builder added is in it.
+  const types = new Set(builderDemo.components.map(({ type }) => type));
+  for (const type of [
+    FormComponentType.SingleChoice,
+    FormComponentType.Checkboxes,
+    FormComponentType.Dropdown,
+    FormComponentType.Date,
+    FormComponentType.YesNo,
+  ])
+    expect(types).toContain(type);
+
+  await FormQuestionService.save(VISIONARIES, builderDemo.formId, {
+    questions: [
+      {
+        type: FormComponentType.ShortText,
+        label: "Added in the builder",
+        helpText: null,
+        required: false,
+        config: {},
+      },
+    ],
+  });
+  await main();
+
+  expect((await storedDefinition(builderDemo.id)).definition).toEqual(
+    builderDemo,
+  );
 });
 
 it("seeds a Visionaries invitation for each accept-page state, open again on reseed", async () => {
@@ -846,6 +907,12 @@ it("configures Visionaries' logo, dashboards, header, navbar, and footer", async
   expect(config[OrganizationConfigKey.OrganizationFooter].ein).toBe(
     "84-4516921",
   );
+  expect(config[OrganizationConfigKey.OrganizationFooter].socialLinks).toEqual([
+    {
+      platform: "instagram",
+      url: "https://www.instagram.com/vttt.inc/",
+    },
+  ]);
 
   const defaults = await OrganizationConfigService.getConfig(
     "org_servicestart",
