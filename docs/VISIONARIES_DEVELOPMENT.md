@@ -85,8 +85,8 @@ wrong-account state.
 **Rerunning the seed resets these student accounts**: their member types, their
 responses to the seeded forms (responses added while testing are deleted), the
 responses' review statuses, and the attendees' alert, which is unread again.
-It also resets the demo forms below (their status, details, and all their
-responses) and the invitations: each is pending again, the account created
+It also resets the demo forms below (their status, details, a draft's
+questions, and all their responses) and the invitations: each is pending again, the account created
 from the counselor invitation (`counselor@example.com`) is deleted, and
 `nonmember@example.com` loses the membership it accepted.
 Use a fresh signup when you want data the seed leaves alone. Seeded forms and
@@ -110,8 +110,11 @@ responses have fixed IDs (`visionariesId` in `tests/unit/fixtures/forms.ts`).
   accepting a response makes the student a current attendee
   (`acceptedMemberType`, #316). The forms use only Sprint 3 question types.
 - Demo forms for form management, assigned to no member type: a draft
-  Family Showcase RSVP (`family-showcase-rsvp`) to preview and publish, and a
-  closed Fall 2026 Open House RSVP (`open-house-rsvp-2026`) to reopen.
+  Family Showcase RSVP (`family-showcase-rsvp`) to preview and publish, a
+  closed Fall 2026 Open House RSVP (`open-house-rsvp-2026`) to reopen, and a
+  draft Camper Health & Emergency Information form (`camper-health-2027`) for
+  the question builder at `/settings/forms/camper-health-2027`, using every
+  question type #321 added.
 - Dashboards: an applicant layout (application status and notifications) and
   an attendee layout (to-do list, weekly calendar, completed forms, and
   progress). Until their tickets land, those widgets show "Coming soon".

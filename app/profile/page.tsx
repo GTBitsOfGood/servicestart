@@ -70,7 +70,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
   return (
     <div className="max-w-[1300px] mx-auto px-12 py-[60px]">
-      <SaveBanner status={bannerStatus} />
+      <SaveBanner status={bannerStatus} redirectTo="/profile" />
 
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-10">

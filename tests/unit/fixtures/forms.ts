@@ -9,7 +9,7 @@ import type {
 /**
  * Fixed IDs for Visionaries fixtures and seed data, so the seed can insert
  * them idempotently and tests and demos can link to them. Group 0 is the camp
- * application, 1–4 the attendee forms, 5–6 the demo forms, and higher groups
+ * application, 1–4 the attendee forms, 5–7 the demo forms, and higher groups
  * seeded submissions and uploads (see scripts/visionariesSeed.ts).
  */
 export function visionariesId(group: number, item: number) {
@@ -333,9 +333,10 @@ export const VISIONARIES_ATTENDEE_FORMS: FormDefinition[] = [
 ];
 
 /**
- * Two optional Visionaries forms for showing form management: a draft to
- * preview and publish, and a closed form to reopen. They aren't assigned to a
- * member type, so they never count toward a student's required forms.
+ * Optional Visionaries forms for showing form management: a draft to preview
+ * and publish, a closed form to reopen, and a draft for the question builder.
+ * They aren't assigned to a member type, so they never count toward a
+ * student's required forms.
  */
 export const VISIONARIES_DEMO_FORMS: FormDefinition[] = [
   visionariesForm(
@@ -402,6 +403,113 @@ export const VISIONARIES_DEMO_FORMS: FormDefinition[] = [
         helpText: null,
         required: true,
         config: { min: 1, max: 8, integer: true },
+      },
+    ],
+  ),
+  // A draft for demoing the question builder (#321), using every question
+  // type it added. Composite questions like a medication schedule are out of
+  // scope, so medications are a long text question.
+  visionariesForm(
+    7,
+    {
+      formId: "camper-health-2027",
+      title: "Camper Health & Emergency Information",
+      description:
+        "Health details and an emergency contact, so our staff can keep your camper safe.",
+      status: FormStatus.Draft,
+      settings: {
+        ...DEFAULT_FORM_SETTINGS,
+        confirmationMessage: "Thanks! Our camp nurse will review this.",
+      },
+    },
+    [
+      sectionHeader("Camper", "Who this form is for."),
+      shortText("Camper's Full Name"),
+      {
+        type: FormComponentType.Date,
+        label: "Date of Birth",
+        helpText: null,
+        required: true,
+        config: { min: "2008-01-01", max: "2016-12-31" },
+      },
+      {
+        type: FormComponentType.Dropdown,
+        label: "T-Shirt Size",
+        helpText: null,
+        required: true,
+        config: {
+          options: [
+            "Youth M",
+            "Youth L",
+            "Adult S",
+            "Adult M",
+            "Adult L",
+            "Adult XL",
+          ],
+        },
+      },
+      sectionHeader("Health"),
+      {
+        type: FormComponentType.YesNo,
+        label: "Does your camper have any allergies?",
+        helpText: "Food, medicine, insects, or anything else.",
+        required: true,
+        config: {},
+      },
+      {
+        type: FormComponentType.Checkboxes,
+        label: "Dietary needs",
+        helpText: "Check all that apply.",
+        required: false,
+        config: {
+          options: [
+            "Vegetarian",
+            "Vegan",
+            "Gluten-free",
+            "Dairy-free",
+            "Nut-free",
+            "Halal",
+            "Kosher",
+          ],
+        },
+      },
+      {
+        type: FormComponentType.LongText,
+        label: "Medications and when they're taken",
+        helpText: "Leave blank if none.",
+        required: false,
+        config: { maxWords: 200 },
+      },
+      {
+        type: FormComponentType.SingleChoice,
+        label: "Can our staff give over-the-counter pain relief if needed?",
+        helpText: null,
+        required: true,
+        config: { options: ["Yes", "No", "Call me first"] },
+      },
+      sectionHeader("Emergency Contact"),
+      shortText("Contact's Full Name"),
+      {
+        type: FormComponentType.SingleChoice,
+        label: "Relationship to camper",
+        helpText: null,
+        required: true,
+        config: {
+          options: [
+            "Parent",
+            "Guardian",
+            "Grandparent",
+            "Other relative",
+            "Family friend",
+          ],
+        },
+      },
+      {
+        type: FormComponentType.Phone,
+        label: "Contact's Phone",
+        helpText: null,
+        required: true,
+        config: {},
       },
     ],
   ),
