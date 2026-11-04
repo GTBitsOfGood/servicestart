@@ -1,10 +1,13 @@
 import { cache } from "react";
-import type { DashboardAudience } from "@/lib/dashboard/audience";
+import {
+  memberTypeFromAudience,
+  type DashboardAudience,
+} from "@/lib/dashboard/audience";
 import {
   canEditSubmission,
   type FormAvailability,
 } from "@/lib/forms/submission";
-import { MemberType, OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/lib/schema";
 import {
   FormProgressService,
   type MemberFormProgress,
@@ -48,17 +51,6 @@ export type FormProgressSummary = {
 export type FormProgressLoadResult =
   | { formsEnabled: false }
   | { formsEnabled: true; summary: FormProgressSummary };
-
-const AUDIENCE_MEMBER_TYPE: Partial<Record<DashboardAudience, MemberType>> = {
-  attendee: MemberType.Attendee,
-  applicant: MemberType.Applicant,
-};
-
-export function memberTypeFromAudience(
-  audience: DashboardAudience,
-): MemberType | null {
-  return AUDIENCE_MEMBER_TYPE[audience] ?? null;
-}
 
 function todoAction(form: MemberFormProgress["form"]): FormTodoAction {
   const availability: FormAvailability = form.availability;

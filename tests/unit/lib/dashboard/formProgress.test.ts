@@ -1,11 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { FormStatus, MemberType, SubmissionReviewStatus } from "@/lib/schema";
-import type { DashboardAudience } from "@/lib/dashboard/audience";
-import {
-  memberTypeFromAudience,
-  summarizeFormProgress,
-} from "@/lib/dashboard/formProgress";
+import { FormStatus, SubmissionReviewStatus } from "@/lib/schema";
+import { summarizeFormProgress } from "@/lib/dashboard/formProgress";
 import type { MemberFormProgress } from "@/lib/services/FormProgressService";
 
 const NOW = new Date("2027-03-15T12:00:00Z");
@@ -33,20 +29,6 @@ function progressRow(
     form: { ...DEFAULT_FORM, ...overrides.form },
   };
 }
-
-describe("memberTypeFromAudience", () => {
-  it.each([
-    ["attendee", MemberType.Attendee],
-    ["applicant", MemberType.Applicant],
-    ["admin", null],
-    ["member", null],
-  ] as const satisfies readonly [DashboardAudience, MemberType | null][])(
-    "maps %s to %s",
-    (audience, memberType) => {
-      expect(memberTypeFromAudience(audience)).toBe(memberType);
-    },
-  );
-});
 
 describe("summarizeFormProgress", () => {
   it("puts required unsubmitted forms in todo and submitted forms in completed", () => {
