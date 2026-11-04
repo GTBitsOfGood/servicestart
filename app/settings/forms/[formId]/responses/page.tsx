@@ -1,0 +1,82 @@
+import { Suspense } from "react";
+import { notFound } from "next/navigation";
+import { redirectIfNotAdmin } from "@/lib/authUtils";
+import { FormError } from "@/lib/forms/management";
+import { FormIdSchema } from "@/lib/forms/schema";
+import { OrganizationConfigKey } from "@/lib/schema";
+import { FormService } from "@/lib/services/FormService";
+import { FormReviewService } from "@/lib/services/FormReviewService";
+import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import FormResponsesClient from "@/components/forms/FormResponsesClient";
+
+export const metadata = { title: "Form responses" };
+
+export default async function ResponsesPage({
+  params,
+}: {
+  params: Promise<{ formId: string }>;
+}) {
+  const { organizationId } = await redirectIfNotAdmin();
+  const { formId } = await params;
+  const config = await OrganizationConfigService.getConfig(organizationId, [
+    OrganizationConfigKey.FormsEnabled,
+  ]);
+  if (
+    !config[OrganizationConfigKey.FormsEnabled] ||
+    !FormIdSchema.safeParse(formId).success
+  )
+    notFound();
+  let form;
+  try {
+    form = await FormService.get(organizationId, formId);
+  } catch (error) {
+    if (error instanceof FormError && error.reason === "not-found") notFound();
+    throw error;
+  }
+  // Resolve access and the form before streaming so inaccessible forms return 404.
+  return (
+    <Suspense
+      fallback={
+        <p role="status" className="p-8">
+          Loading responses…
+        </p>
+      }
+    >
+      <Responses
+        organizationId={organizationId}
+        formId={formId}
+        title={form.title}
+      />
+    </Suspense>
+  );
+}
+
+async function Responses({
+  organizationId,
+  formId,
+  title,
+}: {
+  organizationId: string;
+  formId: string;
+  title: string;
+}) {
+  const data = await FormReviewService.listResponses(organizationId, formId, {
+    limit: 25,
+    offset: 0,
+  });
+  return (
+    <FormResponsesClient
+      key={`${organizationId}:${formId}`}
+      formId={formId}
+      title={title}
+      initialData={{
+        ...data,
+        rows: data.rows.map((row) => ({
+          ...row,
+          submittedAt: row.submittedAt.toISOString(),
+          updatedAt: row.updatedAt?.toISOString() ?? null,
+        })),
+      }}
+    />
+  );
+}

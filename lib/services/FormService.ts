@@ -12,6 +12,7 @@ import {
   FormComponentType,
 } from "@/lib/schema";
 import { DEFAULT_FORM_SETTINGS } from "@/lib/forms/constants";
+import { REVIEW_STATUS_LABELS } from "@/lib/forms/review";
 import { FORM_COMPONENT_CONFIG_SCHEMAS } from "@/lib/forms/schema";
 import {
   CreateFormSchema,
@@ -288,6 +289,7 @@ async function exportCsv(
     .select({
       id: formSubmissions.id,
       submittedAt: formSubmissions.submittedAt,
+      reviewStatus: formSubmissions.reviewStatus,
       name: users.name,
       email: users.email,
     })
@@ -329,6 +331,7 @@ async function exportCsv(
       "Submitter name",
       "Submitter email",
       "Submitted at",
+      "Review status",
       ...components.map((component) => component.label),
     ],
   ];
@@ -337,6 +340,7 @@ async function exportCsv(
       submission.name ?? "",
       submission.email ?? "",
       submission.submittedAt.toISOString(),
+      REVIEW_STATUS_LABELS[submission.reviewStatus],
       ...components.map((component) => {
         const value = values.get(`${submission.id}:${component.id}`);
         if (value === undefined) return "";

@@ -4,6 +4,7 @@ import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import NotificationTag from "@/components/notifications/NotificationTag";
 import { NotificationService } from "@/lib/services/NotificationService";
 import { redirectIfNotMember } from "@/lib/authUtils";
+import { ReviewNotificationMetadataSchema } from "@/lib/forms/review";
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
@@ -58,6 +59,9 @@ export default async function NotificationDetailPage({
   if (!notification.read) {
     await NotificationService.updateReadStatus(notificationId, true);
   }
+  const reviewMetadata = ReviewNotificationMetadataSchema.safeParse(
+    notification.metadata,
+  );
 
   const link = (notification.metadata as { link?: unknown } | null)?.link;
   const formLink =
@@ -81,8 +85,18 @@ export default async function NotificationDetailPage({
           </span>
         </div>
 
-        <div className="whitespace-pre-wrap text-paragraph-1 leading-6 text-grey-text-strong">
-          {notification.text}
+        <div className="flex flex-col gap-4">
+          <div className="whitespace-pre-wrap text-paragraph-1 leading-6 text-grey-text-strong">
+            {notification.text}
+          </div>
+          {reviewMetadata.success && (
+            <Link
+              href={reviewMetadata.data.href}
+              className="self-start text-brand-text underline"
+            >
+              View dashboard
+            </Link>
+          )}
         </div>
 
         {formLink && (

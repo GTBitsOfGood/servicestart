@@ -2,6 +2,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { FormReviewService } from "@/lib/services/FormReviewService";
 import {
   FormStatus,
   OrganizationConfigKey,
@@ -30,7 +31,7 @@ async function setup(role = "admin", enabled = true) {
   );
   const form = await createForm(org.id, { status: FormStatus.Published });
   const submissionId = await createFormSubmission(form);
-  return { org, user, headers, submissionId };
+  return { org, user, headers, form, submissionId };
 }
 
 function setStatus(
@@ -104,5 +105,238 @@ describe("PATCH /api/formResponses/:submissionId/status", () => {
 
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ error: "Submission not found" });
+  });
+});
+
+describe("response list, bulk status, and preview API", () => {
+  it("lists with totals and supports status/search/pagination", async () => {
+    const { form, headers, user } = await setup();
+    await createFormSubmission(form, { userId: user.id });
+    const res = await testApi.formResponses[":formId"].$get(
+      {
+        param: { formId: form.formId },
+        query: {
+          status: SubmissionReviewStatus.Pending,
+          search: user.email,
+          limit: "1",
+          offset: "0",
+        },
+      },
+      { headers },
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toMatchObject({
+      total: 1,
+      counts: { pending: 1 },
+      rows: [expect.objectContaining({ email: user.email, updatedAt: null })],
+    });
+  });
+
+  it.each([
+    { role: "member", enabled: true, expected: 403 },
+    { role: "admin", enabled: false, expected: 404 },
+  ])(
+    "guards every endpoint for $role with forms enabled=$enabled",
+    async ({ role, enabled, expected }) => {
+      const { form, submissionId, headers } = await setup(role, enabled);
+      const json = {
+        submissionIds: [submissionId],
+        status: SubmissionReviewStatus.Accepted,
+      };
+      const list = await testApi.formResponses[":formId"].$get(
+        { param: { formId: form.formId }, query: {} },
+        { headers },
+      );
+      const bulk = await testApi.formResponses.status.$patch(
+        { json },
+        { headers },
+      );
+      const preview = await testApi.formResponses.status.preview.$post(
+        { json },
+        { headers },
+      );
+      expect([list.status, bulk.status, preview.status]).toEqual([
+        expected,
+        expected,
+        expected,
+      ]);
+    },
+  );
+
+  it("requires authentication on the new endpoints", async () => {
+    const { form, submissionId } = await setup();
+    const json = {
+      submissionIds: [submissionId],
+      status: SubmissionReviewStatus.Pending,
+    };
+    expect(
+      (
+        await testApi.formResponses[":formId"].$get({
+          param: { formId: form.formId },
+          query: {},
+        })
+      ).status,
+    ).toBe(401);
+    expect((await testApi.formResponses.status.$patch({ json })).status).toBe(
+      401,
+    );
+    expect(
+      (await testApi.formResponses.status.preview.$post({ json })).status,
+    ).toBe(401);
+  });
+
+  it("previews without writing and bulk changes up to 100 responses", async () => {
+    const { org, form, headers, submissionId } = await setup();
+    const ids = [submissionId];
+    for (let index = 1; index < 100; index++)
+      ids.push(await createFormSubmission(form));
+    const json = {
+      submissionIds: ids,
+      status: SubmissionReviewStatus.Rejected,
+    };
+    const preview = await testApi.formResponses.status.preview.$post(
+      { json },
+      { headers },
+    );
+    expect(preview.status).toBe(200);
+    expect(await preview.json()).toEqual({
+      changed: 100,
+      notified: 0,
+      memberTypesChanged: 0,
+    });
+    expect(
+      (
+        await FormReviewService.listResponses(org.id, form.formId, {
+          status: SubmissionReviewStatus.Pending,
+          limit: 1,
+          offset: 0,
+        })
+      ).total,
+    ).toBe(100);
+    const bulk = await testApi.formResponses.status.$patch(
+      { json },
+      { headers },
+    );
+    expect(bulk.status).toBe(200);
+    expect(await bulk.json()).toHaveLength(100);
+  });
+
+  it.each([
+    { submissionIds: [] },
+    { submissionIds: Array.from({ length: 101 }, () => randomUUID()) },
+    { submissionIds: ["invalid-id"] },
+  ])("rejects invalid bulk ID arrays (%j)", async ({ submissionIds }) => {
+    const { headers } = await setup();
+    const json = { submissionIds, status: SubmissionReviewStatus.Accepted };
+    expect(
+      (await testApi.formResponses.status.$patch({ json }, { headers })).status,
+    ).toBe(400);
+    expect(
+      (await testApi.formResponses.status.preview.$post({ json }, { headers }))
+        .status,
+    ).toBe(400);
+  });
+
+  it.each([
+    { limit: "101" },
+    { limit: "0" },
+    { offset: "-1" },
+    { offset: "1.5" },
+    { status: "approved" },
+    { search: "a".repeat(201) },
+  ])("validates list query %j", async (query) => {
+    const { form, headers } = await setup();
+    const res = await testApi.formResponses[":formId"].$get(
+      { param: { formId: form.formId }, query: query as never },
+      { headers },
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects unknown query parameters instead of silently ignoring them", async () => {
+    const { org, form, headers } = await setup();
+    const res = await testApi.formResponses[":formId"].$get(
+      {
+        param: { formId: form.formId },
+        query: { statsu: SubmissionReviewStatus.Accepted } as never,
+      },
+      { headers },
+    );
+    expect(res.status).toBe(400);
+    const unchanged = await FormReviewService.listResponses(
+      org.id,
+      form.formId,
+      { limit: 25, offset: 0 },
+    );
+    expect(unchanged.rows[0].reviewStatus).toBe(SubmissionReviewStatus.Pending);
+  });
+
+  it("rejects unknown bulk and preview fields without changing statuses", async () => {
+    const { org, form, headers, submissionId } = await setup();
+    const json = {
+      submissionIds: [submissionId],
+      status: SubmissionReviewStatus.Accepted,
+      unsupported: true,
+    };
+    const preview = await testApi.formResponses.status.preview.$post(
+      { json },
+      { headers },
+    );
+    const bulk = await testApi.formResponses.status.$patch(
+      { json },
+      { headers },
+    );
+    expect(preview.status).toBe(400);
+    expect(bulk.status).toBe(400);
+    const remaining = await FormReviewService.listResponses(
+      org.id,
+      form.formId,
+      { limit: 25, offset: 0 },
+    );
+    expect(remaining.rows[0].reviewStatus).toBe(SubmissionReviewStatus.Pending);
+  });
+
+  it("returns 404 for missing forms and mixed-tenant bulk IDs without partial writes", async () => {
+    const a = await setup();
+    const b = await setup();
+    for (const formId of [a.form.formId, "missing-form"]) {
+      expect(
+        (
+          await testApi.formResponses[":formId"].$get(
+            { param: { formId }, query: {} },
+            { headers: b.headers },
+          )
+        ).status,
+      ).toBe(404);
+    }
+    for (const foreignId of [a.submissionId, randomUUID()]) {
+      const json = {
+        submissionIds: [b.submissionId, foreignId],
+        status: SubmissionReviewStatus.Accepted,
+      };
+      expect(
+        (
+          await testApi.formResponses.status.preview.$post(
+            { json },
+            { headers: b.headers },
+          )
+        ).status,
+      ).toBe(404);
+      expect(
+        (
+          await testApi.formResponses.status.$patch(
+            { json },
+            { headers: b.headers },
+          )
+        ).status,
+      ).toBe(404);
+    }
+    const remaining = await FormReviewService.listResponses(
+      b.org.id,
+      b.form.formId,
+      { limit: 25, offset: 0 },
+    );
+    expect(remaining.rows[0].reviewStatus).toBe(SubmissionReviewStatus.Pending);
   });
 });

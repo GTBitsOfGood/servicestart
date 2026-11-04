@@ -5,6 +5,7 @@ import { notifications, NotificationType, members } from "@/lib/schema";
 import { MembersService } from "@/lib/services/MemberService";
 
 const ADMIN_ROLES = ["admin", "owner"];
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type NotificationReadFilter = "all" | "read" | "unread";
 
@@ -14,6 +15,7 @@ async function createForUserIds(
   text: string,
   type: NotificationType = NotificationType.General,
   metadata?: Record<string, unknown> | null,
+  database: typeof db | Transaction = db,
 ) {
   if (userIds.length === 0) {
     return [];
@@ -32,7 +34,7 @@ async function createForUserIds(
     metadata: metadata ?? null,
   }));
 
-  return db.insert(notifications).values(values).returning({
+  return database.insert(notifications).values(values).returning({
     id: notifications.id,
     userId: notifications.userId,
     organizationId: notifications.organizationId,
@@ -49,6 +51,7 @@ async function notify(
   orgId: string,
   text: string,
   metadata?: Record<string, unknown> | null,
+  transaction?: Transaction,
 ) {
   const [notification] = await createForUserIds(
     [userId],
@@ -56,6 +59,7 @@ async function notify(
     text,
     NotificationType.General,
     metadata,
+    transaction,
   );
   return notification ?? null;
 }
