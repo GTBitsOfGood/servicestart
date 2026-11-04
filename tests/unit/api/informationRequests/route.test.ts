@@ -157,6 +157,37 @@ describe("POST /api/informationRequests", () => {
     }
   });
 
+  it("rejects a published form that isn't taking responses", async () => {
+    const { org, headers, member } = await setup();
+    const day = 24 * 60 * 60 * 1000;
+    const closed = await createForm(org.id, {
+      status: FormStatus.Published,
+      settings: { closesAt: new Date(Date.now() - day).toISOString() },
+    });
+    const notYetOpen = await createForm(org.id, {
+      status: FormStatus.Published,
+      settings: { opensAt: new Date(Date.now() + day).toISOString() },
+    });
+
+    for (const form of [closed, notYetOpen]) {
+      const res = await sendRequest(
+        { userId: member.id, formId: form.formId },
+        headers,
+      );
+      expect(res.status).toBe(409);
+    }
+    expect(await listNotifications(member.id, org.id)).toHaveLength(0);
+  });
+
+  it("rejects fields it doesn't know", async () => {
+    const { headers, member, form } = await setup();
+
+    const json = { userId: member.id, formId: form.formId, extra: true };
+    const res = await testApi.informationRequests.$post({ json }, { headers });
+
+    expect(res.status).toBe(400);
+  });
+
   it("rejects members", async () => {
     const { headers, member, form } = await setup("member");
     expect(

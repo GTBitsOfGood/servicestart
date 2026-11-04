@@ -7,13 +7,14 @@ import { NotFoundError } from "@/lib/errors";
 import { FormIdSchema } from "@/lib/forms/schema";
 import { OrganizationConfigKey } from "@/lib/schema";
 import {
+  FormNotOpenError,
   InformationRequestNotFoundError,
   InformationRequestService,
   RecentInformationRequestError,
 } from "@/lib/services/InformationRequestService";
 import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
 
-const requestSchema = z.object({
+const requestSchema = z.strictObject({
   userId: z.string().min(1),
   formId: FormIdSchema,
   message: z
@@ -31,7 +32,10 @@ const app = new Hono<{
   .onError((error, c) => {
     if (error instanceof InformationRequestNotFoundError)
       return c.json({ error: error.message }, 404);
-    if (error instanceof RecentInformationRequestError)
+    if (
+      error instanceof RecentInformationRequestError ||
+      error instanceof FormNotOpenError
+    )
       return c.json({ error: error.message }, 409);
     if (error instanceof HTTPException)
       return c.json({ error: error.message }, error.status);

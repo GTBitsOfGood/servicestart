@@ -9,11 +9,7 @@ import SubmissionSections from "@/components/forms/SubmissionSections";
 import { redirectIfNotAdmin } from "@/lib/authUtils";
 import { getRequiredFormStatus } from "@/lib/forms/review";
 import { FormIdSchema, isImageAnswer } from "@/lib/forms/schema";
-import {
-  FormComponentType,
-  FormStatus,
-  OrganizationConfigKey,
-} from "@/lib/schema";
+import { FormComponentType, OrganizationConfigKey } from "@/lib/schema";
 import { FormProgressService } from "@/lib/services/FormProgressService";
 import { FormSubmissionService } from "@/lib/services/FormSubmissionService";
 import { MembersService } from "@/lib/services/MemberService";
@@ -87,7 +83,7 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
           canRequest:
             Boolean(membership) &&
             status !== "completed" &&
-            progress.form.status === FormStatus.Published,
+            progress.form.availability === "open",
         };
       });
 
@@ -149,22 +145,26 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
         />
       </header>
 
-      <div className="grid grid-cols-1 items-start gap-8 desktop:grid-cols-[minmax(0,1fr)_20rem]">
-        <SubmissionSections
-          definition={{
-            formId: definition.formId,
-            components: definition.components.filter(
-              ({ id }) => id !== headshot?.id,
-            ),
-          }}
-          answers={answers}
-          uploadsPath={uploadsPath}
-        />
-        {submitter && requiredForms && (
-          <RequiredFormsPanel
-            member={{ id: submitter.id, name: submitter.name }}
-            forms={requiredForms}
+      <div className="flex flex-col gap-8 desktop:flex-row desktop:items-start">
+        <div className="min-w-0 desktop:flex-1">
+          <SubmissionSections
+            definition={{
+              formId: definition.formId,
+              components: definition.components.filter(
+                ({ id }) => id !== headshot?.id,
+              ),
+            }}
+            answers={answers}
+            uploadsPath={uploadsPath}
           />
+        </div>
+        {submitter && requiredForms && (
+          <div className="desktop:w-submission-sidebar desktop:shrink-0">
+            <RequiredFormsPanel
+              member={{ id: submitter.id, name: submitter.name }}
+              forms={requiredForms}
+            />
+          </div>
         )}
       </div>
     </div>

@@ -222,6 +222,38 @@ describe("RequiredFormsPanel", () => {
     );
     expect(within(dialog).getByRole("button", { name: "Send" })).toBeTruthy();
   });
+
+  it("ignores a request that finishes after the modal was reopened", async () => {
+    let finish!: (response: unknown) => void;
+    $post.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+    renderPanel();
+    const trigger = screen.getByRole("button", {
+      name: "Request Information for Medical History",
+    });
+
+    fireEvent.click(trigger);
+    let dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Send" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.click(trigger);
+    dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Message (optional)"), {
+      target: { value: "A new message." },
+    });
+    finish({ ok: true, json: async () => ({ id: "n1" }) });
+
+    await waitFor(() => expect($post).toHaveBeenCalledTimes(1));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(within(dialog).queryByText(/Request sent/)).toBeNull();
+    expect(
+      (
+        within(dialog).getByLabelText(
+          "Message (optional)",
+        ) as HTMLTextAreaElement
+      ).value,
+    ).toBe("A new message.");
+  });
 });
 
 function chooseStatus(label: string) {

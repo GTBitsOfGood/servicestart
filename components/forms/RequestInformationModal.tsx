@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import ThemedButton from "@/components/theme/ThemedButton";
 import ThemedModal from "@/components/theme/ThemedModal";
 import api from "@/lib/api";
@@ -25,26 +25,32 @@ export default function RequestInformationModal({
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [state, setState] = useState<RequestState>({ kind: "idle" });
+  // Counts openings, so a request from an earlier one can't overwrite this one.
+  const opening = useRef(0);
 
   async function send() {
+    const sentFrom = opening.current;
+    const finish = (next: RequestState) => {
+      if (opening.current === sentFrom) setState(next);
+    };
     setState({ kind: "sending" });
     try {
       const response = await api.informationRequests.$post({
         json: { userId, formId: form.formId, message },
       });
       if (response.ok) {
-        setState({ kind: "sent" });
+        finish({ kind: "sent" });
         return;
       }
       const body = (await response.json().catch(() => null)) as {
         error?: string;
       } | null;
-      setState({
+      finish({
         kind: "error",
         message: body?.error ?? "Unable to send the request",
       });
     } catch {
-      setState({ kind: "error", message: "Unable to send the request" });
+      finish({ kind: "error", message: "Unable to send the request" });
     }
   }
 
@@ -54,6 +60,7 @@ export default function RequestInformationModal({
       openState={{ open, setOpen }}
       onOpenChange={(value) => {
         if (value) {
+          opening.current += 1;
           setMessage("");
           setState({ kind: "idle" });
         }

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, gt, sql } from "drizzle-orm";
 import db from "@/lib/db";
+import { getFormAvailability } from "@/lib/forms/submission";
 import {
   FormStatus,
   forms,
@@ -16,6 +17,14 @@ export class InformationRequestNotFoundError extends Error {
   constructor() {
     super("Member or form not found");
     this.name = "InformationRequestNotFoundError";
+  }
+}
+
+/** The form is published but not taking responses, so it can't be filled out. */
+export class FormNotOpenError extends Error {
+  constructor() {
+    super("This form isn't accepting responses");
+    this.name = "FormNotOpenError";
   }
 }
 
@@ -69,7 +78,13 @@ async function request({
       .limit(1)
       .for("update");
     const [form] = await tx
-      .select({ id: forms.id, formId: forms.formId, title: forms.title })
+      .select({
+        id: forms.id,
+        formId: forms.formId,
+        title: forms.title,
+        status: forms.status,
+        settings: forms.settings,
+      })
       .from(forms)
       .where(
         and(
@@ -80,6 +95,7 @@ async function request({
       )
       .limit(1);
     if (!membership || !form) throw new InformationRequestNotFoundError();
+    if (getFormAvailability(form, now) !== "open") throw new FormNotOpenError();
 
     const [recent] = await tx
       .select({ id: notifications.id })
