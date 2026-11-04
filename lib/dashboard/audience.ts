@@ -1,4 +1,4 @@
-import { MemberType } from "@/lib/schema";
+import { MemberType, OrganizationConfigKey } from "@/lib/schema";
 
 /**
  * Who a dashboard (and its navbar and header) is for. Member types only count
@@ -17,6 +17,12 @@ export type DashboardAudience = (typeof DASHBOARD_AUDIENCES)[number];
 export const MEMBER_AUDIENCES = ["member", "applicant", "attendee"] as const;
 export type MemberAudience = (typeof MEMBER_AUDIENCES)[number];
 
+/** Where applicants' and attendees' own dashboard layouts are stored. */
+export const MEMBER_TYPE_LAYOUT_KEYS = {
+  applicant: OrganizationConfigKey.ApplicantDashboardLayout,
+  attendee: OrganizationConfigKey.AttendeeDashboardLayout,
+} as const;
+
 export function getDashboardAudience(
   membership: { role: string; memberType: MemberType | null } | null,
   memberTypesEnabled: boolean,
@@ -31,4 +37,15 @@ export function getDashboardAudience(
     return "attendee";
   }
   return "member";
+}
+
+// ponytail: open PR #327 adds the same helper in lib/dashboard/formProgress.ts;
+// whichever PR merges second dedupes.
+/** The member type whose forms an audience sees, or null for none. */
+export function memberTypeFromAudience(
+  audience: DashboardAudience,
+): MemberType | null {
+  if (audience === "applicant") return MemberType.Applicant;
+  if (audience === "attendee") return MemberType.Attendee;
+  return null;
 }
