@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import ThemedDropdown from "@/components/theme/ThemedDropdown";
 import api from "@/lib/api";
 import { REVIEW_STATUS_LABELS } from "@/lib/forms/review";
@@ -17,6 +18,7 @@ export default function ReviewStatusDropdown({
   initialStatus: SubmissionReviewStatus;
 }) {
   const labelId = useId();
+  const router = useRouter();
   const [status, setStatus] = useState(initialStatus);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +50,9 @@ export default function ReviewStatusDropdown({
         json: { status: next },
       });
       if (!response.ok) throw new Error(`Status ${response.status}`);
+      // Accepting can change the submitter's member type (#316), which
+      // changes the required forms panel the server rendered.
+      router.refresh();
     } catch {
       setStatus(previous);
       setRollbacks((count) => count + 1);

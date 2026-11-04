@@ -15,9 +15,14 @@ import SubmissionSections from "@/components/forms/SubmissionSections";
 import type { FormComponent } from "@/lib/forms/schema";
 import { FormComponentType, SubmissionReviewStatus } from "@/lib/schema";
 
-const { $patch, $post } = vi.hoisted(() => ({
+const { $patch, $post, refresh } = vi.hoisted(() => ({
   $patch: vi.fn(),
   $post: vi.fn(),
+  refresh: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh }),
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -53,6 +58,7 @@ const components = [
 beforeEach(() => {
   $patch.mockReset();
   $post.mockReset();
+  refresh.mockReset();
 });
 
 afterEach(cleanup);
@@ -282,6 +288,8 @@ describe("ReviewStatusDropdown", () => {
       expect(screen.getByRole("button", { name: "Accepted" })).toBeTruthy(),
     );
     expect(screen.queryByRole("alert")).toBeNull();
+    // Accepting can change the member type the required forms panel uses.
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
   });
 
   it("shows that it's saving", async () => {
@@ -317,5 +325,6 @@ describe("ReviewStatusDropdown", () => {
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Pending" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Rejected" })).toBeNull();
+    expect(refresh).not.toHaveBeenCalled();
   });
 });
