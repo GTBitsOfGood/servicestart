@@ -121,6 +121,12 @@ export function createApplicationSeed(options: {
   const FOOTER: OrganizationFooter = {
     email: "visionariesttt19@gmail.com",
     ein: "84-4516921",
+    socialLinks: [
+      {
+        platform: "instagram",
+        url: "https://www.instagram.com/vttt.inc/",
+      },
+    ],
   };
 
   const organization: SeedOrg = {

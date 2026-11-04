@@ -81,10 +81,11 @@ export default async function Navbar({ children }: NavbarProps) {
   }
 
   // Below every page's content, in every layout.
+  const footer = orgId ? <OrganizationFooter organizationId={orgId} /> : null;
   const content = (
     <>
       {children}
-      {orgId && <OrganizationFooter organizationId={orgId} />}
+      {footer}
     </>
   );
 
@@ -122,8 +123,12 @@ export default async function Navbar({ children }: NavbarProps) {
           : "center";
 
     return (
-      <HorizontalNavLayout alignment={alignment} mobileNav={mobileNav}>
-        {content}
+      <HorizontalNavLayout
+        alignment={alignment}
+        mobileNav={mobileNav}
+        footer={footer}
+      >
+        {children}
       </HorizontalNavLayout>
     );
   }

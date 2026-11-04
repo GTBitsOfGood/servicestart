@@ -64,7 +64,7 @@ export default function DashboardGrid({
   const columns = distributeWidgetsToColumns(widgets);
 
   return (
-    <div className="flex flex-col gap-6 mobile:grid mobile:h-dashboard-grid mobile:grid-cols-2 mobile:gap-8">
+    <div className="flex flex-col gap-6 mobile:grid mobile:min-h-dashboard-grid mobile:grid-cols-2 mobile:gap-8">
       {columns.map((column, colIdx) => (
         <div key={colIdx} className="flex min-h-0 flex-col gap-6 mobile:gap-8">
           {column.map((widget) => {
@@ -76,10 +76,11 @@ export default function DashboardGrid({
                 // A grid, so the widget fills the slot's minimum height when
                 // the widgets stack.
                 className={cn(
-                  "grid mobile:block mobile:min-h-0",
+                  "grid mobile:block",
                   widget.size === "tall"
-                    ? "min-h-96 mobile:flex-1"
-                    : "min-h-64 mobile:h-1/2",
+                    ? "min-h-96 mobile:flex-2"
+                    : "min-h-64 mobile:flex-1",
+                  widget.id === "weekly_calendar" && "min-h-weekly-calendar",
                 )}
               >
                 <Suspense fallback={<WidgetFallback />}>

@@ -71,6 +71,7 @@ describe("horizontal navigation sizing", () => {
       <HorizontalNavLayout
         alignment="center"
         mobileNav={{ items: [], drawerSide: "left" }}
+        footer={<footer>Organization footer</footer>}
       >
         Page content
       </HorizontalNavLayout>,
@@ -108,5 +109,6 @@ describe("horizontal navigation sizing", () => {
       screen.getByRole("button", { name: "Open navigation menu" }),
     ).toBeTruthy();
     expect(screen.getByText("Page content")).toBeTruthy();
+    expect(screen.getByRole("contentinfo").parentElement?.tagName).toBe("MAIN");
   });
 });

@@ -1,7 +1,8 @@
-import ComingSoonWidget from "@/components/dashboard/widgets/ComingSoonWidget";
+import WeeklyCalendarClient from "@/components/dashboard/widgets/WeeklyCalendarClient";
 
-// Placeholder until #320 builds it. Like every widget, it's rendered with
-// WidgetProps (lib/dashboard/widgets.ts).
-export default async function WeeklyCalendarWidget() {
-  return <ComingSoonWidget title="Weekly Calendar" />;
+export default function WeeklyCalendarWidget() {
+  // The viewer's current week depends on their browser timezone. Calculating
+  // it in this server component would shift Monday into Sunday for users west
+  // of UTC, so the client owns the initial range as well as week navigation.
+  return <WeeklyCalendarClient />;
 }

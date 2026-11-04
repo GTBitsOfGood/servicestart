@@ -148,7 +148,12 @@ describe("useActiveOrganization", () => {
   });
 
   it("does not call setActive when session exists and active org slug matches URL slug", async () => {
-    mockUseSession.mockReturnValue({ data: { user: {}, session: {} } });
+    mockUseSession.mockReturnValue({
+      data: {
+        user: {},
+        session: { activeOrganizationId: "org_acme" },
+      },
+    });
     mockUseActiveOrganization.mockReturnValue({
       data: { slug: "acme", id: "org_acme", name: "Acme" },
       error: null,
@@ -162,6 +167,25 @@ describe("useActiveOrganization", () => {
     await waitFor(() => {});
 
     expect(mockSetActive).not.toHaveBeenCalled();
+  });
+
+  it("calls setActive when cached organization matches but the new session has no active organization", async () => {
+    mockUseSession.mockReturnValue({
+      data: { user: {}, session: { activeOrganizationId: null } },
+    });
+    mockUseActiveOrganization.mockReturnValue({
+      data: { slug: "acme", id: "org_acme", name: "Acme" },
+      error: null,
+      isPending: false,
+      isRefetching: false,
+      refetch: vi.fn(),
+    });
+
+    renderHook(() => useActiveOrganization());
+
+    await waitFor(() => {
+      expect(mockSetActive).toHaveBeenCalledWith({ organizationSlug: "acme" });
+    });
   });
 
   it("does not call setActive when there is no session", async () => {

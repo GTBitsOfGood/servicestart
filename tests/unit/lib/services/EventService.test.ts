@@ -193,3 +193,48 @@ describe("EventService.withdraw", () => {
     expect(await rsvpCount(eventId)).toBe(1);
   });
 });
+
+describe("EventService.listPublishedInRange", () => {
+  it("returns only this organization's published events inside the week", async () => {
+    const organization = await createOrganization(`calendar-${randomUUID()}`);
+    const otherOrganization = await createOrganization(
+      `calendar-other-${randomUUID()}`,
+    );
+    const start = new Date("2026-11-02T05:00:00.000Z");
+    const end = new Date("2026-11-09T05:00:00.000Z");
+
+    const monday = await createEvent(organization.id, {
+      name: "Monday workshop",
+      startTimestamp: new Date("2026-11-02T15:00:00.000Z"),
+    });
+    const friday = await createEvent(organization.id, {
+      name: "Friday showcase",
+      startTimestamp: new Date("2026-11-06T18:00:00.000Z"),
+    });
+    await createEvent(organization.id, {
+      name: "Draft",
+      startTimestamp: new Date("2026-11-04T15:00:00.000Z"),
+      publishedAt: null,
+    });
+    await createEvent(otherOrganization.id, {
+      name: "Another organization",
+      startTimestamp: new Date("2026-11-03T15:00:00.000Z"),
+    });
+    await createEvent(organization.id, {
+      name: "Previous Sunday",
+      startTimestamp: new Date(start.getTime() - 1),
+    });
+    await createEvent(organization.id, {
+      name: "Next Monday",
+      startTimestamp: end,
+    });
+
+    const result = await EventService.listPublishedInRange(
+      organization.id,
+      start,
+      end,
+    );
+
+    expect(result.map(({ id }) => id)).toEqual([monday, friday]);
+  });
+});

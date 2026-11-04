@@ -36,11 +36,21 @@ async function findByUserAndOrganization(
   return membership ?? null;
 }
 
-async function getUserIdsByOrganization(organizationId: string) {
+async function getUserIdsByOrganization(
+  organizationId: string,
+  memberTypes?: MemberType[],
+) {
   const organizationMembers = await db
     .select({ userId: members.userId })
     .from(members)
-    .where(eq(members.organizationId, organizationId));
+    .where(
+      and(
+        eq(members.organizationId, organizationId),
+        memberTypes?.length
+          ? inArray(members.memberType, memberTypes)
+          : undefined,
+      ),
+    );
 
   return organizationMembers.map((member) => member.userId);
 }

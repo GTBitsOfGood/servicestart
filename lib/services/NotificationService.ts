@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
 import db from "@/lib/db";
-import { notifications, NotificationType, members } from "@/lib/schema";
+import {
+  notifications,
+  NotificationType,
+  members,
+  type MemberType,
+} from "@/lib/schema";
 import { MembersService } from "@/lib/services/MemberService";
 
 const ADMIN_ROLES = ["admin", "owner"];
@@ -87,15 +92,22 @@ async function notifyAdmins(
 async function notifyAllMembers(
   organizationId: string,
   text: string,
-  metadata?: Record<string, unknown> | null,
+  options: {
+    type?: NotificationType;
+    memberTypes?: MemberType[];
+    metadata?: Record<string, unknown> | null;
+  } = {},
 ) {
-  const userIds = await MembersService.getUserIdsByOrganization(organizationId);
+  const userIds = await MembersService.getUserIdsByOrganization(
+    organizationId,
+    options.memberTypes,
+  );
   return createForUserIds(
     userIds,
     organizationId,
     text,
-    NotificationType.General,
-    metadata,
+    options.type,
+    options.metadata,
   );
 }
 
