@@ -1,11 +1,13 @@
 // @vitest-environment node
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import db from "@/lib/db";
 import {
   FormComponentType,
   FormStatus,
   OrganizationConfigKey,
+  SubmissionReviewStatus,
   formAnswers,
   formSubmissions,
   formUploads,
@@ -84,6 +86,18 @@ function submit(
   cookie?: string,
 ) {
   return testApi.forms[":formId"].submissions.$post(
+    { param: { formId }, json: { answers } as never },
+    { headers: headersFor(slug, cookie) },
+  );
+}
+
+function edit(
+  slug: string,
+  formId: string,
+  answers: Record<string, unknown>,
+  cookie?: string,
+) {
+  return testApi.forms[":formId"].submissions.mine.$put(
     { param: { formId }, json: { answers } as never },
     { headers: headersFor(slug, cookie) },
   );
@@ -632,11 +646,31 @@ describe("POST /api/forms/:formId/uploads", () => {
     expect((await upload("acme", form.formId, png(), cookie)).status).toBe(403);
   });
 
-  it("returns 409 after the user has submitted", async () => {
+  it("lets a member who already responded upload a replacement", async () => {
     const org = await createOrg("acme");
     const form = await publishedForm(org.id);
     const { userId, cookie } = await signIn(org.id);
     await createFormSubmission(form, { userId });
+
+    const res = await upload("acme", form.formId, png(), cookie);
+
+    expect(res.status).toBe(201);
+    const { id } = (await res.json()) as { id: string };
+    const [row] = await db
+      .select()
+      .from(formUploads)
+      .where(eq(formUploads.id, id));
+    expect(row.uploadedBy).toBe(userId);
+  });
+
+  it("returns 409 for a member whose response was reviewed", async () => {
+    const org = await createOrg("acme");
+    const form = await publishedForm(org.id);
+    const { userId, cookie } = await signIn(org.id);
+    await createFormSubmission(form, {
+      userId,
+      reviewStatus: SubmissionReviewStatus.Rejected,
+    });
 
     expect((await upload("acme", form.formId, png(), cookie)).status).toBe(409);
   });
@@ -729,5 +763,185 @@ describe("GET /api/forms/:formId/my-uploads/:uploadId", () => {
     expect(
       (await getUpload(org.slug, form.formId, uploadId, cookie)).status,
     ).toBe(404);
+  });
+});
+
+describe("PUT /api/forms/:formId/submissions/mine", () => {
+  async function submitted(settings: Partial<FormSettings> = {}) {
+    const org = await createOrg("acme");
+    const form = await publishedForm(org.id, settings);
+    const { userId, cookie } = await signIn(org.id);
+    const answers = await validAnswers(form, userId);
+    const submissionId = await createFormSubmission(form, {
+      userId,
+      answers,
+    });
+    return { org, form, userId, cookie, answers, submissionId };
+  }
+
+  it("replaces the answers and returns the submit shape", async () => {
+    const { form, userId, cookie, answers, submissionId } = await submitted();
+    const shortText = form.components.find(
+      ({ type }) => type === FormComponentType.ShortText,
+    )!;
+    const edited = {
+      ...(await validAnswers(form, userId)),
+      [shortText.id]: "Changed",
+    };
+
+    const res = await edit("acme", form.formId, edited, cookie);
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      id: submissionId,
+      confirmationMessage: form.settings.confirmationMessage,
+    });
+    const rows = await db
+      .select()
+      .from(formAnswers)
+      .where(eq(formAnswers.submissionId, submissionId));
+    const saved = Object.fromEntries(rows.map((r) => [r.componentId, r.value]));
+    expect(saved[shortText.id]).toBe("Changed");
+    expect(saved[shortText.id]).not.toBe(answers[shortText.id]);
+    const [submission] = await db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, submissionId));
+    expect(submission.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it("returns 403 for a closed form", async () => {
+    const org = await createOrg("acme");
+    const form = await createForm(org.id, { status: FormStatus.Closed });
+    const { userId, cookie } = await signIn(org.id);
+    await createFormSubmission(form, { userId });
+
+    const res = await edit("acme", form.formId, {}, cookie);
+
+    expect(res.status).toBe(403);
+  });
+
+  it("returns 404 when the member hasn't responded", async () => {
+    const org = await createOrg("acme");
+    const form = await publishedForm(org.id);
+    const { userId, cookie } = await signIn(org.id);
+
+    const res = await edit(
+      "acme",
+      form.formId,
+      await validAnswers(form, userId),
+      cookie,
+    );
+
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 401 for a guest and 403 for a non-member", async () => {
+    const { form, answers } = await submitted();
+    const outsider = await signIn();
+
+    expect((await edit("acme", form.formId, answers)).status).toBe(401);
+    expect(
+      (await edit("acme", form.formId, answers, outsider.cookie)).status,
+    ).toBe(403);
+  });
+
+  it("returns field errors for invalid answers", async () => {
+    const { form, cookie, answers, submissionId } = await submitted();
+    const required = form.components.find(
+      ({ type, required }) => type === FormComponentType.ShortText && required,
+    )!;
+    const rest = { ...answers };
+    delete rest[required.id];
+
+    const res = await edit("acme", form.formId, rest, cookie);
+
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as {
+      error: string;
+      fieldErrors: Record<string, string>;
+    };
+    expect(body.error).toBe("Some answers need attention");
+    expect(Object.keys(body.fieldErrors)).toEqual([required.id]);
+    const [submission] = await db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, submissionId));
+    expect(submission.updatedAt).toBeNull();
+  });
+
+  it("returns an upload error for another user's image", async () => {
+    const { form, cookie } = await submitted();
+    const other = await signIn();
+    const uploadId = await createFormUpload(form, { uploadedBy: other.userId });
+
+    const res = await edit(
+      "acme",
+      form.formId,
+      buildSampleAnswers(form, { uploadId }),
+      cookie,
+    );
+
+    const { fieldErrors } = z
+      .object({ fieldErrors: z.record(z.string(), z.string()) })
+      .parse(await res.json());
+    expect(res.status).toBe(400);
+    expect(fieldErrors).toEqual({
+      [imageComponentId(form)]: "Upload this image again",
+    });
+  });
+
+  it("returns 403 once the response has been reviewed", async () => {
+    const { form, userId, cookie, answers, submissionId } = await submitted();
+    await db
+      .update(formSubmissions)
+      .set({ reviewStatus: SubmissionReviewStatus.Accepted })
+      .where(eq(formSubmissions.id, submissionId));
+    const shortText = form.components.find(
+      ({ type }) => type === FormComponentType.ShortText,
+    )!;
+    const edited = {
+      ...(await validAnswers(form, userId)),
+      [shortText.id]: "Changed",
+    };
+
+    const res = await edit("acme", form.formId, edited, cookie);
+
+    expect(res.status).toBe(403);
+    const rows = await db
+      .select()
+      .from(formAnswers)
+      .where(eq(formAnswers.submissionId, submissionId));
+    const saved = Object.fromEntries(rows.map((r) => [r.componentId, r.value]));
+    expect(saved).toEqual(answers);
+    const [submission] = await db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, submissionId));
+    expect(submission).toMatchObject({
+      updatedAt: null,
+      reviewStatus: SubmissionReviewStatus.Accepted,
+    });
+  });
+
+  it("returns 404 for org A's form from org B's host", async () => {
+    const { form, answers, cookie } = await submitted();
+    await createOrg("org-b");
+
+    const res = await edit("org-b", form.formId, answers, cookie);
+
+    expect(res.status).toBe(404);
+    const [submission] = await db.select().from(formSubmissions);
+    expect(submission.updatedAt).toBeNull();
+  });
+
+  it("returns 403 for a member of another org on this host", async () => {
+    const { form, answers } = await submitted();
+    const orgB = await createOrg("org-b");
+    const member = await signIn(orgB.id);
+
+    const res = await edit("acme", form.formId, answers, member.cookie);
+
+    expect(res.status).toBe(403);
   });
 });

@@ -88,8 +88,12 @@ it("recreates the ServiceStart demo form, undoing a rehearsal", async () => {
     ),
   ).toEqual(DEMO_FORM);
   expect(
-    await FormSubmissionService.hasSubmitted(DEMO_FORM.id, member.id),
-  ).toBe(false);
+    await FormSubmissionService.isMemberSubmissionEditable({
+      form: DEMO_FORM,
+      organizationId: "org_servicestart",
+      userId: member.id,
+    }),
+  ).toBeNull();
   expect(
     await OrganizationConfigService.getConfig("org_servicestart", [
       OrganizationConfigKey.FormsEnabled,
