@@ -108,7 +108,7 @@ The public API is three files, because each kind of code has to load in differen
 - **`server.ts`**: services, for other contexts' services, routes, and server components.
 - **`ui.ts`**: components and widgets. Seed scripts (`tsx`) and Playwright load code outside the bundler, where CSS module imports fail, so only components and pages import `ui.ts`.
 
-Some widgets in a `ui.ts` are server components that call services, next to client components. `package.json` declares the app's modules free of side effects (`"sideEffects": ["*.css"]`), so Next drops the re-exports a client component doesn't use instead of bundling those services, and `pg` with them, for the browser. Without it, `next build` fails with "Module not found: Can't resolve 'fs'". Because of this, a module must not do work at import time that other code depends on: export a function and call it instead.
+Some widgets in a `ui.ts` are server components that call services, next to client components. `package.json` declares the app's modules free of side effects (`"sideEffects": ["*.css"]`), so when a client component imports one client component from a `ui.ts`, Next drops the other re-exports instead of bundling those widgets' services, and `pg` with them, for the browser. Without it, that import fails `next build` with "Module not found: Can't resolve 'fs'". Because of this, a module must not do work at import time that other code depends on: export a function and call it instead.
 
 Export only what another context uses today, and add to these files as that changes. Within a context, import files directly (`@/features/forms/lib/schema`), not through its own public API, which avoids import cycles.
 
