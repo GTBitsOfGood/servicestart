@@ -5,7 +5,7 @@ import {
 } from "@/features/membership";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { auth } from "@/core/auth/auth";
-import { MembersService } from "@/features/membership";
+import { MembersService } from "@/features/membership/server";
 import OrganizationConfigService from "@/core/config/OrganizationConfigService";
 
 function getRelevantOrgConfigKeys(): OrganizationConfigKey[] {

@@ -35,7 +35,7 @@ import {
   InvalidUploadError,
   SubmissionNotEditableError,
 } from "@/features/forms/services/FormSubmissionService";
-import { MembersService } from "@/features/membership";
+import { MembersService } from "@/features/membership/server";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
 

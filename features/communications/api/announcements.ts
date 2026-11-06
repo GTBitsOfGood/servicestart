@@ -4,7 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { AnnouncementsService } from "@/features/communications/services/AnnouncementService";
 import { auth } from "@/core/auth/auth";
 import { EmailService } from "@/core/email/EmailService";
-import { MembersService } from "@/features/membership";
+import { MembersService } from "@/features/membership/server";
 import { paginationQuerySchema } from "@/core/api/apiUtils";
 
 const contentSchema = z.array(

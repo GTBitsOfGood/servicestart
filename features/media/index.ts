@@ -2,4 +2,3 @@
 // "@/features/media", never from a file inside it.
 
 export { MediaType } from "./schema";
-export { MediaService } from "./services/MediaService";

@@ -5,7 +5,7 @@ import db from "@/core/db";
 import { auth } from "@/core/auth/auth";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
 import { MembersService } from "./MemberService";
-import { NotificationService } from "@/features/communications";
+import { NotificationService } from "@/features/communications/server";
 import {
   joinRequests,
   joinRequestHistory,

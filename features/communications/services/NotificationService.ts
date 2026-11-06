@@ -7,7 +7,7 @@ import {
   members,
   type MemberType,
 } from "@/core/db/schema";
-import { MembersService } from "@/features/membership";
+import { MembersService } from "@/features/membership/server";
 
 const ADMIN_ROLES = ["admin", "owner"];
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];

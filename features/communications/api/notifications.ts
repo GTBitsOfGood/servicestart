@@ -6,7 +6,7 @@ import { requireMembership, requireAdmin } from "@/core/auth/authUtils";
 import { ForbiddenError } from "@/core/api/errors";
 import { NotificationService } from "@/features/communications/services/NotificationService";
 import { NotificationType } from "@/features/communications/schema";
-import { JoinRequestsService } from "@/features/membership";
+import { JoinRequestsService } from "@/features/membership/server";
 import { JoinRequestStatus } from "@/features/membership";
 
 const notificationsQuerySchema = paginationQuerySchema.and(

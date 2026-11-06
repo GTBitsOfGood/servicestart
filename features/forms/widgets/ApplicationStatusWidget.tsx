@@ -17,7 +17,7 @@ import { OrganizationConfigKey } from "@/core/config/schema";
 import { SubmissionReviewStatus } from "@/features/forms/schema";
 import { FormProgressService } from "@/features/forms/services/FormProgressService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import { UserService } from "@/features/membership";
+import { UserService } from "@/features/membership/server";
 import { cn } from "@/core/utils/utils";
 
 const STEP_STATE_TEXT: Record<TimelineStep["state"], string> = {

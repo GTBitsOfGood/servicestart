@@ -11,8 +11,8 @@ import {
 import { getAcceptedMemberType } from "@/features/forms/lib/schema";
 import { REVIEW_STATUS_LABELS } from "@/features/forms/lib/review";
 import { FormService } from "@/features/forms/services/FormService";
-import { MembersService } from "@/features/membership";
-import { NotificationService } from "@/features/communications";
+import { MembersService } from "@/features/membership/server";
+import { NotificationService } from "@/features/communications/server";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];

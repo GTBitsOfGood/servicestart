@@ -13,7 +13,7 @@ import {
   updateShiftSchema,
   ShiftError,
 } from "@/features/events/lib/shifts";
-import { MembersService } from "@/features/membership";
+import { MembersService } from "@/features/membership/server";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Database = typeof db | Transaction;

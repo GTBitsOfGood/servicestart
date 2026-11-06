@@ -16,7 +16,7 @@ import { auth } from "@/core/auth/auth";
 import { headers } from "next/headers";
 import getNavbarItems from "@/features/navigation/getNavbarItems";
 import { getActiveOrganizationIdFromHeaders } from "@/core/auth/authUtils";
-import { MembersService } from "@/features/membership";
+import { MembersService } from "@/features/membership/server";
 import OrganizationFooter from "@/features/navigation/components/OrganizationFooter";
 
 interface NavbarProps {

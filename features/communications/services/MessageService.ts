@@ -1,7 +1,7 @@
 import db from "@/core/db";
 import { messageRecipients, messages } from "@/core/db/schema";
 import { EmailService } from "@/core/email/EmailService";
-import { MembersService } from "@/features/membership";
+import { MembersService } from "@/features/membership/server";
 
 export type MessageBody = Record<string, unknown>;
 
