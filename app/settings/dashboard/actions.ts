@@ -5,9 +5,10 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { auth } from "@/core/auth/auth";
 import {
-  MEMBER_AUDIENCES,
-  MEMBER_TYPE_LAYOUT_KEYS,
-} from "@/features/membership/lib/audience";
+  clearMemberTypeDashboardLayout,
+  setMemberTypeDashboardLayout,
+} from "@/features/dashboard/config";
+import { MEMBER_AUDIENCES } from "@/features/membership/lib/audience";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import {
   ForbiddenError,
@@ -38,7 +39,10 @@ async function getAdminOrganizationId() {
   return orgId;
 }
 
-/** Saves an audience's dashboard layout under its own config key. */
+/**
+ * Saves an audience's dashboard layout: members' under DashboardLayout, a
+ * member type's in MemberTypeDashboardLayouts.
+ */
 export async function saveDashboardLayout(
   audience: unknown,
   layout: DashboardLayout,
@@ -49,11 +53,7 @@ export async function saveDashboardLayout(
   if (parsed === "member") {
     await OrganizationConfigService.setDashboardLayout(orgId, value);
   } else {
-    await OrganizationConfigService.setConfig(
-      orgId,
-      MEMBER_TYPE_LAYOUT_KEYS[parsed],
-      value,
-    );
+    await setMemberTypeDashboardLayout(orgId, parsed, JSON.parse(value));
   }
   revalidatePath("/settings/dashboard");
 }
@@ -65,9 +65,6 @@ export async function saveDashboardLayout(
 export async function clearDashboardLayout(audience: unknown) {
   const orgId = await getAdminOrganizationId();
   const parsed = TypedAudienceSchema.parse(audience);
-  await OrganizationConfigService.clearConfig(
-    orgId,
-    MEMBER_TYPE_LAYOUT_KEYS[parsed],
-  );
+  await clearMemberTypeDashboardLayout(orgId, parsed);
   revalidatePath("/settings/dashboard");
 }

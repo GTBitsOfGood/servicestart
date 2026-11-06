@@ -215,6 +215,38 @@ export const formAnswers = pgTable(
   ],
 );
 
+// A member's answers to a form they haven't submitted yet (#338), one per form
+// and member. Kept apart from form_submissions so drafts never count as
+// responses.
+export const formResponseDrafts = pgTable(
+  "form_response_drafts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    // References forms.id (the UUID), not forms.formId.
+    formId: uuid("form_id")
+      .notNull()
+      .references(() => forms.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // Answers by component ID, each shaped like that component's answer.
+    answers: parsedJsonb<Record<string, FormAnswerValue>>("answers").notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique("form_response_drafts_form_id_user_id_unique").on(
+      table.formId,
+      table.userId,
+    ),
+  ],
+);
+
 // Files uploaded to a form (headshots). Kept apart from `media` so they never
 // appear in the media library.
 export const formUploads = pgTable(

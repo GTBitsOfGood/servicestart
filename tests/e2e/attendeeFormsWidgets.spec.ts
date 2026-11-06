@@ -8,6 +8,7 @@ import {
   OrganizationConfigKey,
   SubmissionReviewStatus,
 } from "@/core/db/schema";
+import { setMemberTypeDashboardLayout } from "@/features/dashboard/config";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,
@@ -62,10 +63,10 @@ async function createAttendeeWidgetsOrg() {
     OrganizationConfigKey.MemberTypesEnabled,
     "true",
   );
-  await OrganizationConfigService.setConfig(
+  await setMemberTypeDashboardLayout(
     org.id,
-    OrganizationConfigKey.AttendeeDashboardLayout,
-    JSON.stringify(ATTENDEE_FORMS_LAYOUT),
+    MemberType.Attendee,
+    ATTENDEE_FORMS_LAYOUT,
   );
 
   const forms: TestForm[] = [];

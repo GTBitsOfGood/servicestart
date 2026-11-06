@@ -6,13 +6,46 @@ import {
   eventRsvps,
   members,
   MemberType,
+  memberTypes,
   shifts,
   shiftRSVPs,
   users,
 } from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import {
+  MEMBER_TYPE_LABELS,
+  MEMBER_TYPE_PLURAL_LABELS,
+} from "@/features/membership/lib/memberTypes";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Creates the organization's applicant and attendee member types if it doesn't
+ * have them yet. A member's type must be one of their organization's
+ * member_types rows, so call this before giving a member a type. Until #336
+ * lets admins define their own types, every organization uses these two, the
+ * same rows the Sprint 5 migration backfilled.
+ */
+async function ensureBuiltInMemberTypes(
+  organizationId: string,
+  tx: Transaction | typeof db = db,
+) {
+  await tx
+    .insert(memberTypes)
+    .values(
+      [MemberType.Applicant, MemberType.Attendee].map((key, position) => ({
+        organizationId,
+        key,
+        label: MEMBER_TYPE_LABELS[key],
+        pluralLabel: MEMBER_TYPE_PLURAL_LABELS[key],
+        position,
+        isSignupDefault: key === MemberType.Applicant,
+      })),
+    )
+    .onConflictDoNothing({
+      target: [memberTypes.organizationId, memberTypes.key],
+    });
+}
 
 async function findByUserAndOrganization(
   userId: string,
@@ -158,6 +191,7 @@ async function setMemberTypes(
       return { error: "admin" as const };
     }
 
+    await ensureBuiltInMemberTypes(organizationId, tx);
     const updated = await tx
       .update(members)
       .set({ memberType })
@@ -183,6 +217,7 @@ async function addSignupMember(userId: string, organizationId: string) {
 
   const memberTypesEnabled =
     await OrganizationConfigService.getMemberTypesEnabled(organizationId);
+  if (memberTypesEnabled) await ensureBuiltInMemberTypes(organizationId);
 
   await db.insert(members).values({
     id: randomUUID(),
@@ -343,6 +378,7 @@ async function addMemberDirectly(
   });
 }
 export const MembersService = {
+  ensureBuiltInMemberTypes,
   findByUserAndOrganization,
   getMemberActivity,
   getUserIdsByOrganization,

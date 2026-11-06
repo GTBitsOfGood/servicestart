@@ -27,6 +27,7 @@ import {
   type SubmissionReviewStatus,
 } from "@/core/db/schema";
 import { InvitationStatus } from "@/features/membership/services/InvitationService";
+import { MembersService } from "@/features/membership/services/MemberService";
 import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import type {
   FormAnswerValue,
@@ -93,7 +94,8 @@ export function buildHost(slug: string) {
 }
 
 /**
- * Creates an organization in the database.
+ * Creates an organization in the database, with the applicant and attendee
+ * member types, so tests can give its members a type directly.
  */
 export async function createOrganization(slug: string) {
   const id = randomUUID();
@@ -102,6 +104,7 @@ export async function createOrganization(slug: string) {
     name: `Organization ${slug}`,
     slug,
   });
+  await MembersService.ensureBuiltInMemberTypes(id);
 
   return { id, slug };
 }

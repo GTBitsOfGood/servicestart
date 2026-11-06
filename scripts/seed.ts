@@ -155,7 +155,12 @@ export async function main() {
   for (const org of ORGS) {
     const orgUserIds = new Map<string, string>();
     userIdsByOrganization.set(org.id, orgUserIds);
-    for (const userData of [...usersData, ...(org.extraUsers ?? [])]) {
+    const orgUsers = [...usersData, ...(org.extraUsers ?? [])];
+    // A member's type has to be one of the organization's member types.
+    if (orgUsers.some((u) => u.memberType ?? org.memberTypes?.[u.email])) {
+      await MembersService.ensureBuiltInMemberTypes(org.id);
+    }
+    for (const userData of orgUsers) {
       const memberType =
         userData.memberType ?? org.memberTypes?.[userData.email];
       let [user] = await db

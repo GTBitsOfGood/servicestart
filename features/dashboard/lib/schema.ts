@@ -108,3 +108,15 @@ export const DashboardLayoutSchema = z
 export type WidgetSize = z.infer<typeof WidgetSizeSchema>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetSchema>;
 export type DashboardLayout = z.infer<typeof DashboardLayoutSchema>;
+
+/**
+ * Each member type's own layout, by member type key. A type without one gets
+ * the member layout.
+ */
+export const MemberTypeDashboardLayoutsSchema = z.record(
+  z.string().min(1),
+  DashboardLayoutSchema,
+);
+export type MemberTypeDashboardLayouts = z.infer<
+  typeof MemberTypeDashboardLayoutsSchema
+>;

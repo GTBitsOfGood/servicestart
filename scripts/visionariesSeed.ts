@@ -152,10 +152,10 @@ export function createApplicationSeed(options: {
       [OrganizationConfigKey.FormsEnabled]: "true",
       [OrganizationConfigKey.MemberTypesEnabled]: "true",
       [OrganizationConfigKey.AutoApproveSignups]: "true",
-      [OrganizationConfigKey.ApplicantDashboardLayout]:
-        JSON.stringify(APPLICANT_LAYOUT),
-      [OrganizationConfigKey.AttendeeDashboardLayout]:
-        JSON.stringify(ATTENDEE_LAYOUT),
+      [OrganizationConfigKey.MemberTypeDashboardLayouts]: JSON.stringify({
+        [MemberType.Applicant]: APPLICANT_LAYOUT,
+        [MemberType.Attendee]: ATTENDEE_LAYOUT,
+      }),
       [OrganizationConfigKey.DashboardHeader]: JSON.stringify(DASHBOARD_HEADER),
       [OrganizationConfigKey.NavbarConfig]: JSON.stringify(NAVBAR),
       [OrganizationConfigKey.OrganizationFooter]: JSON.stringify(FOOTER),

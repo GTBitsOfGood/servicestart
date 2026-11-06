@@ -20,6 +20,7 @@ import {
 import {
   formAnswers,
   formComponents,
+  formResponseDrafts,
   forms,
   formSubmissions,
   formUploads,
@@ -29,6 +30,7 @@ import {
   invitations,
   joinRequests,
   members,
+  memberTypes,
   userOrganizations,
 } from "@/features/membership/schema";
 
@@ -54,6 +56,7 @@ export const relations = defineRelations(
     accounts,
     organizations,
     members,
+    memberTypes,
     invitations,
     joinRequests,
     events,
@@ -75,6 +78,7 @@ export const relations = defineRelations(
     formSubmissions,
     formAnswers,
     formUploads,
+    formResponseDrafts,
   },
   (r) => ({
     users: {
@@ -144,6 +148,10 @@ export const relations = defineRelations(
         from: r.organizations.id,
         to: r.forms.organizationId,
       }),
+      memberTypes: r.many.memberTypes({
+        from: r.organizations.id,
+        to: r.memberTypes.organizationId,
+      }),
     },
     members: {
       users: r.one.users({
@@ -152,6 +160,12 @@ export const relations = defineRelations(
       }),
       organizations: r.one.organizations({
         from: r.members.organizationId,
+        to: r.organizations.id,
+      }),
+    },
+    memberTypes: {
+      organization: r.one.organizations({
+        from: r.memberTypes.organizationId,
         to: r.organizations.id,
       }),
     },
@@ -322,6 +336,10 @@ export const relations = defineRelations(
         from: r.forms.id,
         to: r.formUploads.formId,
       }),
+      drafts: r.many.formResponseDrafts({
+        from: r.forms.id,
+        to: r.formResponseDrafts.formId,
+      }),
     },
     formComponents: {
       form: r.one.forms({
@@ -369,6 +387,16 @@ export const relations = defineRelations(
         optional: true,
       }),
     },
+    formResponseDrafts: {
+      form: r.one.forms({
+        from: r.formResponseDrafts.formId,
+        to: r.forms.id,
+      }),
+      user: r.one.users({
+        from: r.formResponseDrafts.userId,
+        to: r.users.id,
+      }),
+    },
   }),
 );
 
@@ -379,6 +407,7 @@ export const schema = {
   verifications,
   organizations,
   members,
+  memberTypes,
   invitations,
   joinRequests,
   events,
@@ -399,4 +428,5 @@ export const schema = {
   formSubmissions,
   formAnswers,
   formUploads,
+  formResponseDrafts,
 };

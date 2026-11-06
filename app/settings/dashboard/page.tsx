@@ -7,9 +7,9 @@ import {
 } from "@/features/dashboard/widgets";
 import {
   MEMBER_AUDIENCES,
-  MEMBER_TYPE_LAYOUT_KEYS,
   type MemberAudience,
 } from "@/features/membership/lib/audience";
+import { getMemberTypeDashboardLayout } from "@/features/dashboard/config";
 import DashboardLayoutBuilder from "@/features/dashboard/components/DashboardLayoutBuilder";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import { FormStatus } from "@/features/forms/schema";
@@ -62,11 +62,7 @@ export default async function DashboardSettingsPage({
   const ownLayout: DashboardLayout | null =
     audience === "member"
       ? null
-      : (
-          await OrganizationConfigService.getConfig(organizationId, [
-            MEMBER_TYPE_LAYOUT_KEYS[audience],
-          ])
-        )[MEMBER_TYPE_LAYOUT_KEYS[audience]];
+      : await getMemberTypeDashboardLayout(organizationId, audience);
   const layout =
     ownLayout ??
     (await OrganizationConfigService.getDashboardLayout(organizationId));

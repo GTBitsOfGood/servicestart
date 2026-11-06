@@ -4,6 +4,7 @@ import {
   invitations,
   joinRequests,
   members,
+  memberTypes,
   organizations,
   sessions,
   users,
@@ -20,6 +21,7 @@ import {
   formSubmissions,
   formAnswers,
   formUploads,
+  formResponseDrafts,
 } from "@/core/db/schema";
 import { beforeAll, beforeEach, afterAll } from "vitest";
 import { execSync } from "child_process";
@@ -54,6 +56,7 @@ beforeEach(async () => {
 
   // Child tables first, then parent tables
   // Add line here when you create a new table
+  await db.delete(formResponseDrafts);
   await db.delete(formAnswers);
   await db.delete(formSubmissions);
   await db.delete(formUploads);
@@ -70,6 +73,7 @@ beforeEach(async () => {
   await db.delete(joinRequests);
   await db.delete(invitations);
   await db.delete(members);
+  await db.delete(memberTypes);
   await db.delete(sessions);
   await db.delete(accounts);
   await db.delete(verifications);

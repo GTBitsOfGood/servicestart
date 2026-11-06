@@ -1,9 +1,10 @@
-import { pgEnum, pgTable, index, text } from "drizzle-orm/pg-core";
+import { pgTable, index, text } from "drizzle-orm/pg-core";
 import { organizations } from "@/core/tenant/schema";
 
 // Per-organization settings, one row per key.
 
-//TypeScript enum for org config key values
+// Every key an organization can set. organization_config.key is plain text, so
+// adding a key needs no migration; the API's Zod check restricts keys to these.
 export enum OrganizationConfigKey {
   Description = "description",
   PrimaryColor = "primary_color",
@@ -32,6 +33,9 @@ export enum OrganizationConfigKey {
   DashboardHeader = "dashboard_header",
   NavbarConfig = "navbar_config",
   OrganizationFooter = "organization_footer",
+  // Each member type's own dashboard layout, by member type key. Replaces
+  // ApplicantDashboardLayout and AttendeeDashboardLayout, which #336 removes.
+  MemberTypeDashboardLayouts = "member_type_dashboard_layouts",
 }
 
 export type ToggleableOrganizationFeature = Extract<
@@ -42,15 +46,10 @@ export type ToggleableOrganizationFeature = Extract<
   | OrganizationConfigKey.AutoApproveSignups
 >;
 
-// Array of enum values for use with pgEnum and Zod
+// Array of enum values for use with Zod
 export const ORGANIZATION_CONFIG_KEY_VALUES = Object.values(
   OrganizationConfigKey,
 ) as unknown as readonly [string, ...string[]];
-
-export const organizationConfigKeyEnum = pgEnum(
-  "organization_config_key",
-  ORGANIZATION_CONFIG_KEY_VALUES,
-);
 
 export const organizationConfig = pgTable(
   "organization_config",
@@ -59,7 +58,7 @@ export const organizationConfig = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
-    key: organizationConfigKeyEnum("key").notNull(),
+    key: text("key").$type<OrganizationConfigKey>().notNull(),
     value: text("value").notNull(),
   },
   (table) => [

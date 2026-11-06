@@ -1,5 +1,4 @@
 import { MemberType } from "@/features/membership/schema";
-import { OrganizationConfigKey } from "@/core/config/schema";
 
 /**
  * Who a dashboard (and its navbar and header) is for. Member types only count
@@ -17,12 +16,6 @@ export type DashboardAudience = (typeof DASHBOARD_AUDIENCES)[number];
 /** The audiences besides admins, which an org can configure separately. */
 export const MEMBER_AUDIENCES = ["member", "applicant", "attendee"] as const;
 export type MemberAudience = (typeof MEMBER_AUDIENCES)[number];
-
-/** Where applicants' and attendees' own dashboard layouts are stored. */
-export const MEMBER_TYPE_LAYOUT_KEYS = {
-  applicant: OrganizationConfigKey.ApplicantDashboardLayout,
-  attendee: OrganizationConfigKey.AttendeeDashboardLayout,
-} as const;
 
 export function getDashboardAudience(
   membership: { role: string; memberType: MemberType | null } | null,

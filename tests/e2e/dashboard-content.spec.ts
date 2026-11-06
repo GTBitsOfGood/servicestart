@@ -12,6 +12,7 @@ import {
   OrganizationConfigKey,
 } from "@/core/db/schema";
 import { NotificationService } from "@/features/communications/services/NotificationService";
+import { setMemberTypeDashboardLayout } from "@/features/dashboard/config";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,
@@ -115,11 +116,7 @@ async function configureCampDashboard(organizationId: string) {
       OrganizationConfigKey.NavbarVariant,
       "horizontal-center",
     ),
-    OrganizationConfigService.setConfig(
-      organizationId,
-      OrganizationConfigKey.AttendeeDashboardLayout,
-      JSON.stringify(layout),
-    ),
+    setMemberTypeDashboardLayout(organizationId, MemberType.Attendee, layout),
     OrganizationConfigService.setConfig(
       organizationId,
       OrganizationConfigKey.DashboardHeader,

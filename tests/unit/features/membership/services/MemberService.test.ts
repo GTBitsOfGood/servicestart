@@ -3,7 +3,14 @@ import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/core/db";
-import { members, MemberType, users } from "@/core/db/schema";
+import {
+  members,
+  MemberType,
+  memberTypes,
+  OrganizationConfigKey,
+  users,
+} from "@/core/db/schema";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { MembersService } from "@/features/membership/services/MemberService";
 import {
   addMember,
@@ -473,6 +480,73 @@ describe("MembersService.setMemberTypes", () => {
       [adminId]: null,
       [ownerId]: null,
     });
+  });
+});
+
+describe("MembersService member type rows", () => {
+  // An org created before member types existed, or one that turned them on
+  // after the Sprint 5 migration, has no member_types rows yet.
+  async function orgWithoutTypes(slug: string) {
+    const org = await createOrganization(slug);
+    await db.delete(memberTypes).where(eq(memberTypes.organizationId, org.id));
+    return org;
+  }
+  const keysOf = async (organizationId: string) =>
+    (
+      await db
+        .select({
+          key: memberTypes.key,
+          isSignupDefault: memberTypes.isSignupDefault,
+        })
+        .from(memberTypes)
+        .where(eq(memberTypes.organizationId, organizationId))
+        .orderBy(memberTypes.position)
+    ).map(({ key, isSignupDefault }) => [key, isSignupDefault]);
+
+  it("creates the applicant and attendee types once", async () => {
+    const org = await orgWithoutTypes("types-ensure");
+    await MembersService.ensureBuiltInMemberTypes(org.id);
+    await MembersService.ensureBuiltInMemberTypes(org.id);
+    expect(await keysOf(org.id)).toEqual([
+      [MemberType.Applicant, true],
+      [MemberType.Attendee, false],
+    ]);
+  });
+
+  it("creates them before setting a type", async () => {
+    const org = await orgWithoutTypes("types-set");
+    const user = await signUpAndGetSession(buildTestUser(), org.slug);
+    await db.insert(members).values({
+      id: randomUUID(),
+      userId: user.user.id,
+      organizationId: org.id,
+      role: "member",
+    });
+
+    expect(
+      await MembersService.setMemberTypes(
+        org.id,
+        [user.user.id],
+        MemberType.Attendee,
+      ),
+    ).toEqual({ updated: 1 });
+    expect(await keysOf(org.id)).toHaveLength(2);
+  });
+
+  it("creates them before a signup becomes an applicant", async () => {
+    const org = await orgWithoutTypes("types-signup");
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.MemberTypesEnabled,
+      "true",
+    );
+    const user = await signUpAndGetSession(buildTestUser(), org.slug);
+
+    await MembersService.addSignupMember(user.user.id, org.id);
+    expect(
+      (await MembersService.findByUserAndOrganization(user.user.id, org.id))
+        ?.memberType,
+    ).toBe(MemberType.Applicant);
   });
 });
 

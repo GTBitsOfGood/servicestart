@@ -867,8 +867,7 @@ it("configures Visionaries' logo, dashboards, header, navbar, and footer", async
 
   const config = await OrganizationConfigService.getConfig(VISIONARIES, [
     OrganizationConfigKey.LogoUrl,
-    OrganizationConfigKey.ApplicantDashboardLayout,
-    OrganizationConfigKey.AttendeeDashboardLayout,
+    OrganizationConfigKey.MemberTypeDashboardLayouts,
     OrganizationConfigKey.DashboardHeader,
     OrganizationConfigKey.NavbarConfig,
     OrganizationConfigKey.OrganizationFooter,
@@ -877,6 +876,9 @@ it("configures Visionaries' logo, dashboards, header, navbar, and footer", async
   expect(config[OrganizationConfigKey.LogoUrl]).toBe(
     "/organizations/visionaries-logo.png",
   );
+  expect(
+    Object.keys(config[OrganizationConfigKey.MemberTypeDashboardLayouts]),
+  ).toEqual(["applicant", "attendee"]);
   expect(
     (
       await OrganizationConfigService.getDashboardLayoutFor(

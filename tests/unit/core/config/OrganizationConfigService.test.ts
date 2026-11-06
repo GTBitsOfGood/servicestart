@@ -666,8 +666,8 @@ describe("OrganizationConfigService - Sprint 4 dashboard config", () => {
     const org = await createOrganization("camp");
     await OrganizationConfigService.setConfig(
       org.id,
-      OrganizationConfigKey.AttendeeDashboardLayout,
-      JSON.stringify(layout("forms_todo")),
+      OrganizationConfigKey.MemberTypeDashboardLayouts,
+      JSON.stringify({ attendee: layout("forms_todo") }),
     );
 
     expect(
@@ -682,7 +682,7 @@ describe("OrganizationConfigService - Sprint 4 dashboard config", () => {
 
     await OrganizationConfigService.clearConfig(
       org.id,
-      OrganizationConfigKey.AttendeeDashboardLayout,
+      OrganizationConfigKey.MemberTypeDashboardLayouts,
     );
     expect(
       await OrganizationConfigService.getDashboardLayoutFor(org.id, "attendee"),
@@ -706,9 +706,14 @@ describe("OrganizationConfigService - Sprint 4 dashboard config", () => {
       { ein: "844516921" },
     ],
     [
-      OrganizationConfigKey.ApplicantDashboardLayout,
-      layout("forms_todo"),
-      { layout: "horizontal", widgets: [{ id: "nope", size: "tall" }] },
+      OrganizationConfigKey.MemberTypeDashboardLayouts,
+      { applicant: layout("forms_todo") },
+      {
+        applicant: {
+          layout: "horizontal",
+          widgets: [{ id: "nope", size: "tall" }],
+        },
+      },
     ],
   ])("validates %s", async (key, valid, invalid) => {
     const org = await createOrganization("camp");

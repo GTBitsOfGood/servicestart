@@ -35,6 +35,8 @@ const LAYOUT: DashboardLayout = {
 
 const getStored = async (orgId: string, key: OrganizationConfigKey) =>
   (await OrganizationConfigService.getConfig(orgId, [key]))[key];
+const getMemberTypeLayouts = (orgId: string) =>
+  getStored(orgId, OrganizationConfigKey.MemberTypeDashboardLayouts);
 
 async function signInAs(role: string) {
   const org = await createOrganization(
@@ -55,26 +57,39 @@ async function signInAs(role: string) {
 describe("dashboard settings actions", () => {
   beforeEach(() => mockHeaders.mockReset());
 
-  it.each([
-    ["member", OrganizationConfigKey.DashboardLayout],
-    ["applicant", OrganizationConfigKey.ApplicantDashboardLayout],
-    ["attendee", OrganizationConfigKey.AttendeeDashboardLayout],
-  ] as const)(
-    "saves the %s layout under its own key",
-    async (audience, key) => {
+  it("saves the member layout under its own key", async () => {
+    const org = await signInAs("admin");
+    await saveDashboardLayout("member", LAYOUT);
+    expect(
+      await getStored(org.id, OrganizationConfigKey.DashboardLayout),
+    ).toEqual(LAYOUT);
+    expect(await getMemberTypeLayouts(org.id)).toEqual({});
+  });
+
+  it.each(["applicant", "attendee"] as const)(
+    "saves the %s layout under its member type",
+    async (audience) => {
       const org = await signInAs("admin");
       await saveDashboardLayout(audience, LAYOUT);
-      expect(await getStored(org.id, key)).toEqual(LAYOUT);
-      // The other audiences' own layouts are untouched.
-      const others = [
-        OrganizationConfigKey.ApplicantDashboardLayout,
-        OrganizationConfigKey.AttendeeDashboardLayout,
-      ].filter((other) => other !== key);
-      for (const other of others) {
-        expect(await getStored(org.id, other)).toBeNull();
-      }
+      // The other member type's own layout is untouched.
+      expect(await getMemberTypeLayouts(org.id)).toEqual({
+        [audience]: LAYOUT,
+      });
     },
   );
+
+  it("keeps one member type's layout when saving or clearing another", async () => {
+    const org = await signInAs("admin");
+    const other: DashboardLayout = { layout: "vertical", widgets: [] };
+    await saveDashboardLayout("applicant", LAYOUT);
+    await saveDashboardLayout("attendee", other);
+    expect(await getMemberTypeLayouts(org.id)).toEqual({
+      applicant: LAYOUT,
+      attendee: other,
+    });
+    await clearDashboardLayout("applicant");
+    expect(await getMemberTypeLayouts(org.id)).toEqual({ attendee: other });
+  });
 
   it.each(["applicant", "attendee"] as const)(
     "clears the %s layout so the member layout applies",
@@ -104,9 +119,7 @@ describe("dashboard settings actions", () => {
     await expect(clearDashboardLayout("applicant")).rejects.toThrow(
       ForbiddenError,
     );
-    expect(
-      await getStored(org.id, OrganizationConfigKey.ApplicantDashboardLayout),
-    ).toBeNull();
+    expect(await getMemberTypeLayouts(org.id)).toEqual({});
   });
 
   it("rejects widget settings that fail their schema", async () => {
@@ -121,11 +134,11 @@ describe("dashboard settings actions", () => {
         },
       ],
     } as DashboardLayout;
-    await expect(saveDashboardLayout("applicant", bad)).rejects.toThrow();
+    await expect(saveDashboardLayout("applicant", bad)).rejects.toThrow(
+      /^Invalid applicant dashboard layout \(widgets\.0\.config/,
+    );
     await expect(saveDashboardLayout("member", bad)).rejects.toThrow();
-    expect(
-      await getStored(org.id, OrganizationConfigKey.ApplicantDashboardLayout),
-    ).toBeNull();
+    expect(await getMemberTypeLayouts(org.id)).toEqual({});
   });
 });
 

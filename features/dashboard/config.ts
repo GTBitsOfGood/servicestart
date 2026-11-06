@@ -1,4 +1,4 @@
-import { jsonConfig } from "@/core/config/jsonConfig";
+import { clearStoredConfigValue, jsonConfig } from "@/core/config/jsonConfig";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import {
   DEFAULT_ADMIN_LAYOUT,
@@ -11,6 +11,7 @@ import {
 import {
   type DashboardLayout,
   DashboardLayoutSchema,
+  MemberTypeDashboardLayoutsSchema,
 } from "@/features/dashboard/lib/schema";
 import type { DashboardAudience } from "@/features/membership";
 
@@ -34,20 +35,13 @@ export const dashboardLayout = jsonConfig(
   DEFAULT_MEMBER_LAYOUT,
 );
 
-// Applicants' and attendees' layouts are null until set, and then the member
-// layout applies (see getDashboardLayoutFor).
-export const applicantDashboardLayout = jsonConfig<DashboardLayout | null>(
-  OrganizationConfigKey.ApplicantDashboardLayout,
-  "applicant dashboard layout",
-  DashboardLayoutSchema,
-  null,
-);
-
-export const attendeeDashboardLayout = jsonConfig<DashboardLayout | null>(
-  OrganizationConfigKey.AttendeeDashboardLayout,
-  "attendee dashboard layout",
-  DashboardLayoutSchema,
-  null,
+// Member types' own layouts, in one row keyed by member type. A type without
+// one gets the member layout (see getDashboardLayoutFor).
+export const memberTypeDashboardLayouts = jsonConfig(
+  OrganizationConfigKey.MemberTypeDashboardLayouts,
+  "member type dashboard layouts",
+  MemberTypeDashboardLayoutsSchema,
+  {},
 );
 
 export const dashboardHeader = jsonConfig(
@@ -65,18 +59,60 @@ export async function getDashboardLayoutFor(
   switch (audience) {
     case "admin":
       return adminDashboardLayout.get(organizationId);
-    case "applicant":
-      return (
-        (await applicantDashboardLayout.get(organizationId)) ??
-        dashboardLayout.get(organizationId)
-      );
-    case "attendee":
-      return (
-        (await attendeeDashboardLayout.get(organizationId)) ??
-        dashboardLayout.get(organizationId)
-      );
     case "member":
       return dashboardLayout.get(organizationId);
+    default:
+      return (
+        (await getMemberTypeDashboardLayout(organizationId, audience)) ??
+        dashboardLayout.get(organizationId)
+      );
+  }
+}
+
+/** A member type's own layout, or null when it uses the member layout. */
+export async function getMemberTypeDashboardLayout(
+  organizationId: string,
+  memberType: string,
+): Promise<DashboardLayout | null> {
+  const layouts = await memberTypeDashboardLayouts.get(organizationId);
+  return Object.hasOwn(layouts, memberType) ? layouts[memberType] : null;
+}
+
+/** Saves a member type's own layout, leaving the other types' as they are. */
+export async function setMemberTypeDashboardLayout(
+  organizationId: string,
+  memberType: string,
+  layout: unknown,
+) {
+  const result = DashboardLayoutSchema.safeParse(layout);
+  if (!result.success) {
+    const [issue] = result.error.issues;
+    const where = issue.path.length ? ` (${issue.path.join(".")})` : "";
+    throw new Error(
+      `Invalid ${memberType} dashboard layout${where}: ${issue.message}`,
+    );
+  }
+  const layouts = await memberTypeDashboardLayouts.get(organizationId);
+  await memberTypeDashboardLayouts.set(
+    organizationId,
+    JSON.stringify({ ...layouts, [memberType]: result.data }),
+  );
+}
+
+/** Deletes a member type's own layout, so it gets the member layout again. */
+export async function clearMemberTypeDashboardLayout(
+  organizationId: string,
+  memberType: string,
+) {
+  const rest = { ...(await memberTypeDashboardLayouts.get(organizationId)) };
+  delete rest[memberType];
+  if (Object.keys(rest).length === 0) {
+    await clearStoredConfigValue(
+      organizationId,
+      OrganizationConfigKey.MemberTypeDashboardLayouts,
+    );
+  } else {
+    await memberTypeDashboardLayouts.set(organizationId, JSON.stringify(rest));
   }
 }
 
@@ -84,7 +120,7 @@ export async function getDashboardLayoutFor(
 export const DASHBOARD_CONFIG = {
   [OrganizationConfigKey.AdminDashboardLayout]: adminDashboardLayout,
   [OrganizationConfigKey.DashboardLayout]: dashboardLayout,
-  [OrganizationConfigKey.ApplicantDashboardLayout]: applicantDashboardLayout,
-  [OrganizationConfigKey.AttendeeDashboardLayout]: attendeeDashboardLayout,
+  [OrganizationConfigKey.MemberTypeDashboardLayouts]:
+    memberTypeDashboardLayouts,
   [OrganizationConfigKey.DashboardHeader]: dashboardHeader,
 };

@@ -60,7 +60,10 @@ async function createApplicantOrg() {
   for (const [key, value] of [
     [OrganizationConfigKey.FormsEnabled, "true"],
     [OrganizationConfigKey.MemberTypesEnabled, "true"],
-    [OrganizationConfigKey.ApplicantDashboardLayout, JSON.stringify(layout)],
+    [
+      OrganizationConfigKey.MemberTypeDashboardLayouts,
+      JSON.stringify({ [MemberType.Applicant]: layout }),
+    ],
     [OrganizationConfigKey.NavbarConfig, JSON.stringify(NAVBAR)],
   ] as const) {
     await OrganizationConfigService.setConfig(org.id, key, value);
