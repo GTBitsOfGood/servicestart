@@ -5,10 +5,11 @@ import {
   MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
-} from "@/lib/schema";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+} from "@/core/db/schema";
+import { setMemberTypeDashboardLayout } from "@/features/dashboard/config";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { VISIONARIES_APPLICATION_FORM } from "@/tests/unit/fixtures/forms";
-import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/lib/dashboard/schema";
+import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";
 import {
   addMember,
   buildTestUser,
@@ -37,34 +38,26 @@ for (const width of [1280, 768]) {
       OrganizationConfigKey.MemberTypesEnabled,
       "true",
     );
-    await OrganizationConfigService.setConfig(
-      org.id,
-      OrganizationConfigKey.ApplicantDashboardLayout,
-      JSON.stringify({
-        layout: "horizontal",
-        widgets: [
-          {
-            id: "application_status",
-            size: "tall",
-            config: {
-              formId: VISIONARIES_APPLICATION_FORM.formId,
-              steps: DEFAULT_APPLICATION_STATUS_STEPS,
-            },
+    await setMemberTypeDashboardLayout(org.id, MemberType.Applicant, {
+      layout: "horizontal",
+      widgets: [
+        {
+          id: "application_status",
+          size: "tall",
+          config: {
+            formId: VISIONARIES_APPLICATION_FORM.formId,
+            steps: DEFAULT_APPLICATION_STATUS_STEPS,
           },
-        ],
-      }),
-    );
-    await OrganizationConfigService.setConfig(
-      org.id,
-      OrganizationConfigKey.AttendeeDashboardLayout,
-      JSON.stringify({
-        layout: "horizontal",
-        widgets: [
-          { id: "forms_todo", size: "small" },
-          { id: "forms_completed", size: "tall" },
-        ],
-      }),
-    );
+        },
+      ],
+    });
+    await setMemberTypeDashboardLayout(org.id, MemberType.Attendee, {
+      layout: "horizontal",
+      widgets: [
+        { id: "forms_todo", size: "small" },
+        { id: "forms_completed", size: "tall" },
+      ],
+    });
     const form = await createForm(org.id, {
       formId: VISIONARIES_APPLICATION_FORM.formId,
       title: VISIONARIES_APPLICATION_FORM.title,

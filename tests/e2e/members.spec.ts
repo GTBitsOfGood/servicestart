@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { test, expect, type Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
-import db from "@/lib/db";
-import { auth } from "@/lib/auth";
-import { EmailService } from "@/lib/services/EmailService";
+import db from "@/core/db";
+import { auth } from "@/core/auth/auth";
+import { EmailService } from "@/core/email/EmailService";
 import {
   createTestAdminAndSignIn,
   createTestUserAndSignIn,
@@ -15,13 +15,13 @@ import {
   createJoinRequest,
   signUpAndGetSession,
 } from "../unit/testUtils";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   invitations,
   members,
   MemberType,
   OrganizationConfigKey,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 
 test.describe("Members Page", () => {
   test("admin-only access: guests, pending join, and non-admins are redirected", async ({

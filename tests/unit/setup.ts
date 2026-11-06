@@ -4,6 +4,7 @@ import {
   invitations,
   joinRequests,
   members,
+  memberTypes,
   organizations,
   sessions,
   users,
@@ -20,7 +21,8 @@ import {
   formSubmissions,
   formAnswers,
   formUploads,
-} from "@/lib/schema";
+  formResponseDrafts,
+} from "@/core/db/schema";
 import { beforeAll, beforeEach, afterAll } from "vitest";
 import { execSync } from "child_process";
 import { randomUUID } from "node:crypto";
@@ -31,11 +33,11 @@ const dbName = `testdb_${id}`;
 process.env.NEXT_PUBLIC_BRANCH_NAME = dbName;
 
 // We need to configure env vars before importing later
-let db: typeof import("@/lib/db").default;
-let getDbUrl: typeof import("@/lib/db").getDbUrl;
+let db: typeof import("@/core/db").default;
+let getDbUrl: typeof import("@/core/db").getDbUrl;
 
 beforeAll(async () => {
-  getDbUrl = (await import("@/lib/db")).getDbUrl;
+  getDbUrl = (await import("@/core/db")).getDbUrl;
 
   // Start Postgres container
   execSync(`psql ${getDbUrl("postgres")} -c "CREATE DATABASE ${dbName};"`, {
@@ -46,7 +48,7 @@ beforeAll(async () => {
     stdio: "inherit",
   });
 
-  db = (await import("@/lib/db")).default;
+  db = (await import("@/core/db")).default;
 });
 
 beforeEach(async () => {
@@ -54,6 +56,7 @@ beforeEach(async () => {
 
   // Child tables first, then parent tables
   // Add line here when you create a new table
+  await db.delete(formResponseDrafts);
   await db.delete(formAnswers);
   await db.delete(formSubmissions);
   await db.delete(formUploads);
@@ -70,6 +73,7 @@ beforeEach(async () => {
   await db.delete(joinRequests);
   await db.delete(invitations);
   await db.delete(members);
+  await db.delete(memberTypes);
   await db.delete(sessions);
   await db.delete(accounts);
   await db.delete(verifications);

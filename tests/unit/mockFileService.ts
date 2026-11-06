@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import { JunoFileDeletionNotSupportedError } from "@/lib/errors";
+import { JunoFileDeletionNotSupportedError } from "@/core/api/errors";
 
 export type MockedFileService = {
   getBucketName: ReturnType<typeof vi.fn>;

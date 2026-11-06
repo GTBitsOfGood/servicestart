@@ -4,25 +4,25 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import { ProfileAvatar } from "@/components/navigation/ProfileAvatar";
+import { ProfileAvatar } from "@/features/navigation/components/ProfileAvatar";
 import RegisterButton, {
   type RegisterState,
-} from "@/components/events/RegisterButton";
-import EventAdminActions from "@/components/events/EventAdminActions";
-import DraftChip from "@/components/events/DraftChip";
-import { auth } from "@/lib/auth";
-import { MembersService } from "@/lib/services/MemberService";
-import EventService from "@/lib/services/EventService";
-import { OrganizationsService } from "@/lib/services/OrganizationService";
-import { UserService } from "@/lib/services/UserService";
-import { formatDateTime, formatRsvpDeadline } from "@/lib/clientUtils";
+} from "@/features/events/components/RegisterButton";
+import EventAdminActions from "@/features/events/components/EventAdminActions";
+import DraftChip from "@/features/events/components/DraftChip";
+import { auth } from "@/core/auth/auth";
+import { MembersService } from "@/features/membership/services/MemberService";
+import EventService from "@/features/events/services/EventService";
+import { OrganizationsService } from "@/core/tenant/OrganizationService";
+import { UserService } from "@/features/membership/services/UserService";
+import { formatDateTime, formatRsvpDeadline } from "@/core/utils/clientUtils";
 import {
   canManageEvent,
   canViewEvent,
   registrationBlockMessages,
   validateReadyToPublish,
   type Viewer,
-} from "@/lib/events";
+} from "@/features/events/lib/events";
 
 interface EventDetailPageProps {
   params: Promise<{ id: string }>;
@@ -124,7 +124,7 @@ export default async function EventDetailPage({
     isDeadlinePassed,
   };
 
-  // Rules come from lib/events so this stays in step with the RSVP route.
+  // Rules come from features/events/lib/events so this stays in step with the RSVP route.
   async function registerForEvent(): Promise<RegisterState> {
     "use server";
 

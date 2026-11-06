@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
-import EditEventClient from "@/components/events/EditEventClient";
-import { redirectIfNotAdmin } from "@/lib/authUtils";
-import EventService from "@/lib/services/EventService";
-import { UserService } from "@/lib/services/UserService";
+import EditEventClient from "@/features/events/components/EditEventClient";
+import { redirectIfNotAdmin } from "@/core/auth/authUtils";
+import EventService from "@/features/events/services/EventService";
+import { UserService } from "@/features/membership/services/UserService";
 
 interface EditEventPageProps {
   params: Promise<{ id: string }>;

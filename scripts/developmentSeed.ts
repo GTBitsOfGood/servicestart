@@ -1,5 +1,5 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
-import db from "@/lib/db";
+import db from "@/core/db";
 import {
   EventVisibility,
   FormComponentType,
@@ -8,9 +8,9 @@ import {
   NotificationType,
   OrganizationConfigKey as Key,
   schema,
-} from "@/lib/schema";
-import { DEFAULT_FORM_SETTINGS } from "@/lib/forms/constants";
-import type { FormDefinition } from "@/lib/forms/schema";
+} from "@/core/db/schema";
+import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
+import type { FormDefinition } from "@/features/forms/lib/schema";
 import {
   VISIONARIES_APPLICATION_FORM,
   VISIONARIES_ATTENDEE_FORMS,

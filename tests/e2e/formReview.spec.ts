@@ -1,11 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
-import type { FormDefinition } from "@/lib/forms/schema";
+import type { FormDefinition } from "@/features/forms/lib/schema";
 import {
   MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
-} from "@/lib/schema";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+} from "@/core/db/schema";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   VISIONARIES_APPLICATION_FORM,
   VISIONARIES_ATTENDEE_FORMS,

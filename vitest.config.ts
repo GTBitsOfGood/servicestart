@@ -16,7 +16,11 @@ export default defineConfig({
     testTimeout: 120_000,
     coverage: {
       provider: "v8",
-      include: ["lib/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
+      include: [
+        "core/**/*.{ts,tsx}",
+        "features/**/*.{ts,tsx}",
+        "components/**/*.{ts,tsx}",
+      ],
     },
   },
   resolve: {

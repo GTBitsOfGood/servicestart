@@ -30,7 +30,87 @@ Now, suppose nonprofit A wants a new feature for their ServiceStart app. You'd b
 
 Suppose that later nonprofit B wants a similar feature. Ordinarily, you'd have to build the feature from scratch despite its similarities to nonprofit A's feature. With ServiceStart, however, you simply add a config option and use that option to determine which version of the feature to present to users. You only have to code the differences between the two features.
 
-Side note: Check whether features are enabled on the relevant API routes. If the user directory is disabled, that feature's API routes should also be disabled.
+Side note: Check whether features are enabled on the relevant API routes. If the user directory is disabled, that feature's API routes should also be disabled. Use `assertFeatureEnabled` in routes and `notFoundIfFeatureDisabled` in server pages (`core/auth/featureGuards.ts`); both make a feature that's off look like it doesn't exist (a 404).
+
+## Folders and boundaries
+
+_Added in Sprint 5 (#333)._
+
+The code is organized around features, not layers. Everything lives in one of two places:
+
+- **`core/`** is what every feature shares: the database client, auth, finding the organization, config, the API plumbing, files, email, and generic utilities. `core/` never imports a feature.
+- **`features/<context>/`** is one bounded context: one area of the product, its data, and all of its code, from tables to components. A context's internals are private. Other contexts use only its public API: `index.ts`, `server.ts`, and `ui.ts`.
+
+`app/` stays as Next.js routes only. Pages compose contexts, so they may import any context's internals. `components/` is shared UI with no feature logic: the generated BoG primitives in `components/bog/`, the themed wrappers in `components/theme/`, icons, `SaveBanner`, and `TagInput`. (The BoG CLI also generates `utils/design-system/`, which `components/bog/` imports.)
+
+| Folder                     | What's in it                                                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `core/db/`                 | The Drizzle client (`index.ts`), the schema barrel (`schema.ts`), and shared column types (`columns.ts`)                            |
+| `core/auth/`               | BetterAuth (`auth.ts`, `authClient.ts`), the route and page guards (`authUtils.ts`, `featureGuards.ts`), the auth pages' components |
+| `core/tenant/`             | Organizations and finding the one a request is for (host parsing, `OrganizationService`, `useActiveOrganization`)                   |
+| `core/config/`             | `organization_config`, `OrganizationConfigService`, its route and hook, `jsonConfig`, branding and theme                            |
+| `core/api/`                | The typed RPC client (`client.ts`), typed errors, `ping`                                                                            |
+| `core/files/`              | `FileService` and its local and Juno implementations, serving images                                                                |
+| `core/email/`              | `EmailService` and email setup                                                                                                      |
+| `core/utils/`              | Generic helpers and hooks, and `env.ts`                                                                                             |
+| `features/membership/`     | Members, roles, member types, invitations, join requests, profiles, audiences                                                       |
+| `features/events/`         | Events, shifts, RSVPs, tags, and the events and weekly calendar widgets                                                             |
+| `features/forms/`          | Forms, questions, responses, review, information requests, and the forms and application status widgets                             |
+| `features/communications/` | Notifications, alerts, announcements, messages, email to members, and the notifications and newsletter widgets                      |
+| `features/media/`          | The media library                                                                                                                   |
+| `features/dashboard/`      | The dashboard grid, header, layout schema and builder, the widget registry, and the dashboard config keys (`config.ts`)             |
+| `features/navigation/`     | The navbar (`navItems.ts`, `navbarConfig.ts`, `getNavbarItems.ts`), the footer, and the organization logo                           |
+
+A dashboard widget lives in the context whose data it shows (`features/forms/widgets/FormsTodoWidget.tsx`), along with its helpers. `features/dashboard/` only lays widgets out. If a file doesn't fit the table, put it in the context that owns its data, and add it here.
+
+### A context's shape
+
+Each context has only the folders it needs:
+
+| Path          | What goes there                                                    |
+| ------------- | ------------------------------------------------------------------ |
+| `index.ts`    | Public API: enums, types, Zod contracts, pure logic, and hooks     |
+| `server.ts`   | Public API: services, for other contexts' server code              |
+| `ui.ts`       | Public API: React components and widgets                           |
+| `schema.ts`   | Its tables and the enums they use                                  |
+| `config.ts`   | Its config keys                                                    |
+| `api/`        | Its Hono sub-apps                                                  |
+| `services/`   | Database access and business logic                                 |
+| `components/` | React components                                                   |
+| `widgets/`    | Dashboard widgets                                                  |
+| `lib/`        | Pure logic and Zod contracts, shared by its server and client code |
+| `hooks/`      | Client-side hooks                                                  |
+
+### Schema
+
+Each context owns its tables in its `schema.ts`. `core/db/schema.ts` re-exports every context's tables and defines the relations between them; Drizzle (`drizzle.config.ts` and the client in `core/db/index.ts`) reads that barrel. Services import tables from `@/core/db/schema`. Everything else imports enums and types from the context that owns them, through its `index.ts`. Add a table to `tests/unit/setup.ts`'s cleanup list too.
+
+### Routes
+
+`features/app.ts` is the only Hono root. `app/api/[[...route]]/route.ts` serves it, and the typed RPC client and the tests call it. Add a sub-app to its `.route()` chain, which is what types the RPC client.
+
+### The boundary rule
+
+`eslint.config.mjs` enforces these with `no-restricted-imports`:
+
+- A context imports another only through its public API, `@/features/<context>`, `@/features/<context>/server`, or `@/features/<context>/ui`, never through any other file inside it.
+- `core/` never imports `features/`. The two exceptions are by design: `core/db/schema.ts` collects every context's tables, and the RPC client imports `type { AppType }` from `features/app.ts`.
+- `@/core/db` and `drizzle-orm` are only for a context's `services/`, `core/`, `scripts/`, and `tests/`. A context's `schema.ts` may define tables, and type-only Drizzle imports are allowed anywhere.
+- `app/`, `scripts/`, `tests/`, and `features/app.ts` are composition code and may import any context's internals.
+
+Files that broke the rule before it existed are listed, with the reason, in `BOUNDARY_BASELINE` in `eslint.config.mjs`. #337 empties that list. Don't add to it; fix the import instead.
+
+### A context's public API: `index.ts`, `server.ts`, and `ui.ts`
+
+The public API is three files, because each kind of code has to load in different places:
+
+- **`index.ts`**: enums, types, Zod contracts, pure logic, and hooks. Anything may import it, including client components, other contexts' `lib/` and `schema.ts`, seed scripts, and Playwright tests. It never reaches a service, so pure code that imports a context can't pull in the database or form an import cycle through `OrganizationConfigService`.
+- **`server.ts`**: services, for other contexts' services, routes, and server components.
+- **`ui.ts`**: components and widgets. Seed scripts (`tsx`) and Playwright load code outside the bundler, where CSS module imports fail, so only components and pages import `ui.ts`.
+
+Some widgets in a `ui.ts` are server components that call services, next to client components. `package.json` declares the app's modules free of side effects (`"sideEffects": ["*.css"]`), so when a client component imports one client component from a `ui.ts`, Next drops the other re-exports instead of bundling those widgets' services, and `pg` with them, for the browser. Without it, that import fails `next build` with "Module not found: Can't resolve 'fs'". Because of this, a module must not do work at import time that other code depends on: export a function and call it instead.
+
+Export only what another context uses today, and add to these files as that changes. Within a context, import files directly (`@/features/forms/lib/schema`), not through its own public API, which avoids import cycles.
 
 ## Future Work
 

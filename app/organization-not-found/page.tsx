@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import OrganizationNotFound from "@/components/OrganizationNotFound";
+import OrganizationNotFound from "@/core/tenant/components/OrganizationNotFound";
 
 export default async function OrganizationNotFoundPage() {
   const requestHeaders = await headers();

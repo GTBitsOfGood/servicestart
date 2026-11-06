@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
-import { redirectIfNotAdmin } from "@/lib/authUtils";
-import { FormError } from "@/lib/forms/management";
-import { FormIdSchema } from "@/lib/forms/schema";
-import { OrganizationConfigKey } from "@/lib/schema";
-import { FormQuestionService } from "@/lib/services/FormQuestionService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import FormBuilderClient from "@/components/forms/builder/FormBuilderClient";
+import { redirectIfNotAdmin } from "@/core/auth/authUtils";
+import { FormError } from "@/features/forms/lib/management";
+import { FormIdSchema } from "@/features/forms/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
+import { FormQuestionService } from "@/features/forms/services/FormQuestionService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import FormBuilderClient from "@/features/forms/components/builder/FormBuilderClient";
 
 export const metadata = { title: "Edit questions" };
 

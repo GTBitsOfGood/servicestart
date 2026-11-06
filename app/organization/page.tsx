@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { OrganizationsService } from "@/lib/services/OrganizationService";
-import { MembersService } from "@/lib/services/MemberService";
-import authClient from "@/lib/authClient";
+import { OrganizationsService } from "@/core/tenant/OrganizationService";
+import { MembersService } from "@/features/membership/services/MemberService";
+import authClient from "@/core/auth/authClient";
 import { headers } from "next/headers";
 
 export default async function OrganizationPage({

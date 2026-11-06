@@ -1,14 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import type { DashboardLayout } from "@/lib/dashboard/schema";
+import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import {
   FormComponentType,
   FormStatus,
   MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
-} from "@/lib/schema";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+} from "@/core/db/schema";
+import { setMemberTypeDashboardLayout } from "@/features/dashboard/config";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,
   buildTestUser,
@@ -62,10 +63,10 @@ async function createAttendeeWidgetsOrg() {
     OrganizationConfigKey.MemberTypesEnabled,
     "true",
   );
-  await OrganizationConfigService.setConfig(
+  await setMemberTypeDashboardLayout(
     org.id,
-    OrganizationConfigKey.AttendeeDashboardLayout,
-    JSON.stringify(ATTENDEE_FORMS_LAYOUT),
+    MemberType.Attendee,
+    ATTENDEE_FORMS_LAYOUT,
   );
 
   const forms: TestForm[] = [];

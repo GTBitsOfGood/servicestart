@@ -3,28 +3,28 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import AuthOrgTagline from "@/components/auth/AuthOrgTagline";
-import AuthPageIntro from "@/components/auth/AuthPageIntro";
+import AuthOrgTagline from "@/core/auth/components/AuthOrgTagline";
+import AuthPageIntro from "@/core/auth/components/AuthPageIntro";
 import AuthTextField, {
   focusFirstInvalidField,
-} from "@/components/auth/AuthTextField";
-import AuthPasswordField from "@/components/auth/AuthPasswordField";
-import AuthSubmitButton from "@/components/auth/AuthSubmitButton";
+} from "@/core/auth/components/AuthTextField";
+import AuthPasswordField from "@/core/auth/components/AuthPasswordField";
+import AuthSubmitButton from "@/core/auth/components/AuthSubmitButton";
 import AuthFormMessage, {
   type FormMessage,
-} from "@/components/auth/AuthFormMessage";
-import { AUTH_LINK_CLASS } from "@/components/auth/authStyles";
-import { AuthMessage } from "@/components/auth/authConstants";
-import authClient from "@/lib/authClient";
+} from "@/core/auth/components/AuthFormMessage";
+import { AUTH_LINK_CLASS } from "@/core/auth/components/authStyles";
+import { AuthMessage } from "@/core/auth/components/authConstants";
+import authClient from "@/core/auth/authClient";
 import {
   hasErrors,
   validateLogin,
   type FieldErrors,
-} from "@/lib/authValidation";
+} from "@/core/auth/authValidation";
 import {
   getRedirectPath,
   useRedirectIfSignedIn,
-} from "@/lib/hooks/useRedirectIfSignedIn";
+} from "@/core/auth/hooks/useRedirectIfSignedIn";
 
 const WRONG_CREDENTIALS_CODE = "INVALID_EMAIL_OR_PASSWORD";
 

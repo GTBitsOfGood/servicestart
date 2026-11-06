@@ -1,14 +1,14 @@
 import "dotenv/config"; //must be first to load environment variables
-import { EventVisibility, JoinRequestStatus, schema } from "../lib/schema";
-import db from "../lib/db";
-import { auth } from "@/lib/auth";
+import { EventVisibility, JoinRequestStatus, schema } from "@/core/db/schema";
+import db from "@/core/db";
+import { auth } from "@/core/auth/auth";
 import {
   joinRequestHistory,
   OrganizationConfigKey,
   NotificationType,
-} from "@/lib/schema";
-import { MembersService } from "@/lib/services/MemberService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+} from "@/core/db/schema";
+import { MembersService } from "@/features/membership/services/MemberService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { DEFAULT_TEST_PASSWORD } from "@/tests/unit/testUtils";
 import type { SeedOrg, SeedUser } from "./seedTypes";
 import { seedVisionaries, VISIONARIES_ORG } from "./visionariesSeed";
@@ -155,7 +155,12 @@ export async function main() {
   for (const org of ORGS) {
     const orgUserIds = new Map<string, string>();
     userIdsByOrganization.set(org.id, orgUserIds);
-    for (const userData of [...usersData, ...(org.extraUsers ?? [])]) {
+    const orgUsers = [...usersData, ...(org.extraUsers ?? [])];
+    // A member's type has to be one of the organization's member types.
+    if (orgUsers.some((u) => u.memberType ?? org.memberTypes?.[u.email])) {
+      await MembersService.ensureBuiltInMemberTypes(org.id);
+    }
+    for (const userData of orgUsers) {
       const memberType =
         userData.memberType ?? org.memberTypes?.[userData.email];
       let [user] = await db

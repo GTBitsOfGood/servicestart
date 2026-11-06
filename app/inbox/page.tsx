@@ -6,19 +6,19 @@ import BogBanner from "@/components/bog/BogBanner/BogBanner";
 import BogButton from "@/components/theme/ThemedButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogTextInput from "@/components/theme/ThemedTextInput";
-import NotificationItem from "@/components/notifications/NotificationItem";
-import { useNotifications } from "@/lib/hooks/useNotifications";
-import { NotificationType } from "@/lib/schema";
-import { cn } from "@/lib/utils";
-import authClient from "@/lib/authClient";
-import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
-import { isAdmin } from "@/lib/clientUtils";
-import { useEmailRecipients } from "@/lib/hooks/useEmailRecipients";
-import SendEmailModal from "@/components/SendEmailModal";
+import NotificationItem from "@/features/communications/components/NotificationItem";
+import { useNotifications } from "@/features/communications/hooks/useNotifications";
+import { NotificationType } from "@/features/communications/schema";
+import { cn } from "@/core/utils/utils";
+import authClient from "@/core/auth/authClient";
+import { useActiveOrganization } from "@/core/tenant/hooks/useActiveOrganization";
+import { isAdmin } from "@/core/utils/clientUtils";
+import { useEmailRecipients } from "@/features/communications/hooks/useEmailRecipients";
+import SendEmailModal from "@/features/communications/components/SendEmailModal";
 import {
   EMAIL_SENT_MESSAGE,
   postOrganizationEmail,
-} from "@/lib/organizationEmail";
+} from "@/core/email/organizationEmail";
 
 type FilterValue = "all" | NotificationType;
 

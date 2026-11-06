@@ -1,4 +1,4 @@
-import { redirectIfNotAdmin } from "@/lib/authUtils";
+import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 
 export default async function SettingsLayout({
   children,

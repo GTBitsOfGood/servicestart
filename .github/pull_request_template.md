@@ -1,5 +1,7 @@
 Closes #
 
+Screenshots and videos go in this description (drag them in), not in the repo.
+
 **Checklist:**
 
 - [ ] I have mentioned a ticket above
