@@ -6,9 +6,9 @@ import {
   OrganizationConfigKey,
   SubmissionReviewStatus,
 } from "@/lib/schema";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { VISIONARIES_APPLICATION_FORM } from "@/tests/unit/fixtures/forms";
-import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/lib/dashboard/schema";
+import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";
 import {
   addMember,
   buildTestUser,

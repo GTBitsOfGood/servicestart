@@ -1,0 +1,1469 @@
+import { randomUUID } from "node:crypto";
+import { and, eq, inArray } from "drizzle-orm";
+import type { z } from "zod";
+import db from "@/core/db";
+import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
+import { DashboardLayoutSchema } from "@/features/dashboard/lib/schema";
+import type { DashboardLayout } from "@/features/dashboard/lib/schema";
+import {
+  DEFAULT_ADMIN_LAYOUT,
+  DEFAULT_MEMBER_LAYOUT,
+} from "@/features/dashboard/lib/constants";
+import type { DashboardAudience } from "@/features/membership/lib/audience";
+import {
+  DashboardHeaderConfigSchema,
+  DEFAULT_DASHBOARD_HEADER_CONFIG,
+} from "@/features/dashboard/lib/header";
+import {
+  DEFAULT_ORGANIZATION_FOOTER,
+  OrganizationFooterSchema,
+} from "@/features/navigation/footer";
+import {
+  DEFAULT_NAVBAR_CONFIG,
+  NavbarConfigSchema,
+} from "@/features/navigation/navItems";
+import { DEFAULT_BRANDING } from "@/core/config/branding";
+import {
+  assertCornerStyle,
+  assertHexColor,
+  assertThemeFont,
+  DEFAULT_APP_THEME,
+  isCornerStyle,
+  isThemeFont,
+  ORGANIZATION_THEME_CONFIG_KEYS,
+  type OrganizationThemeConfig,
+  type OrganizationThemeConfigKey,
+  type ThemeFont,
+} from "@/core/config/theme";
+
+export const ALLOWED_NAVBAR_VARIANTS = [
+  "vertical-sidebar",
+  "vertical-icon",
+  "horizontal-left",
+  "horizontal-center",
+  "horizontal-right",
+] as const;
+
+type AllowedNavbarVariant = (typeof ALLOWED_NAVBAR_VARIANTS)[number];
+export const ALLOWED_MOBILE_NAVBAR_VARIANTS = [
+  "mobile-left-sidebar",
+  "mobile-right-sidebar",
+  "mobile-left-sidebar-icons",
+  "mobile-right-sidebar-no-icons",
+  "mobile-left-sidebar-pinned",
+  "mobile-right-sidebar-pinned",
+  "mobile-left-sidebar-pinned-icons",
+  "mobile-right-sidebar-pinned-no-icons",
+] as const;
+
+export type MobileNavbarVariant =
+  (typeof ALLOWED_MOBILE_NAVBAR_VARIANTS)[number];
+
+async function getStoredConfigValue(
+  organizationId: string,
+  key: OrganizationConfigKey,
+) {
+  const [row] = await db
+    .select({ value: organizationConfig.value })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, key),
+      ),
+    )
+    .limit(1);
+
+  return row?.value;
+}
+
+async function setStoredConfigValue(
+  organizationId: string,
+  key: OrganizationConfigKey,
+  value: string,
+) {
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, key),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, key),
+        ),
+      );
+    return;
+  }
+
+  await db.insert(organizationConfig).values({
+    id: randomUUID(),
+    organizationId,
+    key,
+    value,
+  });
+}
+
+async function getDesc(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.Description),
+      ),
+    )
+    .limit(1);
+
+  return row?.value ?? "No description has been set";
+}
+
+async function setDesc(organizationId: string, desc: string) {
+  const htmlRegex = /<(?:"[^"]*"['"]*|'[^']*'['"]*|[^'">])+>/g;
+  // sanitization?
+  // desc = desc.replace(htmlRegex, "");
+
+  if (desc.length > 300) {
+    throw new Error("Description must be no longer than 300 characters");
+  }
+
+  if (desc.match(htmlRegex)) {
+    throw new Error("Description must not contain HTML tags");
+  }
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.Description),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: desc })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.Description),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.Description,
+      value: desc,
+    });
+  }
+}
+
+async function getPrimaryColor(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.PrimaryColor),
+      ),
+    )
+    .limit(1);
+
+  return row?.value ?? DEFAULT_BRANDING[OrganizationConfigKey.PrimaryColor];
+}
+
+async function setPrimaryColor(organizationId: string, color: string) {
+  assertHexColor(color);
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.PrimaryColor),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: color })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.PrimaryColor),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.PrimaryColor,
+      value: color,
+    });
+  }
+}
+
+async function getSecondaryColor(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.SecondaryColor),
+      ),
+    )
+    .limit(1);
+
+  return row?.value ?? DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor];
+}
+
+async function setSecondaryColor(organizationId: string, color: string) {
+  assertHexColor(color);
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.SecondaryColor),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: color })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.SecondaryColor),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.SecondaryColor,
+      value: color,
+    });
+  }
+}
+
+async function getBackgroundColor(organizationId: string) {
+  return (
+    (await getStoredConfigValue(
+      organizationId,
+      OrganizationConfigKey.BackgroundColor,
+    )) ?? DEFAULT_APP_THEME.backgroundColor
+  );
+}
+
+async function setBackgroundColor(organizationId: string, color: string) {
+  assertHexColor(color);
+  await setStoredConfigValue(
+    organizationId,
+    OrganizationConfigKey.BackgroundColor,
+    color,
+  );
+}
+
+async function getTextColor(organizationId: string) {
+  return (
+    (await getStoredConfigValue(
+      organizationId,
+      OrganizationConfigKey.TextColor,
+    )) ?? DEFAULT_APP_THEME.textColor
+  );
+}
+
+async function setTextColor(organizationId: string, color: string) {
+  assertHexColor(color);
+  await setStoredConfigValue(
+    organizationId,
+    OrganizationConfigKey.TextColor,
+    color,
+  );
+}
+
+async function getFontConfig(
+  organizationId: string,
+  key: OrganizationConfigKey,
+  fallback: ThemeFont,
+) {
+  const value = await getStoredConfigValue(organizationId, key);
+  return value && isThemeFont(value) ? value : fallback;
+}
+
+async function setFontConfig(
+  organizationId: string,
+  key: OrganizationConfigKey,
+  font: string,
+) {
+  assertThemeFont(font);
+  await setStoredConfigValue(organizationId, key, font);
+}
+
+async function getDisplayFont(organizationId: string) {
+  return getFontConfig(
+    organizationId,
+    OrganizationConfigKey.DisplayFont,
+    DEFAULT_APP_THEME.displayFont,
+  );
+}
+
+async function setDisplayFont(organizationId: string, font: string) {
+  await setFontConfig(organizationId, OrganizationConfigKey.DisplayFont, font);
+}
+
+async function getHeadingFont(organizationId: string) {
+  return getFontConfig(
+    organizationId,
+    OrganizationConfigKey.HeadingFont,
+    DEFAULT_APP_THEME.headingFont,
+  );
+}
+
+async function setHeadingFont(organizationId: string, font: string) {
+  await setFontConfig(organizationId, OrganizationConfigKey.HeadingFont, font);
+}
+
+async function getBodyFont(organizationId: string) {
+  return getFontConfig(
+    organizationId,
+    OrganizationConfigKey.BodyFont,
+    DEFAULT_APP_THEME.bodyFont,
+  );
+}
+
+async function setBodyFont(organizationId: string, font: string) {
+  await setFontConfig(organizationId, OrganizationConfigKey.BodyFont, font);
+}
+
+async function getCornerStyle(organizationId: string) {
+  const value = await getStoredConfigValue(
+    organizationId,
+    OrganizationConfigKey.CornerStyle,
+  );
+  return value && isCornerStyle(value) ? value : DEFAULT_APP_THEME.cornerStyle;
+}
+
+async function setCornerStyle(organizationId: string, cornerStyle: string) {
+  assertCornerStyle(cornerStyle);
+  await setStoredConfigValue(
+    organizationId,
+    OrganizationConfigKey.CornerStyle,
+    cornerStyle,
+  );
+}
+
+async function getThemeConfig(
+  organizationId: string,
+): Promise<OrganizationThemeConfig> {
+  const rows = await db
+    .select({
+      key: organizationConfig.key,
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        inArray(organizationConfig.key, [
+          ...ORGANIZATION_THEME_CONFIG_KEYS,
+        ] as OrganizationThemeConfigKey[]),
+      ),
+    );
+
+  return Object.fromEntries(
+    rows.map(({ key, value }) => [key, value]),
+  ) as OrganizationThemeConfig;
+}
+
+async function getTagline(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.Tagline),
+      ),
+    )
+    .limit(1);
+
+  return row?.value ?? "";
+}
+
+async function setTagline(organizationId: string, tagline: string) {
+  const htmlRegex = /<(?:"[^"]*"['"]*|'[^']*'['"]*|[^'">])+>/g;
+  // sanitization?
+  // desc = desc.replace(htmlRegex, "");
+
+  if (tagline.length > 100) {
+    throw new Error("Tagline must be no longer than 100 characters");
+  }
+
+  if (tagline.match(htmlRegex)) {
+    throw new Error("Tagline must not contain HTML tags");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.Tagline),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: tagline })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.Tagline),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.Tagline,
+      value: tagline,
+    });
+  }
+}
+
+async function getMembersPageEnabled(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.MembersPageEnabled),
+      ),
+    )
+    .limit(1);
+
+  return (row?.value ?? "true") === "true";
+}
+
+async function setMembersPageEnabled(organizationId: string, value: string) {
+  if (value !== "true" && value !== "false") {
+    throw new Error("Value must be 'true' or 'false'");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.MembersPageEnabled),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.MembersPageEnabled),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.MembersPageEnabled,
+      value,
+    });
+  }
+}
+
+async function getFormsEnabled(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.FormsEnabled),
+      ),
+    )
+    .limit(1);
+
+  return (row?.value ?? "false") === "true";
+}
+
+async function setFormsEnabled(organizationId: string, value: string) {
+  if (value !== "true" && value !== "false") {
+    throw new Error("Value must be 'true' or 'false'");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.FormsEnabled),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.FormsEnabled),
+        ),
+      );
+  } else {
+    await db.insert(organizationConfig).values({
+      id: randomUUID(),
+      organizationId,
+      key: OrganizationConfigKey.FormsEnabled,
+      value,
+    });
+  }
+}
+
+// Boolean feature toggles that default to off.
+async function getBooleanToggle(
+  organizationId: string,
+  key: OrganizationConfigKey,
+) {
+  const [row] = await db
+    .select({ value: organizationConfig.value })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, key),
+      ),
+    )
+    .limit(1);
+
+  return (row?.value ?? "false") === "true";
+}
+
+async function setBooleanToggle(
+  organizationId: string,
+  key: OrganizationConfigKey,
+  value: string,
+) {
+  if (value !== "true" && value !== "false") {
+    throw new Error("Value must be 'true' or 'false'");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, key),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value })
+      .where(eq(organizationConfig.id, existing.id));
+  } else {
+    await db.insert(organizationConfig).values({
+      id: randomUUID(),
+      organizationId,
+      key,
+      value,
+    });
+  }
+}
+
+const getMemberTypesEnabled = (organizationId: string) =>
+  getBooleanToggle(organizationId, OrganizationConfigKey.MemberTypesEnabled);
+
+const setMemberTypesEnabled = (organizationId: string, value: string) =>
+  setBooleanToggle(
+    organizationId,
+    OrganizationConfigKey.MemberTypesEnabled,
+    value,
+  );
+
+const getAutoApproveSignups = (organizationId: string) =>
+  getBooleanToggle(organizationId, OrganizationConfigKey.AutoApproveSignups);
+
+const setAutoApproveSignups = (organizationId: string, value: string) =>
+  setBooleanToggle(
+    organizationId,
+    OrganizationConfigKey.AutoApproveSignups,
+    value,
+  );
+
+async function getNavbarVariant(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.NavbarVariant),
+      ),
+    )
+    .limit(1);
+
+  const value = row?.value;
+  if (
+    value &&
+    ALLOWED_NAVBAR_VARIANTS.includes(value as AllowedNavbarVariant)
+  ) {
+    return value;
+  }
+  return "vertical-sidebar";
+}
+
+async function setNavbarVariant(organizationId: string, variant: string) {
+  if (!variant || typeof variant !== "string") {
+    throw new Error("Navbar variant must be a non-empty string");
+  }
+  if (!ALLOWED_NAVBAR_VARIANTS.includes(variant as AllowedNavbarVariant)) {
+    throw new Error(`Invalid navbar variant: ${variant}`);
+  }
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.NavbarVariant),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: variant })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.NavbarVariant),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.NavbarVariant,
+      value: variant,
+    });
+  }
+}
+
+async function getMobileNavbarVariant(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.MobileNavbarVariant),
+      ),
+    )
+    .limit(1);
+
+  const value = row?.value;
+  if (
+    value &&
+    ALLOWED_MOBILE_NAVBAR_VARIANTS.includes(value as MobileNavbarVariant)
+  ) {
+    return value;
+  }
+  return "mobile-left-sidebar";
+}
+
+async function setMobileNavbarVariant(organizationId: string, variant: string) {
+  if (!variant || typeof variant !== "string") {
+    throw new Error("Mobile navbar variant must be a non-empty string");
+  }
+  if (
+    !ALLOWED_MOBILE_NAVBAR_VARIANTS.includes(variant as MobileNavbarVariant)
+  ) {
+    throw new Error(`Invalid mobile navbar variant: ${variant}`);
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.MobileNavbarVariant),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: variant })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.MobileNavbarVariant),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.MobileNavbarVariant,
+      value: variant,
+    });
+  }
+}
+
+export const MOBILE_PROFILE_ORIENTATIONS = ["vertical", "horizontal"] as const;
+export type MobileProfileOrientation =
+  (typeof MOBILE_PROFILE_ORIENTATIONS)[number];
+
+export function resolveMobileShowIcons(
+  stored: string,
+  variantDerived: boolean,
+): boolean {
+  if (stored === "true") return true;
+  if (stored === "false") return false;
+  return variantDerived;
+}
+
+export function resolveMobileProfileOrientation(
+  stored: string,
+): MobileProfileOrientation {
+  if (stored === "vertical" || stored === "horizontal") return stored;
+  return "horizontal";
+}
+
+async function getMobileNavbarShowIcons(organizationId: string) {
+  const [row] = await db
+    .select({ value: organizationConfig.value })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.MobileNavbarShowIcons),
+      ),
+    )
+    .limit(1);
+
+  const v = row?.value;
+  if (v === "true" || v === "false") return v;
+  return "";
+}
+
+async function setMobileNavbarShowIcons(organizationId: string, value: string) {
+  if (value === "inherit") {
+    await db
+      .delete(organizationConfig)
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(
+            organizationConfig.key,
+            OrganizationConfigKey.MobileNavbarShowIcons,
+          ),
+        ),
+      );
+    return;
+  }
+  if (value !== "true" && value !== "false") {
+    throw new Error("Value must be 'true', 'false', or 'inherit'");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.MobileNavbarShowIcons),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(
+            organizationConfig.key,
+            OrganizationConfigKey.MobileNavbarShowIcons,
+          ),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.MobileNavbarShowIcons,
+      value,
+    });
+  }
+}
+
+async function getMobileNavbarProfileOrientation(organizationId: string) {
+  const [row] = await db
+    .select({ value: organizationConfig.value })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(
+          organizationConfig.key,
+          OrganizationConfigKey.MobileNavbarProfileOrientation,
+        ),
+      ),
+    )
+    .limit(1);
+
+  const v = row?.value;
+  if (v === "vertical" || v === "horizontal") return v;
+  return "";
+}
+
+async function setMobileNavbarProfileOrientation(
+  organizationId: string,
+  value: string,
+) {
+  if (value === "inherit") {
+    await db
+      .delete(organizationConfig)
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(
+            organizationConfig.key,
+            OrganizationConfigKey.MobileNavbarProfileOrientation,
+          ),
+        ),
+      );
+    return;
+  }
+  if (
+    !MOBILE_PROFILE_ORIENTATIONS.includes(value as MobileProfileOrientation)
+  ) {
+    throw new Error(
+      "Profile orientation must be 'vertical', 'horizontal', or 'inherit'",
+    );
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(
+          organizationConfig.key,
+          OrganizationConfigKey.MobileNavbarProfileOrientation,
+        ),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(
+            organizationConfig.key,
+            OrganizationConfigKey.MobileNavbarProfileOrientation,
+          ),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.MobileNavbarProfileOrientation,
+      value,
+    });
+  }
+}
+
+async function getNavbarColor(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.NavbarColor),
+      ),
+    )
+    .limit(1);
+
+  const value = row?.value;
+  return value === "white" ? "white" : "red";
+}
+
+async function setNavbarColor(organizationId: string, color: string) {
+  if (color !== "red" && color !== "white") {
+    throw new Error("Navbar color must be either 'red' or 'white'");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.NavbarColor),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: color })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.NavbarColor),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.NavbarColor,
+      value: color,
+    });
+  }
+}
+
+async function getLogoUrl(organizationId: string) {
+  const [row] = await db
+    .select({
+      value: organizationConfig.value,
+    })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.LogoUrl),
+      ),
+    )
+    .limit(1);
+
+  // If no logo URL is configured, return null so callers can
+  // fall back to their own default logo rendering.
+  return row?.value ?? null;
+}
+
+async function setLogoUrl(organizationId: string, logoUrl: string) {
+  if (!logoUrl || typeof logoUrl !== "string") {
+    throw new Error("Logo URL must be a non-empty string");
+  }
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.LogoUrl),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: logoUrl })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.LogoUrl),
+        ),
+      );
+  } else {
+    const id = randomUUID();
+    await db.insert(organizationConfig).values({
+      id,
+      organizationId,
+      key: OrganizationConfigKey.LogoUrl,
+      value: logoUrl,
+    });
+  }
+}
+
+async function getAdminDashboardLayout(
+  organizationId: string,
+): Promise<DashboardLayout> {
+  const [row] = await db
+    .select({ value: organizationConfig.value })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.AdminDashboardLayout),
+      ),
+    )
+    .limit(1);
+
+  if (!row?.value) return DEFAULT_ADMIN_LAYOUT;
+
+  try {
+    return DashboardLayoutSchema.parse(JSON.parse(row.value));
+  } catch {
+    return DEFAULT_ADMIN_LAYOUT;
+  }
+}
+
+async function setAdminDashboardLayout(organizationId: string, value: string) {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error("Invalid JSON for admin dashboard layout");
+  }
+
+  const result = DashboardLayoutSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error("Invalid admin dashboard layout");
+  }
+
+  const jsonString = JSON.stringify(result.data);
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.AdminDashboardLayout),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: jsonString })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(
+            organizationConfig.key,
+            OrganizationConfigKey.AdminDashboardLayout,
+          ),
+        ),
+      );
+  } else {
+    await db.insert(organizationConfig).values({
+      id: randomUUID(),
+      organizationId,
+      key: OrganizationConfigKey.AdminDashboardLayout,
+      value: jsonString,
+    });
+  }
+}
+
+async function getDashboardLayout(
+  organizationId: string,
+): Promise<DashboardLayout> {
+  const [row] = await db
+    .select({ value: organizationConfig.value })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.DashboardLayout),
+      ),
+    )
+    .limit(1);
+
+  if (!row?.value) return DEFAULT_MEMBER_LAYOUT;
+
+  try {
+    return DashboardLayoutSchema.parse(JSON.parse(row.value));
+  } catch {
+    return DEFAULT_MEMBER_LAYOUT;
+  }
+}
+
+async function setDashboardLayout(organizationId: string, value: string) {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error("Invalid JSON for dashboard layout");
+  }
+
+  const result = DashboardLayoutSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new Error("Invalid dashboard layout");
+  }
+
+  const jsonString = JSON.stringify(result.data);
+
+  const [existing] = await db
+    .select({ id: organizationConfig.id })
+    .from(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, OrganizationConfigKey.DashboardLayout),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(organizationConfig)
+      .set({ value: jsonString })
+      .where(
+        and(
+          eq(organizationConfig.organizationId, organizationId),
+          eq(organizationConfig.key, OrganizationConfigKey.DashboardLayout),
+        ),
+      );
+  } else {
+    await db.insert(organizationConfig).values({
+      id: randomUUID(),
+      organizationId,
+      key: OrganizationConfigKey.DashboardLayout,
+      value: jsonString,
+    });
+  }
+}
+
+/** Removes a config row, so its key goes back to its default. */
+async function clearConfig(organizationId: string, key: OrganizationConfigKey) {
+  await db
+    .delete(organizationConfig)
+    .where(
+      and(
+        eq(organizationConfig.organizationId, organizationId),
+        eq(organizationConfig.key, key),
+      ),
+    );
+}
+
+/**
+ * Get/set for a config value stored as JSON. `get` returns `fallback` when
+ * nothing (or something invalid) is stored; `set` rejects values that don't
+ * match the schema.
+ */
+function jsonConfig<T>(
+  key: OrganizationConfigKey,
+  label: string,
+  schema: z.ZodType<T>,
+  fallback: T,
+) {
+  return {
+    async get(organizationId: string): Promise<T> {
+      const value = await getStoredConfigValue(organizationId, key);
+      if (!value) return fallback;
+      try {
+        return schema.parse(JSON.parse(value));
+      } catch {
+        return fallback;
+      }
+    },
+    async set(organizationId: string, value: string) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(value);
+      } catch {
+        throw new Error(`Invalid JSON for ${label}`);
+      }
+      const result = schema.safeParse(parsed);
+      if (!result.success) {
+        const [issue] = result.error.issues;
+        const where = issue.path.length ? ` (${issue.path.join(".")})` : "";
+        throw new Error(`Invalid ${label}${where}: ${issue.message}`);
+      }
+      await setStoredConfigValue(
+        organizationId,
+        key,
+        JSON.stringify(result.data),
+      );
+    },
+  };
+}
+
+// Applicants' and attendees' layouts are null until set, and then the member
+// layout applies (see getDashboardLayoutFor).
+const applicantDashboardLayout = jsonConfig<DashboardLayout | null>(
+  OrganizationConfigKey.ApplicantDashboardLayout,
+  "applicant dashboard layout",
+  DashboardLayoutSchema,
+  null,
+);
+const attendeeDashboardLayout = jsonConfig<DashboardLayout | null>(
+  OrganizationConfigKey.AttendeeDashboardLayout,
+  "attendee dashboard layout",
+  DashboardLayoutSchema,
+  null,
+);
+const dashboardHeader = jsonConfig(
+  OrganizationConfigKey.DashboardHeader,
+  "dashboard header",
+  DashboardHeaderConfigSchema,
+  DEFAULT_DASHBOARD_HEADER_CONFIG,
+);
+const navbarConfig = jsonConfig(
+  OrganizationConfigKey.NavbarConfig,
+  "navbar config",
+  NavbarConfigSchema,
+  DEFAULT_NAVBAR_CONFIG,
+);
+const organizationFooter = jsonConfig(
+  OrganizationConfigKey.OrganizationFooter,
+  "footer",
+  OrganizationFooterSchema,
+  DEFAULT_ORGANIZATION_FOOTER,
+);
+
+/** The dashboard layout for an audience, falling back to the member layout. */
+async function getDashboardLayoutFor(
+  organizationId: string,
+  audience: DashboardAudience,
+): Promise<DashboardLayout> {
+  switch (audience) {
+    case "admin":
+      return getAdminDashboardLayout(organizationId);
+    case "applicant":
+      return (
+        (await applicantDashboardLayout.get(organizationId)) ??
+        getDashboardLayout(organizationId)
+      );
+    case "attendee":
+      return (
+        (await attendeeDashboardLayout.get(organizationId)) ??
+        getDashboardLayout(organizationId)
+      );
+    case "member":
+      return getDashboardLayout(organizationId);
+  }
+}
+
+type ConfigHandler = {
+  get: (organizationId: string) => Promise<unknown>;
+  set: (organizationId: string, value: string) => Promise<void>;
+};
+
+// Keys without an entry here are rejected by setConfig and skipped by getConfig.
+const keyMap = {
+  [OrganizationConfigKey.Description]: { get: getDesc, set: setDesc },
+  [OrganizationConfigKey.PrimaryColor]: {
+    get: getPrimaryColor,
+    set: setPrimaryColor,
+  },
+  [OrganizationConfigKey.SecondaryColor]: {
+    get: getSecondaryColor,
+    set: setSecondaryColor,
+  },
+  [OrganizationConfigKey.BackgroundColor]: {
+    get: getBackgroundColor,
+    set: setBackgroundColor,
+  },
+  [OrganizationConfigKey.TextColor]: {
+    get: getTextColor,
+    set: setTextColor,
+  },
+  [OrganizationConfigKey.DisplayFont]: {
+    get: getDisplayFont,
+    set: setDisplayFont,
+  },
+  [OrganizationConfigKey.HeadingFont]: {
+    get: getHeadingFont,
+    set: setHeadingFont,
+  },
+  [OrganizationConfigKey.BodyFont]: {
+    get: getBodyFont,
+    set: setBodyFont,
+  },
+  [OrganizationConfigKey.CornerStyle]: {
+    get: getCornerStyle,
+    set: setCornerStyle,
+  },
+  [OrganizationConfigKey.Tagline]: {
+    get: getTagline,
+    set: setTagline,
+  },
+  [OrganizationConfigKey.NavbarVariant]: {
+    get: getNavbarVariant,
+    set: setNavbarVariant,
+  },
+  [OrganizationConfigKey.MobileNavbarVariant]: {
+    get: getMobileNavbarVariant,
+    set: setMobileNavbarVariant,
+  },
+  [OrganizationConfigKey.MobileNavbarShowIcons]: {
+    get: getMobileNavbarShowIcons,
+    set: setMobileNavbarShowIcons,
+  },
+  [OrganizationConfigKey.MobileNavbarProfileOrientation]: {
+    get: getMobileNavbarProfileOrientation,
+    set: setMobileNavbarProfileOrientation,
+  },
+  [OrganizationConfigKey.NavbarColor]: {
+    get: getNavbarColor,
+    set: setNavbarColor,
+  },
+  [OrganizationConfigKey.MembersPageEnabled]: {
+    get: getMembersPageEnabled,
+    set: setMembersPageEnabled,
+  },
+  [OrganizationConfigKey.LogoUrl]: {
+    get: getLogoUrl,
+    set: setLogoUrl,
+  },
+  [OrganizationConfigKey.AdminDashboardLayout]: {
+    get: getAdminDashboardLayout,
+    set: setAdminDashboardLayout,
+  },
+  [OrganizationConfigKey.DashboardLayout]: {
+    get: getDashboardLayout,
+    set: setDashboardLayout,
+  },
+  [OrganizationConfigKey.FormsEnabled]: {
+    get: getFormsEnabled,
+    set: setFormsEnabled,
+  },
+  [OrganizationConfigKey.MemberTypesEnabled]: {
+    get: getMemberTypesEnabled,
+    set: setMemberTypesEnabled,
+  },
+  [OrganizationConfigKey.AutoApproveSignups]: {
+    get: getAutoApproveSignups,
+    set: setAutoApproveSignups,
+  },
+  [OrganizationConfigKey.ApplicantDashboardLayout]: applicantDashboardLayout,
+  [OrganizationConfigKey.AttendeeDashboardLayout]: attendeeDashboardLayout,
+  [OrganizationConfigKey.DashboardHeader]: dashboardHeader,
+  [OrganizationConfigKey.NavbarConfig]: navbarConfig,
+  [OrganizationConfigKey.OrganizationFooter]: organizationFooter,
+} satisfies Partial<Record<OrganizationConfigKey, ConfigHandler>>;
+
+type HandledConfigKey = keyof typeof keyMap;
+
+function isHandledConfigKey(key: string): key is HandledConfigKey {
+  return Object.hasOwn(keyMap, key);
+}
+
+async function getConfig(
+  organizationId: string,
+  keys: OrganizationConfigKey[],
+) {
+  const entries = await Promise.all(
+    keys
+      .filter(isHandledConfigKey)
+      .map(async (key) => [key, await keyMap[key].get(organizationId)]),
+  );
+
+  return Object.fromEntries(entries);
+}
+
+async function setConfig(
+  organizationId: string,
+  key: OrganizationConfigKey,
+  value: string,
+) {
+  if (!isHandledConfigKey(key)) {
+    throw new Error("Invalid key");
+  }
+
+  await keyMap[key].set(organizationId, value);
+}
+
+export const OrganizationConfigService = {
+  getConfig,
+  getThemeConfig,
+  setConfig,
+  clearConfig,
+  getDashboardLayoutFor,
+  getDashboardHeader: dashboardHeader.get,
+  getNavbarConfig: navbarConfig.get,
+  getOrganizationFooter: organizationFooter.get,
+  getAdminDashboardLayout,
+  setAdminDashboardLayout,
+  getDashboardLayout,
+  setDashboardLayout,
+  getMemberTypesEnabled,
+  getAutoApproveSignups,
+};
+
+export default OrganizationConfigService;

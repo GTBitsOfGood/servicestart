@@ -9,7 +9,7 @@ import {
   ValueContainerProps,
 } from "react-select";
 import { TagIcon } from "@phosphor-icons/react";
-import api from "@/lib/api";
+import api from "@/core/api/client";
 
 interface TagOption {
   value: string;

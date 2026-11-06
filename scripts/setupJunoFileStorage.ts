@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { juno } from "../lib/junoClient";
-import { buildAzureBlobBaseUrl } from "../lib/services/junoFileUtils";
+import { juno } from "@/core/files/junoClient";
+import { buildAzureBlobBaseUrl } from "@/core/files/junoFileUtils";
 
 /**
  * Azure Blob Storage endpoint for the storage account.

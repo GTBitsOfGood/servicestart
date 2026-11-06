@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import type { DashboardLayout } from "@/lib/dashboard/schema";
+import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import {
   FormComponentType,
   FormStatus,
@@ -8,7 +8,7 @@ import {
   OrganizationConfigKey,
   SubmissionReviewStatus,
 } from "@/lib/schema";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,
   buildTestUser,

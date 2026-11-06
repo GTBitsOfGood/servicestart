@@ -1,13 +1,13 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { redirectIfNotAdmin } from "@/lib/authUtils";
-import { FormError } from "@/lib/forms/management";
-import { FormIdSchema } from "@/lib/forms/schema";
+import { redirectIfNotAdmin } from "@/core/auth/authUtils";
+import { FormError } from "@/features/forms/lib/management";
+import { FormIdSchema } from "@/features/forms/lib/schema";
 import { OrganizationConfigKey } from "@/lib/schema";
-import { FormService } from "@/lib/services/FormService";
-import { FormReviewService } from "@/lib/services/FormReviewService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import FormResponsesClient from "@/components/forms/FormResponsesClient";
+import { FormService } from "@/features/forms/services/FormService";
+import { FormReviewService } from "@/features/forms/services/FormReviewService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import FormResponsesClient from "@/features/forms/components/FormResponsesClient";
 
 export const metadata = { title: "Form responses" };
 

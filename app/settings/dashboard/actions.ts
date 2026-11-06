@@ -3,19 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { auth } from "@/core/auth/auth";
 import {
   MEMBER_AUDIENCES,
   MEMBER_TYPE_LAYOUT_KEYS,
-} from "@/lib/dashboard/audience";
-import type { DashboardLayout } from "@/lib/dashboard/schema";
+} from "@/features/membership/lib/audience";
+import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import {
   ForbiddenError,
   NoActiveOrganizationError,
   UnauthorizedError,
-} from "@/lib/errors";
-import { MembersService } from "@/lib/services/MemberService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+} from "@/core/api/errors";
+import { MembersService } from "@/features/membership/services/MemberService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 
 const AudienceSchema = z.enum(MEMBER_AUDIENCES);
 const TypedAudienceSchema = AudienceSchema.exclude(["member"]);

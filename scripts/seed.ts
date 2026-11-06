@@ -1,14 +1,14 @@
 import "dotenv/config"; //must be first to load environment variables
 import { EventVisibility, JoinRequestStatus, schema } from "../lib/schema";
-import db from "../lib/db";
-import { auth } from "@/lib/auth";
+import db from "@/core/db";
+import { auth } from "@/core/auth/auth";
 import {
   joinRequestHistory,
   OrganizationConfigKey,
   NotificationType,
 } from "@/lib/schema";
-import { MembersService } from "@/lib/services/MemberService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { MembersService } from "@/features/membership/services/MemberService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { DEFAULT_TEST_PASSWORD } from "@/tests/unit/testUtils";
 import type { SeedOrg, SeedUser } from "./seedTypes";
 import { seedVisionaries, VISIONARIES_ORG } from "./visionariesSeed";

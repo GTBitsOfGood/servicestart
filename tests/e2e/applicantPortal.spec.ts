@@ -1,14 +1,14 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
-import type { DashboardLayout } from "@/lib/dashboard/schema";
-import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/lib/dashboard/schema";
-import type { NavbarConfig } from "@/lib/navbar";
+import type { DashboardLayout } from "@/features/dashboard/lib/schema";
+import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";
+import type { NavbarConfig } from "@/features/navigation/navItems";
 import {
   FormStatus,
   MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
 } from "@/lib/schema";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,
   buildTestUser,

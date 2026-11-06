@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import NotificationTag from "@/components/notifications/NotificationTag";
-import { NotificationService } from "@/lib/services/NotificationService";
-import { redirectIfNotMember } from "@/lib/authUtils";
-import { ReviewNotificationMetadataSchema } from "@/lib/forms/review";
+import NotificationTag from "@/features/communications/components/NotificationTag";
+import { NotificationService } from "@/features/communications/services/NotificationService";
+import { redirectIfNotMember } from "@/core/auth/authUtils";
+import { ReviewNotificationMetadataSchema } from "@/features/forms/lib/review";
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);

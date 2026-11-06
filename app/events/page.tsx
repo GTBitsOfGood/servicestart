@@ -1,7 +1,7 @@
-import EventsPageClient from "@/components/events/EventsPageClient";
-import { redirectIfNotMember } from "@/lib/authUtils";
-import EventService from "@/lib/services/EventService";
-import { MembersService } from "@/lib/services/MemberService";
+import EventsPageClient from "@/features/events/components/EventsPageClient";
+import { redirectIfNotMember } from "@/core/auth/authUtils";
+import EventService from "@/features/events/services/EventService";
+import { MembersService } from "@/features/membership/services/MemberService";
 
 const EVENTS_PAGE_LIMIT = 500;
 

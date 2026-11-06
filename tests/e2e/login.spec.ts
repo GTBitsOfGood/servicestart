@@ -5,7 +5,7 @@ import {
   expectPageDoesNotRedirect,
 } from "./testUtils";
 import { buildTestUser, signUpAndGetSession } from "../unit/testUtils";
-import { DEFAULT_BRANDING } from "@/lib/branding";
+import { DEFAULT_BRANDING } from "@/core/config/branding";
 import { OrganizationConfigKey } from "@/lib/schema";
 
 function hexToRgb(hex: string): string {

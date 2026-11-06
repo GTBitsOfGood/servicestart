@@ -1,4 +1,4 @@
-import db from "@/lib/db";
+import db from "@/core/db";
 import { users } from "@/lib/schema";
 import { describe, expect, it } from "vitest";
 

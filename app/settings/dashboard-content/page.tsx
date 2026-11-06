@@ -1,7 +1,7 @@
-import DashboardContentSettings from "@/components/dashboard/DashboardContentSettings";
-import { redirectIfNotAdmin } from "@/lib/authUtils";
+import DashboardContentSettings from "@/features/dashboard/components/DashboardContentSettings";
+import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 import { OrganizationConfigKey } from "@/lib/schema";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 
 export const metadata = { title: "Dashboard Content" };
 

@@ -12,7 +12,7 @@ const { readFile } = vi.hoisted(() => ({
   readFile: vi.fn().mockResolvedValue(Buffer.from("binary image data here")),
 }));
 
-vi.mock("@/lib/services/FileService", async () => {
+vi.mock("@/core/files/FileService", async () => {
   const { createMockFileService } =
     await import("@/tests/unit/mockFileService");
   return {

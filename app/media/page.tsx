@@ -1,8 +1,8 @@
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import MediaCard from "@/components/MediaCard";
-import MediaUploadCard from "@/components/MediaUploadCard";
-import { MediaService } from "@/lib/services/MediaService";
-import { redirectIfNotAdmin } from "@/lib/authUtils";
+import MediaCard from "@/features/media/components/MediaCard";
+import MediaUploadCard from "@/features/media/components/MediaUploadCard";
+import { MediaService } from "@/features/media/services/MediaService";
+import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 
 const typeOptions = ["Videos", "Images", "Documents", "All"] as const;
 const dateOptions = ["Today", "Last Week", "Last Month", "All Time"] as const;

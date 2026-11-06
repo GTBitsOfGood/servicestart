@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getSlugFromHost } from "@/lib/clientAuthUtils";
-import { ORGANIZATION_NOT_FOUND_PATH } from "@/lib/organizationRoutes";
+import { getSlugFromHost } from "@/core/tenant/clientAuthUtils";
+import { ORGANIZATION_NOT_FOUND_PATH } from "@/core/tenant/organizationRoutes";
 
 export async function proxy(request: NextRequest) {
   const slug = getSlugFromHost(request.headers.get("host") ?? undefined);

@@ -1,15 +1,15 @@
 import { expect, test } from "@playwright/test";
 import { eq } from "drizzle-orm";
-import db from "@/lib/db";
-import { DEFAULT_FORM_SETTINGS } from "@/lib/forms/constants";
+import db from "@/core/db";
+import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import {
   FormStatus,
   OrganizationConfigKey,
   formAnswers,
   formSubmissions,
 } from "@/lib/schema";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { FormService } from "@/lib/services/FormService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { FormService } from "@/features/forms/services/FormService";
 import {
   createTestAdminAndSignIn,
   createTestMemberAndSignIn,

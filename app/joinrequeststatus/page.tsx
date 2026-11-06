@@ -12,16 +12,16 @@ import Link from "next/link";
 import { Fragment } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/core/auth/auth";
 import {
   createJoinRequestIfNeeded,
   requireOrganizationOrRedirect,
-} from "@/lib/authUtils";
+} from "@/core/auth/authUtils";
 import { JoinRequestStatus } from "@/lib/schema";
-import { JoinRequestsService } from "@/lib/services/JoinRequestService";
-import { MembersService } from "@/lib/services/MemberService";
-import { OrganizationsService } from "@/lib/services/OrganizationService";
-import { cn } from "@/lib/utils";
+import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
+import { MembersService } from "@/features/membership/services/MemberService";
+import { OrganizationsService } from "@/core/tenant/OrganizationService";
+import { cn } from "@/core/utils/utils";
 
 export const metadata: Metadata = { title: "Join Request Status" };
 

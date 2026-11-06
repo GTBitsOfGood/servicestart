@@ -10,12 +10,12 @@ afterEach(() => {
 
 it("allows credential-free imports but rejects service access without an API key", async () => {
   vi.stubEnv("JUNO_API_KEY", " ");
-  const { juno } = await import("../../lib/junoClient");
+  const { juno } = await import("@/core/files/junoClient");
   expect(() => juno.email).toThrow("JUNO_API_KEY is required");
 });
 
 it("allows configured service access", async () => {
   vi.stubEnv("JUNO_API_KEY", "test-key");
-  const { juno } = await import("../../lib/junoClient");
+  const { juno } = await import("@/core/files/junoClient");
   expect(juno.email.sendEmail).toBeTypeOf("function");
 });

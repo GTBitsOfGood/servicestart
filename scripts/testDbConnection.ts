@@ -1,5 +1,5 @@
 import "dotenv/config";
-import db from "@/lib/db";
+import db from "@/core/db";
 
 async function main() {
   await db.execute(`SELECT 1`);

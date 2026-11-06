@@ -1,15 +1,15 @@
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import FormEditView from "@/components/forms/FormEditView";
-import FormPageLayout from "@/components/forms/FormPageLayout";
-import { auth } from "@/lib/auth";
-import { getSlugFromHost } from "@/lib/clientAuthUtils";
-import { FormIdSchema } from "@/lib/forms/schema";
+import FormEditView from "@/features/forms/components/FormEditView";
+import FormPageLayout from "@/features/forms/components/FormPageLayout";
+import { auth } from "@/core/auth/auth";
+import { getSlugFromHost } from "@/core/tenant/clientAuthUtils";
+import { FormIdSchema } from "@/features/forms/lib/schema";
 import { OrganizationConfigKey } from "@/lib/schema";
-import { FormSubmissionService } from "@/lib/services/FormSubmissionService";
-import { MembersService } from "@/lib/services/MemberService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { OrganizationsService } from "@/lib/services/OrganizationService";
+import { FormSubmissionService } from "@/features/forms/services/FormSubmissionService";
+import { MembersService } from "@/features/membership/services/MemberService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { OrganizationsService } from "@/core/tenant/OrganizationService";
 
 export const metadata = { title: "Edit your response" };
 

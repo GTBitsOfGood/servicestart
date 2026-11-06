@@ -1,13 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 import { eq } from "drizzle-orm";
-import db from "@/lib/db";
+import db from "@/core/db";
 import {
   FormStatus,
   OrganizationConfigKey,
   formAnswers,
   formSubmissions,
 } from "@/lib/schema";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { createTestMemberAndSignIn } from "./testUtils";
 import {
   VISIONARIES_APPLICATION_FORM,

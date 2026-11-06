@@ -4,8 +4,8 @@ import {
   createTestAdminAndSignIn,
   createTestMemberAndSignIn,
 } from "./testUtils";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { FormService } from "@/lib/services/FormService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { FormService } from "@/features/forms/services/FormService";
 import { OrganizationConfigKey } from "@/lib/schema";
 import {
   createForm,

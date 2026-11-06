@@ -19,7 +19,7 @@ import type {
   FormAnswerValue,
   FormComponentConfigValue,
   FormSettings,
-} from "./forms/schema";
+} from "@/features/forms/lib/schema";
 
 // TypeScript enum for join request status values
 export enum JoinRequestStatus {

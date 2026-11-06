@@ -1,7 +1,7 @@
 // @vitest-environment node
 
-import { auth } from "@/lib/auth";
-import db from "@/lib/db";
+import { auth } from "@/core/auth/auth";
+import db from "@/core/db";
 import {
   organizations,
   users,
@@ -24,18 +24,18 @@ import {
   joinRequestHistory,
   JoinRequestStatus,
 } from "@/lib/schema";
-import { FormDefinitionSchema } from "@/lib/forms/schema";
-import { FormProgressService } from "@/lib/services/FormProgressService";
-import { FormQuestionService } from "@/lib/services/FormQuestionService";
-import { FormSubmissionService } from "@/lib/services/FormSubmissionService";
-import { InformationRequestService } from "@/lib/services/InformationRequestService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { FormDefinitionSchema } from "@/features/forms/lib/schema";
+import { FormProgressService } from "@/features/forms/services/FormProgressService";
+import { FormQuestionService } from "@/features/forms/services/FormQuestionService";
+import { FormSubmissionService } from "@/features/forms/services/FormSubmissionService";
+import { InformationRequestService } from "@/features/forms/services/InformationRequestService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { hashPassword } from "better-auth/crypto";
 import { main } from "@/scripts/seed";
-import { InvitationService } from "@/lib/services/InvitationService";
-import { JoinRequestsService } from "@/lib/services/JoinRequestService";
-import { MembersService } from "@/lib/services/MemberService";
-import { UserService } from "@/lib/services/UserService";
+import { InvitationService } from "@/features/membership/services/InvitationService";
+import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
+import { MembersService } from "@/features/membership/services/MemberService";
+import { UserService } from "@/features/membership/services/UserService";
 import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
 import { expect, it } from "vitest";
 import {

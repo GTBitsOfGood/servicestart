@@ -6,10 +6,10 @@ import {
 } from "@/app/settings/dashboard/actions";
 import AdminDashboardSettingsPage from "@/app/settings/admindashboard/page";
 import DashboardSettingsPage from "@/app/settings/dashboard/page";
-import type { DashboardLayout } from "@/lib/dashboard/schema";
-import { ForbiddenError } from "@/lib/errors";
+import type { DashboardLayout } from "@/features/dashboard/lib/schema";
+import { ForbiddenError } from "@/core/api/errors";
 import { OrganizationConfigKey } from "@/lib/schema";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,
   buildHost,

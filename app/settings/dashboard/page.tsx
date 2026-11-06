@@ -1,18 +1,21 @@
 import Link from "next/link";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { FormService } from "@/lib/services/FormService";
-import { getWidgetOptions, WIDGET_FEATURE_KEYS } from "@/lib/dashboard/widgets";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { FormService } from "@/features/forms/services/FormService";
+import {
+  getWidgetOptions,
+  WIDGET_FEATURE_KEYS,
+} from "@/features/dashboard/widgets";
 import {
   MEMBER_AUDIENCES,
   MEMBER_TYPE_LAYOUT_KEYS,
   type MemberAudience,
-} from "@/lib/dashboard/audience";
-import DashboardLayoutBuilder from "@/components/dashboard/DashboardLayoutBuilder";
-import type { DashboardLayout } from "@/lib/dashboard/schema";
+} from "@/features/membership/lib/audience";
+import DashboardLayoutBuilder from "@/features/dashboard/components/DashboardLayoutBuilder";
+import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import { FormStatus, MemberType, OrganizationConfigKey } from "@/lib/schema";
-import { MEMBER_TYPE_PLURAL_LABELS } from "@/lib/memberTypes";
-import { redirectIfNotAdmin } from "@/lib/authUtils";
-import { cn } from "@/lib/utils";
+import { MEMBER_TYPE_PLURAL_LABELS } from "@/features/membership/lib/memberTypes";
+import { redirectIfNotAdmin } from "@/core/auth/authUtils";
+import { cn } from "@/core/utils/utils";
 import { clearDashboardLayout, saveDashboardLayout } from "./actions";
 
 export const metadata = {

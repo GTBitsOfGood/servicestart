@@ -1,6 +1,6 @@
 import { deflateSync } from "node:zlib";
 import { and, eq, inArray, like, notInArray, or, sql } from "drizzle-orm";
-import db from "@/lib/db";
+import db from "@/core/db";
 import {
   EventVisibility,
   FormStatus,
@@ -10,14 +10,17 @@ import {
   SubmissionReviewStatus,
   schema,
 } from "@/lib/schema";
-import type { DashboardLayout } from "@/lib/dashboard/schema";
-import type { DashboardHeaderConfig } from "@/lib/dashboard/header";
-import type { OrganizationFooter } from "@/lib/footer";
-import type { NavbarConfig } from "@/lib/navbar";
-import type { FormAnswerValue, FormDefinition } from "@/lib/forms/schema";
-import { buildSubmissionSchema } from "@/lib/forms/submission";
-import { FileService } from "@/lib/services/FileService";
-import { InvitationStatus } from "@/lib/services/InvitationService";
+import type { DashboardLayout } from "@/features/dashboard/lib/schema";
+import type { DashboardHeaderConfig } from "@/features/dashboard/lib/header";
+import type { OrganizationFooter } from "@/features/navigation/footer";
+import type { NavbarConfig } from "@/features/navigation/navItems";
+import type {
+  FormAnswerValue,
+  FormDefinition,
+} from "@/features/forms/lib/schema";
+import { buildSubmissionSchema } from "@/features/forms/lib/submission";
+import { FileService } from "@/core/files/FileService";
+import { InvitationStatus } from "@/features/membership/services/InvitationService";
 import {
   VISIONARIES_APPLICATION_FORM,
   VISIONARIES_ATTENDEE_FORMS,

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { eq } from "drizzle-orm";
-import db from "@/lib/db";
+import db from "@/core/db";
 import { organizations, users } from "@/lib/schema";
 import { buildTestUser, createOrganization } from "../unit/testUtils";
 

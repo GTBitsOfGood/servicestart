@@ -1,0 +1,324 @@
+import { createUserOverride } from "@/core/auth/authUtils";
+import { findUserByEmailOverride } from "@/core/auth/authUtils";
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createAuthMiddleware, organization } from "better-auth/plugins";
+import { APIError } from "better-auth/api";
+import db from "@/core/db";
+import { afterUserCreated } from "@/core/auth/authUtils";
+import { headers } from "next/headers";
+import {
+  getSlugFromHost,
+  getTenantRootDomain,
+} from "@/core/tenant/clientAuthUtils";
+import {
+  eventRsvps,
+  events,
+  joinRequests,
+  joinRequestHistory,
+  JoinRequestStatus,
+  sessions,
+  shiftRSVPs,
+  shifts,
+  // members
+} from "@/lib/schema";
+// import { UserService } from "@/features/membership/services/UserService";
+import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
+import { EmailService } from "@/core/email/EmailService";
+import { getBaseUrl } from "@/core/utils/clientUtils";
+import { requireEnv } from "@/core/utils/env";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./authValidation";
+import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
+import { OrganizationsService } from "@/core/tenant/OrganizationService";
+
+const baseURL = process.env.BETTER_AUTH_URL || getBaseUrl();
+
+/**
+ * Tenants are served from subdomains of the tenant root domain (`<slug>.lvh.me`
+ * in local development). Better Auth only trusts its base URL by default and
+ * rejects cookie-bearing requests from other origins, so trust the tenant
+ * hosts too. Outside production, also trust localhost, which serves the
+ * default tenant locally, so it keeps working when BETTER_AUTH_URL points at
+ * another tenant's host. These are static patterns rather than a per-request
+ * function because Better Auth stores per-request origins on a context shared
+ * by concurrent requests.
+ */
+export function tenantTrustedOrigins(authBaseURL: string): string[] {
+  const { protocol, port } = new URL(authBaseURL);
+  const suffix = port ? `:${port}` : "";
+  const isProduction = process.env.NODE_ENV === "production";
+  const roots = [getTenantRootDomain()];
+  if (!isProduction && !roots.includes("lvh.me")) {
+    roots.push("lvh.me");
+  }
+  const origins = roots.flatMap((root) => [
+    `${protocol}//${root}${suffix}`,
+    `${protocol}//*.${root}${suffix}`,
+  ]);
+  if (!isProduction) {
+    origins.push(`${protocol}//localhost${suffix}`);
+  }
+  return origins;
+}
+
+export const auth = betterAuth({
+  secret: requireEnv("BETTER_AUTH_SECRET"),
+  plugins: [
+    organization({
+      async sendInvitationEmail(data) {
+        await EmailService.sendInvitationEmail({
+          id: data.id,
+          email: data.email,
+          organization: data.organization,
+          inviter: data.inviter,
+          invitation: data.invitation as unknown as {
+            expiresAt: Date;
+            role: string;
+            name: string;
+          },
+        });
+      },
+      organizationHooks: {
+        afterCreateOrganization: async ({ organization }) => {
+          await EmailService.registerOrganizationSender({
+            organizationId: organization.id,
+            organizationName: organization.name,
+            organizationSlug: organization.slug,
+          });
+        },
+        beforeCreateInvitation: async ({ invitation }) => {
+          // Invites are the only way to create admins; never owners.
+          if (invitation.role !== "member" && invitation.role !== "admin") {
+            throw new APIError("FORBIDDEN", {
+              message: "Invitations can only be for the member or admin role.",
+            });
+          }
+        },
+        beforeRemoveMember: async ({ member }) => {
+          const now = new Date();
+
+          // Records the removal so auto-approve doesn't re-add them on their
+          // next login. Leaves an existing request alone (the join request
+          // "remove" flow has already moved it back to pending).
+          const [existingRequest] = await db
+            .select({ id: joinRequests.id, status: joinRequests.status })
+            .from(joinRequests)
+            .where(
+              and(
+                eq(joinRequests.userId, member.userId),
+                eq(joinRequests.organizationId, member.organizationId),
+              ),
+            )
+            .limit(1);
+          if (!existingRequest) {
+            await db.insert(joinRequests).values({
+              id: crypto.randomUUID(),
+              userId: member.userId,
+              organizationId: member.organizationId,
+              status: JoinRequestStatus.Denied,
+            });
+          }
+
+          if (existingRequest?.status === JoinRequestStatus.Pending) {
+            const history = await JoinRequestsService.listHistory(
+              existingRequest.id,
+            );
+            if (!history.some((entry) => entry.action === "removed")) {
+              // An invite may have been accepted while a join request was
+              // pending. Preserve removal history when access is revoked.
+              await db.insert(joinRequestHistory).values({
+                id: crypto.randomUUID(),
+                joinRequestId: existingRequest.id,
+                action: "removed",
+              });
+            }
+          }
+
+          await Promise.all([
+            db.delete(eventRsvps).where(
+              and(
+                eq(eventRsvps.userId, member.userId),
+                inArray(
+                  eventRsvps.eventId,
+                  db
+                    .select({ id: events.id })
+                    .from(events)
+                    .where(
+                      and(
+                        eq(events.organizationId, member.organizationId),
+                        gt(events.startTimestamp, now),
+                        isNotNull(events.startTimestamp),
+                      ),
+                    ),
+                ),
+              ),
+            ),
+
+            db.delete(shiftRSVPs).where(
+              and(
+                eq(shiftRSVPs.userId, member.userId),
+                inArray(
+                  shiftRSVPs.shiftId,
+                  db
+                    .select({ id: shifts.id })
+                    .from(shifts)
+                    .where(
+                      and(
+                        eq(shifts.organizationId, member.organizationId),
+                        gt(shifts.startTimestamp, now),
+                      ),
+                    ),
+                ),
+              ),
+            ),
+          ]);
+        },
+      },
+      schema: {
+        organization: {
+          additionalFields: {
+            phoneNumber: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+            email: {
+              type: "string",
+              input: true,
+              required: false,
+            },
+          },
+        },
+        member: {
+          additionalFields: {
+            // A MemberType value or null. Server code sets it; clients can't,
+            // since it gates what a member can see.
+            memberType: {
+              type: "string",
+              required: false,
+              input: false,
+            },
+          },
+        },
+        invitation: {
+          additionalFields: {
+            name: {
+              type: "string",
+              input: true,
+              required: true,
+            },
+          },
+        },
+      },
+    }),
+  ],
+  user: {
+    additionalFields: {
+      phoneNumber: {
+        type: "string",
+        required: false,
+      },
+      displayName: {
+        type: "string",
+        required: false,
+      },
+      pronouns: {
+        type: "string",
+        required: false,
+      },
+      location: {
+        type: "string",
+        required: false,
+      },
+      organizationSlug: {
+        type: "string",
+        required: false,
+        input: true,
+      },
+    },
+  },
+  baseURL,
+  trustedOrigins: tenantTrustedOrigins(baseURL),
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    usePlural: true,
+  }),
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: PASSWORD_MIN_LENGTH,
+    maxPasswordLength: PASSWORD_MAX_LENGTH,
+    sendResetPassword: async ({ user, url }, request) => {
+      const host = request?.headers?.get("host");
+      const slug = getSlugFromHost(host || undefined);
+
+      await EmailService.sendResetPasswordEmail({
+        email: user.email,
+        slug: slug,
+        name: user.name,
+        url: url,
+      });
+    },
+  },
+  databaseHooks: {
+    session: {
+      create: {
+        after: async (session, context) => {
+          const headers = context?.headers;
+          await afterUserCreated(session.userId, headers);
+        },
+      },
+    },
+  },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      // --- Multi-tenant BetterAuth DB adapter override ---
+      // Get organizationId from headers or context
+      let organizationSlug = ctx.headers?.get("x-organization-slug");
+      if (!organizationSlug) {
+        const host = ctx.headers?.get("host") ?? undefined;
+        if (host) {
+          organizationSlug = getSlugFromHost(host);
+        }
+      }
+      if (!organizationSlug) return;
+      const organizationId = await OrganizationsService.findBySlug(
+        organizationSlug!,
+      ).then((org) => org?.id);
+
+      if (!organizationId) return;
+
+      ctx.context.organizationId = organizationId;
+      ctx.context.internalAdapter.createUser = createUserOverride(
+        ctx,
+      ) as unknown as typeof ctx.context.internalAdapter.createUser;
+      ctx.context.internalAdapter.findUserByEmail = findUserByEmailOverride(
+        ctx,
+        organizationId,
+      ) as unknown as typeof ctx.context.internalAdapter.findUserByEmail;
+    }),
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path.startsWith("/login")) {
+        const session = ctx.context.session;
+        if (session?.user) {
+          const theHeaders = ctx?.headers;
+          const host =
+            theHeaders?.get?.("host") ??
+            (theHeaders as Record<string, string> | undefined)?.host;
+          const slug = getSlugFromHost(host);
+          const [result] = await db
+            .select({ activeOrganizationId: sessions.activeOrganizationId })
+            .from(sessions)
+            .where(eq(sessions.id, session.session.id))
+            .limit(1);
+          await auth.api.setActiveOrganization({
+            body: {
+              organizationId: result?.activeOrganizationId,
+              organizationSlug: slug,
+            },
+            headers: await headers(),
+          });
+        }
+      }
+    }),
+  },
+});

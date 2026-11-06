@@ -1,15 +1,15 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { redirectIfNotAdmin } from "@/lib/authUtils";
-import { MembersService } from "@/lib/services/MemberService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { auth } from "@/core/auth/auth";
+import { redirectIfNotAdmin } from "@/core/auth/authUtils";
+import { MembersService } from "@/features/membership/services/MemberService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   MEMBER_TYPE_VALUES,
   MemberType,
   OrganizationConfigKey,
 } from "@/lib/schema";
-import MembersTable from "@/components/MembersTable";
+import MembersTable from "@/features/membership/components/MembersTable";
 
 const DEFAULT_PAGE_SIZE = 20;
 

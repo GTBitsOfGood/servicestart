@@ -1,8 +1,11 @@
 import "dotenv/config";
 import { and, eq } from "drizzle-orm";
-import db, { getDbUrl } from "@/lib/db";
-import { DEFAULT_FORM_SETTINGS } from "@/lib/forms/constants";
-import type { FormComponent, FormDefinition } from "@/lib/forms/schema";
+import db, { getDbUrl } from "@/core/db";
+import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
+import type {
+  FormComponent,
+  FormDefinition,
+} from "@/features/forms/lib/schema";
 import {
   EventVisibility,
   events,
@@ -14,7 +17,7 @@ import {
   OrganizationConfigKey,
 } from "@/lib/schema";
 import { main as seed } from "./seed";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 
 const demoFormId = (item: number) =>
   `0d3e0f00-5e7f-4c1d-8b2c-${item.toString(16).padStart(12, "0")}`;

@@ -5,15 +5,15 @@ import AuthRouteLayout from "@/app/(auth)/layout";
 import LoginPage from "@/app/(auth)/login/page";
 import SignupPage from "@/app/(auth)/signup/page";
 import ForgotPasswordPage from "@/app/(auth)/forgotpassword/page";
-import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
+import ResetPasswordForm from "@/core/auth/components/ResetPasswordForm";
 
 const mockConfig = vi.fn();
 
-vi.mock("@/lib/hooks/useOrganizationConfig", () => ({
+vi.mock("@/core/config/hooks/useOrganizationConfig", () => ({
   default: () => mockConfig(),
 }));
 
-vi.mock("@/lib/hooks/useActiveOrganization", () => ({
+vi.mock("@/core/tenant/hooks/useActiveOrganization", () => ({
   useActiveOrganization: () => ({ organization: { data: null } }),
 }));
 
@@ -21,7 +21,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 
-vi.mock("@/lib/authClient", () => ({
+vi.mock("@/core/auth/authClient", () => ({
   default: {
     getSession: () => Promise.resolve({ data: null }),
     signIn: { email: vi.fn() },
@@ -31,7 +31,7 @@ vi.mock("@/lib/authClient", () => ({
   },
 }));
 
-vi.mock("@/lib/clientAuthUtils", () => ({
+vi.mock("@/core/tenant/clientAuthUtils", () => ({
   getSlugFromHost: () => "doesnotexist",
 }));
 

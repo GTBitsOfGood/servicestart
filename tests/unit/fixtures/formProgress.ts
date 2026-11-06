@@ -1,5 +1,5 @@
 import { FormStatus, type SubmissionReviewStatus } from "@/lib/schema";
-import type { MemberFormProgress } from "@/lib/services/FormProgressService";
+import type { MemberFormProgress } from "@/features/forms/services/FormProgressService";
 
 /** A row as FormProgressService.listForMember returns it, keyed by formId. */
 export function progressRow(

@@ -1,15 +1,18 @@
 import "@/styles/globals.css";
 import { type CSSProperties } from "react";
 import { headers } from "next/headers";
-import { ActiveOrganizationSync } from "../components/ActiveOrganizationSync";
-import NavbarWrapper from "@/components/navigation/NavbarWrapper";
-import Navbar from "@/components/navigation/Navbar";
-import NotificationToastProvider from "@/components/notifications/NotificationToastProvider";
-import { getSlugFromHost } from "@/lib/clientAuthUtils";
-import { OrganizationsService } from "@/lib/services/OrganizationService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { ActiveOrganizationSync } from "@/core/tenant/components/ActiveOrganizationSync";
+import NavbarWrapper from "@/features/navigation/components/NavbarWrapper";
+import Navbar from "@/features/navigation/components/Navbar";
+import NotificationToastProvider from "@/features/communications/components/NotificationToastProvider";
+import { getSlugFromHost } from "@/core/tenant/clientAuthUtils";
+import { OrganizationsService } from "@/core/tenant/OrganizationService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { OrganizationConfigKey } from "@/lib/schema";
-import { getOrganizationThemeCssVariables, isCornerStyle } from "@/lib/theme";
+import {
+  getOrganizationThemeCssVariables,
+  isCornerStyle,
+} from "@/core/config/theme";
 import { themeFontVariableClassNames } from "@/app/fonts";
 
 export default async function RootLayout({

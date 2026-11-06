@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
-import db from "@/lib/db";
+import { auth } from "@/core/auth/auth";
+import db from "@/core/db";
 import {
   joinRequests,
   JoinRequestStatus,
@@ -26,17 +26,17 @@ import {
   type MemberType,
   type SubmissionReviewStatus,
 } from "@/lib/schema";
-import { InvitationStatus } from "@/lib/services/InvitationService";
-import { DEFAULT_FORM_SETTINGS } from "@/lib/forms/constants";
+import { InvitationStatus } from "@/features/membership/services/InvitationService";
+import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import type {
   FormAnswerValue,
   FormComponent,
   FormDefinition,
   FormSettings,
-} from "@/lib/forms/schema";
+} from "@/features/forms/lib/schema";
 import { VISIONARIES_APPLICATION_FORM } from "@/tests/unit/fixtures/forms";
 import { testClient } from "hono/testing";
-import { app } from "@/lib/app";
+import { app } from "@/features/app";
 
 export {
   VISIONARIES_APPLICATION_FORM,

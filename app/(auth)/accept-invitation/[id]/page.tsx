@@ -2,22 +2,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import AuthPageIntro from "@/components/auth/AuthPageIntro";
-import BackToLoginLink from "@/components/auth/BackToLoginLink";
-import SignupForm from "@/components/auth/SignupForm";
+import AuthPageIntro from "@/core/auth/components/AuthPageIntro";
+import BackToLoginLink from "@/core/auth/components/BackToLoginLink";
+import SignupForm from "@/core/auth/components/SignupForm";
 import {
   AcceptInvitationButton,
   SignOutButton,
-} from "@/components/auth/AcceptInvitationActions";
-import { AUTH_PRIMARY_LINK_CLASS } from "@/components/auth/authStyles";
-import { auth } from "@/lib/auth";
-import { findOrganizationByRequestHost } from "@/lib/organizationFromHost";
+} from "@/core/auth/components/AcceptInvitationActions";
+import { AUTH_PRIMARY_LINK_CLASS } from "@/core/auth/components/authStyles";
+import { auth } from "@/core/auth/auth";
+import { findOrganizationByRequestHost } from "@/core/tenant/organizationFromHost";
 import {
   InvitationService,
   type Invitation,
-} from "@/lib/services/InvitationService";
-import { MembersService } from "@/lib/services/MemberService";
-import { UserService } from "@/lib/services/UserService";
+} from "@/features/membership/services/InvitationService";
+import { MembersService } from "@/features/membership/services/MemberService";
+import { UserService } from "@/features/membership/services/UserService";
 
 export const metadata: Metadata = { title: "Accept Invitation" };
 

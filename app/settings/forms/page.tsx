@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { redirectIfNotAdmin } from "@/lib/authUtils";
+import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 import { OrganizationConfigKey } from "@/lib/schema";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { FormService } from "@/lib/services/FormService";
-import FormsClient from "@/components/forms/FormsClient";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { FormService } from "@/features/forms/services/FormService";
+import FormsClient from "@/features/forms/components/FormsClient";
 
 export const metadata = { title: "Forms" };
 

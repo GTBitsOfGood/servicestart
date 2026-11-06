@@ -1,8 +1,8 @@
 import { expect, type Page } from "@playwright/test";
 import { eq } from "drizzle-orm";
-import db from "@/lib/db";
+import db from "@/core/db";
 import { organizations } from "@/lib/schema";
-import { JoinRequestsService } from "@/lib/services/JoinRequestService";
+import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
 import {
   addMember,
   buildTestUser,

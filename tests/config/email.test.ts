@@ -2,12 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { parse } from "dotenv";
 import { validateSendGridKey } from "juno-sdk/lib/validators";
-import { getDbUrl, getEmailSenderDomain, requireEnv } from "../../lib/env";
-import { setupEmail } from "../../lib/emailSetup";
-import { EmailService } from "../../lib/services/EmailService";
-import { juno } from "../../lib/junoClient";
+import { getDbUrl, getEmailSenderDomain, requireEnv } from "@/core/utils/env";
+import { setupEmail } from "@/core/email/emailSetup";
+import { EmailService } from "@/core/email/EmailService";
+import { juno } from "@/core/files/junoClient";
 
-vi.mock("../../lib/junoClient", () => ({
+vi.mock("@/core/files/junoClient", () => ({
   juno: {
     email: {
       setupEmail: vi.fn(),
@@ -17,11 +17,13 @@ vi.mock("../../lib/junoClient", () => ({
     },
   },
 }));
-vi.mock("@/lib/services/OrganizationService", () => ({
+vi.mock("@/core/tenant/OrganizationService", () => ({
   OrganizationsService: {},
 }));
-vi.mock("@/lib/services/MemberService", () => ({ MembersService: {} }));
-vi.mock("@/lib/authClient", () => ({ default: {} }));
+vi.mock("@/features/membership/services/MemberService", () => ({
+  MembersService: {},
+}));
+vi.mock("@/core/auth/authClient", () => ({ default: {} }));
 
 beforeEach(() => {
   vi.stubEnv("JUNO_API_KEY", "test-key");

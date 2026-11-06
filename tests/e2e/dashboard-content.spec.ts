@@ -2,17 +2,17 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   addCalendarDays,
   startOfDashboardWeek,
-} from "@/lib/dashboard/calendar";
-import type { DashboardHeaderConfig } from "@/lib/dashboard/header";
-import type { DashboardLayout } from "@/lib/dashboard/schema";
-import type { OrganizationFooter } from "@/lib/footer";
+} from "@/features/events/lib/calendar";
+import type { DashboardHeaderConfig } from "@/features/dashboard/lib/header";
+import type { DashboardLayout } from "@/features/dashboard/lib/schema";
+import type { OrganizationFooter } from "@/features/navigation/footer";
 import {
   MemberType,
   NotificationType,
   OrganizationConfigKey,
 } from "@/lib/schema";
-import { NotificationService } from "@/lib/services/NotificationService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { NotificationService } from "@/features/communications/services/NotificationService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,
   buildTestUser,
