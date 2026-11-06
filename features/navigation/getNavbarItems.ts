@@ -2,10 +2,10 @@ import { NAVBAR_ITEMS, NavbarItem, Page } from "@/features/navigation/navItems";
 import {
   getDashboardAudience,
   type MemberAudience,
-} from "@/features/membership/lib/audience";
+} from "@/features/membership";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { auth } from "@/core/auth/auth";
-import { MembersService } from "@/features/membership/services/MemberService";
+import { MembersService } from "@/features/membership";
 import OrganizationConfigService from "@/core/config/OrganizationConfigService";
 
 function getRelevantOrgConfigKeys(): OrganizationConfigKey[] {

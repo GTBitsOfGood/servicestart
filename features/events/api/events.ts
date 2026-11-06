@@ -4,7 +4,7 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { auth } from "@/core/auth/auth";
 import { EventService } from "@/features/events/services/EventService";
-import { MembersService } from "@/features/membership/services/MemberService";
+import { MembersService } from "@/features/membership";
 import { ShiftService } from "@/features/events/services/ShiftService";
 import { requireMembership } from "@/core/auth/authUtils";
 import { shiftErrorResponse } from "@/features/events/api/shifts/errors";

@@ -2,7 +2,7 @@ import { cache } from "react";
 import {
   memberTypeFromAudience,
   type DashboardAudience,
-} from "@/features/membership/lib/audience";
+} from "@/features/membership";
 import {
   canEditSubmission,
   type FormAvailability,

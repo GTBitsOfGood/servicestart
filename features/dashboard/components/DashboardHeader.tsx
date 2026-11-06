@@ -1,7 +1,7 @@
-import type { DashboardAudience } from "@/features/membership/lib/audience";
+import type { DashboardAudience } from "@/features/membership";
 import { CalendarDotsIcon, MapPinIcon } from "@phosphor-icons/react/ssr";
 import type { Icon } from "@phosphor-icons/react";
-import DashboardAlertBanner from "@/features/communications/components/DashboardAlertBanner";
+import { DashboardAlertBanner } from "@/features/communications";
 import {
   resolveDashboardHeader,
   type ResolvedDashboardHeader,

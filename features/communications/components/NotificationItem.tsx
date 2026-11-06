@@ -7,7 +7,7 @@ import BogButton from "@/components/theme/ThemedButton";
 import BogModal from "@/components/theme/ThemedModal";
 import { cn, formatTime } from "@/core/utils/utils";
 import NotificationTag from "./NotificationTag";
-import { JoinRequestStatus } from "@/features/membership/schema";
+import { JoinRequestStatus } from "@/features/membership";
 
 export interface NotificationListItem {
   id: string;

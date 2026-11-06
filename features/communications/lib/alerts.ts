@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MemberType } from "@/features/membership/schema";
+import { MemberType } from "@/features/membership";
 
 /** Shared validation for admins posting dashboard announcements. */
 export const PostDashboardAlertSchema = z.strictObject({

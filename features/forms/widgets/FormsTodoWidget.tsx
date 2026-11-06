@@ -5,7 +5,7 @@ import {
   type FormTodoAction,
   type FormTodoCard,
 } from "@/features/forms/widgets/formProgress";
-import type { WidgetProps } from "@/features/dashboard/widgets";
+import type { WidgetProps } from "@/features/dashboard";
 
 function availabilityLabel(action: FormTodoAction): string {
   switch (action.kind) {

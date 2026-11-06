@@ -1,5 +1,5 @@
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import NotificationsSidebar from "@/features/communications/components/NotificationsSidebar";
+import { NotificationsSidebar } from "@/features/communications";
 import { cn } from "@/core/utils/utils";
 
 export default function NotificationCounter({

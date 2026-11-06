@@ -5,7 +5,7 @@ import Link from "next/link";
 import api from "@/core/api/client";
 import { useHydrated } from "@/core/utils/hooks/useHydrated";
 import { FormStatus } from "@/features/forms/schema";
-import { MemberType } from "@/features/membership/schema";
+import { MemberType } from "@/features/membership";
 import {
   FormIdSchema,
   FormSettingsSchema,
@@ -18,7 +18,7 @@ import { suggestFormId } from "@/features/forms/lib/management";
 import {
   MEMBER_TYPE_LABELS,
   MEMBER_TYPE_PLURAL_LABELS,
-} from "@/features/membership/lib/memberTypes";
+} from "@/features/membership";
 import type { FormService } from "@/features/forms/services/FormService";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import BogTable from "@/components/bog/BogTable/BogTable";

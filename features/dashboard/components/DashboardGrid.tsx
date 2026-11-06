@@ -1,21 +1,21 @@
 import { Suspense } from "react";
 import type { ComponentType } from "react";
-import type { DashboardAudience } from "@/features/membership/lib/audience";
+import type { DashboardAudience } from "@/features/membership";
 import type {
   DashboardLayout,
   WidgetId,
 } from "@/features/dashboard/lib/schema";
 import type { WidgetProps } from "@/features/dashboard/widgets";
 import { cn } from "@/core/utils/utils";
-import EventsWidget from "@/features/events/widgets/EventsWidget";
-import NotificationsDashboardWidget from "@/features/communications/widgets/NotificationsWidget";
-import MemberRequestsWidget from "@/features/membership/widgets/MemberRequestsWidget";
-import NewsletterWidget from "@/features/communications/widgets/NewsletterWidget";
-import ApplicationStatusWidget from "@/features/forms/widgets/ApplicationStatusWidget";
-import FormsTodoWidget from "@/features/forms/widgets/FormsTodoWidget";
-import FormsCompletedWidget from "@/features/forms/widgets/FormsCompletedWidget";
-import FormsProgressWidget from "@/features/forms/widgets/FormsProgressWidget";
-import WeeklyCalendarWidget from "@/features/events/widgets/WeeklyCalendarWidget";
+import { EventsWidget } from "@/features/events";
+import { NotificationsWidget as NotificationsDashboardWidget } from "@/features/communications";
+import { MemberRequestsWidget } from "@/features/membership";
+import { NewsletterWidget } from "@/features/communications";
+import { ApplicationStatusWidget } from "@/features/forms";
+import { FormsTodoWidget } from "@/features/forms";
+import { FormsCompletedWidget } from "@/features/forms";
+import { FormsProgressWidget } from "@/features/forms";
+import { WeeklyCalendarWidget } from "@/features/events";
 
 const WIDGET_COMPONENTS: Record<WidgetId, ComponentType<WidgetProps>> = {
   events: EventsWidget,

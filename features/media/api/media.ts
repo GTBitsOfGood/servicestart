@@ -6,7 +6,7 @@ import { zValidator } from "@hono/zod-validator";
 import { auth } from "@/core/auth/auth";
 import { requireAdmin } from "@/core/auth/authUtils";
 import { JunoFileDeletionNotSupportedError } from "@/core/api/errors";
-import { MembersService } from "@/features/membership/services/MemberService";
+import { MembersService } from "@/features/membership";
 import { FileService } from "@/core/files/FileService";
 import { LocalFileService } from "@/core/files/LocalFileService";
 import { MediaService } from "@/features/media/services/MediaService";

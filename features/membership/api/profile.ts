@@ -3,8 +3,8 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { requireMembership } from "@/core/auth/authUtils";
 import { FileService } from "@/core/files/FileService";
-import { MediaService } from "@/features/media/services/MediaService";
-import { MediaType } from "@/features/media/schema";
+import { MediaService } from "@/features/media";
+import { MediaType } from "@/features/media";
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const BLOCKED_IMAGE_TYPES = new Set(["image/svg+xml"]);

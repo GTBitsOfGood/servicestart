@@ -1,4 +1,4 @@
-import { ApplicationStatusWidgetConfigSchema } from "@/features/dashboard/lib/schema";
+import { ApplicationStatusWidgetConfigSchema } from "@/features/dashboard";
 import { SubmissionReviewStatus } from "@/features/forms/schema";
 import type { MemberFormProgress } from "@/features/forms/services/FormProgressService";
 

@@ -10,14 +10,14 @@ import {
   type NextStep,
   type TimelineStep,
 } from "@/features/forms/lib/applicationStatus";
-import { memberTypeFromAudience } from "@/features/membership/lib/audience";
-import { ApplicationStatusWidgetConfigSchema } from "@/features/dashboard/lib/schema";
-import type { WidgetProps } from "@/features/dashboard/widgets";
+import { memberTypeFromAudience } from "@/features/membership";
+import { ApplicationStatusWidgetConfigSchema } from "@/features/dashboard";
+import type { WidgetProps } from "@/features/dashboard";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { SubmissionReviewStatus } from "@/features/forms/schema";
 import { FormProgressService } from "@/features/forms/services/FormProgressService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import { UserService } from "@/features/membership/services/UserService";
+import { UserService } from "@/features/membership";
 import { cn } from "@/core/utils/utils";
 
 const STEP_STATE_TEXT: Record<TimelineStep["state"], string> = {

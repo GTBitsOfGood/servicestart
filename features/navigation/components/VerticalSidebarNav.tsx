@@ -5,10 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { SunsetLogo } from "@/features/navigation/components/Logo";
-import { useUnreadNotificationCount } from "@/features/communications/hooks/useUnreadNotificationCount";
+import { useUnreadNotificationCount } from "@/features/communications";
 import { NavbarProps } from "@/features/navigation/navItems";
 import { UserProfileMenu } from "./UserProfileMenu";
-import NotificationsSidebar from "@/features/communications/components/NotificationsSidebar";
+import { NotificationsSidebar } from "@/features/communications";
 
 export function VerticalSidebarNav({ items }: NavbarProps) {
   const pathname = usePathname();

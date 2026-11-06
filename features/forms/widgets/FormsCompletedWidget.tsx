@@ -5,7 +5,7 @@ import {
   loadFormProgress,
   type FormCompletedCard,
 } from "@/features/forms/widgets/formProgress";
-import type { WidgetProps } from "@/features/dashboard/widgets";
+import type { WidgetProps } from "@/features/dashboard";
 
 const ICON_LINK_CLASS =
   "inline-flex size-12 items-center justify-center rounded-full text-brand-text hover:bg-grey-fill-weak";

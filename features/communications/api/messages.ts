@@ -7,7 +7,7 @@ import db from "@/core/db";
 import { messageRecipients, messages } from "@/features/communications/schema";
 import { paginationQuerySchema } from "@/core/api/apiUtils";
 import { requireAdmin, requireMembership } from "@/core/auth/authUtils";
-import { MembersService } from "@/features/membership/services/MemberService";
+import { MembersService } from "@/features/membership";
 import { MessageService } from "@/features/communications/services/MessageService";
 
 const messageQuerySchema = paginationQuerySchema.and(

@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/features/navigation/components/ProfileAvatar";
-import { useUnreadNotificationCount } from "@/features/communications/hooks/useUnreadNotificationCount";
+import { useUnreadNotificationCount } from "@/features/communications";
 import { NavbarProps } from "@/features/navigation/navItems";
-import NotificationsSidebar from "@/features/communications/components/NotificationsSidebar";
+import { NotificationsSidebar } from "@/features/communications";
 
 export function VerticalIconNav({ items }: NavbarProps) {
   const pathname = usePathname();

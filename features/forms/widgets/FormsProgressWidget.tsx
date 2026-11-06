@@ -3,7 +3,7 @@ import {
   loadFormProgress,
   type FormProgressGauge,
 } from "@/features/forms/widgets/formProgress";
-import type { WidgetProps } from "@/features/dashboard/widgets";
+import type { WidgetProps } from "@/features/dashboard";
 
 const GAUGE_RADIUS = 80;
 const GAUGE_STROKE = 12;

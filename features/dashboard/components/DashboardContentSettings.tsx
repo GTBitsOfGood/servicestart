@@ -12,12 +12,12 @@ import {
   SOCIAL_PLATFORMS,
   type OrganizationFooter,
   type SocialPlatform,
-} from "@/features/navigation/footer";
+} from "@/features/navigation";
 import {
   PostDashboardAlertSchema,
   type PostDashboardAlert,
-} from "@/features/communications/lib/alerts";
-import { MemberType } from "@/features/membership/schema";
+} from "@/features/communications";
+import { MemberType } from "@/features/membership";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import SaveBanner from "@/components/SaveBanner";
 import BogButton from "@/components/theme/ThemedButton";

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { DashboardAudience } from "@/features/membership/lib/audience";
+import type { DashboardAudience } from "@/features/membership";
 
 /*
  * The text above an org's dashboard (#320): a title, a subtitle, a

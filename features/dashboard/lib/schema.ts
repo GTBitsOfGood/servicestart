@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FormIdSchema } from "@/features/forms/lib/schema";
+import { FormIdSchema } from "@/features/forms";
 
 export const WIDGET_IDS = [
   "events",

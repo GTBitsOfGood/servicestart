@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/core/utils/utils";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import { useUnreadNotificationCount } from "@/features/communications/hooks/useUnreadNotificationCount";
+import { useUnreadNotificationCount } from "@/features/communications";
 import { NavbarItem, NavbarProps } from "@/features/navigation/navItems";
 import authClient from "@/core/auth/authClient";
 import { useActiveOrganization } from "@/core/tenant/hooks/useActiveOrganization";

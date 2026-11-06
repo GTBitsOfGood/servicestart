@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { SunsetLogo } from "@/features/navigation/components/Logo";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { UserProfileMenu } from "@/features/navigation/components/UserProfileMenu";
-import { useUnreadNotificationCount } from "@/features/communications/hooks/useUnreadNotificationCount";
+import { useUnreadNotificationCount } from "@/features/communications";
 import { NavbarItem, NavbarProps } from "@/features/navigation/navItems";
 import NotificationCounter from "./NotificationCounter";
 

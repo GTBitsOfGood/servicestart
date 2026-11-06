@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import OrganizationLogo from "@/features/navigation/components/OrganizationLogo";
+import { OrganizationLogo } from "@/features/navigation";
 
 type FormPageLayoutProps = {
   organizationName: string;

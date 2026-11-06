@@ -2,7 +2,7 @@ import {
   OrganizationConfigKey,
   type ToggleableOrganizationFeature,
 } from "@/core/config/schema";
-import type { DashboardAudience } from "@/features/membership/lib/audience";
+import type { DashboardAudience } from "@/features/membership";
 import type { WidgetId } from "./lib/schema";
 
 /**
