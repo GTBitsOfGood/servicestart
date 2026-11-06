@@ -1,22 +1,23 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
-import type { z } from "zod";
 import db from "@/core/db";
 import {
   organizationConfig,
   OrganizationConfigKey,
 } from "@/core/config/schema";
-import { DashboardLayoutSchema } from "@/features/dashboard/lib/schema";
-import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import {
-  DEFAULT_ADMIN_LAYOUT,
-  DEFAULT_MEMBER_LAYOUT,
-} from "@/features/dashboard/lib/constants";
-import type { DashboardAudience } from "@/features/membership/lib/audience";
+  clearStoredConfigValue,
+  getStoredConfigValue,
+  jsonConfig,
+  setStoredConfigValue,
+} from "@/core/config/jsonConfig";
 import {
-  DashboardHeaderConfigSchema,
-  DEFAULT_DASHBOARD_HEADER_CONFIG,
-} from "@/features/dashboard/lib/header";
+  adminDashboardLayout,
+  DASHBOARD_CONFIG,
+  dashboardHeader,
+  dashboardLayout,
+  getDashboardLayoutFor,
+} from "@/features/dashboard/config";
 import {
   DEFAULT_ORGANIZATION_FOOTER,
   OrganizationFooterSchema,
@@ -61,61 +62,6 @@ export const ALLOWED_MOBILE_NAVBAR_VARIANTS = [
 
 export type MobileNavbarVariant =
   (typeof ALLOWED_MOBILE_NAVBAR_VARIANTS)[number];
-
-async function getStoredConfigValue(
-  organizationId: string,
-  key: OrganizationConfigKey,
-) {
-  const [row] = await db
-    .select({ value: organizationConfig.value })
-    .from(organizationConfig)
-    .where(
-      and(
-        eq(organizationConfig.organizationId, organizationId),
-        eq(organizationConfig.key, key),
-      ),
-    )
-    .limit(1);
-
-  return row?.value;
-}
-
-async function setStoredConfigValue(
-  organizationId: string,
-  key: OrganizationConfigKey,
-  value: string,
-) {
-  const [existing] = await db
-    .select({ id: organizationConfig.id })
-    .from(organizationConfig)
-    .where(
-      and(
-        eq(organizationConfig.organizationId, organizationId),
-        eq(organizationConfig.key, key),
-      ),
-    )
-    .limit(1);
-
-  if (existing) {
-    await db
-      .update(organizationConfig)
-      .set({ value })
-      .where(
-        and(
-          eq(organizationConfig.organizationId, organizationId),
-          eq(organizationConfig.key, key),
-        ),
-      );
-    return;
-  }
-
-  await db.insert(organizationConfig).values({
-    id: randomUUID(),
-    organizationId,
-    key,
-    value,
-  });
-}
 
 async function getDesc(organizationId: string) {
   const [row] = await db
@@ -1070,222 +1016,11 @@ async function setLogoUrl(organizationId: string, logoUrl: string) {
   }
 }
 
-async function getAdminDashboardLayout(
-  organizationId: string,
-): Promise<DashboardLayout> {
-  const [row] = await db
-    .select({ value: organizationConfig.value })
-    .from(organizationConfig)
-    .where(
-      and(
-        eq(organizationConfig.organizationId, organizationId),
-        eq(organizationConfig.key, OrganizationConfigKey.AdminDashboardLayout),
-      ),
-    )
-    .limit(1);
-
-  if (!row?.value) return DEFAULT_ADMIN_LAYOUT;
-
-  try {
-    return DashboardLayoutSchema.parse(JSON.parse(row.value));
-  } catch {
-    return DEFAULT_ADMIN_LAYOUT;
-  }
-}
-
-async function setAdminDashboardLayout(organizationId: string, value: string) {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(value);
-  } catch {
-    throw new Error("Invalid JSON for admin dashboard layout");
-  }
-
-  const result = DashboardLayoutSchema.safeParse(parsed);
-  if (!result.success) {
-    throw new Error("Invalid admin dashboard layout");
-  }
-
-  const jsonString = JSON.stringify(result.data);
-
-  const [existing] = await db
-    .select({ id: organizationConfig.id })
-    .from(organizationConfig)
-    .where(
-      and(
-        eq(organizationConfig.organizationId, organizationId),
-        eq(organizationConfig.key, OrganizationConfigKey.AdminDashboardLayout),
-      ),
-    )
-    .limit(1);
-
-  if (existing) {
-    await db
-      .update(organizationConfig)
-      .set({ value: jsonString })
-      .where(
-        and(
-          eq(organizationConfig.organizationId, organizationId),
-          eq(
-            organizationConfig.key,
-            OrganizationConfigKey.AdminDashboardLayout,
-          ),
-        ),
-      );
-  } else {
-    await db.insert(organizationConfig).values({
-      id: randomUUID(),
-      organizationId,
-      key: OrganizationConfigKey.AdminDashboardLayout,
-      value: jsonString,
-    });
-  }
-}
-
-async function getDashboardLayout(
-  organizationId: string,
-): Promise<DashboardLayout> {
-  const [row] = await db
-    .select({ value: organizationConfig.value })
-    .from(organizationConfig)
-    .where(
-      and(
-        eq(organizationConfig.organizationId, organizationId),
-        eq(organizationConfig.key, OrganizationConfigKey.DashboardLayout),
-      ),
-    )
-    .limit(1);
-
-  if (!row?.value) return DEFAULT_MEMBER_LAYOUT;
-
-  try {
-    return DashboardLayoutSchema.parse(JSON.parse(row.value));
-  } catch {
-    return DEFAULT_MEMBER_LAYOUT;
-  }
-}
-
-async function setDashboardLayout(organizationId: string, value: string) {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(value);
-  } catch {
-    throw new Error("Invalid JSON for dashboard layout");
-  }
-
-  const result = DashboardLayoutSchema.safeParse(parsed);
-  if (!result.success) {
-    throw new Error("Invalid dashboard layout");
-  }
-
-  const jsonString = JSON.stringify(result.data);
-
-  const [existing] = await db
-    .select({ id: organizationConfig.id })
-    .from(organizationConfig)
-    .where(
-      and(
-        eq(organizationConfig.organizationId, organizationId),
-        eq(organizationConfig.key, OrganizationConfigKey.DashboardLayout),
-      ),
-    )
-    .limit(1);
-
-  if (existing) {
-    await db
-      .update(organizationConfig)
-      .set({ value: jsonString })
-      .where(
-        and(
-          eq(organizationConfig.organizationId, organizationId),
-          eq(organizationConfig.key, OrganizationConfigKey.DashboardLayout),
-        ),
-      );
-  } else {
-    await db.insert(organizationConfig).values({
-      id: randomUUID(),
-      organizationId,
-      key: OrganizationConfigKey.DashboardLayout,
-      value: jsonString,
-    });
-  }
-}
-
 /** Removes a config row, so its key goes back to its default. */
 async function clearConfig(organizationId: string, key: OrganizationConfigKey) {
-  await db
-    .delete(organizationConfig)
-    .where(
-      and(
-        eq(organizationConfig.organizationId, organizationId),
-        eq(organizationConfig.key, key),
-      ),
-    );
+  await clearStoredConfigValue(organizationId, key);
 }
 
-/**
- * Get/set for a config value stored as JSON. `get` returns `fallback` when
- * nothing (or something invalid) is stored; `set` rejects values that don't
- * match the schema.
- */
-function jsonConfig<T>(
-  key: OrganizationConfigKey,
-  label: string,
-  schema: z.ZodType<T>,
-  fallback: T,
-) {
-  return {
-    async get(organizationId: string): Promise<T> {
-      const value = await getStoredConfigValue(organizationId, key);
-      if (!value) return fallback;
-      try {
-        return schema.parse(JSON.parse(value));
-      } catch {
-        return fallback;
-      }
-    },
-    async set(organizationId: string, value: string) {
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(value);
-      } catch {
-        throw new Error(`Invalid JSON for ${label}`);
-      }
-      const result = schema.safeParse(parsed);
-      if (!result.success) {
-        const [issue] = result.error.issues;
-        const where = issue.path.length ? ` (${issue.path.join(".")})` : "";
-        throw new Error(`Invalid ${label}${where}: ${issue.message}`);
-      }
-      await setStoredConfigValue(
-        organizationId,
-        key,
-        JSON.stringify(result.data),
-      );
-    },
-  };
-}
-
-// Applicants' and attendees' layouts are null until set, and then the member
-// layout applies (see getDashboardLayoutFor).
-const applicantDashboardLayout = jsonConfig<DashboardLayout | null>(
-  OrganizationConfigKey.ApplicantDashboardLayout,
-  "applicant dashboard layout",
-  DashboardLayoutSchema,
-  null,
-);
-const attendeeDashboardLayout = jsonConfig<DashboardLayout | null>(
-  OrganizationConfigKey.AttendeeDashboardLayout,
-  "attendee dashboard layout",
-  DashboardLayoutSchema,
-  null,
-);
-const dashboardHeader = jsonConfig(
-  OrganizationConfigKey.DashboardHeader,
-  "dashboard header",
-  DashboardHeaderConfigSchema,
-  DEFAULT_DASHBOARD_HEADER_CONFIG,
-);
 const navbarConfig = jsonConfig(
   OrganizationConfigKey.NavbarConfig,
   "navbar config",
@@ -1298,29 +1033,6 @@ const organizationFooter = jsonConfig(
   OrganizationFooterSchema,
   DEFAULT_ORGANIZATION_FOOTER,
 );
-
-/** The dashboard layout for an audience, falling back to the member layout. */
-async function getDashboardLayoutFor(
-  organizationId: string,
-  audience: DashboardAudience,
-): Promise<DashboardLayout> {
-  switch (audience) {
-    case "admin":
-      return getAdminDashboardLayout(organizationId);
-    case "applicant":
-      return (
-        (await applicantDashboardLayout.get(organizationId)) ??
-        getDashboardLayout(organizationId)
-      );
-    case "attendee":
-      return (
-        (await attendeeDashboardLayout.get(organizationId)) ??
-        getDashboardLayout(organizationId)
-      );
-    case "member":
-      return getDashboardLayout(organizationId);
-  }
-}
 
 type ConfigHandler = {
   get: (organizationId: string) => Promise<unknown>;
@@ -1394,14 +1106,6 @@ const keyMap = {
     get: getLogoUrl,
     set: setLogoUrl,
   },
-  [OrganizationConfigKey.AdminDashboardLayout]: {
-    get: getAdminDashboardLayout,
-    set: setAdminDashboardLayout,
-  },
-  [OrganizationConfigKey.DashboardLayout]: {
-    get: getDashboardLayout,
-    set: setDashboardLayout,
-  },
   [OrganizationConfigKey.FormsEnabled]: {
     get: getFormsEnabled,
     set: setFormsEnabled,
@@ -1414,9 +1118,8 @@ const keyMap = {
     get: getAutoApproveSignups,
     set: setAutoApproveSignups,
   },
-  [OrganizationConfigKey.ApplicantDashboardLayout]: applicantDashboardLayout,
-  [OrganizationConfigKey.AttendeeDashboardLayout]: attendeeDashboardLayout,
-  [OrganizationConfigKey.DashboardHeader]: dashboardHeader,
+  // The dashboard's keys live with the dashboard.
+  ...DASHBOARD_CONFIG,
   [OrganizationConfigKey.NavbarConfig]: navbarConfig,
   [OrganizationConfigKey.OrganizationFooter]: organizationFooter,
 } satisfies Partial<Record<OrganizationConfigKey, ConfigHandler>>;
@@ -1461,10 +1164,10 @@ export const OrganizationConfigService = {
   getDashboardHeader: dashboardHeader.get,
   getNavbarConfig: navbarConfig.get,
   getOrganizationFooter: organizationFooter.get,
-  getAdminDashboardLayout,
-  setAdminDashboardLayout,
-  getDashboardLayout,
-  setDashboardLayout,
+  getAdminDashboardLayout: adminDashboardLayout.get,
+  setAdminDashboardLayout: adminDashboardLayout.set,
+  getDashboardLayout: dashboardLayout.get,
+  setDashboardLayout: dashboardLayout.set,
   getMemberTypesEnabled,
   getAutoApproveSignups,
 };
