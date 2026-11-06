@@ -1,7 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";
-import type { NavbarConfig } from "@/features/navigation/navItems";
+import type { NavbarConfig } from "@/features/navigation/navbarConfig";
 import {
   FormStatus,
   MemberType,

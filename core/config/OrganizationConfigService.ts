@@ -21,7 +21,7 @@ import {
 import {
   DEFAULT_NAVBAR_CONFIG,
   NavbarConfigSchema,
-} from "@/features/navigation/navItems";
+} from "@/features/navigation/navbarConfig";
 import { DEFAULT_BRANDING } from "@/core/config/branding";
 import {
   assertCornerStyle,

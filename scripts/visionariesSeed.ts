@@ -13,7 +13,7 @@ import {
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import type { DashboardHeaderConfig } from "@/features/dashboard/lib/header";
 import type { OrganizationFooter } from "@/features/navigation/footer";
-import type { NavbarConfig } from "@/features/navigation/navItems";
+import type { NavbarConfig } from "@/features/navigation/navbarConfig";
 import type {
   FormAnswerValue,
   FormDefinition,

@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { DashboardHeaderConfigSchema } from "@/features/dashboard/lib/header";
 import { OrganizationFooterSchema } from "@/features/navigation/footer";
-import { NavbarConfigSchema } from "@/features/navigation/navItems";
+import { NavbarConfigSchema } from "@/features/navigation/navbarConfig";
 
 describe("DashboardHeaderConfigSchema", () => {
   it("accepts a header per audience", () => {
