@@ -5,11 +5,15 @@ Postgres setup is fairly standard, so there's not much to say about it.
 
 ## Migrations
 
-Drizzle generates migrations from the schema defined in `lib/schema.ts`. Whenever you push, the `generate_migrations.yml`
+Drizzle generates migrations from the schema: each context's tables in its `schema.ts` (for example `features/forms/schema.ts`), collected by `core/db/schema.ts`, which `drizzle.config.ts` points at. Whenever you push, the `generate_migrations.yml`
 workflow generates and commits any new migrations to the `migrations` folder. If no new migrations are generated, no commit is made.
 
 On commits to main or to a branch with an open PR, the `cd.yml` workflow's `migrate-db` job migrates the corresponding database
 with any new migrations.
+
+### Hand-written migrations
+
+Migrations are generated, with one approved exception: Sprint 5's member type backfill (`drizzle/*_backfill_member_types/migration.sql`, #333), which moves existing data between a generated migration that adds the tables and one that adds the foreign key. It was created with `pnpm drizzle-kit generate --custom --name <name>`, which writes an empty migration and its snapshot. A data migration like that needs a ticket that approves it, and a test that runs it on a database with the previous schema and data (`tests/unit/core/db/memberTypesMigration.test.ts`).
 
 ### Migration Troubleshooting
 
@@ -25,7 +29,7 @@ To fix this, delete and regenerate any migrations files created for the PR.
 
 Netlify provides preivew deployments for PRs, but these do not with a preview database out of the box. When a PR is opened, a preview database is created, migrated, and seeded by the `setup_preview.yml` workflow. The database is named `pr<pr #>` and is hosted on the same Postgres instance as the main database.
 
-We've configured Drizzle to replace `<branch>` in the `DB_URL` with `NEXT_PUBLIC_BRANCH_NAME`, so that the preview deployment for a PR automatically connects to the correct preview database. There's some additional work to get the correct DB name, so take a look at `getDbUrl` in `lib/db.ts` for details.
+We've configured Drizzle to replace `<branch>` in the `DB_URL` with `NEXT_PUBLIC_BRANCH_NAME`, so that the preview deployment for a PR automatically connects to the correct preview database. There's some additional work to get the correct DB name, so take a look at `getDbUrl` in `core/utils/env.ts` for details.
 
 In Netlify's build process, we embed the branch name as `NEXT_PUBLIC_BRANCH_NAME`. The variable must be public so it is present in the server files and not just during the build process.
 
