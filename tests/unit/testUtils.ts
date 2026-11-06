@@ -6,6 +6,7 @@ import {
   joinRequests,
   JoinRequestStatus,
   members,
+  memberTypes,
   organizations,
   sessions,
   announcements,
@@ -23,11 +24,14 @@ import {
   formUploads,
   FormStatus,
   invitations,
-  type MemberType,
+  MemberType,
   type SubmissionReviewStatus,
 } from "@/core/db/schema";
 import { InvitationStatus } from "@/features/membership/services/InvitationService";
-import { MembersService } from "@/features/membership/services/MemberService";
+import {
+  MEMBER_TYPE_LABELS,
+  MEMBER_TYPE_PLURAL_LABELS,
+} from "@/features/membership/lib/memberTypes";
 import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import type {
   FormAnswerValue,
@@ -104,7 +108,18 @@ export async function createOrganization(slug: string) {
     name: `Organization ${slug}`,
     slug,
   });
-  await MembersService.ensureBuiltInMemberTypes(id);
+  // The same rows MembersService.ensureBuiltInMemberTypes creates, inserted
+  // here so tests that mock MembersService can still create organizations.
+  await db.insert(memberTypes).values(
+    [MemberType.Applicant, MemberType.Attendee].map((key, position) => ({
+      organizationId: id,
+      key,
+      label: MEMBER_TYPE_LABELS[key],
+      pluralLabel: MEMBER_TYPE_PLURAL_LABELS[key],
+      position,
+      isSignupDefault: key === MemberType.Applicant,
+    })),
+  );
 
   return { id, slug };
 }
