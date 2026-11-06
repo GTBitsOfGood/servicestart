@@ -5,7 +5,7 @@ import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogTextInput from "@/components/theme/ThemedTextInput";
 import BogDropdown from "@/components/theme/ThemedDropdown";
 import BogChip from "@/components/bog/BogChip/BogChip";
-import { NotificationItem } from "@/features/communications";
+import { NotificationItem } from "@/features/communications/ui";
 import { JoinRequestStatus } from "@/features/membership/schema";
 import { NotificationType } from "@/features/communications";
 import type {

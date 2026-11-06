@@ -10,7 +10,8 @@ import eslintConfigPrettier from "eslint-config-prettier/flat";
 /*
  * Boundary rule (#333). See "Folders and boundaries" in docs/ARCHITECTURE.md.
  *
- * - A context imports another only through its index.ts (@/features/<name>),
+ * - A context imports another only through its index.ts (@/features/<name>)
+ *   or, for React components and widgets, its ui.ts (@/features/<name>/ui),
  *   never through a file inside it.
  * - core/ never imports features/. The exceptions are the Drizzle barrel
  *   (core/db/schema.ts) and the RPC client's `import type { AppType }`.
@@ -46,11 +47,11 @@ const DB = [
   },
 ];
 
-/** Deep imports into any context but `own`. */
+/** Deep imports into any context but `own`, other than its ui.ts. */
 const otherContexts = (own) => ({
-  regex: `^@/features/(?!${own}(/|$))[^/]+/`,
+  regex: `^@/features/(?!${own}(/|$))[^/]+/(?!ui$)`,
   message:
-    "Import another context through its public API (@/features/<context>), not a file inside it.",
+    "Import another context through its public API (@/features/<context>, or @/features/<context>/ui for components), not a file inside it.",
 });
 
 const NO_FEATURES = {

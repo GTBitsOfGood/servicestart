@@ -23,7 +23,7 @@ import {
   MEMBER_TYPE_PLURAL_LABELS,
 } from "@/features/membership/lib/memberTypes";
 import { useEmailRecipients } from "@/features/communications";
-import { SendEmailModal } from "@/features/communications";
+import { SendEmailModal } from "@/features/communications/ui";
 import {
   EMAIL_SENT_MESSAGE,
   postOrganizationEmail,

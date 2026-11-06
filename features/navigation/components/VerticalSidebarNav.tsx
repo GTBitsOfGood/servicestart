@@ -8,7 +8,7 @@ import { SunsetLogo } from "@/features/navigation/components/Logo";
 import { useUnreadNotificationCount } from "@/features/communications";
 import { NavbarProps } from "@/features/navigation/navItems";
 import { UserProfileMenu } from "./UserProfileMenu";
-import { NotificationsSidebar } from "@/features/communications";
+import { NotificationsSidebar } from "@/features/communications/ui";
 
 export function VerticalSidebarNav({ items }: NavbarProps) {
   const pathname = usePathname();

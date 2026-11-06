@@ -7,15 +7,15 @@ import type {
 } from "@/features/dashboard/lib/schema";
 import type { WidgetProps } from "@/features/dashboard/widgets";
 import { cn } from "@/core/utils/utils";
-import { EventsWidget } from "@/features/events";
-import { NotificationsWidget as NotificationsDashboardWidget } from "@/features/communications";
-import { MemberRequestsWidget } from "@/features/membership";
-import { NewsletterWidget } from "@/features/communications";
-import { ApplicationStatusWidget } from "@/features/forms";
-import { FormsTodoWidget } from "@/features/forms";
-import { FormsCompletedWidget } from "@/features/forms";
-import { FormsProgressWidget } from "@/features/forms";
-import { WeeklyCalendarWidget } from "@/features/events";
+import { EventsWidget } from "@/features/events/ui";
+import { NotificationsWidget as NotificationsDashboardWidget } from "@/features/communications/ui";
+import { MemberRequestsWidget } from "@/features/membership/ui";
+import { NewsletterWidget } from "@/features/communications/ui";
+import { ApplicationStatusWidget } from "@/features/forms/ui";
+import { FormsTodoWidget } from "@/features/forms/ui";
+import { FormsCompletedWidget } from "@/features/forms/ui";
+import { FormsProgressWidget } from "@/features/forms/ui";
+import { WeeklyCalendarWidget } from "@/features/events/ui";
 
 const WIDGET_COMPONENTS: Record<WidgetId, ComponentType<WidgetProps>> = {
   events: EventsWidget,

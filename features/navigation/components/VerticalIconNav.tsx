@@ -6,7 +6,7 @@ import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/features/navigation/components/ProfileAvatar";
 import { useUnreadNotificationCount } from "@/features/communications";
 import { NavbarProps } from "@/features/navigation/navItems";
-import { NotificationsSidebar } from "@/features/communications";
+import { NotificationsSidebar } from "@/features/communications/ui";
 
 export function VerticalIconNav({ items }: NavbarProps) {
   const pathname = usePathname();
