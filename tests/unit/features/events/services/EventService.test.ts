@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/core/db";
-import { eventRsvps } from "@/lib/schema";
+import { eventRsvps } from "@/core/db/schema";
 import { EventService } from "@/features/events/services/EventService";
 import {
   addMember,

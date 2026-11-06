@@ -7,7 +7,7 @@ vi.mock("@/core/files/FileService", () => ({
 }));
 import { FileService } from "@/core/files/FileService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import { OrganizationConfigKey, FormStatus } from "@/lib/schema";
+import { OrganizationConfigKey, FormStatus } from "@/core/db/schema";
 import { app } from "@/features/app";
 import {
   addMember,

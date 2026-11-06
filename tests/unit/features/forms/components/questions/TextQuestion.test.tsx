@@ -2,7 +2,7 @@ import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import TextQuestion from "@/features/forms/components/questions/TextQuestion";
 import { fieldId } from "@/features/forms/components/types";
-import { FormComponentType } from "@/lib/schema";
+import { FormComponentType } from "@/core/db/schema";
 
 const NAME_ID = "00000000-0000-4000-8000-000000000001";
 

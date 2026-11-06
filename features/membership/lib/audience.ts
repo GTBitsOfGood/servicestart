@@ -1,4 +1,5 @@
-import { MemberType, OrganizationConfigKey } from "@/lib/schema";
+import { MemberType } from "@/features/membership/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 
 /**
  * Who a dashboard (and its navbar and header) is for. Member types only count

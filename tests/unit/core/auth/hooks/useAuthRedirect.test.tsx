@@ -5,7 +5,7 @@ import {
   useRedirectIfNotAdmin,
   useRedirectIfNotMember,
 } from "@/core/auth/hooks/useAuthRedirect";
-import { JoinRequestStatus } from "@/lib/schema";
+import { JoinRequestStatus } from "@/core/db/schema";
 
 const mockReplace = vi.fn();
 const mockUseSession = vi.fn();

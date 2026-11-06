@@ -13,7 +13,7 @@ import RequiredFormsPanel, {
 import ReviewStatusDropdown from "@/features/forms/components/ReviewStatusDropdown";
 import SubmissionSections from "@/features/forms/components/SubmissionSections";
 import type { FormComponent } from "@/features/forms/lib/schema";
-import { FormComponentType, SubmissionReviewStatus } from "@/lib/schema";
+import { FormComponentType, SubmissionReviewStatus } from "@/core/db/schema";
 
 const { $patch, $post, refresh } = vi.hoisted(() => ({
   $patch: vi.fn(),

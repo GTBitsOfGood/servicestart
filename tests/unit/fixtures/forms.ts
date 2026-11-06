@@ -1,4 +1,4 @@
-import { FormComponentType, FormStatus, MemberType } from "@/lib/schema";
+import { FormComponentType, FormStatus, MemberType } from "@/core/db/schema";
 import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import type {
   FormAnswerValue,

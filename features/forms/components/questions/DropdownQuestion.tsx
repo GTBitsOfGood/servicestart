@@ -9,7 +9,7 @@ import {
 } from "@/features/forms/components/types";
 import ThemedDropdown from "@/components/theme/ThemedDropdown";
 import type { FormComponentOfType } from "@/features/forms/lib/schema";
-import type { FormComponentType } from "@/lib/schema";
+import type { FormComponentType } from "@/features/forms/schema";
 import { cn } from "@/core/utils/utils";
 
 function setAttribute(element: Element, name: string, value?: string) {

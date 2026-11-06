@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { FormComponentType, MemberType } from "@/lib/schema";
+import { FormComponentType, MemberType } from "@/core/db/schema";
 import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import {
   FORM_ANSWER_VALUE_SCHEMAS,

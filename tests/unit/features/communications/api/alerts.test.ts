@@ -7,7 +7,7 @@ import {
   NotificationType,
   notifications,
   OrganizationConfigKey,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,

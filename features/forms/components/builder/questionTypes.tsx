@@ -9,7 +9,7 @@ import {
 } from "@/features/forms/components/builder/fields";
 import OptionsEditor from "@/features/forms/components/builder/OptionsEditor";
 import type { FormComponentConfigFor } from "@/features/forms/lib/schema";
-import { FormComponentType } from "@/lib/schema";
+import { FormComponentType } from "@/features/forms/schema";
 
 export type SettingsProps<T extends FormComponentType> = {
   questionKey: string;

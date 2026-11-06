@@ -2,7 +2,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import db from "@/core/db";
-import { members, users } from "@/lib/schema";
+import { members, users } from "@/core/db/schema";
 import { EmailService } from "@/core/email/EmailService";
 import { juno } from "@/core/files/junoClient";
 import { createOrganization } from "@/tests/unit/testUtils";

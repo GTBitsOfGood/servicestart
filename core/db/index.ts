@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import { relations, schema } from "@/lib/schema";
+import { relations, schema } from "@/core/db/schema";
 import { getDbUrl } from "@/core/utils/env";
 
 /**

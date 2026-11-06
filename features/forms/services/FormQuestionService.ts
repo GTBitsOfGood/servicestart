@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import db from "@/core/db";
-import { formComponents, forms, FormStatus } from "@/lib/schema";
+import { formComponents, forms, FormStatus } from "@/core/db/schema";
 import type { FormComponent } from "@/features/forms/lib/schema";
 import {
   FormError,

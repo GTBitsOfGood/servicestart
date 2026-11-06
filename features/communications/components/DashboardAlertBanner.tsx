@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import api from "@/core/api/client";
 import { useNotifications } from "@/features/communications/hooks/useNotifications";
-import { NotificationType } from "@/lib/schema";
+import { NotificationType } from "@/features/communications/schema";
 
 function notificationMessage(text: string) {
   const titleBreak = text.indexOf("\n");

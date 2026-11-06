@@ -10,7 +10,7 @@ import {
   eventTags,
   tags,
   EventVisibility,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import {
   addMember,
   buildTestUser,

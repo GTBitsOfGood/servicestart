@@ -8,7 +8,7 @@ import {
   users,
   FormStatus,
   FormComponentType,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { FormService } from "@/features/forms/services/FormService";
 import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import {

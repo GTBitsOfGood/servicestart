@@ -10,7 +10,7 @@ import {
   formUploads,
   forms,
   users,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import {
   isImageAnswer,
   type FormAnswerValue,

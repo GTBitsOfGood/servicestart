@@ -9,7 +9,7 @@ import WarningIcon from "@/components/WarningIcon";
 import ExitIcon from "@/components/ExitIcon";
 import PlusIcon from "@/components/PlusIcon";
 import { TagInput } from "@/components/TagInput";
-import { EventVisibility } from "@/lib/schema";
+import { EventVisibility } from "@/features/events/schema";
 import {
   buildEventPayload,
   type EventFormField,

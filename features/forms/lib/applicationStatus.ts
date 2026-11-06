@@ -1,5 +1,5 @@
 import { ApplicationStatusWidgetConfigSchema } from "@/features/dashboard/lib/schema";
-import { SubmissionReviewStatus } from "@/lib/schema";
+import { SubmissionReviewStatus } from "@/features/forms/schema";
 import type { MemberFormProgress } from "@/features/forms/services/FormProgressService";
 
 export type TimelineStepState = "complete" | "current" | "upcoming";

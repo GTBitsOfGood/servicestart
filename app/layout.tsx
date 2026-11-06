@@ -8,7 +8,7 @@ import NotificationToastProvider from "@/features/communications/components/Noti
 import { getSlugFromHost } from "@/core/tenant/clientAuthUtils";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import {
   getOrganizationThemeCssVariables,
   isCornerStyle,

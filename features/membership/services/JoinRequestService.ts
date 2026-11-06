@@ -11,7 +11,7 @@ import {
   joinRequestHistory,
   JoinRequestStatus,
   users,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 
 async function findByUserAndOrganization(
   userId: string,

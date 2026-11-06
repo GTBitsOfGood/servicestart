@@ -5,7 +5,7 @@ import {
   memberTypeFromAudience,
 } from "@/features/membership/lib/audience";
 import { getWidgetOptions } from "@/features/dashboard/widgets";
-import { MemberType, OrganizationConfigKey } from "@/lib/schema";
+import { MemberType, OrganizationConfigKey } from "@/core/db/schema";
 
 describe("getDashboardAudience", () => {
   it.each([

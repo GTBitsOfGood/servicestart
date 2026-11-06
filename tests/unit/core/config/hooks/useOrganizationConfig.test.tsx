@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/db/schema";
 import useOrganizationConfig from "@/core/config/hooks/useOrganizationConfig";
 import { DEFAULT_BRANDING, resolveBranding } from "@/core/config/branding";
 

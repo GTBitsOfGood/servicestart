@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { z } from "zod";
 import { requireAdmin } from "@/core/auth/authUtils";
 import { FormError } from "@/features/forms/lib/management";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 
 /*

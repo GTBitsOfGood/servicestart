@@ -5,7 +5,11 @@ import FormsTodoWidget, {
   FormsTodoWidgetView,
 } from "@/features/forms/widgets/FormsTodoWidget";
 import type { FormTodoCard } from "@/features/forms/widgets/formProgress";
-import { FormStatus, MemberType, OrganizationConfigKey } from "@/lib/schema";
+import {
+  FormStatus,
+  MemberType,
+  OrganizationConfigKey,
+} from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,

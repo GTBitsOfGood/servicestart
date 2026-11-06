@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import useOrganizationConfig from "@/core/config/hooks/useOrganizationConfig";
 import { cn } from "@/core/utils/utils";
 import OrganizationLogo from "@/features/navigation/components/OrganizationLogo";

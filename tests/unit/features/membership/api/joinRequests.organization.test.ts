@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/core/db";
-import { joinRequests, JoinRequestStatus } from "@/lib/schema";
+import { joinRequests, JoinRequestStatus } from "@/core/db/schema";
 import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
 import {
   buildTestUser,

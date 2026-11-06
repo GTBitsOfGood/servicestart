@@ -17,7 +17,8 @@ import {
   PostDashboardAlertSchema,
   type PostDashboardAlert,
 } from "@/features/communications/lib/alerts";
-import { MemberType, OrganizationConfigKey } from "@/lib/schema";
+import { MemberType } from "@/features/membership/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import SaveBanner from "@/components/SaveBanner";
 import BogButton from "@/components/theme/ThemedButton";
 

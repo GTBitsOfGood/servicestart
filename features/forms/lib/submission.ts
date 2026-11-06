@@ -3,7 +3,7 @@ import {
   FormComponentType,
   FormStatus,
   SubmissionReviewStatus,
-} from "@/lib/schema";
+} from "@/features/forms/schema";
 import type {
   FormAnswerValue,
   FormComponent,

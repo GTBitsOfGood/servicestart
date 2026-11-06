@@ -10,7 +10,7 @@ import TextQuestion from "@/features/forms/components/questions/TextQuestion";
 import YesNoQuestion from "@/features/forms/components/questions/YesNoQuestion";
 import type { QuestionProps } from "@/features/forms/components/types";
 import type { FormComponentOfType } from "@/features/forms/lib/schema";
-import { FormComponentType } from "@/lib/schema";
+import { FormComponentType } from "@/features/forms/schema";
 
 /**
  * How each component type renders. A new type needs an entry here, and its

@@ -2,7 +2,7 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/core/db";
-import { invitations, members } from "@/lib/schema";
+import { invitations, members } from "@/core/db/schema";
 import {
   InvitationService,
   InvitationStatus,

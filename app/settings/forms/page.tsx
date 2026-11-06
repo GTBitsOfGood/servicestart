@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { redirectIfNotAdmin } from "@/core/auth/authUtils";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { FormService } from "@/features/forms/services/FormService";
 import FormsClient from "@/features/forms/components/FormsClient";

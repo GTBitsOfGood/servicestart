@@ -16,7 +16,7 @@ import {
 } from "@/features/forms/components/builder/draft";
 import { QUESTION_TYPES } from "@/features/forms/components/builder/questionTypes";
 import type { FormComponent } from "@/features/forms/lib/schema";
-import { FormComponentType, FormStatus } from "@/lib/schema";
+import { FormComponentType, FormStatus } from "@/core/db/schema";
 
 const $put = vi.hoisted(() => vi.fn());
 

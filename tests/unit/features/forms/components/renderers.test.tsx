@@ -28,7 +28,7 @@ import type {
   FormComponent,
   FormComponentOfType,
 } from "@/features/forms/lib/schema";
-import { FormComponentType } from "@/lib/schema";
+import { FormComponentType } from "@/core/db/schema";
 
 const ID = "00000000-0000-4000-8000-000000000001";
 const UPLOAD_ID = "3b0f6a52-8c1d-4e7a-9f20-6d5c4b3a2910";

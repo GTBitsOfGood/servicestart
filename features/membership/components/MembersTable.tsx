@@ -17,7 +17,7 @@ import BogBanner from "@/components/bog/BogBanner/BogBanner";
 import BogButton from "@/components/theme/ThemedButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogDropdown from "@/components/bog/BogDropdown/BogDropdown";
-import { MemberType } from "@/lib/schema";
+import { MemberType } from "@/features/membership/schema";
 import {
   MEMBER_TYPE_LABELS,
   MEMBER_TYPE_PLURAL_LABELS,

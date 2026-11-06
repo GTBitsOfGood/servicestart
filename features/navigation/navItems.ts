@@ -3,7 +3,7 @@ import type { IconName } from "@/components/bog/BogIcon/BogIcon";
 import {
   OrganizationConfigKey,
   ToggleableOrganizationFeature,
-} from "@/lib/schema";
+} from "@/core/config/schema";
 
 export type Page = {
   label: string;

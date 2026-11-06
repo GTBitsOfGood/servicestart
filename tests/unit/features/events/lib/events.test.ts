@@ -9,7 +9,7 @@ import {
   type EventLike,
   type Viewer,
 } from "@/features/events/lib/events";
-import { EventVisibility } from "@/lib/schema";
+import { EventVisibility } from "@/core/db/schema";
 
 const ORG = "org-1";
 const OTHER_ORG = "org-2";

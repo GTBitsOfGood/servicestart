@@ -1,4 +1,4 @@
-import { MemberType } from "@/lib/schema";
+import { MemberType } from "@/features/membership/schema";
 
 /** How member types read in the app, e.g. in a member's Type column. */
 export const MEMBER_TYPE_LABELS: Record<MemberType, string> = {

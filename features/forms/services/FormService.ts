@@ -10,7 +10,7 @@ import {
   users,
   FormStatus,
   FormComponentType,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import { REVIEW_STATUS_LABELS } from "@/features/forms/lib/review";
 import { FORM_COMPONENT_CONFIG_SCHEMAS } from "@/features/forms/lib/schema";

@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/core/db";
-import { events, shiftRSVPs } from "@/lib/schema";
+import { events, shiftRSVPs } from "@/core/db/schema";
 import { ShiftService } from "@/features/events/services/ShiftService";
 import {
   addMember,

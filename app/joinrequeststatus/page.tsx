@@ -17,7 +17,7 @@ import {
   createJoinRequestIfNeeded,
   requireOrganizationOrRedirect,
 } from "@/core/auth/authUtils";
-import { JoinRequestStatus } from "@/lib/schema";
+import { JoinRequestStatus } from "@/features/membership/schema";
 import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
 import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";

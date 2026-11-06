@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { requireMembership } from "@/core/auth/authUtils";
 import { FileService } from "@/core/files/FileService";
 import { MediaService } from "@/features/media/services/MediaService";
-import { MediaType } from "@/lib/schema";
+import { MediaType } from "@/features/media/schema";
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const BLOCKED_IMAGE_TYPES = new Set(["image/svg+xml"]);

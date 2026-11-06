@@ -6,7 +6,8 @@ import BogTextInput from "@/components/theme/ThemedTextInput";
 import BogDropdown from "@/components/theme/ThemedDropdown";
 import BogChip from "@/components/bog/BogChip/BogChip";
 import NotificationItem from "@/features/communications/components/NotificationItem";
-import { JoinRequestStatus, NotificationType } from "@/lib/schema";
+import { JoinRequestStatus } from "@/features/membership/schema";
+import { NotificationType } from "@/features/communications/schema";
 import type {
   JoinRequestWithUser,
   JoinRequestHistoryEntry,

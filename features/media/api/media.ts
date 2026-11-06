@@ -10,7 +10,7 @@ import { MembersService } from "@/features/membership/services/MemberService";
 import { FileService } from "@/core/files/FileService";
 import { LocalFileService } from "@/core/files/LocalFileService";
 import { MediaService } from "@/features/media/services/MediaService";
-import { MediaType } from "@/lib/schema";
+import { MediaType } from "@/features/media/schema";
 import { paginationQuerySchema } from "@/core/api/apiUtils";
 
 const patchMediaSchema = z.object({

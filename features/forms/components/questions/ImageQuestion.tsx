@@ -18,7 +18,7 @@ import {
   isImageAnswer,
   type FormComponentOfType,
 } from "@/features/forms/lib/schema";
-import type { FormComponentType } from "@/lib/schema";
+import type { FormComponentType } from "@/features/forms/schema";
 
 const ACCEPTED_TYPES: readonly string[] = FORM_UPLOAD_CONTENT_TYPES;
 

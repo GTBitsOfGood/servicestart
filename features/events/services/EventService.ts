@@ -20,7 +20,7 @@ import {
   EventVisibility,
   members,
   tags,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import type { RegistrationBlock } from "@/features/events/lib/events";
 import { publicationBlock, deadlineBlock } from "@/features/events/lib/events";
 import { randomUUID } from "node:crypto";

@@ -5,9 +5,9 @@ import { paginationQuerySchema } from "@/core/api/apiUtils";
 import { requireMembership, requireAdmin } from "@/core/auth/authUtils";
 import { ForbiddenError } from "@/core/api/errors";
 import { NotificationService } from "@/features/communications/services/NotificationService";
-import { NotificationType } from "@/lib/schema";
+import { NotificationType } from "@/features/communications/schema";
 import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
-import { JoinRequestStatus } from "@/lib/schema";
+import { JoinRequestStatus } from "@/features/membership/schema";
 
 const notificationsQuerySchema = paginationQuerySchema.and(
   z.object({

@@ -8,7 +8,7 @@ import {
   parseLocation,
   type EventFormValues,
 } from "@/features/events/lib/eventFormUtils";
-import { EventVisibility } from "@/lib/schema";
+import { EventVisibility } from "@/core/db/schema";
 
 function completeValues(
   overrides: Partial<EventFormValues> = {},

@@ -13,7 +13,8 @@ import {
 import { memberTypeFromAudience } from "@/features/membership/lib/audience";
 import { ApplicationStatusWidgetConfigSchema } from "@/features/dashboard/lib/schema";
 import type { WidgetProps } from "@/features/dashboard/widgets";
-import { OrganizationConfigKey, SubmissionReviewStatus } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
+import { SubmissionReviewStatus } from "@/features/forms/schema";
 import { FormProgressService } from "@/features/forms/services/FormProgressService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { UserService } from "@/features/membership/services/UserService";

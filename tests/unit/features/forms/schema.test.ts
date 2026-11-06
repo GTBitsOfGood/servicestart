@@ -12,7 +12,7 @@ import {
   FormStatus,
   organizations,
   users,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { FormDefinitionSchema } from "@/features/forms/lib/schema";
 import {
   buildSampleAnswers,

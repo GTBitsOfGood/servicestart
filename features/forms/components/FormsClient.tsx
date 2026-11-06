@@ -4,7 +4,8 @@ import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import api from "@/core/api/client";
 import { useHydrated } from "@/core/utils/hooks/useHydrated";
-import { FormStatus, MemberType } from "@/lib/schema";
+import { FormStatus } from "@/features/forms/schema";
+import { MemberType } from "@/features/membership/schema";
 import {
   FormIdSchema,
   FormSettingsSchema,

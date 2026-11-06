@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it, vi } from "vitest";
 import db from "@/core/db";
-import { media } from "@/lib/schema";
+import { media } from "@/core/db/schema";
 import {
   addMember,
   buildTestUser,

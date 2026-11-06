@@ -1,6 +1,6 @@
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import type { IconName } from "@/components/bog/BogIcon/BogIcon";
-import { NotificationType } from "@/lib/schema";
+import { NotificationType } from "@/features/communications/schema";
 
 const TAG_CONFIG: Record<
   NotificationType,

@@ -6,7 +6,7 @@ import {
   members,
   users,
   OrganizationConfigKey,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { AuthMessage } from "@/core/auth/components/authConstants";
 import { InvitationStatus } from "@/features/membership/services/InvitationService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";

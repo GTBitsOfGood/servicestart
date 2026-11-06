@@ -14,7 +14,7 @@ import {
   MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import type { MemberFormProgress } from "@/features/forms/services/FormProgressService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { progressRow } from "@/tests/unit/fixtures/formProgress";

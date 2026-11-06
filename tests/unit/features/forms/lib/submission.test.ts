@@ -4,7 +4,7 @@ import {
   FormComponentType,
   FormStatus,
   SubmissionReviewStatus,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import type { FormComponent } from "@/features/forms/lib/schema";
 import {

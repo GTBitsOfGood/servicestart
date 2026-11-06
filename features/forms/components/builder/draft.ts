@@ -4,7 +4,7 @@ import {
   type FormComponent,
   type FormQuestionInput,
 } from "@/features/forms/lib/schema";
-import { FormComponentType } from "@/lib/schema";
+import { FormComponentType } from "@/features/forms/schema";
 
 /** A question while it's being edited in the builder. */
 export type DraftQuestion = {

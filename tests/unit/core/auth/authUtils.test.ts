@@ -19,7 +19,7 @@ import {
   members,
   MemberType,
   OrganizationConfigKey,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { EmailService } from "@/core/email/EmailService";
 import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";

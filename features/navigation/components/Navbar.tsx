@@ -6,7 +6,7 @@ import {
   MobileSidebarNav,
   type MobileDrawerSide,
 } from "@/features/navigation/components/MobileSidebarNav";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import OrganizationConfigService, {
   ALLOWED_NAVBAR_VARIANTS,
   ALLOWED_MOBILE_NAVBAR_VARIANTS,

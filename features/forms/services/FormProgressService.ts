@@ -6,7 +6,7 @@ import {
   forms,
   type MemberType,
   type SubmissionReviewStatus,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { getAssignedMemberTypes, getDueAt } from "@/features/forms/lib/schema";
 import {
   getFormAvailability,

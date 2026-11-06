@@ -5,7 +5,7 @@ import { auth } from "@/core/auth/auth";
 import {
   OrganizationConfigKey,
   ORGANIZATION_CONFIG_KEY_VALUES,
-} from "@/lib/schema";
+} from "@/core/config/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
 import { MembersService } from "@/features/membership/services/MemberService";

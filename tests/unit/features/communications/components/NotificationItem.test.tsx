@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import NotificationItem, {
   type NotificationListItem,
 } from "@/features/communications/components/NotificationItem";
-import { JoinRequestStatus } from "@/lib/schema";
+import { JoinRequestStatus } from "@/core/db/schema";
 
 vi.mock("@/components/bog/BogIcon/BogIcon", () => ({
   default: ({ name }: { name: string }) => <span>{name}</span>,

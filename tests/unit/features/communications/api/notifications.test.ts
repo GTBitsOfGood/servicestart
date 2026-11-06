@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { and, eq } from "drizzle-orm";
 import db from "@/core/db";
-import { notifications, NotificationType } from "@/lib/schema";
+import { notifications, NotificationType } from "@/core/db/schema";
 import {
   addMember,
   buildTestUser,

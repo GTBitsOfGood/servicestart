@@ -1,4 +1,4 @@
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 
 export const THEME_FONT_VALUES = [
   "fredoka",

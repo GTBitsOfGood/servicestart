@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/core/db";
-import { members, MemberType, OrganizationConfigKey } from "@/lib/schema";
+import { members, MemberType, OrganizationConfigKey } from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/core/db";
-import { media } from "@/lib/schema";
+import { media } from "@/core/db/schema";
 import { MediaService } from "@/features/media/services/MediaService";
 import { createOrganization } from "@/tests/unit/testUtils";
 

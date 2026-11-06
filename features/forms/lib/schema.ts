@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { FormComponentType, FormStatus, MemberType } from "@/lib/schema";
+import { FormComponentType, FormStatus } from "@/features/forms/schema";
+import { MemberType } from "@/features/membership/schema";
 
 /*
  * Shared contract for forms. The builder, the renderer, the submission route,

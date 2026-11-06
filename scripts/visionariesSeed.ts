@@ -9,7 +9,7 @@ import {
   OrganizationConfigKey,
   SubmissionReviewStatus,
   schema,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import type { DashboardHeaderConfig } from "@/features/dashboard/lib/header";
 import type { OrganizationFooter } from "@/features/navigation/footer";

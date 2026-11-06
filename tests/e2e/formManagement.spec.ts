@@ -6,7 +6,7 @@ import {
 } from "./testUtils";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { FormService } from "@/features/forms/services/FormService";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/db/schema";
 import {
   createForm,
   createFormComponents,

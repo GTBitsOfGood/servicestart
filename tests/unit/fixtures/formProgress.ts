@@ -1,4 +1,4 @@
-import { FormStatus, type SubmissionReviewStatus } from "@/lib/schema";
+import { FormStatus, type SubmissionReviewStatus } from "@/core/db/schema";
 import type { MemberFormProgress } from "@/features/forms/services/FormProgressService";
 
 /** A row as FormProgressService.listForMember returns it, keyed by formId. */

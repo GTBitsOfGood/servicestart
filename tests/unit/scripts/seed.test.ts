@@ -23,7 +23,7 @@ import {
   joinRequests,
   joinRequestHistory,
   JoinRequestStatus,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { FormDefinitionSchema } from "@/features/forms/lib/schema";
 import { FormProgressService } from "@/features/forms/services/FormProgressService";
 import { FormQuestionService } from "@/features/forms/services/FormQuestionService";

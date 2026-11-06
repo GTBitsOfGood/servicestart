@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import ThemedDropdown from "@/components/theme/ThemedDropdown";
 import api from "@/core/api/client";
 import { REVIEW_STATUS_LABELS } from "@/features/forms/lib/review";
-import { SubmissionReviewStatus } from "@/lib/schema";
+import { SubmissionReviewStatus } from "@/features/forms/schema";
 
 const STATUSES = Object.values(SubmissionReviewStatus);
 

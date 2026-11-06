@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import getNavbarItems from "@/features/navigation/getNavbarItems";
 import type { NavbarConfig } from "@/features/navigation/navbarConfig";
-import { MemberType, OrganizationConfigKey } from "@/lib/schema";
+import { MemberType, OrganizationConfigKey } from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,

@@ -7,7 +7,7 @@ import {
   fetchNotifications,
   fetchUnreadCount,
 } from "@/features/communications/lib/notifications";
-import type { NotificationType } from "@/lib/schema";
+import type { NotificationType } from "@/features/communications/schema";
 import authClient from "@/core/auth/authClient";
 import { publishUnreadNotificationCount } from "@/features/communications/lib/notificationEvents";
 

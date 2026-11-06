@@ -6,7 +6,7 @@ import EditProfileButton from "@/features/membership/components/EditProfileButto
 import HoursTab from "@/features/events/components/HoursTab";
 import SaveBanner from "@/components/SaveBanner";
 import db from "@/core/db";
-import { organizations } from "@/lib/schema";
+import { organizations } from "@/core/tenant/schema";
 import { inArray } from "drizzle-orm";
 import { requireSessionOrRedirect } from "@/core/auth/authUtils";
 

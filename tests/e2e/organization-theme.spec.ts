@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/db/schema";
 import OrganizationConfigService from "@/core/config/OrganizationConfigService";
 import {
   addMember,

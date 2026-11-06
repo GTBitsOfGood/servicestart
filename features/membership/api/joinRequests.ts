@@ -1,4 +1,7 @@
-import { JOIN_REQUEST_STATUS_VALUES, JoinRequestStatus } from "@/lib/schema";
+import {
+  JOIN_REQUEST_STATUS_VALUES,
+  JoinRequestStatus,
+} from "@/features/membership/schema";
 import { Hono } from "hono";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";

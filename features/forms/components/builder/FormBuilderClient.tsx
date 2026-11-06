@@ -24,7 +24,7 @@ import api from "@/core/api/client";
 import { useUnsavedChangesGuard } from "@/core/utils/hooks/useUnsavedChangesGuard";
 import { FORM_QUESTIONS_MAX } from "@/features/forms/lib/management";
 import type { FormComponent } from "@/features/forms/lib/schema";
-import { FormComponentType, FormStatus } from "@/lib/schema";
+import { FormComponentType, FormStatus } from "@/features/forms/schema";
 
 type FormBuilderClientProps = {
   formId: string;

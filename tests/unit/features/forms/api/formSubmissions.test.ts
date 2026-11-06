@@ -12,7 +12,7 @@ import {
   formSubmissions,
   formUploads,
   media,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { FORM_UPLOAD_MAX_BYTES } from "@/features/forms/lib/constants";
 import type { FormSettings } from "@/features/forms/lib/schema";
 import { FileService } from "@/core/files/FileService";

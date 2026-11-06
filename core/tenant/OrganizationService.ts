@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import db from "@/core/db";
-import { organizations } from "@/lib/schema";
+import { organizations } from "@/core/tenant/schema";
 
 async function findBySlug(slug: string) {
   const [organization] = await db

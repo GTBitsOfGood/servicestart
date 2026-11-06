@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { JoinRequestStatus } from "@/lib/schema";
+import { JoinRequestStatus } from "@/core/db/schema";
 import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
 import {
   addMember,

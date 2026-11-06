@@ -7,7 +7,7 @@ import {
   shifts,
   eventHosts,
   EventVisibility,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import {
   addMember,
   buildTestUser,

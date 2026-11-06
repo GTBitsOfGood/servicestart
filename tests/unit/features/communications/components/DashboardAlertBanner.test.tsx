@@ -6,7 +6,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { NotificationType } from "@/lib/schema";
+import { NotificationType } from "@/core/db/schema";
 
 const mocks = vi.hoisted(() => ({
   patch: vi.fn(),

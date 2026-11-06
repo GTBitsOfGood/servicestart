@@ -6,7 +6,7 @@ import {
   NotificationType,
   members,
   type MemberType,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { MembersService } from "@/features/membership/services/MemberService";
 
 const ADMIN_ROLES = ["admin", "owner"];

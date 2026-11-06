@@ -1,7 +1,7 @@
 "use client";
 
 import useOrganizationConfig from "@/core/config/hooks/useOrganizationConfig";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 
 const DEFAULT_TAGLINE = "Welcome";
 

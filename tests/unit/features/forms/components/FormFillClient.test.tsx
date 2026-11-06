@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import FormFillClient from "@/features/forms/components/FormFillClient";
 import type { FormDefinition } from "@/features/forms/lib/schema";
-import { FormComponentType } from "@/lib/schema";
+import { FormComponentType } from "@/core/db/schema";
 
 const $post = vi.hoisted(() => vi.fn());
 

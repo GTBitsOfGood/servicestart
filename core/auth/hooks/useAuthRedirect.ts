@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/core/api/client";
 import authClient from "@/core/auth/authClient";
-import { JoinRequestStatus } from "@/lib/schema";
+import { JoinRequestStatus } from "@/core/db/schema";
 import { useActiveOrganization } from "@/core/tenant/hooks/useActiveOrganization";
 
 type RedirectGuardOptions = {

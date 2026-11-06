@@ -17,14 +17,18 @@ import { findOrganizationByRequestHost } from "@/core/tenant/organizationFromHos
 import { UserService } from "@/features/membership/services/UserService";
 import { User } from "better-auth";
 import db from "@/core/db";
-import { users } from "@/lib/schema";
+import { users } from "@/core/auth/schema";
 import {
   getSlugFromHost,
   INVITATION_ID_HEADER,
 } from "@/core/tenant/clientAuthUtils";
 // import { User } from "better-auth/client";
 import { NotificationService } from "@/features/communications/services/NotificationService";
-import { JoinRequestStatus, MemberType, NotificationType } from "@/lib/schema";
+import {
+  JoinRequestStatus,
+  MemberType,
+  NotificationType,
+} from "@/core/db/schema";
 
 type AppSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 

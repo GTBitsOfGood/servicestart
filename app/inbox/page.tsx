@@ -8,7 +8,7 @@ import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogTextInput from "@/components/theme/ThemedTextInput";
 import NotificationItem from "@/features/communications/components/NotificationItem";
 import { useNotifications } from "@/features/communications/hooks/useNotifications";
-import { NotificationType } from "@/lib/schema";
+import { NotificationType } from "@/features/communications/schema";
 import { cn } from "@/core/utils/utils";
 import authClient from "@/core/auth/authClient";
 import { useActiveOrganization } from "@/core/tenant/hooks/useActiveOrganization";

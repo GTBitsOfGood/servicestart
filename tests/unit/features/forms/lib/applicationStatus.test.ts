@@ -7,7 +7,7 @@ import {
   NO_APPLICATION_MESSAGE,
 } from "@/features/forms/lib/applicationStatus";
 import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";
-import { SubmissionReviewStatus } from "@/lib/schema";
+import { SubmissionReviewStatus } from "@/core/db/schema";
 import { progressRow } from "@/tests/unit/fixtures/formProgress";
 
 const CONFIG = { formId: "camp-app", steps: DEFAULT_APPLICATION_STATUS_STEPS };

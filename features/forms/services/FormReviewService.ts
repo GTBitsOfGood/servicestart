@@ -7,7 +7,7 @@ import {
   users,
   MemberType,
   SubmissionReviewStatus,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { getAcceptedMemberType } from "@/features/forms/lib/schema";
 import { REVIEW_STATUS_LABELS } from "@/features/forms/lib/review";
 import { FormService } from "@/features/forms/services/FormService";

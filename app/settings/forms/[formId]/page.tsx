@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 import { FormError } from "@/features/forms/lib/management";
 import { FormIdSchema } from "@/features/forms/lib/schema";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import { FormQuestionService } from "@/features/forms/services/FormQuestionService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import FormBuilderClient from "@/features/forms/components/builder/FormBuilderClient";

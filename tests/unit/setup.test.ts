@@ -1,5 +1,5 @@
 import db from "@/core/db";
-import { users } from "@/lib/schema";
+import { users } from "@/core/db/schema";
 import { describe, expect, it } from "vitest";
 
 describe("beforeEach", () => {

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/core/auth/authUtils";
 import { NotFoundError } from "@/core/api/errors";
 import { FormIdSchema } from "@/features/forms/lib/schema";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import {
   FormNotOpenError,
   InformationRequestNotFoundError,

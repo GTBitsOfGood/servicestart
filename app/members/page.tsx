@@ -4,11 +4,8 @@ import { auth } from "@/core/auth/auth";
 import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import {
-  MEMBER_TYPE_VALUES,
-  MemberType,
-  OrganizationConfigKey,
-} from "@/lib/schema";
+import { MEMBER_TYPE_VALUES, MemberType } from "@/features/membership/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import MembersTable from "@/features/membership/components/MembersTable";
 
 const DEFAULT_PAGE_SIZE = 20;

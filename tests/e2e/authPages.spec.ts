@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { and, eq, like } from "drizzle-orm";
 import db from "@/core/db";
-import { verifications } from "@/lib/schema";
+import { verifications } from "@/core/db/schema";
 import { AuthMessage } from "@/core/auth/components/authConstants";
 import { AuthFieldError } from "@/core/auth/authValidation";
 import { buildTestUser, signUpAndGetSession } from "../unit/testUtils";

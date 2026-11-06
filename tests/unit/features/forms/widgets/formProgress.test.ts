@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { FormStatus, SubmissionReviewStatus } from "@/lib/schema";
+import { FormStatus, SubmissionReviewStatus } from "@/core/db/schema";
 import { summarizeFormProgress } from "@/features/forms/widgets/formProgress";
 import type { MemberFormProgress } from "@/features/forms/services/FormProgressService";
 

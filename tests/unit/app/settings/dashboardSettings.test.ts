@@ -8,7 +8,7 @@ import AdminDashboardSettingsPage from "@/app/settings/admindashboard/page";
 import DashboardSettingsPage from "@/app/settings/dashboard/page";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import { ForbiddenError } from "@/core/api/errors";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/db/schema";
 import { DEFAULT_BRANDING, resolveBranding } from "@/core/config/branding";
 
 describe("resolveBranding", () => {

@@ -4,7 +4,7 @@ import {
   getRequiredFormStatus,
   splitSections,
 } from "@/features/forms/lib/review";
-import { FormComponentType, SubmissionReviewStatus } from "@/lib/schema";
+import { FormComponentType, SubmissionReviewStatus } from "@/core/db/schema";
 
 describe("splitSections", () => {
   it("starts a section at each header", () => {

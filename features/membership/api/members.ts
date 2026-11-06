@@ -5,7 +5,7 @@ import { requireAdmin } from "@/core/auth/authUtils";
 import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { paginationQuerySchema } from "@/core/api/apiUtils";
-import { MemberType } from "@/lib/schema";
+import { MemberType } from "@/features/membership/schema";
 
 const activityQuerySchema = z.object({
   userIds: z

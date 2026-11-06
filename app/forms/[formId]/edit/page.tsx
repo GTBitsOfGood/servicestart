@@ -5,7 +5,7 @@ import FormPageLayout from "@/features/forms/components/FormPageLayout";
 import { auth } from "@/core/auth/auth";
 import { getSlugFromHost } from "@/core/tenant/clientAuthUtils";
 import { FormIdSchema } from "@/features/forms/lib/schema";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import { FormSubmissionService } from "@/features/forms/services/FormSubmissionService";
 import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";

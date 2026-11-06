@@ -5,7 +5,7 @@ import OrganizationNotFound from "@/core/tenant/components/OrganizationNotFound"
 import UnauthenticatedOrganizationLogo from "@/features/navigation/components/UnauthenticatedOrganizationLogo";
 import { resolveBranding } from "@/core/config/branding";
 import useOrganizationConfig from "@/core/config/hooks/useOrganizationConfig";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 
 const AUTH_CONFIG_KEYS = [
   OrganizationConfigKey.PrimaryColor,

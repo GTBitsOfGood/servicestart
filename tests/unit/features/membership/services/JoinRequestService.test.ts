@@ -8,7 +8,7 @@ import {
   JoinRequestStatus,
   MemberType,
   OrganizationConfigKey,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
 import { MembersService } from "@/features/membership/services/MemberService";

@@ -7,7 +7,7 @@ import {
   OrganizationConfigKey,
   formAnswers,
   formSubmissions,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { FormService } from "@/features/forms/services/FormService";
 import {

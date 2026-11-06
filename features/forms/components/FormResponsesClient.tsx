@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import api from "@/core/api/client";
 import { useHydrated } from "@/core/utils/hooks/useHydrated";
-import { SubmissionReviewStatus } from "@/lib/schema";
+import { SubmissionReviewStatus } from "@/features/forms/schema";
 import {
   REVIEW_STATUS_LABELS,
   REVIEW_STATUS_CHIP_COLORS,

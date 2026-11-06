@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import db from "@/core/db";
-import { announcements } from "@/lib/schema";
+import { announcements } from "@/core/db/schema";
 import { EmailService } from "@/core/email/EmailService";
 import {
   addMember,

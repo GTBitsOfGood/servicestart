@@ -9,7 +9,7 @@ import {
   type QuestionProps,
 } from "@/features/forms/components/types";
 import type { FormComponentOfType } from "@/features/forms/lib/schema";
-import type { FormComponentType } from "@/lib/schema";
+import type { FormComponentType } from "@/features/forms/schema";
 
 function selectionHint(minSelected?: number, maxSelected?: number) {
   if (minSelected !== undefined && maxSelected !== undefined)

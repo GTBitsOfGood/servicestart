@@ -1,4 +1,4 @@
-import type { MemberType, OrganizationConfigKey } from "@/lib/schema";
+import type { MemberType, OrganizationConfigKey } from "@/core/db/schema";
 
 export type NavbarConfig = {
   variant: string;

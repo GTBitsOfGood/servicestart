@@ -5,7 +5,7 @@ import {
   MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { VISIONARIES_APPLICATION_FORM } from "@/tests/unit/fixtures/forms";
 import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";

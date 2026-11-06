@@ -1,5 +1,5 @@
 import { createInsertSchema } from "drizzle-orm/zod";
-import { announcements } from "@/lib/schema";
+import { announcements } from "@/core/db/schema";
 import { z } from "zod";
 import db from "@/core/db";
 import { randomUUID } from "node:crypto";

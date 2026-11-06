@@ -15,7 +15,7 @@ import {
   FormStatus,
   users,
   OrganizationConfigKey,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { main as seed } from "./seed";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 

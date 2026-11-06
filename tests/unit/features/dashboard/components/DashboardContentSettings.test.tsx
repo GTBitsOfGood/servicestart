@@ -8,7 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { MemberType, OrganizationConfigKey } from "@/lib/schema";
+import { MemberType, OrganizationConfigKey } from "@/core/db/schema";
 
 const mocks = vi.hoisted(() => ({
   putConfig: vi.fn(),

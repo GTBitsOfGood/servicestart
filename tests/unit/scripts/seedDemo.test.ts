@@ -9,7 +9,7 @@ import {
   FormStatus,
   OrganizationConfigKey,
   users,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { DEMO_FORM, seedDemo } from "@/scripts/seedDemo";
 import { FormSubmissionService } from "@/features/forms/services/FormSubmissionService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";

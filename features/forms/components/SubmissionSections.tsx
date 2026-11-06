@@ -4,7 +4,7 @@ import type {
   FormAnswerValue,
   FormDefinition,
 } from "@/features/forms/lib/schema";
-import { FormComponentType } from "@/lib/schema";
+import { FormComponentType } from "@/features/forms/schema";
 
 /**
  * A submission's answers with one read-only response per section, laid out

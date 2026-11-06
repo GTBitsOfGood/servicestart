@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { eq } from "drizzle-orm";
 import db from "@/core/db";
-import { organizations, users } from "@/lib/schema";
+import { organizations, users } from "@/core/db/schema";
 import { buildTestUser, createOrganization } from "../unit/testUtils";
 
 async function ensureOrganization(slug: string) {

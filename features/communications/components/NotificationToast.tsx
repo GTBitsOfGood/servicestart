@@ -5,7 +5,8 @@ import Link from "next/link";
 import { Toast } from "radix-ui";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogModal from "@/components/theme/ThemedModal";
-import { NotificationType, JoinRequestStatus } from "@/lib/schema";
+import { NotificationType } from "@/features/communications/schema";
+import { JoinRequestStatus } from "@/features/membership/schema";
 import { formatTime } from "@/core/utils/utils";
 import api from "@/core/api/client";
 import type {

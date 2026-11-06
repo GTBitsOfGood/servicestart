@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, eq } from "drizzle-orm";
 import db from "@/core/db";
-import { media } from "@/lib/schema";
+import { media } from "@/core/db/schema";
 import type { InferInsertModel } from "drizzle-orm";
 
 export type MediaInsertInput = InferInsertModel<typeof media>;

@@ -20,7 +20,7 @@ import {
   formSubmissions,
   formAnswers,
   formUploads,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { beforeAll, beforeEach, afterAll } from "vitest";
 import { execSync } from "child_process";
 import { randomUUID } from "node:crypto";

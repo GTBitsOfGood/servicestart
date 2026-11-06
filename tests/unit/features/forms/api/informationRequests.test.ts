@@ -9,7 +9,7 @@ import {
   MemberType,
   NotificationType,
   OrganizationConfigKey,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import {
   addMember,
   buildTestUser,

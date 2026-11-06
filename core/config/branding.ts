@@ -1,4 +1,4 @@
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 
 export const DEFAULT_BRANDING = {
   [OrganizationConfigKey.PrimaryColor]: "#FD8033",

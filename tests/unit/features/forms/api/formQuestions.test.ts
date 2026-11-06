@@ -7,7 +7,7 @@ import {
   FormComponentType,
   FormStatus,
   OrganizationConfigKey,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import type { FormQuestionInput as QuestionInput } from "@/features/forms/lib/schema";
 import {
   addMember,

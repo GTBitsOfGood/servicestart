@@ -7,7 +7,7 @@ import {
   FormStatus,
   OrganizationConfigKey,
   SubmissionReviewStatus,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import {
   addMember,
   buildTestUser,

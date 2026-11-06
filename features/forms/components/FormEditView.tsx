@@ -9,7 +9,7 @@ import {
   canEditSubmission,
   getFormAvailability,
 } from "@/features/forms/lib/submission";
-import type { SubmissionReviewStatus } from "@/lib/schema";
+import type { SubmissionReviewStatus } from "@/features/forms/schema";
 
 type FormEditViewProps = {
   definition: Pick<

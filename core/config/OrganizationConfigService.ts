@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import type { z } from "zod";
 import db from "@/core/db";
-import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
+import {
+  organizationConfig,
+  OrganizationConfigKey,
+} from "@/core/config/schema";
 import { DashboardLayoutSchema } from "@/features/dashboard/lib/schema";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import {

@@ -10,7 +10,7 @@ import {
   MemberType,
   NotificationType,
   OrganizationConfigKey,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { NotificationService } from "@/features/communications/services/NotificationService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {

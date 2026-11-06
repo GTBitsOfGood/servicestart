@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { and, eq } from "drizzle-orm";
 import db from "@/core/db";
 import { auth, tenantTrustedOrigins } from "@/core/auth/auth";
-import { eventRsvps, members, MemberType, shiftRSVPs } from "@/lib/schema";
+import { eventRsvps, members, MemberType, shiftRSVPs } from "@/core/db/schema";
 import { EmailService } from "@/core/email/EmailService";
 import {
   addMember,

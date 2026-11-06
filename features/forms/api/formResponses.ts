@@ -4,7 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { requireAdmin } from "@/core/auth/authUtils";
 import { NotFoundError } from "@/core/api/errors";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import { FormIdSchema } from "@/features/forms/lib/schema";
 import { FormError } from "@/features/forms/lib/management";
 import {

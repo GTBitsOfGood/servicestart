@@ -6,7 +6,7 @@ import {
   REVIEW_STATUS_CHIP_COLORS,
   REVIEW_STATUS_LABELS,
 } from "@/features/forms/lib/review";
-import { SubmissionReviewStatus } from "@/lib/schema";
+import { SubmissionReviewStatus } from "@/features/forms/schema";
 
 /**
  * Theme-token colors (through BogChip's CSS variables) where the shared chip

@@ -11,7 +11,7 @@ import { shiftErrorResponse } from "@/features/events/api/shifts/errors";
 import { TagService } from "@/features/events/services/TagService";
 import { paginationQuerySchema } from "@/core/api/apiUtils";
 import { ForbiddenError } from "@/core/api/errors";
-import { EventVisibility } from "@/lib/schema";
+import { EventVisibility } from "@/features/events/schema";
 import {
   canViewEvent,
   eventCreateSchema,

@@ -9,7 +9,7 @@ import {
   shifts,
   shiftRSVPs,
   users,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];

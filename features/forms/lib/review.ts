@@ -1,4 +1,7 @@
-import { FormComponentType, SubmissionReviewStatus } from "@/lib/schema";
+import {
+  FormComponentType,
+  SubmissionReviewStatus,
+} from "@/features/forms/schema";
 import type { FormComponent } from "@/features/forms/lib/schema";
 import type { MemberFormProgress } from "@/features/forms/services/FormProgressService";
 import { z } from "zod";

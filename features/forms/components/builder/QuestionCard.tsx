@@ -17,7 +17,7 @@ import {
   QUESTION_TYPES,
   type SettingsProps,
 } from "@/features/forms/components/builder/questionTypes";
-import { FormComponentType } from "@/lib/schema";
+import { FormComponentType } from "@/features/forms/schema";
 import { cn } from "@/core/utils/utils";
 
 type QuestionCardProps = {

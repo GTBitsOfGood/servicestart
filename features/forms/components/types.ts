@@ -1,5 +1,5 @@
 import type { FocusEvent } from "react";
-import type { FormComponentType } from "@/lib/schema";
+import type { FormComponentType } from "@/features/forms/schema";
 import type {
   FormAnswerValue,
   FormAnswerValueFor,

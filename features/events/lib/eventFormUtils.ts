@@ -1,4 +1,4 @@
-import { EventVisibility } from "@/lib/schema";
+import { EventVisibility } from "@/features/events/schema";
 import { parseDurationMinutes } from "@/features/events/lib/events";
 
 export type EventFormValues = {

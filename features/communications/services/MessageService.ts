@@ -1,5 +1,5 @@
 import db from "@/core/db";
-import { messageRecipients, messages } from "@/lib/schema";
+import { messageRecipients, messages } from "@/core/db/schema";
 import { EmailService } from "@/core/email/EmailService";
 import { MembersService } from "@/features/membership/services/MemberService";
 

@@ -21,7 +21,7 @@ import {
   members,
   MemberType,
   OrganizationConfigKey,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 
 test.describe("Members Page", () => {
   test("admin-only access: guests, pending join, and non-admins are redirected", async ({

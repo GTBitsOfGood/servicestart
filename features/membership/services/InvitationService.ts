@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, gt, sql } from "drizzle-orm";
 import db from "@/core/db";
-import { invitations, members, organizations } from "@/lib/schema";
+import { invitations, members, organizations } from "@/core/db/schema";
 
 /** Statuses BetterAuth's organization plugin writes to `invitations.status`. */
 export const InvitationStatus = {

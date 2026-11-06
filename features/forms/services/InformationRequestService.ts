@@ -8,7 +8,7 @@ import {
   members,
   notifications,
   NotificationType,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 
 const REPEAT_WINDOW_MS = 24 * 60 * 60 * 1000;
 

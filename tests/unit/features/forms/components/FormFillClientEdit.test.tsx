@@ -7,7 +7,7 @@ import {
   FormComponentType,
   FormStatus,
   SubmissionReviewStatus,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 
 const $put = vi.hoisted(() => vi.fn());
 

@@ -8,7 +8,7 @@ import {
   NotificationType,
   OrganizationConfigKey as Key,
   schema,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import type { FormDefinition } from "@/features/forms/lib/schema";
 import {

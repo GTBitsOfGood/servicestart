@@ -1,5 +1,5 @@
 import api from "@/core/api/client";
-import type { NotificationType } from "@/lib/schema";
+import type { NotificationType } from "@/features/communications/schema";
 
 export type ReadFilter = "all" | "read" | "unread";
 

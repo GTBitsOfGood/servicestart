@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import db from "@/core/db";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import { organizationConfig, OrganizationConfigKey } from "@/lib/schema";
+import { organizationConfig, OrganizationConfigKey } from "@/core/db/schema";
 import { createOrganization } from "@/tests/unit/testUtils";
 import {
   DEFAULT_ADMIN_LAYOUT,

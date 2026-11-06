@@ -7,7 +7,7 @@ import {
   canEditSubmission,
   type FormAvailability,
 } from "@/features/forms/lib/submission";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import {
   FormProgressService,
   type MemberFormProgress,

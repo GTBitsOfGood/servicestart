@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import db from "@/core/db";
-import { members, messages, users } from "@/lib/schema";
+import { members, messages, users } from "@/core/db/schema";
 import { EmailService } from "@/core/email/EmailService";
 import { MessageService } from "@/features/communications/services/MessageService";
 import { MembersService } from "@/features/membership/services/MemberService";

@@ -29,7 +29,7 @@ import {
   getAnswerErrors,
   parseNumberInput,
 } from "@/features/forms/lib/submission";
-import { FormComponentType } from "@/lib/schema";
+import { FormComponentType } from "@/features/forms/schema";
 
 export type DynamicFormSubmitResult =
   | { ok: true }

@@ -6,7 +6,7 @@ import {
 } from "./testUtils";
 import { buildTestUser, signUpAndGetSession } from "../unit/testUtils";
 import { DEFAULT_BRANDING } from "@/core/config/branding";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/db/schema";
 
 function hexToRgb(hex: string): string {
   const normalized = hex.replace("#", "");

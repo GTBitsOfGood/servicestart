@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EventVisibility } from "@/lib/schema";
+import { EventVisibility } from "@/features/events/schema";
 
 // Publication, visibility, and registration rules shared by the API routes,
 // the server pages, and the registration server actions.

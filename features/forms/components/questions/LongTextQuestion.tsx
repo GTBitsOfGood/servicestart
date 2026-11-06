@@ -9,7 +9,7 @@ import {
 } from "@/features/forms/components/types";
 import { countWords } from "@/features/forms/lib/submission";
 import type { FormComponentOfType } from "@/features/forms/lib/schema";
-import type { FormComponentType } from "@/lib/schema";
+import type { FormComponentType } from "@/features/forms/schema";
 
 function wordRange(minWords?: number, maxWords?: number) {
   if (minWords !== undefined && maxWords !== undefined) {

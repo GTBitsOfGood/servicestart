@@ -10,7 +10,7 @@ import {
   formComponents,
   formSubmissions,
   forms,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import type { FormSettings } from "@/features/forms/lib/schema";
 import {
   DuplicateSubmissionError,

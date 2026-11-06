@@ -2,7 +2,7 @@ import { and, count, eq, inArray } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 import db from "@/core/db";
-import { events, members, shifts, shiftRSVPs } from "@/lib/schema";
+import { events, members, shifts, shiftRSVPs } from "@/core/db/schema";
 import {
   canViewEvent,
   deadlineBlock,

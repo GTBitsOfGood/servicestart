@@ -26,7 +26,8 @@ import {
   getAnswerErrors,
   getFormAvailability,
 } from "@/features/forms/lib/submission";
-import { FormComponentType, OrganizationConfigKey } from "@/lib/schema";
+import { FormComponentType } from "@/features/forms/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import { FileService } from "@/core/files/FileService";
 import {
   DuplicateSubmissionError,

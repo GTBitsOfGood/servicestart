@@ -17,11 +17,10 @@ import {
   joinRequests,
   joinRequestHistory,
   JoinRequestStatus,
-  sessions,
   shiftRSVPs,
   shifts,
-  // members
-} from "@/lib/schema";
+} from "@/core/db/schema";
+import { sessions } from "@/core/auth/schema";
 // import { UserService } from "@/features/membership/services/UserService";
 import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
 import { EmailService } from "@/core/email/EmailService";

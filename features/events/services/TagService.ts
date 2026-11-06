@@ -1,4 +1,4 @@
-import { tags } from "@/lib/schema";
+import { tags } from "@/core/db/schema";
 import db from "@/core/db";
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";

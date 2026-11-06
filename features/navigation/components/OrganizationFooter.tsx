@@ -13,7 +13,7 @@ import type {
   OrganizationFooter as OrganizationFooterConfig,
   SocialPlatform,
 } from "@/features/navigation/footer";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 
 export type OrganizationFooterProps = { organizationId: string };

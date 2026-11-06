@@ -12,7 +12,9 @@ import {
 } from "@/features/membership/lib/audience";
 import DashboardLayoutBuilder from "@/features/dashboard/components/DashboardLayoutBuilder";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
-import { FormStatus, MemberType, OrganizationConfigKey } from "@/lib/schema";
+import { FormStatus } from "@/features/forms/schema";
+import { MemberType } from "@/features/membership/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import { MEMBER_TYPE_PLURAL_LABELS } from "@/features/membership/lib/memberTypes";
 import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 import { cn } from "@/core/utils/utils";

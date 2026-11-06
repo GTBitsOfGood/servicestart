@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { users } from "@/lib/schema";
+import { users } from "@/core/db/schema";
 import db from "@/core/db";
 
 async function findById(id: string) {

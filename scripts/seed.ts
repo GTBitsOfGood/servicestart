@@ -1,12 +1,12 @@
 import "dotenv/config"; //must be first to load environment variables
-import { EventVisibility, JoinRequestStatus, schema } from "../lib/schema";
+import { EventVisibility, JoinRequestStatus, schema } from "@/core/db/schema";
 import db from "@/core/db";
 import { auth } from "@/core/auth/auth";
 import {
   joinRequestHistory,
   OrganizationConfigKey,
   NotificationType,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { DEFAULT_TEST_PASSWORD } from "@/tests/unit/testUtils";

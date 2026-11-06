@@ -3,7 +3,7 @@ import {
   getDashboardAudience,
   type MemberAudience,
 } from "@/features/membership/lib/audience";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import { auth } from "@/core/auth/auth";
 import { MembersService } from "@/features/membership/services/MemberService";
 import OrganizationConfigService from "@/core/config/OrganizationConfigService";

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { requireAdmin } from "@/core/auth/authUtils";
-import { NotificationType } from "@/lib/schema";
+import { NotificationType } from "@/features/communications/schema";
 import { PostDashboardAlertSchema } from "@/features/communications/lib/alerts";
 import { NotificationService } from "@/features/communications/services/NotificationService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";

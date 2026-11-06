@@ -25,7 +25,7 @@ import {
   invitations,
   type MemberType,
   type SubmissionReviewStatus,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { InvitationStatus } from "@/features/membership/services/InvitationService";
 import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import type {

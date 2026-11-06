@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { InferSelectModel } from "drizzle-orm";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
-import { events } from "@/lib/schema";
+import { events } from "@/features/events/schema";
 
 export type Event = Omit<InferSelectModel<typeof events>, "startTimestamp"> & {
   startTimestamp: string | null;
