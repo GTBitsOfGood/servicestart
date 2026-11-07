@@ -193,4 +193,26 @@ describe("EmailService", () => {
 
     expect(mockSendEmail).not.toHaveBeenCalled();
   });
+  it("emails invitation links on the invited tenant rather than the default host", async () => {
+    vi.stubEnv("NEXT_PUBLIC_BASE_URL", "http://localhost:3000");
+    try {
+      const org = await createOrganization("invite-link");
+      await EmailService.sendInvitationEmail({
+        id: "invitation-id",
+        email: "invitee@example.com",
+        organization: { ...org, name: "Invited organization" },
+        inviter: { user: { name: "Admin", email: "admin@example.com" } },
+        invitation: {
+          expiresAt: new Date("2027-01-01"),
+          role: "member",
+          name: "Invitee",
+        },
+      });
+      expect(mockSendEmail.mock.calls[0][0].contents[0].value).toContain(
+        "http://invite-link.lvh.me:3000/accept-invitation/invitation-id",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });
