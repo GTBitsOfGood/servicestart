@@ -1,9 +1,7 @@
 import { Hono } from "hono";
-import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { requireAdmin } from "@/core/auth/authUtils";
-import { NotFoundError } from "@/core/api/errors";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { FormIdSchema } from "@/features/forms/lib/schema";
 import { FormError } from "@/features/forms/lib/management";
@@ -16,7 +14,8 @@ import {
   FormReviewService,
   SubmissionNotFoundError,
 } from "@/features/forms/services/FormReviewService";
-import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { assertFeatureEnabled } from "@/core/auth/featureGuards";
+import { handleError } from "@/core/api/handleError";
 
 const app = new Hono<{
   Variables: { organizationId: string; userId: string };
@@ -26,18 +25,15 @@ const app = new Hono<{
       return c.json({ error: error.message }, 404);
     if (error instanceof FormError && error.reason === "not-found")
       return c.json({ error: error.message }, 404);
-    if (error instanceof HTTPException)
-      return c.json({ error: error.message }, error.status);
-    console.error(error);
-    return c.json({ error: "Unable to update the response" }, 500);
+    return handleError(error, c);
   })
   .use("*", async (c, next) => {
     const session = await requireAdmin(c);
     const organizationId = session.session.activeOrganizationId!;
-    const config = await OrganizationConfigService.getConfig(organizationId, [
+    await assertFeatureEnabled(
+      organizationId,
       OrganizationConfigKey.FormsEnabled,
-    ]);
-    if (!config[OrganizationConfigKey.FormsEnabled]) throw new NotFoundError();
+    );
     c.set("organizationId", organizationId);
     c.set("userId", session.user.id);
     await next();

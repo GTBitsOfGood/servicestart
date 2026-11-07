@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { createMiddleware } from "hono/factory";
 import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -16,47 +17,58 @@ import { FormService } from "@/features/forms/services/FormService";
 import { FileService } from "@/core/files/FileService";
 
 const formParam = z.object({ formId: FormIdSchema });
+const requireAdminForRoute = createMiddleware<{
+  Variables: { organizationId: string; userId: string };
+}>(async (c, next) => {
+  let admin;
+  try {
+    admin = await requireFormsAdmin(c);
+  } catch (error) {
+    // Headshots must never disclose whether a private file exists.
+    if (c.req.path.includes("/uploads/") && error instanceof HTTPException)
+      throw new HTTPException(404, { message: "File not found" });
+    throw error;
+  }
+  c.set("organizationId", admin.organizationId);
+  c.set("userId", admin.userId);
+  await next();
+});
 const app = new Hono<{
   Variables: { organizationId: string; userId: string };
 }>()
   .onError(handleFormsError)
-  .use("*", async (c, next) => {
-    let admin;
-    try {
-      admin = await requireFormsAdmin(c);
-    } catch (error) {
-      // Headshots must never disclose whether a private file exists.
-      if (c.req.path.includes("/uploads/") && error instanceof HTTPException)
-        throw new HTTPException(404, { message: "File not found" });
-      throw error;
-    }
-    c.set("organizationId", admin.organizationId);
-    c.set("userId", admin.userId);
-    await next();
-  })
-  .get("/", async (c) =>
+  .get("/", requireAdminForRoute, async (c) =>
     c.json(await FormService.list(c.get("organizationId"))),
   )
-  .post("/", zValidator("json", CreateFormSchema), async (c) =>
-    c.json(
-      await FormService.create(
-        c.get("organizationId"),
-        c.get("userId"),
-        c.req.valid("json"),
+  .post(
+    "/",
+    requireAdminForRoute,
+    zValidator("json", CreateFormSchema),
+    async (c) =>
+      c.json(
+        await FormService.create(
+          c.get("organizationId"),
+          c.get("userId"),
+          c.req.valid("json"),
+        ),
+        201,
       ),
-      201,
-    ),
   )
-  .get("/:formId", zValidator("param", formParam), async (c) =>
-    c.json(
-      await FormService.get(
-        c.get("organizationId"),
-        c.req.valid("param").formId,
+  .get(
+    "/:formId",
+    requireAdminForRoute,
+    zValidator("param", formParam),
+    async (c) =>
+      c.json(
+        await FormService.get(
+          c.get("organizationId"),
+          c.req.valid("param").formId,
+        ),
       ),
-    ),
   )
   .patch(
     "/:formId",
+    requireAdminForRoute,
     zValidator("param", formParam),
     zValidator("json", UpdateFormSchema),
     async (c) =>
@@ -68,55 +80,78 @@ const app = new Hono<{
         ),
       ),
   )
-  .delete("/:formId", zValidator("param", formParam), async (c) => {
-    await FormService.remove(
-      c.get("organizationId"),
-      c.req.valid("param").formId,
-    );
-    return c.json({ success: true });
-  })
-  .post("/:formId/publish", zValidator("param", formParam), async (c) =>
-    c.json(
-      await FormService.transition(
+  .delete(
+    "/:formId",
+    requireAdminForRoute,
+    zValidator("param", formParam),
+    async (c) => {
+      await FormService.remove(
         c.get("organizationId"),
         c.req.valid("param").formId,
-        "publish",
-      ),
-    ),
+      );
+      return c.json({ success: true });
+    },
   )
-  .post("/:formId/close", zValidator("param", formParam), async (c) =>
-    c.json(
-      await FormService.transition(
+  .post(
+    "/:formId/publish",
+    requireAdminForRoute,
+    zValidator("param", formParam),
+    async (c) =>
+      c.json(
+        await FormService.transition(
+          c.get("organizationId"),
+          c.req.valid("param").formId,
+          "publish",
+        ),
+      ),
+  )
+  .post(
+    "/:formId/close",
+    requireAdminForRoute,
+    zValidator("param", formParam),
+    async (c) =>
+      c.json(
+        await FormService.transition(
+          c.get("organizationId"),
+          c.req.valid("param").formId,
+          "close",
+        ),
+      ),
+  )
+  .post(
+    "/:formId/reopen",
+    requireAdminForRoute,
+    zValidator("param", formParam),
+    async (c) =>
+      c.json(
+        await FormService.transition(
+          c.get("organizationId"),
+          c.req.valid("param").formId,
+          "reopen",
+        ),
+      ),
+  )
+  .get(
+    "/:formId/export.csv",
+    requireAdminForRoute,
+    zValidator("param", formParam),
+    async (c) => {
+      const { formId } = c.req.valid("param");
+      const csv = await FormService.exportCsv(
         c.get("organizationId"),
-        c.req.valid("param").formId,
-        "close",
-      ),
-    ),
+        formId,
+        new URL(c.req.url).origin,
+      );
+      return c.body(csv, 200, {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${formId}.csv"`,
+        "Cache-Control": "private, no-store",
+      });
+    },
   )
-  .post("/:formId/reopen", zValidator("param", formParam), async (c) =>
-    c.json(
-      await FormService.transition(
-        c.get("organizationId"),
-        c.req.valid("param").formId,
-        "reopen",
-      ),
-    ),
-  )
-  .get("/:formId/export.csv", zValidator("param", formParam), async (c) => {
-    const { formId } = c.req.valid("param");
-    const csv = await FormService.exportCsv(
-      c.get("organizationId"),
-      formId,
-      new URL(c.req.url).origin,
-    );
-    return c.body(csv, 200, {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${formId}.csv"`,
-      "Cache-Control": "private, no-store",
-    });
-  })
   .get(
     "/:formId/uploads/:uploadId",
+    requireAdminForRoute,
     zValidator("param", formParam.extend({ uploadId: z.uuid() })),
     async (c) => {
       const { formId, uploadId } = c.req.valid("param");

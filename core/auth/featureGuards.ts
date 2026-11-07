@@ -23,8 +23,10 @@ async function isFeatureEnabled(
 export async function assertFeatureEnabled(
   organizationId: string,
   key: ToggleableOrganizationFeature,
+  message?: string,
 ) {
-  if (!(await isFeatureEnabled(organizationId, key))) throw new NotFoundError();
+  if (!(await isFeatureEnabled(organizationId, key)))
+    throw new NotFoundError(message);
 }
 
 /** For server pages: renders the not-found page while the toggle is off. */

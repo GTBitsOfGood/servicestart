@@ -77,8 +77,8 @@ describe("FormFillClient", () => {
     ).toBe("Ada");
   });
 
-  it("shows a plain-text error from the server", async () => {
-    respond(403, "This form isn't accepting responses");
+  it("shows a JSON error from the server", async () => {
+    respond(403, { error: "This form isn't accepting responses" });
     render(<FormFillClient definition={definition} />);
 
     fillAndSubmit();

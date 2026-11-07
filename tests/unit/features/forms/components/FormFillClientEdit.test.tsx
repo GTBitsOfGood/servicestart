@@ -174,7 +174,7 @@ describe("FormFillClient in edit mode", () => {
   });
 
   it("keeps the edits and shows the error when saving fails", async () => {
-    respond(403, "This form isn't accepting responses");
+    respond(403, { error: "This form isn't accepting responses" });
     renderEdit();
 
     changeNameAndSave();

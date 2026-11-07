@@ -4,9 +4,7 @@ import { assertFeatureEnabled } from "@/core/auth/featureGuards";
 import { OrganizationConfigKey } from "@/core/config/schema";
 
 // A member's saved answers for a form (#338): GET, PUT, and DELETE
-// /api/forms/:formId/draft. Mounted at /api/forms before forms.ts (in
-// features/app.ts already), so that sub-app's admin middleware doesn't run
-// here. Add the routes to this chain; the guard below already covers them.
+// /api/forms/:formId/draft. Add routes to this chain; the guard covers them.
 const app = new Hono<{
   Variables: { organizationId: string; userId: string };
 }>().use("/:formId/draft", async (c, next) => {
