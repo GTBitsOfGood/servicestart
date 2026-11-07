@@ -102,8 +102,8 @@ export async function createTestAdminAndSignIn(
 }
 
 /**
- * Ensures an organization with slug `servicestart` exists so localhost
- * resolves to the default tenant (`getActiveOrganizationIdFromHeaders`).
+ * Ensures the shared `servicestart` tenant exists for tests that explicitly
+ * select it through a tenant host or an active session organization.
  */
 export async function ensureServicestartOrganization() {
   const [existing] = await db
@@ -130,7 +130,7 @@ export async function ensureServicestartOrganization() {
 }
 
 /**
- * Signs in a new user who has a pending join request for the default host org.
+ * Signs in a new user with a pending join request and selects its organization.
  * Join requests are inserted explicitly: `signUpEmail` from tests does not pass
  * request headers into the session hook, so `afterUserCreated` often runs without
  * a Host header and may not create a row reliably.
@@ -141,7 +141,12 @@ export async function createTestUserWithPendingJoinRequestAndSignIn(
 ) {
   const org = await ensureServicestartOrganization();
   const credentials = buildTestUser();
-  const { user: createdUser, headers } = await signUpAndGetHeaders(credentials);
+  const {
+    user: createdUser,
+    session,
+    headers,
+  } = await signUpAndGetSession(credentials);
+  await setActiveOrganization(session.id, org.id);
 
   const existing = await JoinRequestsService.findByUserAndOrganization(
     createdUser.id,
