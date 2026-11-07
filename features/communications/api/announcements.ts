@@ -3,7 +3,11 @@ import {
   ForbiddenError,
   NotFoundError,
 } from "@/core/api/errors";
-import { requireAuth, requireAdmin } from "@/core/auth/authUtils";
+import {
+  requireAuth,
+  requireAdmin,
+  requireAdminSession,
+} from "@/core/auth/authUtils";
 import { Hono } from "hono";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";
@@ -87,7 +91,10 @@ const app = new Hono()
       const { page, pageSize, draft } = c.req.valid("query");
       let onlyDrafts = false;
       if (draft) {
-        await requireAdmin(c, "Forbidden: Admin or owner role required");
+        await requireAdminSession(
+          session,
+          "Forbidden: Admin or owner role required",
+        );
         onlyDrafts = true;
       }
 
@@ -147,7 +154,10 @@ const app = new Hono()
       if (!activeOrganizationId) {
         throw new ForbiddenError("No active organization");
       }
-      await requireAdmin(c, "Forbidden: Admin or owner role required");
+      await requireAdminSession(
+        session,
+        "Forbidden: Admin or owner role required",
+      );
 
       const existingAnnouncement =
         await AnnouncementsService.getById(announcementId);
@@ -194,7 +204,10 @@ const app = new Hono()
     if (!activeOrganizationId) {
       throw new ForbiddenError("No active organization");
     }
-    await requireAdmin(c, "Forbidden: Admin or owner role required");
+    await requireAdminSession(
+      session,
+      "Forbidden: Admin or owner role required",
+    );
     const deleted = await AnnouncementsService.deleteAnnouncement(
       announcementId,
       activeOrganizationId,
