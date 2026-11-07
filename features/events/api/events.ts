@@ -1,16 +1,22 @@
+import { getSlugFromHost } from "@/core/tenant/host";
+import {
+  BadRequestError,
+  ForbiddenError,
+  InternalServerError,
+  NotFoundError,
+} from "@/core/api/errors";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { auth } from "@/core/auth/auth";
 import { EventService } from "@/features/events/services/EventService";
 import { MembersService } from "@/features/membership/server";
 import { ShiftService } from "@/features/events/services/ShiftService";
-import { requireMembership } from "@/core/auth/authUtils";
+import { requireAuth, requireMembership } from "@/core/auth/authUtils";
 import { shiftErrorResponse } from "@/features/events/api/shifts/errors";
 import { TagService } from "@/features/events/services/TagService";
 import { paginationQuerySchema } from "@/core/api/apiUtils";
-import { ForbiddenError } from "@/core/api/errors";
+
 import { EventVisibility } from "@/features/events/schema";
 import {
   canViewEvent,
@@ -59,10 +65,12 @@ const rsvpQuerySchema = z.object({
 });
 
 async function getViewer(c: Context) {
-  const session = await auth.api.getSession({ headers: c.req.header() });
-
-  if (!session?.user) {
-    return null;
+  const session = await requireAuth(c);
+  if (
+    !session.session.activeOrganizationId &&
+    getSlugFromHost(c.req.header("host"))
+  ) {
+    throw new ForbiddenError("No active organization");
   }
 
   const organizationId = session.session.activeOrganizationId ?? null;
@@ -103,14 +111,11 @@ async function resolveHostIds(emails: string[], organizationId: string) {
 const app = new Hono()
   .post("/", zValidator("json", eventCreateSchema), async (c) => {
     const resolved = await getViewer(c);
-    if (!resolved) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const { session, viewer } = resolved;
     const activeOrganizationId = viewer.organizationId;
     if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
+      throw new ForbiddenError("No active organization");
     }
 
     if (!viewer.isAdmin) {
@@ -121,7 +126,7 @@ const app = new Hono()
 
     const dateError = validateEventDates(data);
     if (dateError) {
-      return c.json({ error: dateError }, { status: 400 });
+      throw new BadRequestError(dateError);
     }
 
     if (data.published) {
@@ -135,14 +140,14 @@ const app = new Hono()
       });
 
       if (publishError) {
-        return c.json({ error: publishError }, { status: 400 });
+        throw new BadRequestError(publishError);
       }
     }
 
     const hosts = data.hosts ?? [];
     const resolvedHosts = await resolveHostIds(hosts, activeOrganizationId);
     if (resolvedHosts.error) {
-      return c.json({ error: resolvedHosts.error }, { status: 404 });
+      throw new NotFoundError(resolvedHosts.error);
     }
 
     if (data.tagIds && data.tagIds.length > 0) {
@@ -151,10 +156,7 @@ const app = new Hono()
         activeOrganizationId,
       );
       if (!valid) {
-        return c.json(
-          { error: "At least one tag not in organization" },
-          { status: 404 },
-        );
+        throw new NotFoundError("At least one tag not in organization");
       }
     }
 
@@ -180,7 +182,7 @@ const app = new Hono()
     );
 
     if (!event) {
-      return c.json({ error: "Failed to create event" }, { status: 500 });
+      throw new InternalServerError("Failed to create event");
     }
 
     if (resolvedHosts.ids && resolvedHosts.ids.length > 0) {
@@ -191,9 +193,6 @@ const app = new Hono()
   })
   .get("/", zValidator("query", eventsQuerySchema), async (c) => {
     const resolved = await getViewer(c);
-    if (!resolved) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const { viewer } = resolved;
     const { page, pageSize, published } = c.req.valid("query");
@@ -239,13 +238,15 @@ const app = new Hono()
   .get("/:eventId", async (c) => {
     const { eventId } = c.req.param();
     const resolved = await getViewer(c);
-    if (!resolved) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const event = await EventService.findById(eventId);
-    if (!event || !canViewEvent(event, resolved.viewer)) {
-      return c.json({ error: "Event not found" }, { status: 404 });
+    if (
+      !event ||
+      (getSlugFromHost(c.req.header("host")) &&
+        event.organizationId !== resolved.viewer.organizationId) ||
+      !canViewEvent(event, resolved.viewer)
+    ) {
+      throw new NotFoundError("Event not found");
     }
 
     return c.json(event);
@@ -282,14 +283,11 @@ const app = new Hono()
   .patch("/:eventId", zValidator("json", eventUpdateSchema), async (c) => {
     const { eventId } = c.req.param();
     const resolved = await getViewer(c);
-    if (!resolved) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const { session, viewer } = resolved;
     const activeOrganizationId = viewer.organizationId;
     if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
+      throw new ForbiddenError("No active organization");
     }
 
     if (!viewer.isAdmin) {
@@ -298,14 +296,14 @@ const app = new Hono()
 
     const event = await EventService.findById(eventId);
     if (!event || event.organizationId !== activeOrganizationId) {
-      return c.json({ error: "Event not found" }, { status: 404 });
+      throw new NotFoundError("Event not found");
     }
 
     const data = c.req.valid("json");
 
     const dateError = validateEventDates(data, event);
     if (dateError) {
-      return c.json({ error: dateError }, { status: 400 });
+      throw new BadRequestError(dateError);
     }
 
     const updates: {
@@ -368,7 +366,7 @@ const app = new Hono()
       });
 
       if (publishError) {
-        return c.json({ error: publishError }, { status: 400 });
+        throw new BadRequestError(publishError);
       }
     }
 
@@ -386,10 +384,7 @@ const app = new Hono()
         activeOrganizationId,
       );
       if (!valid) {
-        return c.json(
-          { error: "At least one tag not in organization" },
-          { status: 404 },
-        );
+        throw new NotFoundError("At least one tag not in organization");
       }
     }
 
@@ -400,7 +395,7 @@ const app = new Hono()
         activeOrganizationId,
       );
       if (resolvedHosts.error) {
-        return c.json({ error: resolvedHosts.error }, { status: 404 });
+        throw new NotFoundError(resolvedHosts.error);
       }
       hostIds = resolvedHosts.ids;
     }
@@ -413,7 +408,7 @@ const app = new Hono()
     );
 
     if (!updated) {
-      return c.json({ error: "Failed to update event" }, { status: 500 });
+      throw new InternalServerError("Failed to update event");
     }
 
     return c.json(updated);
@@ -421,14 +416,11 @@ const app = new Hono()
   .delete("/:eventId", async (c) => {
     const { eventId } = c.req.param();
     const resolved = await getViewer(c);
-    if (!resolved) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const { viewer } = resolved;
     const activeOrganizationId = viewer.organizationId;
     if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
+      throw new ForbiddenError("No active organization");
     }
 
     if (!viewer.isAdmin) {
@@ -441,7 +433,7 @@ const app = new Hono()
     );
 
     if (!deleted) {
-      return c.json({ error: "Event not found" }, { status: 404 });
+      throw new NotFoundError("Event not found");
     }
 
     return c.json({ success: true });
@@ -449,14 +441,11 @@ const app = new Hono()
   .post("/:eventId/rsvps", zValidator("query", rsvpQuerySchema), async (c) => {
     const { eventId } = c.req.param();
     const resolved = await getViewer(c);
-    if (!resolved) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const { session, viewer } = resolved;
     const activeOrganizationId = viewer.organizationId;
     if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
+      throw new ForbiddenError("No active organization");
     }
 
     const event = await EventService.findById(eventId);
@@ -465,7 +454,7 @@ const app = new Hono()
       event.organizationId !== activeOrganizationId ||
       !canViewEvent(event, viewer)
     ) {
-      return c.json({ error: "Event not found" }, { status: 404 });
+      throw new NotFoundError("Event not found");
     }
 
     const { userId } = c.req.valid("query");
@@ -500,14 +489,11 @@ const app = new Hono()
     async (c) => {
       const { eventId } = c.req.param();
       const resolved = await getViewer(c);
-      if (!resolved) {
-        return c.json({ error: "Unauthorized" }, { status: 401 });
-      }
 
       const { session, viewer } = resolved;
       const activeOrganizationId = viewer.organizationId;
       if (!activeOrganizationId) {
-        return c.json({ error: "No active organization" }, { status: 403 });
+        throw new ForbiddenError("No active organization");
       }
 
       const event = await EventService.findById(eventId);
@@ -516,7 +502,7 @@ const app = new Hono()
         event.organizationId !== activeOrganizationId ||
         !canViewEvent(event, viewer)
       ) {
-        return c.json({ error: "Event not found" }, { status: 404 });
+        throw new NotFoundError("Event not found");
       }
 
       const { userId } = c.req.valid("query");

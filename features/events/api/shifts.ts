@@ -1,3 +1,4 @@
+import { NotFoundError } from "@/core/api/errors";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { requireAdmin, requireMembership } from "@/core/auth/authUtils";
@@ -51,7 +52,7 @@ const app = new Hono()
         session.activeOrganizationId!,
         user.id,
       );
-      if (!shift) return c.json({ error: "Shift not found" }, 404);
+      if (!shift) throw new NotFoundError("Shift not found");
       return c.json({ status: 200, shift });
     } catch (error) {
       return shiftErrorResponse(c, error);
