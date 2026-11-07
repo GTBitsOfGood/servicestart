@@ -3,10 +3,10 @@ import { juno } from "@/core/files/junoClient";
 import { parseJunoNumericId } from "@/core/files/junoFileUtils";
 import { ResponseError } from "juno-sdk/internal/runtime";
 import { JunoFileService } from "@/core/files/JunoFileService";
-import { setupEmail } from "@/core/email/emailSetup";
+import { setupEmailUnlessAllowedToFail } from "@/core/email/emailSetup";
 
 async function main() {
-  await setupEmail();
+  await setupEmailUnlessAllowedToFail();
 
   const projectId = process.env.JUNO_PROJECT_ID?.trim();
   const organizationId = process.env.SETUP_ORGANIZATION_ID?.trim();

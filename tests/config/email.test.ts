@@ -3,7 +3,11 @@ import { readFileSync } from "node:fs";
 import { parse } from "dotenv";
 import { validateSendGridKey } from "juno-sdk/lib/validators";
 import { getDbUrl, getEmailSenderDomain, requireEnv } from "@/core/utils/env";
-import { setupEmail } from "@/core/email/emailSetup";
+import { ResponseError } from "juno-sdk/internal/runtime";
+import {
+  setupEmail,
+  setupEmailUnlessAllowedToFail,
+} from "@/core/email/emailSetup";
 import { EmailService } from "@/core/email/EmailService";
 import { juno } from "@/core/files/junoClient";
 
@@ -88,6 +92,71 @@ it("provisions email using the normalized domain without file credentials", asyn
   } finally {
     log.mockRestore();
   }
+});
+
+describe(setupEmailUnlessAllowedToFail, () => {
+  // What Juno sends back when SendGrid rejects a domain: the serialized axios
+  // error, request config and Authorization header included.
+  const sendGridRejection = (body: string) =>
+    new ResponseError(
+      new Response(body, { status: 400 }),
+      "Response returned an error code",
+    );
+  const SERIALIZED_AXIOS_ERROR = JSON.stringify({
+    message: "Request failed with status code 401",
+    name: "AxiosError",
+    code: "ERR_BAD_REQUEST",
+    status: 401,
+    config: { headers: { Authorization: "Bearer SG.leaked-sendgrid-key" } },
+  });
+
+  async function run() {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      await setupEmailUnlessAllowedToFail();
+      return warn.mock.calls.map((args) => args.join(" ")).join("\n");
+    } finally {
+      warn.mockRestore();
+    }
+  }
+
+  it("still fails when Juno rejects the domain and the flag isn't set", async () => {
+    vi.mocked(juno.email.registerDomain).mockRejectedValue(
+      sendGridRejection(SERIALIZED_AXIOS_ERROR),
+    );
+    await expect(run()).rejects.toBeInstanceOf(ResponseError);
+  });
+
+  it("warns with the statuses, never the body, when the flag is set", async () => {
+    vi.stubEnv("ALLOW_EMAIL_SETUP_FAILURE", "true");
+    vi.mocked(juno.email.registerDomain).mockRejectedValue(
+      sendGridRejection(SERIALIZED_AXIOS_ERROR),
+    );
+    const warning = await run();
+    expect(warning).toContain("::warning title=Email setup failed (#342)::");
+    expect(warning).toContain(
+      "Juno responded 400; SendGrid responded 401 (ERR_BAD_REQUEST).",
+    );
+    expect(warning).not.toContain("SG.leaked-sendgrid-key");
+    expect(warning).not.toContain("Bearer");
+  });
+
+  it("reports only Juno's status when its body isn't a serialized error", async () => {
+    vi.stubEnv("ALLOW_EMAIL_SETUP_FAILURE", "true");
+    vi.mocked(juno.email.registerDomain).mockRejectedValue(
+      sendGridRejection("<html>Bad Request SG.leaked-sendgrid-key</html>"),
+    );
+    const warning = await run();
+    expect(warning).toContain("Juno responded 400. Continuing");
+    expect(warning).not.toContain("SG.leaked-sendgrid-key");
+  });
+
+  it("still fails on missing configuration when the flag is set", async () => {
+    vi.stubEnv("ALLOW_EMAIL_SETUP_FAILURE", "true");
+    vi.stubEnv("SENDGRID_KEY", " ");
+    await expect(run()).rejects.toThrow("SENDGRID_KEY is required");
+    expect(juno.email.registerDomain).not.toHaveBeenCalled();
+  });
 });
 
 it("ships simulated SendGrid keys accepted by the actual Juno SDK", () => {
