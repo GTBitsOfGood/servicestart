@@ -1,3 +1,4 @@
+import { handleError } from "@/core/api/handleError";
 import { Hono } from "hono";
 import ping from "@/core/api/ping";
 import organizationConfig from "@/core/config/api/organizationConfig";
@@ -30,6 +31,7 @@ import profile from "@/features/membership/api/profile";
  */
 export const app = new Hono()
   .basePath("/api")
+  .onError(handleError)
   .route("/ping", ping)
   .route("/joinRequests", joinRequests)
   .route("/announcements", announcements)
@@ -44,9 +46,6 @@ export const app = new Hono()
   .route("/emails", emails)
   .route("/profile", profile)
   .route("/tags", tags)
-  // features/forms/api/forms.ts runs admin-only middleware for every
-  // /api/forms/* route mounted after it, so mount other /forms sub-apps
-  // before it.
   .route("/forms", formQuestions)
   .route("/forms", formSubmissions)
   .route("/forms", drafts)

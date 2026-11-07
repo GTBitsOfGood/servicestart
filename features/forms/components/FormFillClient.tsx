@@ -55,7 +55,7 @@ export default function FormFillClient(props: FormFillClientProps) {
   async function submit(answers: Answers): Promise<DynamicFormSubmitResult> {
     const failed = isEdit ? SAVE_FAILED : SUBMIT_FAILED;
     try {
-      const res = isEdit
+      const res: Response = isEdit
         ? await api.forms[":formId"].submissions.mine.$put({
             param: { formId: definition.formId },
             json: { answers },
@@ -82,8 +82,10 @@ export default function FormFillClient(props: FormFillClientProps) {
       if (res.status === 404 || res.status === 409) {
         return { ok: false, error: (await res.json()).error };
       }
-      // Auth and availability errors come back as plain text.
-      const message = await res.text().catch(() => "");
+      const message = await res
+        .json()
+        .then((body) => body.error as string)
+        .catch(() => "");
       return { ok: false, error: message || `${failed} Try again.` };
     } catch {
       return {
@@ -125,7 +127,7 @@ export default function FormFillClient(props: FormFillClientProps) {
         ? {
             initialValues: props.initialValues,
             submitLabel: "Save changes",
-            submittingLabel: "Saving…",
+            submittingLabel: "Savingâ€¦",
             imageSrc,
           }
         : {})}

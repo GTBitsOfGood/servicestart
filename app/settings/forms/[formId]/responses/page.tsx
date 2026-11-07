@@ -1,3 +1,4 @@
+import { notFoundIfFeatureDisabled } from "@/core/auth/featureGuards";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { redirectIfNotAdmin } from "@/core/auth/authUtils";
@@ -6,7 +7,6 @@ import { FormIdSchema } from "@/features/forms/lib/schema";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { FormService } from "@/features/forms/services/FormService";
 import { FormReviewService } from "@/features/forms/services/FormReviewService";
-import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import FormResponsesClient from "@/features/forms/components/FormResponsesClient";
 
 export const metadata = { title: "Form responses" };
@@ -18,14 +18,11 @@ export default async function ResponsesPage({
 }) {
   const { organizationId } = await redirectIfNotAdmin();
   const { formId } = await params;
-  const config = await OrganizationConfigService.getConfig(organizationId, [
+  await notFoundIfFeatureDisabled(
+    organizationId,
     OrganizationConfigKey.FormsEnabled,
-  ]);
-  if (
-    !config[OrganizationConfigKey.FormsEnabled] ||
-    !FormIdSchema.safeParse(formId).success
-  )
-    notFound();
+  );
+  if (!FormIdSchema.safeParse(formId).success) notFound();
   let form;
   try {
     form = await FormService.get(organizationId, formId);
@@ -38,7 +35,7 @@ export default async function ResponsesPage({
     <Suspense
       fallback={
         <p role="status" className="p-8">
-          Loading responses…
+          Loading responsesâ€¦
         </p>
       }
     >

@@ -50,8 +50,7 @@ describe("/api/forms/:formId/draft guard", () => {
 
   it("lets a member through while forms are on", async () => {
     const headers = await memberOf(true);
-    // No draft route exists yet, so the request falls through to the admin
-    // forms routes, which turn away a non-admin.
-    expect((await app.request(draftUrl, { headers })).status).toBe(403);
+    // No draft handler exists until #338; the member guard allows fallthrough.
+    expect((await app.request(draftUrl, { headers })).status).toBe(404);
   });
 });

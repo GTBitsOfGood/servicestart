@@ -36,3 +36,22 @@ export class JunoFileDeletionNotSupportedError extends Error {
     this.name = "JunoFileDeletionNotSupportedError";
   }
 }
+
+export class BadRequestError extends HTTPException {
+  constructor(message = "Bad request") {
+    super(400, { message });
+  }
+}
+
+export class ConflictError extends HTTPException {
+  constructor(message = "Conflict") {
+    super(409, { message });
+  }
+}
+
+/** Expected infrastructure failure with an existing client-facing message. */
+export class InternalServerError extends HTTPException {
+  constructor(message: string) {
+    super(500, { message });
+  }
+}

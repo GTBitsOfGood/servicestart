@@ -1,3 +1,4 @@
+import { notFoundIfFeatureDisabled } from "@/core/auth/featureGuards";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
@@ -27,11 +28,13 @@ export default async function SubmissionPage({ params }: SubmissionPageProps) {
   const { organizationId } = await redirectIfNotAdmin();
   const { formId, submissionId } = await params;
   const config = await OrganizationConfigService.getConfig(organizationId, [
-    OrganizationConfigKey.FormsEnabled,
     OrganizationConfigKey.MemberTypesEnabled,
   ]);
+  await notFoundIfFeatureDisabled(
+    organizationId,
+    OrganizationConfigKey.FormsEnabled,
+  );
   if (
-    !config[OrganizationConfigKey.FormsEnabled] ||
     !FormIdSchema.safeParse(formId).success ||
     !z.uuid().safeParse(submissionId).success
   )

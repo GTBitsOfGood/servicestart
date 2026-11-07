@@ -1,10 +1,10 @@
+import { notFoundIfFeatureDisabled } from "@/core/auth/featureGuards";
 import { notFound } from "next/navigation";
 import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 import { FormError } from "@/features/forms/lib/management";
 import { FormIdSchema } from "@/features/forms/lib/schema";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { FormQuestionService } from "@/features/forms/services/FormQuestionService";
-import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import FormBuilderClient from "@/features/forms/components/builder/FormBuilderClient";
 
 export const metadata = { title: "Edit questions" };
@@ -15,10 +15,10 @@ export default async function FormBuilderPage({
   params: Promise<{ formId: string }>;
 }) {
   const { organizationId } = await redirectIfNotAdmin();
-  const config = await OrganizationConfigService.getConfig(organizationId, [
+  await notFoundIfFeatureDisabled(
+    organizationId,
     OrganizationConfigKey.FormsEnabled,
-  ]);
-  if (!config[OrganizationConfigKey.FormsEnabled]) notFound();
+  );
 
   const formId = FormIdSchema.safeParse((await params).formId);
   if (!formId.success) notFound();
