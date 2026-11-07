@@ -94,6 +94,12 @@ from the counselor invitation (`counselor@example.com`) is deleted, and
 Use a fresh signup when you want data the seed leaves alone. Seeded forms and
 responses have fixed IDs (`visionariesId` in `tests/unit/fixtures/forms.ts`).
 
+Emergency Contact Information uses a repeating contacts group (2–3 entries),
+and Medical History has an optional Medication Schedule (0–10 entries).
+Reseeding upgrades their older flattened questions when all existing responses
+are fixtures. If other responses exist, it stops and preserves them; export
+those responses and recreate the development fixture before reseeding.
+
 ## Configuration and scope
 
 - Organization ID: `org_visionariestothethrone`

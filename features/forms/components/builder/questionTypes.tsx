@@ -8,14 +8,23 @@ import {
   NumberSetting,
 } from "@/features/forms/components/builder/fields";
 import OptionsEditor from "@/features/forms/components/builder/OptionsEditor";
+import type { QuestionGroupInputConfigSchema } from "@/features/forms/lib/schema";
+import type { z } from "zod";
+import QuestionGroupSettings from "@/features/forms/components/builder/QuestionGroupSettings";
 import type { FormComponentConfigFor } from "@/features/forms/lib/schema";
 import { FormComponentType } from "@/features/forms/schema";
 
 export type SettingsProps<T extends FormComponentType> = {
   questionKey: string;
-  config: FormComponentConfigFor<T>;
+  config: T extends FormComponentType.QuestionGroup
+    ? z.infer<typeof QuestionGroupInputConfigSchema>
+    : FormComponentConfigFor<T>;
   errors: QuestionErrors;
-  onChange: (config: FormComponentConfigFor<T>) => void;
+  onChange: (
+    config: T extends FormComponentType.QuestionGroup
+      ? z.infer<typeof QuestionGroupInputConfigSchema>
+      : FormComponentConfigFor<T>,
+  ) => void;
 };
 
 type QuestionTypeDefinition<T extends FormComponentType> = {
@@ -268,6 +277,11 @@ export const QUESTION_TYPES: {
     name: "Yes/No",
     defaultConfig: {},
     Settings: null,
+  },
+  [FormComponentType.QuestionGroup]: {
+    name: "Question group",
+    defaultConfig: { questions: [], repeatable: false },
+    Settings: QuestionGroupSettings,
   },
   [FormComponentType.Image]: {
     name: "Image upload",

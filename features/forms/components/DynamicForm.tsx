@@ -92,6 +92,37 @@ export default function DynamicForm({
       const answers: Record<string, unknown> = {};
       for (const component of definition.components) {
         const value = current[component.id];
+        if (component.type === FormComponentType.QuestionGroup) {
+          const entries = Array.isArray(value)
+            ? value
+            : Array.from(
+                {
+                  length: component.config.repeatable
+                    ? Math.max(
+                        component.required ? 1 : 0,
+                        component.config.minEntries ?? 0,
+                      )
+                    : 1,
+                },
+                () => ({}),
+              );
+          answers[component.id] = entries.map((entry) =>
+            typeof entry === "object"
+              ? Object.fromEntries(
+                  Object.entries(entry).map(([id, cell]) => [
+                    id,
+                    component.config.questions.some(
+                      (sub) =>
+                        sub.id === id && sub.type === FormComponentType.Number,
+                    ) && typeof cell === "string"
+                      ? parseNumberInput(cell)
+                      : cell,
+                  ]),
+                )
+              : entry,
+          );
+          continue;
+        }
         answers[component.id] =
           component.type === FormComponentType.Number &&
           typeof value === "string"
@@ -118,12 +149,15 @@ export default function DynamicForm({
     current: Record<string, FieldValue>,
     { onlyIfShown = false } = {},
   ) {
-    const error = validate(current).errors[id];
     setErrors((previous) => {
       if (onlyIfShown && !previous[id]) return previous;
       const next = { ...previous };
-      if (error) next[id] = error;
-      else delete next[id];
+      for (const key of Object.keys(next))
+        if (key === id || key.startsWith(`${id}.`)) delete next[key];
+      const fieldErrors = validate(current).errors;
+      for (const key of Object.keys(fieldErrors))
+        if (key === id || key.startsWith(`${id}.`))
+          next[key] = fieldErrors[key];
       return next;
     });
   }
@@ -155,7 +189,10 @@ export default function DynamicForm({
 
   function focusFirstError(fieldErrors: Record<string, string>) {
     const first = definition.components.find(({ id }) => fieldErrors[id]);
-    focusTarget.current = first ? fieldId(first.id) : FORM_ERROR_ID;
+    const nested =
+      first &&
+      Object.keys(fieldErrors).find((key) => key.startsWith(`${first.id}.`));
+    focusTarget.current = first ? fieldId(nested ?? first.id) : FORM_ERROR_ID;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -227,6 +264,7 @@ export default function DynamicForm({
               component={component}
               value={values[component.id]}
               error={errors[component.id]}
+              errors={errors}
               disabled={submitting}
               readOnly={readOnly}
               onChange={(value) => handleChange(component.id, value)}
