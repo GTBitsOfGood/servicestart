@@ -1,3 +1,6 @@
+import { auth } from "@/core/auth/auth";
+import { OrganizationsService } from "@/core/tenant/OrganizationService";
+import { app } from "@/features/app";
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import db from "@/core/db";
@@ -6,6 +9,7 @@ import { EmailService } from "@/core/email/EmailService";
 import {
   addMember,
   buildTestUser,
+  buildHost,
   createAnnouncement,
   createOrganization,
   setActiveOrganization,
@@ -502,5 +506,41 @@ describe("DELETE /api/announcements/:announcementId", () => {
     );
 
     expect(response.status).toBe(404);
+  });
+});
+
+describe("announcement authentication reuse", () => {
+  it("loads the session and host organization once per draft list, edit, and delete", async () => {
+    const { organization, headers } = await setupOrgAndUser("admin");
+    const id = await createAnnouncement(organization.id);
+    const sessionLookup = vi.spyOn(auth.api, "getSession");
+    const hostLookup = vi.spyOn(OrganizationsService, "findBySlug");
+    try {
+      for (const [method, path] of [
+        ["GET", "/api/announcements?draft=true"],
+        ["PATCH", `/api/announcements/${id}`],
+        ["DELETE", `/api/announcements/${id}`],
+      ]) {
+        sessionLookup.mockClear();
+        hostLookup.mockClear();
+        const response = await app.request(path, {
+          method,
+          headers: {
+            ...headers,
+            host: buildHost(organization.slug),
+            "content-type": "application/json",
+          },
+          ...(method === "PATCH"
+            ? { body: JSON.stringify({ name: "Updated" }) }
+            : {}),
+        });
+        expect(response.status).toBe(200);
+        expect(sessionLookup).toHaveBeenCalledTimes(1);
+        expect(hostLookup).toHaveBeenCalledTimes(1);
+      }
+    } finally {
+      sessionLookup.mockRestore();
+      hostLookup.mockRestore();
+    }
   });
 });
