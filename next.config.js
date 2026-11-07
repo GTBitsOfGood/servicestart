@@ -8,5 +8,11 @@ const allowedDevOrigins = [
 ];
 
 module.exports = {
+  env: {
+    NEXT_PUBLIC_TENANT_ROOT_DOMAIN:
+      process.env.NEXT_PUBLIC_TENANT_ROOT_DOMAIN ||
+      process.env.E2E_TENANT_DOMAIN ||
+      "servicestart.com",
+  },
   ...(allowedDevOrigins.length > 0 && { allowedDevOrigins }),
 };

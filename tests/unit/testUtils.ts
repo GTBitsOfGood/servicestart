@@ -1,3 +1,4 @@
+import { getTenantRootDomain } from "@/core/tenant/host";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { auth } from "@/core/auth/auth";
@@ -94,7 +95,7 @@ export function buildTestUser() {
  * Builds a host header value for a given organization slug.
  */
 export function buildHost(slug: string) {
-  return `${slug}.servicestart.com`;
+  return `${slug}.${getTenantRootDomain()}`;
 }
 
 /**

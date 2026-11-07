@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFoundIfFeatureDisabled } from "@/core/auth/featureGuards";
 import { headers } from "next/headers";
 import { auth } from "@/core/auth/auth";
 import { redirectIfNotAdmin } from "@/core/auth/authUtils";
@@ -19,16 +19,16 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
   const { organizationId } = authSession;
 
   const config = await OrganizationConfigService.getConfig(organizationId, [
-    OrganizationConfigKey.MembersPageEnabled,
     OrganizationConfigKey.MemberTypesEnabled,
   ]);
   const memberTypesEnabled = Boolean(
     config[OrganizationConfigKey.MemberTypesEnabled],
   );
 
-  if (!config[OrganizationConfigKey.MembersPageEnabled]) {
-    redirect("/");
-  }
+  await notFoundIfFeatureDisabled(
+    organizationId,
+    OrganizationConfigKey.MembersPageEnabled,
+  );
 
   const {
     page: pageParam,

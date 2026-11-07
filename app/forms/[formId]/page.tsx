@@ -1,3 +1,4 @@
+import { notFoundIfFeatureDisabled } from "@/core/auth/featureGuards";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -8,14 +9,13 @@ import FormMessage from "@/features/forms/components/FormMessage";
 import FormPageLayout from "@/features/forms/components/FormPageLayout";
 import LocalDateTime from "@/features/forms/components/LocalDateTime";
 import { auth } from "@/core/auth/auth";
-import { getSlugFromHost } from "@/core/tenant/clientAuthUtils";
+import { resolveOrganization } from "@/core/tenant/resolveOrganization";
 import { FormIdSchema } from "@/features/forms/lib/schema";
 import { getFormAvailability } from "@/features/forms/lib/submission";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { FormSubmissionService } from "@/features/forms/services/FormSubmissionService";
 import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import { OrganizationsService } from "@/core/tenant/OrganizationService";
 
 type FormPageProps = {
   params: Promise<{ formId: string }>;
@@ -30,17 +30,17 @@ export default async function FormPage({
   const { preview } = await searchParams;
   const requestHeaders = await headers();
 
-  const organization = await OrganizationsService.findBySlug(
-    getSlugFromHost(requestHeaders.get("host") ?? undefined),
-  );
+  const session = await auth.api.getSession({ headers: requestHeaders });
+  const organization = await resolveOrganization(requestHeaders, session);
   if (!organization || !FormIdSchema.safeParse(formId).success) notFound();
   const config = await OrganizationConfigService.getConfig(organization.id, [
-    OrganizationConfigKey.FormsEnabled,
     OrganizationConfigKey.LogoUrl,
   ]);
-  if (!config[OrganizationConfigKey.FormsEnabled]) notFound();
+  await notFoundIfFeatureDisabled(
+    organization.id,
+    OrganizationConfigKey.FormsEnabled,
+  );
 
-  const session = await auth.api.getSession({ headers: requestHeaders });
   const membership = session
     ? await MembersService.findByUserAndOrganization(
         session.user.id,

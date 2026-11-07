@@ -108,7 +108,8 @@ export default function SignupForm({
           email: email.trim(),
           password,
           name: `${firstName.trim()} ${lastName.trim()}`,
-          organizationSlug: org?.slug || getSlugFromHost(window.location.host),
+          organizationSlug:
+            org?.slug || getSlugFromHost(window.location.host) || undefined,
         },
         invitation && {
           headers: { [INVITATION_ID_HEADER]: invitation.id },

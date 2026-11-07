@@ -79,13 +79,14 @@ export default function useOrganizationConfig<K extends readonly string[]>(
     let cancelled = false;
     const host =
       typeof window === "undefined" ? undefined : window.location.host;
-    const slug = organization?.data?.slug ?? getSlugFromHost(host ?? undefined);
+    const slug = getSlugFromHost(host) ?? organization?.data?.slug;
     const stateKey = buildStateKey(keys, slug);
     const now = Date.now();
     const cachedData: ConfigResult<K> = {};
     const missingKeys = new Set<string>();
 
     keys.forEach((key) => {
+      if (!slug) return;
       if (isCacheDisabled()) {
         missingKeys.add(key);
         return;
@@ -105,7 +106,7 @@ export default function useOrganizationConfig<K extends readonly string[]>(
       setState({ stateKey, data: cachedData, status: "ok" });
     });
 
-    if (missingKeys.size === 0)
+    if (!slug || missingKeys.size === 0)
       return () => {
         cancelled = true;
       };
@@ -154,7 +155,7 @@ export default function useOrganizationConfig<K extends readonly string[]>(
   }, [organization?.data?.slug, ...keys]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const host = typeof window === "undefined" ? undefined : window.location.host;
-  const slug = organization?.data?.slug ?? getSlugFromHost(host ?? undefined);
+  const slug = getSlugFromHost(host) ?? organization?.data?.slug;
   const stateKey = buildStateKey(keys, slug);
 
   if (state.stateKey !== stateKey)

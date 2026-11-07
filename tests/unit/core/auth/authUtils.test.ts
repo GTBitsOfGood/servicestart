@@ -14,6 +14,7 @@ import db from "@/core/db";
 import { INVITATION_ID_HEADER } from "@/core/tenant/clientAuthUtils";
 import {
   invitations,
+  users,
   joinRequests,
   JoinRequestStatus,
   members,
@@ -59,6 +60,9 @@ vi.mock("next/headers", () => ({
 
 vi.mock("next/navigation", () => ({
   redirect: (path: string) => mockRedirect(path),
+  notFound: () => {
+    throw new Error("NEXT_NOT_FOUND");
+  },
 }));
 
 async function getJoinRequests(userId: string, organizationId: string) {
@@ -89,7 +93,7 @@ describe("join request hooks", () => {
     expect(requests[0].status).toBe(JoinRequestStatus.Pending);
   });
 
-  it("defaults the slug to servicestart when host is not a subdomain", async () => {
+  it("does not file a host-based join request on a default host", async () => {
     const organization = await createOrganization("servicestart");
     const user = buildTestUser();
 
@@ -103,7 +107,7 @@ describe("join request hooks", () => {
 
     const requests = await getJoinRequests(result.user.id, organization.id);
 
-    expect(requests).toHaveLength(1);
+    expect(requests).toHaveLength(0);
   });
 
   it("does not create a join request when the user is already a member", async () => {
@@ -993,5 +997,68 @@ describe("members page pagination", () => {
     });
 
     expect(page.props.children.props).toMatchObject({ page: 1, total: 1 });
+  });
+});
+
+describe("auth organization selection", () => {
+  it("uses the tenant host ahead of an explicit organization hint", async () => {
+    const a = await createOrganization("auth-host-a");
+    const b = await createOrganization("auth-hint-b");
+    const credentials = buildTestUser();
+    const result = await auth.api.signUpEmail({
+      body: { ...credentials, organizationSlug: b.slug },
+      headers: { host: buildHost(a.slug), "x-organization-slug": b.slug },
+    });
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, result.user.id));
+    expect(user.organizationId).toBe(a.id);
+    expect(await getJoinRequests(user.id, a.id)).toHaveLength(1);
+    expect(await getJoinRequests(user.id, b.id)).toHaveLength(0);
+  });
+
+  it("does not fall back to a hint when the tenant host is unknown", async () => {
+    const org = await createOrganization("auth-valid-hint");
+    await expect(
+      auth.api.signUpEmail({
+        body: { ...buildTestUser(), organizationSlug: org.slug },
+        headers: {
+          host: buildHost("unknown"),
+          "x-organization-slug": org.slug,
+        },
+      }),
+    ).rejects.toThrow("Organization not found");
+    expect(await db.select().from(users)).toHaveLength(0);
+  });
+
+  it("does not create an account without an organization on a default host", async () => {
+    await createOrganization("servicestart");
+    await expect(
+      auth.api.signUpEmail({
+        body: buildTestUser(),
+        headers: { host: "localhost:3000" },
+      }),
+    ).rejects.toThrow("Organization not found");
+    expect(await db.select().from(users)).toHaveLength(0);
+  });
+});
+
+describe("members page access", () => {
+  it("returns not found when the members page feature is disabled", async () => {
+    const org = await createOrganization("disabled-members-page");
+    const { user, session, headers } =
+      await signUpAndGetSession(buildTestUser());
+    await addMember(user.id, org.id, "admin");
+    await setActiveOrganization(session.id, org.id);
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.MembersPageEnabled,
+      "false",
+    );
+    mockHeaders.mockReturnValue(new Headers(headers));
+    await expect(
+      MembersPage({ searchParams: Promise.resolve({}) }),
+    ).rejects.toThrow("NEXT_NOT_FOUND");
   });
 });

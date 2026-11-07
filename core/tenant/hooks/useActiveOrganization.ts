@@ -2,44 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import authClient from "@/core/auth/authClient";
-import { DEFAULT_SLUG, getSlugFromHostname } from "@/core/utils/utils";
-
-function isLoopbackHostname(hostname: string): boolean {
-  return (
-    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]"
-  );
-}
-
-/**
- * Browser automation on loopback: DB-backed sessions (e.g. E2E helpers) set
- * `activeOrganizationId` to an isolated org. `getSlugFromHostname` still maps
- * localhost → `servicestart`, so syncing here would switch tenants and break
- * same-origin fetches (POST /api/media → 403).
- */
-function shouldSkipHostSlugSync(): boolean {
-  return (
-    typeof navigator !== "undefined" &&
-    navigator.webdriver === true &&
-    typeof window !== "undefined" &&
-    isLoopbackHostname(window.location.hostname)
-  );
-}
+import { getSlugFromHost } from "@/core/tenant/host";
 
 export function useActiveOrganization() {
   const organization = authClient.useActiveOrganization();
   const session = authClient.useSession();
 
-  const [slug, setSlug] = useState<string>(() =>
+  const [slug, setSlug] = useState<string | null>(() =>
     typeof window !== "undefined"
-      ? getSlugFromHostname(window.location.hostname)
-      : DEFAULT_SLUG,
+      ? getSlugFromHost(window.location.hostname)
+      : null,
   );
 
   const lastSetSlugRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const updateSlug = () =>
-      setSlug(getSlugFromHostname(window.location.hostname));
+    const updateSlug = () => setSlug(getSlugFromHost(window.location.hostname));
 
     updateSlug();
     window.addEventListener("popstate", updateSlug);
@@ -54,7 +32,7 @@ export function useActiveOrganization() {
       session?.data?.session.activeOrganizationId ?? null;
 
     if (!hasSession) return;
-    if (shouldSkipHostSlugSync()) return;
+    if (!slug) return;
     if (activeSlug === slug && activeOrganizationId === sessionOrganizationId)
       return;
     if (lastSetSlugRef.current === slug) return;
@@ -65,5 +43,11 @@ export function useActiveOrganization() {
     });
   }, [slug, session?.data, organization?.data?.id, organization?.data?.slug]);
 
-  return { slug, organization };
+  const activeId = session?.data?.session.activeOrganizationId;
+  const data = organization.data;
+  const matches = data && data.id === activeId && (!slug || data.slug === slug);
+  return {
+    slug: slug ?? (matches ? data.slug : null),
+    organization: { ...organization, data: matches ? data : null },
+  };
 }

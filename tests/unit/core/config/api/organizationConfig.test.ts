@@ -12,6 +12,7 @@ import { OrganizationConfigService } from "@/core/config/OrganizationConfigServi
 import {
   addMember,
   buildTestUser,
+  buildHost,
   createOrganization,
   setActiveOrganization,
   signUpAndGetSession,
@@ -65,7 +66,7 @@ describe("GET /api/organizationConfig", () => {
 
     const hostResponse = await testApi.organizationConfig.$get(
       { query: { keys: [OrganizationConfigKey.LogoUrl] } },
-      { headers: { host: `${org.slug}.servicestart.com` } },
+      { headers: { host: buildHost(org.slug) } },
     );
     expect(hostResponse.status).toBe(200);
     expect(await hostResponse.json()).toEqual({ logo_url: "/bog.svg" });

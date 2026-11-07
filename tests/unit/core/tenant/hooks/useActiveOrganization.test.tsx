@@ -17,23 +17,12 @@ vi.mock("@/core/auth/authClient", () => ({
   },
 }));
 
-const ROOT_DOMAIN = "servicestart.com";
-vi.mock("@/core/utils/utils", () => ({
-  getSlugFromHostname: vi.fn((hostname: string) => {
-    if (hostname === ROOT_DOMAIN) return "servicestart";
-    if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
-      const sub = hostname.slice(0, -ROOT_DOMAIN.length - 1);
-      return sub || "servicestart";
-    }
-    return "servicestart";
-  }),
-}));
-
 describe("useActiveOrganization", () => {
   const originalLocation = window.location;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv("NEXT_PUBLIC_TENANT_ROOT_DOMAIN", "servicestart.com");
     mockSetActive.mockResolvedValue(undefined);
     Object.defineProperty(window, "location", {
       value: { ...originalLocation, hostname: "acme.servicestart.com" },
@@ -42,6 +31,7 @@ describe("useActiveOrganization", () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     Object.defineProperty(window, "location", {
       value: originalLocation,
       writable: true,
@@ -70,7 +60,7 @@ describe("useActiveOrganization", () => {
     });
   });
 
-  it("returns default slug for servicestart.com hostname", () => {
+  it("returns no slug on the default host without an active organization", () => {
     Object.defineProperty(window, "location", {
       value: { ...originalLocation, hostname: "servicestart.com" },
       writable: true,
@@ -86,7 +76,7 @@ describe("useActiveOrganization", () => {
 
     const { result } = renderHook(() => useActiveOrganization());
 
-    expect(result.current.slug).toBe("servicestart");
+    expect(result.current.slug).toBeNull();
   });
 
   it("returns slug when user is not signed in", () => {
@@ -122,7 +112,7 @@ describe("useActiveOrganization", () => {
     });
   });
 
-  it("does not call setActive on loopback when navigator.webdriver is true", async () => {
+  it("does not call setActive on loopback for any browser", async () => {
     Object.defineProperty(window, "location", {
       value: { ...originalLocation, hostname: "localhost" },
       writable: true,
@@ -203,5 +193,33 @@ describe("useActiveOrganization", () => {
     await waitFor(() => {});
 
     expect(mockSetActive).not.toHaveBeenCalled();
+  });
+  it("uses the session org on a default host without synchronizing to a slug", () => {
+    Object.defineProperty(window, "location", {
+      value: { ...originalLocation, hostname: "localhost" },
+      writable: true,
+    });
+    mockUseSession.mockReturnValue({
+      data: { session: { activeOrganizationId: "org_other" } },
+    });
+    mockUseActiveOrganization.mockReturnValue({
+      data: { id: "org_other", slug: "other" },
+    });
+    const { result } = renderHook(() => useActiveOrganization());
+    expect(result.current.slug).toBe("other");
+    expect(result.current.organization.data?.id).toBe("org_other");
+    expect(mockSetActive).not.toHaveBeenCalled();
+  });
+
+  it("withholds cached organization data for a different tenant", () => {
+    mockUseSession.mockReturnValue({
+      data: { session: { activeOrganizationId: "org_other" } },
+    });
+    mockUseActiveOrganization.mockReturnValue({
+      data: { id: "org_other", slug: "other" },
+    });
+    const { result } = renderHook(() => useActiveOrganization());
+    expect(result.current.slug).toBe("acme");
+    expect(result.current.organization.data).toBeNull();
   });
 });

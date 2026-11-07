@@ -140,7 +140,7 @@ it("reuses an approved applicant's existing membership and fully removes access"
       email: "admin@example.com",
       password: DEFAULT_TEST_PASSWORD,
     },
-    headers: new Headers({ host: "localhost:3000" }),
+    headers: new Headers({ host: "servicestart.lvh.me:3000" }),
     returnHeaders: true,
   });
   await JoinRequestsService.updateStatus(
@@ -230,7 +230,7 @@ it("creates users/accounts such that they can be signed into", async () => {
   await main();
 
   const res = await auth.api.signInEmail({
-    headers: new Headers({ host: "localhost:3000" }),
+    headers: new Headers({ host: "servicestart.lvh.me:3000" }),
     body: {
       email: "owner@example.com",
       password: DEFAULT_TEST_PASSWORD,
@@ -565,7 +565,7 @@ it("repairs an old unscoped seed account without replacing its ID or credential"
     .where(eq(accounts.id, "legacy-credential"));
   expect(account.password).toBe(password);
   const res = await auth.api.signInEmail({
-    headers: new Headers({ host: "localhost:3000" }),
+    headers: new Headers({ host: "servicestart.lvh.me:3000" }),
     body: { email: "admin@example.com", password: DEFAULT_TEST_PASSWORD },
   });
   expect(res.user.id).toBe("legacy-admin");

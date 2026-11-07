@@ -85,6 +85,30 @@ Each context has only the folders it needs:
 
 Each context owns its tables in its `schema.ts`. `core/db/schema.ts` re-exports every context's tables and defines the relations between them; Drizzle (`drizzle.config.ts` and the client in `core/db/index.ts`) reads that barrel. Services import tables from `@/core/db/schema`. Everything else imports enums and types from the context that owns them, through its `index.ts`. Add a table to `tests/unit/setup.ts`'s cleanup list too.
 
+### Finding the request's organization
+
+`core/tenant/host.ts` is the only host parser, shared by the browser, server,
+and edge proxy. `NEXT_PUBLIC_TENANT_ROOT_DOMAIN` (or the existing
+`E2E_TENANT_DOMAIN` at build time) selects the root; `lvh.me` also works locally.
+Only a single tenant label is accepted. Root hosts, `www`, loopback hosts,
+unrelated domains, and Netlify preview names do not name an organization.
+Unlike the old permissive parser, an arbitrary three-label domain is never a
+tenant, and default hosts no longer implicitly select `servicestart`.
+
+`resolveOrganization(headersOrContext, session)` in `core/tenant/resolveOrganization.ts`
+returns the host's organization, or the active session organization on a default
+host. An unknown tenant returns null, even when the session has an active org.
+Callers load the session and pass it in, so BetterAuth hooks cannot recurse into
+session loading. Identity endpoints may use an explicit organization hint only
+on a default host; anonymous default-host pages use platform branding defaults.
+
+API guards authorize the active session org and reject a conflicting tenant
+host with 403 before data access. A session without an active org is handled by
+the route's existing membership/login rules. Private form images keep their
+concealed 404 response. Server pages resolve the host first and authorize
+membership in that organization. The browser synchronizes only tenant hosts;
+on default hosts it leaves the active organization alone.
+
 ### Routes
 
 `features/app.ts` is the only Hono root. `app/api/[[...route]]/route.ts` serves it, and the typed RPC client and the tests call it. Add a sub-app to its `.route()` chain, which is what types the RPC client.
