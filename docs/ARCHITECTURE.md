@@ -111,8 +111,7 @@ on default hosts it leaves the active organization alone.
 
 HTTP exceptions use the root API's JSON `{ error: message }` renderer. Unexpected
 errors are logged and return a generic 500. Feature-specific adapters retain
-structured validation and business-error details. The separate image-serving
-entrypoint installs the same shared renderer.
+structured validation and business-error details.
 
 ### Routes
 
