@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 import { config, proxy } from "@/proxy";
-import { app } from "@/lib/app";
+import { app } from "@/features/app";
 import { createOrganization } from "@/tests/unit/testUtils";
 
 // Stub only HTTP transport; tenant resolution still runs through the real API and DB.

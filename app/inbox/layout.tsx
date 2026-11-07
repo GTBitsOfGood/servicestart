@@ -1,4 +1,4 @@
-import { redirectIfNotMember } from "@/lib/authUtils";
+import { redirectIfNotMember } from "@/core/auth/authUtils";
 
 export default async function InboxLayout({
   children,

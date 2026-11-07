@@ -36,7 +36,7 @@ fi
 pnpm install --frozen-lockfile >"$LOG_DIR/install.log" 2>&1
 
 # The database that migrate and seed use (DB_URL from .env, <branch> resolved).
-DB=$(pnpm exec tsx -e 'import "dotenv/config"; import { getDbUrl } from "./lib/env"; process.stdout.write(getDbUrl())')
+DB=$(pnpm exec tsx -e 'import "dotenv/config"; import { getDbUrl } from "./core/utils/env"; process.stdout.write(getDbUrl())')
 if [ "${RESET_DB:-}" = 1 ]; then
   case "$DB" in
   postgres*://*@localhost:*/* | postgres*://*@127.0.0.1:*/*) ;;

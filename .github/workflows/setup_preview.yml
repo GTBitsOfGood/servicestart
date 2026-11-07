@@ -49,6 +49,10 @@ jobs:
       - name: Setup organization
         run: pnpm run setupOrg
         env:
+          # Temporary (#342): SendGrid rejects registering the sender domain, so
+          # a failed email setup is a warning here instead of failing the job.
+          # Delete this line once #342 is fixed, so email setup is critical again.
+          ALLOW_EMAIL_SETUP_FAILURE: "true"
           JUNO_API_KEY: ${{ secrets.JUNO_API_KEY }}
           JUNO_BASE_URL: ${{ vars.JUNO_BASE_URL }}
           FILE_PROVIDER_NAME: ${{ vars.FILE_PROVIDER_NAME }}

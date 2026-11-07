@@ -1,0 +1,2 @@
+ALTER TABLE "members" ADD CONSTRAINT "members_member_type_fkey" FOREIGN KEY ("organization_id","member_type") REFERENCES "member_types"("organization_id","key");--> statement-breakpoint
+DROP TYPE "member_type";

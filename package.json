@@ -1,6 +1,9 @@
 {
   "private": true,
   "packageManager": "pnpm@10.17.1",
+  "sideEffects": [
+    "*.css"
+  ],
   "scripts": {
     "dev": "pnpm run juno:start > /dev/null & pnpm run db:start & next dev",
     "build": "next build",

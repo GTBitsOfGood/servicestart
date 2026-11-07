@@ -1,7 +1,7 @@
 import { exec, execSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 import "dotenv/config";
-import { requireEnv } from "../lib/env";
+import { requireEnv } from "@/core/utils/env";
 
 let junoProcess: ReturnType<typeof exec>;
 

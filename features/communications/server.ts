@@ -1,0 +1,6 @@
+// The communications context's services, for other contexts' server code: import
+// them from "@/features/communications/server". They're kept out of index.ts so that
+// pure code (Zod contracts, lib/) importing a context never pulls in services,
+// and through them the database and import cycles.
+
+export { NotificationService } from "./services/NotificationService";

@@ -1,14 +1,14 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
-import type { DashboardLayout } from "@/lib/dashboard/schema";
-import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/lib/dashboard/schema";
-import type { NavbarConfig } from "@/lib/navbar";
+import type { DashboardLayout } from "@/features/dashboard/lib/schema";
+import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";
+import type { NavbarConfig } from "@/features/navigation/navbarConfig";
 import {
   FormStatus,
   MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
-} from "@/lib/schema";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+} from "@/core/db/schema";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,
   buildTestUser,
@@ -60,7 +60,10 @@ async function createApplicantOrg() {
   for (const [key, value] of [
     [OrganizationConfigKey.FormsEnabled, "true"],
     [OrganizationConfigKey.MemberTypesEnabled, "true"],
-    [OrganizationConfigKey.ApplicantDashboardLayout, JSON.stringify(layout)],
+    [
+      OrganizationConfigKey.MemberTypeDashboardLayouts,
+      JSON.stringify({ [MemberType.Applicant]: layout }),
+    ],
     [OrganizationConfigKey.NavbarConfig, JSON.stringify(NAVBAR)],
   ] as const) {
     await OrganizationConfigService.setConfig(org.id, key, value);
@@ -151,6 +154,51 @@ test.describe("Applicant portal", () => {
     await expect(
       widget(page).getByRole("link", { name: "View Application" }),
     ).toHaveAttribute("href", `/forms/${form.formId}/response`);
+  });
+
+  test("a pending applicant can edit their application from View Application", async ({
+    page,
+    baseURL,
+  }) => {
+    const { org, form } = await createApplicantOrg();
+    const origin = tenantUrl(org.slug, baseURL);
+    await signInApplicant(page, origin, form, SubmissionReviewStatus.Pending);
+
+    await expect(async () => {
+      await widget(page)
+        .getByRole("link", { name: "View Application" })
+        .click();
+      await expect(page).toHaveURL(
+        new RegExp(`/forms/${form.formId}/response$`),
+      );
+    }).toPass({ timeout: 10_000 });
+    const edit = page.getByRole("link", { name: "Edit response" });
+    await expect(edit).toHaveAttribute("href", `/forms/${form.formId}/edit`);
+    await expect(async () => {
+      await edit.click();
+      await expect(page).toHaveURL(new RegExp(`/forms/${form.formId}/edit$`));
+    }).toPass({ timeout: 10_000 });
+    await expect(page.getByText("Editing your response.")).toBeVisible();
+  });
+
+  test("an applicant under review can view their application but not edit it", async ({
+    page,
+    baseURL,
+  }) => {
+    const { org, form } = await createApplicantOrg();
+    const origin = tenantUrl(org.slug, baseURL);
+    await signInApplicant(
+      page,
+      origin,
+      form,
+      SubmissionReviewStatus.UnderReview,
+    );
+
+    await page.goto(`${origin}/forms/${form.formId}/response`);
+    await expect(page.getByText(/^Your response, submitted/)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Edit response" })).toHaveCount(
+      0,
+    );
   });
 
   test("an applicant under review sees step 2 current", async ({

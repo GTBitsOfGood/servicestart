@@ -1,16 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
-import db from "@/lib/db";
+import db from "@/core/db";
 import {
   invitations,
   members,
   users,
   OrganizationConfigKey,
-} from "@/lib/schema";
-import { AuthMessage } from "@/components/auth/authConstants";
-import { InvitationStatus } from "@/lib/services/InvitationService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { auth } from "@/lib/auth";
+} from "@/core/db/schema";
+import { AuthMessage } from "@/core/auth/components/authConstants";
+import { InvitationStatus } from "@/features/membership/services/InvitationService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { auth } from "@/core/auth/auth";
 import {
   buildHost,
   buildTestUser,

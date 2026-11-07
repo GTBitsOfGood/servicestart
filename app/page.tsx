@@ -1,9 +1,9 @@
-import { redirectIfNotMember } from "@/lib/authUtils";
-import { getDashboardAudience } from "@/lib/dashboard/audience";
-import { MembersService } from "@/lib/services/MemberService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import DashboardGrid from "@/components/dashboard/DashboardGrid";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { redirectIfNotMember } from "@/core/auth/authUtils";
+import { getDashboardAudience } from "@/features/membership/lib/audience";
+import { MembersService } from "@/features/membership/services/MemberService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import DashboardGrid from "@/features/dashboard/components/DashboardGrid";
+import DashboardHeader from "@/features/dashboard/components/DashboardHeader";
 
 export const metadata = {
   title: "Dashboard",

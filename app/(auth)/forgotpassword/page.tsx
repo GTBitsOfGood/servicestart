@@ -1,18 +1,18 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import AuthPageIntro from "@/components/auth/AuthPageIntro";
+import AuthPageIntro from "@/core/auth/components/AuthPageIntro";
 import AuthTextField, {
   focusFirstInvalidField,
-} from "@/components/auth/AuthTextField";
-import AuthSubmitButton from "@/components/auth/AuthSubmitButton";
+} from "@/core/auth/components/AuthTextField";
+import AuthSubmitButton from "@/core/auth/components/AuthSubmitButton";
 import AuthFormMessage, {
   type FormMessage,
-} from "@/components/auth/AuthFormMessage";
-import BackToLoginLink from "@/components/auth/BackToLoginLink";
-import { AuthMessage } from "@/components/auth/authConstants";
-import authClient from "@/lib/authClient";
-import { validateEmail } from "@/lib/authValidation";
+} from "@/core/auth/components/AuthFormMessage";
+import BackToLoginLink from "@/core/auth/components/BackToLoginLink";
+import { AuthMessage } from "@/core/auth/components/authConstants";
+import authClient from "@/core/auth/authClient";
+import { validateEmail } from "@/core/auth/authValidation";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");

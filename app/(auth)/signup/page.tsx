@@ -1,9 +1,9 @@
 "use client";
 
-import AuthOrgTagline from "@/components/auth/AuthOrgTagline";
-import AuthPageIntro from "@/components/auth/AuthPageIntro";
-import SignupForm from "@/components/auth/SignupForm";
-import { useRedirectIfSignedIn } from "@/lib/hooks/useRedirectIfSignedIn";
+import AuthOrgTagline from "@/core/auth/components/AuthOrgTagline";
+import AuthPageIntro from "@/core/auth/components/AuthPageIntro";
+import SignupForm from "@/core/auth/components/SignupForm";
+import { useRedirectIfSignedIn } from "@/core/auth/hooks/useRedirectIfSignedIn";
 
 export default function SignupPage() {
   useRedirectIfSignedIn();

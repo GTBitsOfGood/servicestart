@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
-import { MembersService } from "@/lib/services/MemberService";
+import { MembersService } from "@/features/membership/services/MemberService";
 import {
   addMember,
   buildTestUser,

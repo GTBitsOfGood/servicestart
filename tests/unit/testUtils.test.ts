@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createTestUser } from "@/tests/unit/testUtils";
-import db from "@/lib/db";
-import { auth } from "@/lib/auth";
-import { sessions } from "@/lib/schema";
+import db from "@/core/db";
+import { auth } from "@/core/auth/auth";
+import { sessions } from "@/core/db/schema";
 import { eq } from "drizzle-orm";
 
 describe(createTestUser, () => {

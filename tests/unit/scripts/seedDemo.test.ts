@@ -2,17 +2,17 @@
 
 import { and, eq, inArray } from "drizzle-orm";
 import { expect, it, vi } from "vitest";
-import db from "@/lib/db";
+import db from "@/core/db";
 import {
   events,
   forms,
   FormStatus,
   OrganizationConfigKey,
   users,
-} from "@/lib/schema";
+} from "@/core/db/schema";
 import { DEMO_FORM, seedDemo } from "@/scripts/seedDemo";
-import { FormSubmissionService } from "@/lib/services/FormSubmissionService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+import { FormSubmissionService } from "@/features/forms/services/FormSubmissionService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { createFormSubmission } from "@/tests/unit/testUtils";
 
 it("refreshes the demo dates without duplicating events or changing existing events", async () => {

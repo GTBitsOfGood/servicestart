@@ -1,11 +1,12 @@
 # Visionaries to the Throne development
 
-This development tenant is the organization Sprints 3 and 4 build against.
+This development tenant is the organization Sprints 3 through 5 build against.
 Sprint 3 built forms (#299, #303), theming (#300), the auth pages (#301), and
-member types (#302). Sprint 4 builds application review (#316, #317), the
+member types (#302). Sprint 4 built application review (#316, #317), the
 applicant and attendee portals (#318, #319), the configurable dashboard (#320),
-and the question builder (#321) on the pre-sprint setup (#315). It does not
-provision a production deployment.
+and the question builder (#321) on the pre-sprint setup (#315). Sprint 5 keeps
+refining it with drafts (#338) on its pre-sprint (#333), which made member
+types per-organization data. It does not provision a production deployment.
 
 ## First-time setup
 
@@ -103,7 +104,9 @@ responses have fixed IDs (`visionariesId` in `tests/unit/fixtures/forms.ts`).
 - Forms: `FormsEnabled` is on, with a published copy of the camp application
   at `/forms/camp-application-2027` (its questions are in
   `tests/unit/fixtures/forms.ts`).
-- Member types: `MemberTypesEnabled` and `AutoApproveSignups` are on.
+- Member types: `MemberTypesEnabled` and `AutoApproveSignups` are on. The org's
+  `member_types` rows are applicant ("Applicant", the signup default) and
+  attendee ("Current Attendee").
 - Logo: `public/organizations/visionaries-logo.png` (`LogoUrl`), from the Figma.
 - Required forms: four published forms assigned to current attendees, with due
   dates: Emergency Contact Information, Consent Form, Medical History, and
@@ -118,7 +121,7 @@ responses have fixed IDs (`visionariesId` in `tests/unit/fixtures/forms.ts`).
   question type #321 added.
 - Dashboards: an applicant layout (application status and notifications) and
   an attendee layout (to-do list, weekly calendar, completed forms, and
-  progress). Until their tickets land, those widgets show "Coming soon".
+  progress), both in the `MemberTypeDashboardLayouts` config row.
 - Dashboard header, navbar, and footer config rows (#318, #320), with
   development copy from the Figma.
 - Camp events this week and next, dated from when the seed runs, and an alert
@@ -126,7 +129,11 @@ responses have fixed IDs (`visionariesId` in `tests/unit/fixtures/forms.ts`).
 
 These are organization configuration rows and seed data, not organization-name
 checks in app code. They live in `scripts/visionariesSeed.ts`; add new
-Visionaries config rows and demo data there. Rerunning the seed reapplies these
+Visionaries config rows and demo data there. The app code they configure is
+under `features/` (see the folder table in `docs/ARCHITECTURE.md`): the
+dashboard widgets in `features/forms/widgets/` and `features/events/widgets/`,
+and the header, navbar, and footer schemas in `features/dashboard/lib/header.ts`,
+`features/navigation/navbarConfig.ts`, and `features/navigation/footer.ts`. Rerunning the seed reapplies these
 configuration defaults while retaining existing account IDs and credentials.
 Headshots for the seeded applications are stored through the configured
 `FileService`; without file storage (for example in CI) they're skipped and
@@ -136,7 +143,8 @@ the images don't load.
 
 1. Open signup while signed out; verify the Visionaries name, logo, and purple background.
 2. Sign in as `applicant-pending@example.com`; the dashboard has the applicant
-   layout. Open `/forms/camp-application-2027/response` to see the response.
+   layout. **View Application** opens the response, and **Edit response** lets
+   you change it while it's pending.
 3. Sign in as `member1@example.com`; the dashboard has the attendee layout.
 4. Sign in as `admin@example.com` and open **Settings → Forms**.
 5. Rerun the seed and confirm the same accounts still work.

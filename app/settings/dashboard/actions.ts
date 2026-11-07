@@ -3,19 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { auth } from "@/core/auth/auth";
 import {
-  MEMBER_AUDIENCES,
-  MEMBER_TYPE_LAYOUT_KEYS,
-} from "@/lib/dashboard/audience";
-import type { DashboardLayout } from "@/lib/dashboard/schema";
+  clearMemberTypeDashboardLayout,
+  setMemberTypeDashboardLayout,
+} from "@/features/dashboard/config";
+import { MEMBER_AUDIENCES } from "@/features/membership/lib/audience";
+import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import {
   ForbiddenError,
   NoActiveOrganizationError,
   UnauthorizedError,
-} from "@/lib/errors";
-import { MembersService } from "@/lib/services/MemberService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
+} from "@/core/api/errors";
+import { MembersService } from "@/features/membership/services/MemberService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 
 const AudienceSchema = z.enum(MEMBER_AUDIENCES);
 const TypedAudienceSchema = AudienceSchema.exclude(["member"]);
@@ -38,7 +39,10 @@ async function getAdminOrganizationId() {
   return orgId;
 }
 
-/** Saves an audience's dashboard layout under its own config key. */
+/**
+ * Saves an audience's dashboard layout: members' under DashboardLayout, a
+ * member type's in MemberTypeDashboardLayouts.
+ */
 export async function saveDashboardLayout(
   audience: unknown,
   layout: DashboardLayout,
@@ -49,11 +53,7 @@ export async function saveDashboardLayout(
   if (parsed === "member") {
     await OrganizationConfigService.setDashboardLayout(orgId, value);
   } else {
-    await OrganizationConfigService.setConfig(
-      orgId,
-      MEMBER_TYPE_LAYOUT_KEYS[parsed],
-      value,
-    );
+    await setMemberTypeDashboardLayout(orgId, parsed, JSON.parse(value));
   }
   revalidatePath("/settings/dashboard");
 }
@@ -65,9 +65,6 @@ export async function saveDashboardLayout(
 export async function clearDashboardLayout(audience: unknown) {
   const orgId = await getAdminOrganizationId();
   const parsed = TypedAudienceSchema.parse(audience);
-  await OrganizationConfigService.clearConfig(
-    orgId,
-    MEMBER_TYPE_LAYOUT_KEYS[parsed],
-  );
+  await clearMemberTypeDashboardLayout(orgId, parsed);
   revalidatePath("/settings/dashboard");
 }

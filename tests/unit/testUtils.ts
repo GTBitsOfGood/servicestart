@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
-import db from "@/lib/db";
+import { auth } from "@/core/auth/auth";
+import db from "@/core/db";
 import {
   joinRequests,
   JoinRequestStatus,
   members,
+  memberTypes,
   organizations,
   sessions,
   announcements,
@@ -23,20 +24,24 @@ import {
   formUploads,
   FormStatus,
   invitations,
-  type MemberType,
+  MemberType,
   type SubmissionReviewStatus,
-} from "@/lib/schema";
-import { InvitationStatus } from "@/lib/services/InvitationService";
-import { DEFAULT_FORM_SETTINGS } from "@/lib/forms/constants";
+} from "@/core/db/schema";
+import { InvitationStatus } from "@/features/membership/services/InvitationService";
+import {
+  MEMBER_TYPE_LABELS,
+  MEMBER_TYPE_PLURAL_LABELS,
+} from "@/features/membership/lib/memberTypes";
+import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import type {
   FormAnswerValue,
   FormComponent,
   FormDefinition,
   FormSettings,
-} from "@/lib/forms/schema";
+} from "@/features/forms/lib/schema";
 import { VISIONARIES_APPLICATION_FORM } from "@/tests/unit/fixtures/forms";
 import { testClient } from "hono/testing";
-import { app } from "@/lib/app";
+import { app } from "@/features/app";
 
 export {
   VISIONARIES_APPLICATION_FORM,
@@ -93,7 +98,8 @@ export function buildHost(slug: string) {
 }
 
 /**
- * Creates an organization in the database.
+ * Creates an organization in the database, with the applicant and attendee
+ * member types, so tests can give its members a type directly.
  */
 export async function createOrganization(slug: string) {
   const id = randomUUID();
@@ -102,6 +108,18 @@ export async function createOrganization(slug: string) {
     name: `Organization ${slug}`,
     slug,
   });
+  // The same rows MembersService.ensureBuiltInMemberTypes creates, inserted
+  // here so tests that mock MembersService can still create organizations.
+  await db.insert(memberTypes).values(
+    [MemberType.Applicant, MemberType.Attendee].map((key, position) => ({
+      organizationId: id,
+      key,
+      label: MEMBER_TYPE_LABELS[key],
+      pluralLabel: MEMBER_TYPE_PLURAL_LABELS[key],
+      position,
+      isSignupDefault: key === MemberType.Applicant,
+    })),
+  );
 
   return { id, slug };
 }

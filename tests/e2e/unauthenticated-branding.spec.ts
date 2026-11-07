@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { OrganizationConfigKey } from "@/lib/schema";
+import { OrganizationConfigKey } from "@/core/db/schema";
 
 const unauthenticatedPages = [
   "/login",

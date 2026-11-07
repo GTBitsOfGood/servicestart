@@ -2,12 +2,17 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import authClient from "@/lib/authClient";
-import { useActiveOrganization } from "@/lib/hooks/useActiveOrganization";
-import { isAdmin } from "@/lib/clientUtils";
-import api from "@/lib/api";
-import EventForm, { type SubmitIntent } from "@/components/events/EventForm";
-import { emptyEventFormValues, type EventPayload } from "@/lib/eventFormUtils";
+import authClient from "@/core/auth/authClient";
+import { useActiveOrganization } from "@/core/tenant/hooks/useActiveOrganization";
+import { isAdmin } from "@/core/utils/clientUtils";
+import api from "@/core/api/client";
+import EventForm, {
+  type SubmitIntent,
+} from "@/features/events/components/EventForm";
+import {
+  emptyEventFormValues,
+  type EventPayload,
+} from "@/features/events/lib/eventFormUtils";
 
 export default function EventsCreationPage() {
   const router = useRouter();

@@ -1,52 +1,11 @@
-import ping from "@/api/ping";
-import forms from "@/api/forms";
-import joinRequests from "@/api/joinRequests";
-import announcements from "@/api/announcements";
-import events from "@/api/events";
-import shifts from "@/api/shifts";
-import media from "@/api/media";
-import notifications from "@/api/notifications";
-import organizationConfig from "@/api/organizationConfig";
-import members from "@/api/members";
-import messages from "@/api/messages";
-import emails from "@/api/emails";
-import profile from "@/api/profile";
-import tags from "@/api/tags";
-import formSubmissions from "@/api/formSubmissions";
-import formQuestions from "@/api/formQuestions";
-import formResponses from "@/api/formResponses";
-import informationRequests from "@/api/informationRequests";
-import alerts from "@/api/alerts";
-import invitations from "@/api/invitations";
-import { Hono } from "hono";
 import { handle } from "hono/netlify";
+import { app } from "@/features/app";
 
-const app = new Hono()
-  .basePath("/api")
-  .route("/ping", ping)
-  .route("/joinRequests", joinRequests)
-  .route("/announcements", announcements)
-  .route("/events", events)
-  .route("/organizationConfig", organizationConfig)
-  .route("/shifts", shifts)
-  .route("/notifications", notifications)
-  .route("/media", media)
-  .route("/members", members)
-  .route("/messages", messages)
-  .route("/emails", emails)
-  .route("/profile", profile)
-  .route("/tags", tags)
-  // Keep in sync with lib/app.ts, including the order of the /forms mounts.
-  .route("/forms", formQuestions)
-  .route("/forms", formSubmissions)
-  .route("/forms", forms)
-  .route("/formResponses", formResponses)
-  .route("/informationRequests", informationRequests)
-  .route("/alerts", alerts)
-  .route("/invitations", invitations);
+// Routes are registered in features/app.ts, not here.
+const handler = handle(app);
 
-export const GET = handle(app);
-export const POST = handle(app);
-export const PUT = handle(app);
-export const DELETE = handle(app);
-export const PATCH = handle(app);
+export const GET = handler;
+export const POST = handler;
+export const PUT = handler;
+export const DELETE = handler;
+export const PATCH = handler;

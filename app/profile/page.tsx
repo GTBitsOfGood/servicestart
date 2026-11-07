@@ -1,14 +1,14 @@
 import { headers } from "next/headers";
 import BogTabs from "@/components/bog/BogTabs/BogTabs";
-import EventCard, { type Event } from "@/components/EventCard";
-import EventService from "@/lib/services/EventService";
-import EditProfileButton from "@/components/EditProfileButton";
-import HoursTab from "@/components/HoursTab";
+import EventCard, { type Event } from "@/features/events/components/EventCard";
+import EventService from "@/features/events/services/EventService";
+import EditProfileButton from "@/features/membership/components/EditProfileButton";
+import HoursTab from "@/features/events/components/HoursTab";
 import SaveBanner from "@/components/SaveBanner";
-import db from "@/lib/db";
-import { organizations } from "@/lib/schema";
+import db from "@/core/db";
+import { organizations } from "@/core/tenant/schema";
 import { inArray } from "drizzle-orm";
-import { requireSessionOrRedirect } from "@/lib/authUtils";
+import { requireSessionOrRedirect } from "@/core/auth/authUtils";
 
 interface ProfilePageProps {
   searchParams: Promise<{ saved?: string }>;

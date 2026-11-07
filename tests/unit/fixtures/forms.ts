@@ -1,10 +1,10 @@
-import { FormComponentType, FormStatus, MemberType } from "@/lib/schema";
-import { DEFAULT_FORM_SETTINGS } from "@/lib/forms/constants";
+import { FormComponentType, FormStatus, MemberType } from "@/core/db/schema";
+import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import type {
   FormAnswerValue,
   FormComponent,
   FormDefinition,
-} from "@/lib/forms/schema";
+} from "@/features/forms/lib/schema";
 
 /**
  * Fixed IDs for Visionaries fixtures and seed data, so the seed can insert

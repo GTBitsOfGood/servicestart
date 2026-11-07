@@ -1,22 +1,30 @@
+import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import FormPageLayout from "@/components/forms/FormPageLayout";
-import FormResponseView from "@/components/forms/FormResponseView";
-import LocalDateTime from "@/components/forms/LocalDateTime";
-import { auth } from "@/lib/auth";
-import { getSlugFromHost } from "@/lib/clientAuthUtils";
-import { FormIdSchema } from "@/lib/forms/schema";
-import { OrganizationConfigKey } from "@/lib/schema";
-import { FormSubmissionService } from "@/lib/services/FormSubmissionService";
-import { MembersService } from "@/lib/services/MemberService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { OrganizationsService } from "@/lib/services/OrganizationService";
+import FormPageLayout from "@/features/forms/components/FormPageLayout";
+import FormResponseView from "@/features/forms/components/FormResponseView";
+import LocalDateTime from "@/features/forms/components/LocalDateTime";
+import { auth } from "@/core/auth/auth";
+import { getSlugFromHost } from "@/core/tenant/clientAuthUtils";
+import { FormIdSchema } from "@/features/forms/lib/schema";
+import {
+  canEditSubmission,
+  getFormAvailability,
+} from "@/features/forms/lib/submission";
+import { OrganizationConfigKey } from "@/core/config/schema";
+import { FormSubmissionService } from "@/features/forms/services/FormSubmissionService";
+import { MembersService } from "@/features/membership/services/MemberService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { OrganizationsService } from "@/core/tenant/OrganizationService";
 
 export const metadata = { title: "Your response" };
 
 type ResponsePageProps = { params: Promise<{ formId: string }> };
 
-/** A member's own latest response to a form, read-only. */
+/**
+ * A member's own latest response to a form, read-only, with a link to edit it
+ * while it's still editable (the form is open and the response is pending).
+ */
 export default async function ResponsePage({ params }: ResponsePageProps) {
   const { formId } = await params;
   const requestHeaders = await headers();
@@ -50,6 +58,10 @@ export default async function ResponsePage({ params }: ResponsePageProps) {
   );
   if (!response) notFound();
   const { definition, submission, answers } = response;
+  const canEdit = canEditSubmission({
+    availability: getFormAvailability(definition),
+    reviewStatus: submission.reviewStatus,
+  });
 
   return (
     <FormPageLayout
@@ -71,6 +83,14 @@ export default async function ResponsePage({ params }: ResponsePageProps) {
           )}
           .
         </p>
+        {canEdit && (
+          <Link
+            href={`/forms/${encodeURIComponent(definition.formId)}/edit`}
+            className="theme-control self-start rounded border border-brand-stroke-strong px-4 py-2 text-paragraph-1 font-semibold text-brand-text hover:bg-brand-fill"
+          >
+            Edit response
+          </Link>
+        )}
       </header>
       <FormResponseView
         definition={{

@@ -1,16 +1,19 @@
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { MembersService } from "@/lib/services/MemberService";
-import { OrganizationConfigService } from "@/lib/services/OrganizationConfigService";
-import { getWidgetOptions, WIDGET_FEATURE_KEYS } from "@/lib/dashboard/widgets";
-import DashboardLayoutBuilder from "@/components/dashboard/DashboardLayoutBuilder";
-import type { DashboardLayout } from "@/lib/dashboard/schema";
+import { auth } from "@/core/auth/auth";
+import { MembersService } from "@/features/membership/services/MemberService";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import {
+  getWidgetOptions,
+  WIDGET_FEATURE_KEYS,
+} from "@/features/dashboard/widgets";
+import DashboardLayoutBuilder from "@/features/dashboard/components/DashboardLayoutBuilder";
+import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import {
   ForbiddenError,
   NoActiveOrganizationError,
   UnauthorizedError,
-} from "@/lib/errors";
-import { redirectIfNotAdmin } from "@/lib/authUtils";
+} from "@/core/api/errors";
+import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 
 export const metadata = {
   title: "Customize Admin Dashboard",

@@ -1,12 +1,12 @@
 import "dotenv/config";
-import { juno } from "../lib/junoClient";
-import { parseJunoNumericId } from "../lib/services/junoFileUtils";
+import { juno } from "@/core/files/junoClient";
+import { parseJunoNumericId } from "@/core/files/junoFileUtils";
 import { ResponseError } from "juno-sdk/internal/runtime";
-import { JunoFileService } from "@/lib/services/JunoFileService";
-import { setupEmail } from "../lib/emailSetup";
+import { JunoFileService } from "@/core/files/JunoFileService";
+import { setupEmailUnlessAllowedToFail } from "@/core/email/emailSetup";
 
 async function main() {
-  await setupEmail();
+  await setupEmailUnlessAllowedToFail();
 
   const projectId = process.env.JUNO_PROJECT_ID?.trim();
   const organizationId = process.env.SETUP_ORGANIZATION_ID?.trim();

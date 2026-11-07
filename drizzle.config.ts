@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { defineConfig } from "drizzle-kit";
-import { getDbUrl } from "./lib/env";
+import { getDbUrl } from "./core/utils/env";
 
 // Schema generation/checking needs no live database or credentials.
 const needsDatabase = process.argv.some((arg) =>
@@ -9,7 +9,7 @@ const needsDatabase = process.argv.some((arg) =>
 
 export default defineConfig({
   out: "./drizzle",
-  schema: "./lib/schema.ts",
+  schema: "./core/db/schema.ts",
   dialect: "postgresql",
   ...(needsDatabase || process.env.DB_URL?.trim()
     ? { dbCredentials: { url: getDbUrl() } }
