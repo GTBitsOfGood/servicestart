@@ -1,3 +1,4 @@
+import { BadRequestError, InternalServerError } from "@/core/api/errors";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -31,11 +32,10 @@ function composeEmailBody({
 
 const app = new Hono().post(
   "/",
-  zValidator("json", sendEmailSchema, (result, c) => {
+  zValidator("json", sendEmailSchema, (result) => {
     if (!result.success) {
-      return c.json(
-        { error: result.error.issues[0]?.message ?? "Invalid email" },
-        400,
+      throw new BadRequestError(
+        result.error.issues[0]?.message ?? "Invalid email",
       );
     }
   }),
@@ -57,16 +57,13 @@ const app = new Hono().post(
     });
 
     if (result === "no-recipients") {
-      return c.json(
-        {
-          error: "None of the selected recipients belong to this organization",
-        },
-        400,
+      throw new BadRequestError(
+        "None of the selected recipients belong to this organization",
       );
     }
 
     if (result === "delivery-failed") {
-      return c.json({ error: "Failed to send email" }, 500);
+      throw new InternalServerError("Failed to send email");
     }
 
     return c.json({ success: true });

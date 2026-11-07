@@ -1,8 +1,13 @@
+import {
+  BadRequestError,
+  ForbiddenError,
+  NotFoundError,
+} from "@/core/api/errors";
+import { requireAuth, requireAdmin } from "@/core/auth/authUtils";
 import { Hono } from "hono";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { AnnouncementsService } from "@/features/communications/services/AnnouncementService";
-import { auth } from "@/core/auth/auth";
 import { EmailService } from "@/core/email/EmailService";
 import { MembersService } from "@/features/membership/server";
 import { paginationQuerySchema } from "@/core/api/apiUtils";
@@ -25,32 +30,11 @@ const app = new Hono()
         .and(z.object({ draft: z.boolean() })),
     ),
     async (c) => {
-      const session = await auth.api.getSession({
-        headers: c.req.header(),
-      });
-
-      if (!session?.user) {
-        return c.json({ error: "Unauthorized" }, { status: 401 });
-      }
-
-      const activeOrganizationId = session.session.activeOrganizationId;
-
-      if (!activeOrganizationId) {
-        return c.json({ error: "No active organization" }, { status: 400 });
-      }
-
-      // Check if user is admin or owner of the active organization
-      const membership = await MembersService.findByUserAndOrganization(
-        session.user.id,
-        activeOrganizationId,
+      const session = await requireAdmin(
+        c,
+        "Forbidden: Admin or owner role required",
       );
-
-      if (!MembersService.isAdminOrOwner(membership?.role)) {
-        return c.json(
-          { error: "Forbidden: Admin or owner role required" },
-          { status: 403 },
-        );
-      }
+      const activeOrganizationId = session.session.activeOrganizationId!;
 
       const data = c.req.valid("json");
 
@@ -65,7 +49,7 @@ const app = new Hono()
       if (createdAnnouncement.publishedAt) {
         const content = contentSchema.safeParse(createdAnnouncement.content);
         if (!content.success) {
-          return c.json({ error: "Invalid content format" }, { status: 400 });
+          throw new BadRequestError("Invalid content format");
         }
         const data = content.data;
 
@@ -92,34 +76,18 @@ const app = new Hono()
       ),
     ),
     async (c) => {
-      const session = await auth.api.getSession({
-        headers: c.req.header(),
-      });
-
-      if (!session?.user) {
-        return c.json({ error: "Unauthorized" }, { status: 401 });
-      }
+      const session = await requireAuth(c);
 
       const activeOrganizationId = session.session.activeOrganizationId;
 
       if (!activeOrganizationId) {
-        return c.json({ error: "No active organization" }, { status: 403 });
+        throw new ForbiddenError("No active organization");
       }
 
       const { page, pageSize, draft } = c.req.valid("query");
       let onlyDrafts = false;
       if (draft) {
-        const membership = await MembersService.findByUserAndOrganization(
-          session.user.id,
-          activeOrganizationId,
-        );
-
-        if (!MembersService.isAdminOrOwner(membership?.role)) {
-          return c.json(
-            { error: "Forbidden: Admin or owner role required" },
-            { status: 403 },
-          );
-        }
+        await requireAdmin(c, "Forbidden: Admin or owner role required");
         onlyDrafts = true;
       }
 
@@ -135,22 +103,16 @@ const app = new Hono()
   .get("/:announcementId", async (c) => {
     const { announcementId } = c.req.param();
 
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
-
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await requireAuth(c);
     const { activeOrganizationId } = session.session;
     if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
+      throw new ForbiddenError("No active organization");
     }
 
     const announcement = await AnnouncementsService.getById(announcementId);
 
     if (!announcement || announcement.organizationId !== activeOrganizationId) {
-      return c.json({ error: "Announcement not found" }, { status: 404 });
+      throw new NotFoundError("Announcement not found");
     }
     if (announcement.isDraft) {
       const membership = await MembersService.findByUserAndOrganization(
@@ -158,7 +120,7 @@ const app = new Hono()
         activeOrganizationId,
       );
       if (!MembersService.isAdminOrOwner(membership?.role)) {
-        return c.json({ error: "Announcement not found" }, { status: 404 });
+        throw new NotFoundError("Announcement not found");
       }
     }
 
@@ -180,28 +142,12 @@ const app = new Hono()
       const { announcementId } = c.req.param();
       const { name, content, subject, template, draft } = c.req.valid("json");
 
-      const session = await auth.api.getSession({
-        headers: c.req.header(),
-      });
-
-      if (!session?.user) {
-        return c.json({ error: "Unauthorized" }, { status: 401 });
-      }
+      const session = await requireAuth(c);
       const { activeOrganizationId } = session.session;
       if (!activeOrganizationId) {
-        return c.json({ error: "No active organization" }, { status: 403 });
+        throw new ForbiddenError("No active organization");
       }
-      const membership = await MembersService.findByUserAndOrganization(
-        session.user.id,
-        activeOrganizationId,
-      );
-
-      if (!MembersService.isAdminOrOwner(membership?.role)) {
-        return c.json(
-          { error: "Forbidden: Admin or owner role required" },
-          { status: 403 },
-        );
-      }
+      await requireAdmin(c, "Forbidden: Admin or owner role required");
 
       const existingAnnouncement =
         await AnnouncementsService.getById(announcementId);
@@ -219,7 +165,7 @@ const app = new Hono()
         },
       );
       if (!updatedAnnouncement) {
-        return c.json({ error: "Announcement not found" }, { status: 404 });
+        throw new NotFoundError("Announcement not found");
       }
 
       if (
@@ -228,7 +174,7 @@ const app = new Hono()
       ) {
         const content = contentSchema.safeParse(updatedAnnouncement.content);
         if (!content.success) {
-          return c.json({ error: "Invalid content format" }, { status: 400 });
+          throw new BadRequestError("Invalid content format");
         }
         const data = content.data;
 
@@ -243,32 +189,18 @@ const app = new Hono()
   )
   .delete("/:announcementId", async (c) => {
     const { announcementId } = c.req.param();
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await requireAuth(c);
     const { activeOrganizationId } = session.session;
     if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 403 });
+      throw new ForbiddenError("No active organization");
     }
-    const membership = await MembersService.findByUserAndOrganization(
-      session.user.id,
-      activeOrganizationId,
-    );
-    if (!MembersService.isAdminOrOwner(membership?.role)) {
-      return c.json(
-        { error: "Forbidden: Admin or owner role required" },
-        { status: 403 },
-      );
-    }
+    await requireAdmin(c, "Forbidden: Admin or owner role required");
     const deleted = await AnnouncementsService.deleteAnnouncement(
       announcementId,
       activeOrganizationId,
     );
     if (deleted.length === 0) {
-      return c.json({ error: "Announcement not found" }, { status: 404 });
+      throw new NotFoundError("Announcement not found");
     }
     return c.json(deleted[0]);
   });
