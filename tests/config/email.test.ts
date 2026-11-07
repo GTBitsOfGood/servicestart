@@ -187,11 +187,11 @@ it("rejects a missing sender domain without sending or deriving a localhost send
   expect(juno.email.sendEmail).not.toHaveBeenCalled();
 });
 
-it("uses the default application URL and normalized domain for invitations", async () => {
+it("uses the tenant application URL and normalized sender domain for invitations", async () => {
   await EmailService.sendInvitationEmail(invitation);
   const payload = vi.mocked(juno.email.sendEmail).mock.calls[0][0];
   expect(payload.sender.email).toBe("test@mail.notifications.test");
   expect(payload.contents[0].value).toContain(
-    "http://localhost:3000/accept-invitation/invite-1",
+    "http://test.lvh.me:3000/accept-invitation/invite-1",
   );
 });
