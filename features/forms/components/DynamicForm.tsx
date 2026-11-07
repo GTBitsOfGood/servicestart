@@ -60,6 +60,21 @@ const noImageSrc = () => null;
 
 const FORM_ERROR_ID = "form-error";
 
+function isBlankGroupEntry(entry: unknown) {
+  return (
+    typeof entry === "object" &&
+    entry !== null &&
+    !Array.isArray(entry) &&
+    Object.values(entry).every(
+      (value) =>
+        value === undefined ||
+        value === null ||
+        (typeof value === "string" && value.trim() === "") ||
+        (Array.isArray(value) && value.length === 0),
+    )
+  );
+}
+
 /** Renders a form's questions in order and validates them as they're filled. */
 export default function DynamicForm({
   definition,
@@ -106,7 +121,7 @@ export default function DynamicForm({
                 },
                 () => ({}),
               );
-          answers[component.id] = entries.map((entry) =>
+          const groupAnswers = entries.map((entry) =>
             typeof entry === "object"
               ? Object.fromEntries(
                   Object.entries(entry).map(([id, cell]) => [
@@ -121,6 +136,16 @@ export default function DynamicForm({
                 )
               : entry,
           );
+          // A single entry is always displayed, but a blank optional group
+          // stays unanswered until at least one child has a value.
+          if (
+            !component.required &&
+            !component.config.repeatable &&
+            groupAnswers.length <= 1 &&
+            groupAnswers.every(isBlankGroupEntry)
+          )
+            continue;
+          answers[component.id] = groupAnswers;
           continue;
         }
         answers[component.id] =

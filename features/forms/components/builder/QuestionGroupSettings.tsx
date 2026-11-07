@@ -10,6 +10,7 @@ import {
   builderInputClass,
   CheckboxSetting,
   FieldError,
+  fieldProps,
   NumberSetting,
 } from "@/features/forms/components/builder/fields";
 import { questionFieldId } from "@/features/forms/components/builder/draft";
@@ -30,6 +31,7 @@ export default function QuestionGroupSettings({
   const [type, setType] = useState<SubQuestionType>(
     FormComponentType.ShortText,
   );
+  const questionsField = fieldProps(questionKey, "config.questions", errors);
   function changeQuestions(questions: SubQuestionInput[]) {
     onChange({ ...config, questions });
   }
@@ -153,7 +155,7 @@ export default function QuestionGroupSettings({
       <FieldError
         questionKey={questionKey}
         path="config.questions"
-        error={errors["config.questions"]}
+        error={questionsField.error}
       />
       <div className="flex flex-wrap items-end gap-3">
         <label
@@ -175,6 +177,9 @@ export default function QuestionGroupSettings({
           </select>
         </label>
         <ThemedButton
+          id={questionsField.id}
+          aria-invalid={questionsField["aria-invalid"]}
+          aria-describedby={questionsField["aria-describedby"]}
           type="button"
           variant="secondary"
           disabled={config.questions.length >= 10}

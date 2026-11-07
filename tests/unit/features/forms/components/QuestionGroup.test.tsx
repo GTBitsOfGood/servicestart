@@ -8,7 +8,10 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 import DynamicForm from "@/features/forms/components/DynamicForm";
 import { FormComponentType } from "@/features/forms/schema";
-import type { FormComponentOfType } from "@/features/forms/lib/schema";
+import type {
+  FormComponentOfType,
+  SubQuestion,
+} from "@/features/forms/lib/schema";
 
 const id = "00000000-0000-4000-8000-000000000001";
 const subId = "00000000-0000-4000-8000-000000000002";
@@ -35,9 +38,113 @@ const group: FormComponentOfType<FormComponentType.QuestionGroup> = {
   },
 };
 const definition = { formId: "health", components: [group] };
+const notesId = "00000000-0000-4000-8000-000000000003";
+const optionalSingle: FormComponentOfType<FormComponentType.QuestionGroup> = {
+  ...group,
+  required: false,
+  config: {
+    repeatable: false,
+    questions: [
+      ...group.config.questions,
+      {
+        id: notesId,
+        type: FormComponentType.ShortText,
+        label: "Instructions",
+        required: false,
+        config: {},
+      },
+    ],
+  },
+};
+const optionalDefinition = { formId: "health", components: [optionalSingle] };
 afterEach(cleanup);
 
 describe("question group renderer", () => {
+  it("omits an untouched optional single-entry group with required children", async () => {
+    const onSubmit = vi.fn(async () => ({ ok: true as const }));
+    render(<DynamicForm definition={optionalDefinition} onSubmit={onSubmit} />);
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({}));
+  });
+
+  it("omits an optional single-entry group after its answers are cleared", async () => {
+    const onSubmit = vi.fn(async () => ({ ok: true as const }));
+    render(
+      <DynamicForm
+        definition={optionalDefinition}
+        initialValues={{ [id]: [{ [subId]: 2, [notesId]: "Morning" }] }}
+        onSubmit={onSubmit}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/^Dose /), {
+      target: { value: "" },
+    });
+    fireEvent.change(screen.getByLabelText("Instructions"), {
+      target: { value: "   " },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({}));
+  });
+
+  it("validates required children when an optional single-entry group is partially filled", async () => {
+    const onSubmit = vi.fn(async () => ({ ok: true as const }));
+    render(<DynamicForm definition={optionalDefinition} onSubmit={onSubmit} />);
+    fireEvent.change(screen.getByLabelText("Instructions"), {
+      target: { value: "Morning" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    const dose = screen.getByLabelText(/^Dose /);
+    await waitFor(() => expect(document.activeElement).toBe(dose));
+    expect(dose.getAttribute("aria-invalid")).toBe("true");
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it.each<{ question: SubQuestion; value: number | boolean }>([
+    {
+      question: {
+        id: subId,
+        type: FormComponentType.Number,
+        label: "Answer",
+        required: true,
+        config: { min: 0 },
+      },
+      value: 0,
+    },
+    {
+      question: {
+        id: subId,
+        type: FormComponentType.YesNo,
+        label: "Answer",
+        required: true,
+        config: {},
+      },
+      value: false,
+    },
+  ])(
+    "keeps $value as a supplied answer in an optional single-entry group",
+    async ({ question, value }) => {
+      const onSubmit = vi.fn(async () => ({ ok: true as const }));
+      const component: typeof optionalSingle = {
+        ...optionalSingle,
+        config: {
+          repeatable: false,
+          questions: [question],
+        },
+      };
+      render(
+        <DynamicForm
+          definition={{ formId: "health", components: [component] }}
+          initialValues={{ [id]: [{ [subId]: value }] }}
+          onSubmit={onSubmit}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+      await waitFor(() =>
+        expect(onSubmit).toHaveBeenCalledWith({ [id]: [{ [subId]: value }] }),
+      );
+    },
+  );
+
   it("adds and removes entries within bounds and submits numbers as numbers", async () => {
     const onSubmit = vi.fn(async () => ({ ok: true as const }));
     render(<DynamicForm definition={definition} onSubmit={onSubmit} />);

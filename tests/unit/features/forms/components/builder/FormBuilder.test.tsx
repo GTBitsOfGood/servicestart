@@ -101,6 +101,27 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("FormBuilderClient", () => {
+  it("focuses the add sub-question button and describes the error for an empty group", async () => {
+    renderBuilder(FormStatus.Draft, []);
+    fireEvent.click(screen.getByRole("button", { name: "Add Question group" }));
+    fireEvent.change(screen.getByLabelText("Question"), {
+      target: { value: "Contacts" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save questions" }));
+    const add = screen.getByRole("button", { name: "Add sub-question" });
+    await waitFor(() => expect(document.activeElement).toBe(add));
+    expect(add.getAttribute("aria-invalid")).toBe("true");
+    const description = add.getAttribute("aria-describedby");
+    expect(description).toBeTruthy();
+    expect(document.getElementById(description!)?.textContent).toBe(
+      "Add at least one sub-question",
+    );
+    expect($put).not.toHaveBeenCalled();
+    fireEvent.click(add);
+    expect(add.getAttribute("aria-describedby")).toBeNull();
+    expect(add.getAttribute("aria-invalid")).toBeNull();
+  });
+
   it("duplicates groups with new sub-question IDs and locks published groups", async () => {
     const group: FormComponent = {
       id: ID_1,
