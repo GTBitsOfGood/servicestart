@@ -32,9 +32,12 @@ async function listByOrganization(
     .offset(opts.offset);
 }
 
-async function findById(id: string) {
-  const [row] = await db.select().from(media).where(eq(media.id, id)).limit(1);
-
+async function findById(id: string, organizationId: string) {
+  const [row] = await db
+    .select()
+    .from(media)
+    .where(and(eq(media.id, id), eq(media.organizationId, organizationId)))
+    .limit(1);
   return row ?? null;
 }
 
