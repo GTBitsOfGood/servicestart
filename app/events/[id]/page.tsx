@@ -332,7 +332,7 @@ export default async function EventDetailPage({
             <div className="flex items-center gap-2">
               <BogIcon name="users" size={16} />
               <span className="text-paragraph-1">
-                Max Capacity: {rsvpLimit ?? "â€”"}
+                Max Capacity: {rsvpLimit ?? "—"}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -360,7 +360,7 @@ export default async function EventDetailPage({
                 </a>
               ))
             ) : (
-              <span>â€”</span>
+              <span>—</span>
             )}
           </div>
         </div>
