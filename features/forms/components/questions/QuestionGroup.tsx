@@ -39,7 +39,7 @@ export default function QuestionGroup({
         id={fieldId(component.id)}
         tabIndex={-1}
         aria-describedby={describedBy(component, error)}
-        className="flex min-w-0 flex-col gap-5 outline-none"
+        className="@container flex min-w-0 flex-col gap-5 outline-none"
       >
         {entries.map((entry, index) => (
           <fieldset
@@ -49,7 +49,7 @@ export default function QuestionGroup({
             <legend className="px-2 text-paragraph-1 font-semibold text-page-text">
               {component.label} {index + 1}
             </legend>
-            <div className="grid min-w-0 grid-cols-1 gap-6 tablet:grid-cols-2">
+            <div className="grid min-w-0 grid-cols-1 gap-6 @md:grid-cols-2">
               {questions.map((question, position) => {
                 const id = `${component.id}.${index}.${question.id}`;
                 const Renderer = FORM_RENDERERS[

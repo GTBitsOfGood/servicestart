@@ -193,6 +193,11 @@ test.describe("admin submission page", () => {
     await expect(page.getByLabel(/^Contact Phone Number/).nth(1)).toHaveValue(
       "4045550456",
     );
+    const phoneInput = await page
+      .getByLabel(/^Contact Phone Number/)
+      .first()
+      .boundingBox();
+    expect(phoneInput?.width).toBeGreaterThan(150);
     await expect(
       page.getByRole("button", { name: "Add another contact" }),
     ).toHaveCount(0);
