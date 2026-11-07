@@ -127,7 +127,7 @@ export default function FormFillClient(props: FormFillClientProps) {
         ? {
             initialValues: props.initialValues,
             submitLabel: "Save changes",
-            submittingLabel: "Savingâ€¦",
+            submittingLabel: "Saving…",
             imageSrc,
           }
         : {})}
