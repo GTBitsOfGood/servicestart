@@ -1,0 +1,1 @@
+ALTER TYPE "form_component_type" ADD VALUE 'question_group';

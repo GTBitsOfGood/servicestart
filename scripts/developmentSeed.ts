@@ -45,10 +45,20 @@ function applicationForm(
       dueAt: form.settings.dueAt ? future(30 + group * 7) : null,
       closesAt: form.settings.closesAt ? future(90) : null,
     },
-    components: form.components.map((component, index) => ({
-      ...component,
-      id: applicationId(group, index + 1),
-    })),
+    components: form.components.map((component, index) => {
+      const copy = { ...component, id: applicationId(group, index + 1) };
+      if (copy.type !== FormComponentType.QuestionGroup) return copy;
+      return {
+        ...copy,
+        config: {
+          ...copy.config,
+          questions: copy.config.questions.map((sub, subIndex) => ({
+            ...sub,
+            id: applicationId(group, 100 + index * 10 + subIndex),
+          })),
+        },
+      };
+    }),
   };
 }
 

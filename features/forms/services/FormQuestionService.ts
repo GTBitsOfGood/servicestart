@@ -1,7 +1,13 @@
+import { randomUUID } from "node:crypto";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import db from "@/core/db";
-import { formComponents, forms, FormStatus } from "@/core/db/schema";
+import {
+  formComponents,
+  forms,
+  FormStatus,
+  FormComponentType,
+} from "@/core/db/schema";
 import type { FormComponent } from "@/features/forms/lib/schema";
 import {
   FormError,
@@ -70,9 +76,23 @@ async function save(
         "Questions can't change once a form is published",
       );
 
-    const existing = new Set(
-      (await questionsOf(tx, organizationId, form.id)).map(({ id }) => id),
-    );
+    const savedQuestions = await questionsOf(tx, organizationId, form.id);
+    const existing = new Set(savedQuestions.map(({ id }) => id));
+    for (const question of questions) {
+      if (question.type !== FormComponentType.QuestionGroup) continue;
+      const saved = savedQuestions.find(({ id }) => id === question.id);
+      const owned = new Set(
+        saved?.type === FormComponentType.QuestionGroup
+          ? saved.config.questions.map(({ id }) => id)
+          : [],
+      );
+      if (question.config.questions.some(({ id }) => id && !owned.has(id)))
+        throw new FormError(
+          "invalid",
+          "A sub-question doesn't belong to this group",
+          "questions",
+        );
+    }
     // Also rejects IDs from other forms and organizations.
     if (questions.some(({ id }) => id && !existing.has(id)))
       throw new FormError(
@@ -96,7 +116,20 @@ async function save(
 
     const inserts = [];
     for (const [position, { id, ...question }] of questions.entries()) {
-      const values = { ...question, position };
+      const values = {
+        ...question,
+        position,
+        config:
+          question.type === FormComponentType.QuestionGroup
+            ? {
+                ...question.config,
+                questions: question.config.questions.map((sub) => ({
+                  ...sub,
+                  id: sub.id ?? randomUUID(),
+                })),
+              }
+            : question.config,
+      };
       if (id)
         await tx
           .update(formComponents)

@@ -101,6 +101,121 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("FormBuilderClient", () => {
+  it("focuses the add sub-question button and describes the error for an empty group", async () => {
+    renderBuilder(FormStatus.Draft, []);
+    fireEvent.click(screen.getByRole("button", { name: "Add Question group" }));
+    fireEvent.change(screen.getByLabelText("Question"), {
+      target: { value: "Contacts" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save questions" }));
+    const add = screen.getByRole("button", { name: "Add sub-question" });
+    await waitFor(() => expect(document.activeElement).toBe(add));
+    expect(add.getAttribute("aria-invalid")).toBe("true");
+    const description = add.getAttribute("aria-describedby");
+    expect(description).toBeTruthy();
+    expect(document.getElementById(description!)?.textContent).toBe(
+      "Add at least one sub-question",
+    );
+    expect($put).not.toHaveBeenCalled();
+    fireEvent.click(add);
+    expect(add.getAttribute("aria-describedby")).toBeNull();
+    expect(add.getAttribute("aria-invalid")).toBeNull();
+  });
+
+  it("duplicates groups with new sub-question IDs and locks published groups", async () => {
+    const group: FormComponent = {
+      id: ID_1,
+      type: FormComponentType.QuestionGroup,
+      label: "Contacts",
+      helpText: null,
+      required: true,
+      position: 0,
+      config: {
+        repeatable: false,
+        questions: [
+          {
+            id: ID_2,
+            type: FormComponentType.ShortText,
+            label: "Name",
+            required: true,
+            config: {},
+          },
+        ],
+      },
+    };
+    respond(200, { questions: [] });
+    const view = renderBuilder(FormStatus.Draft, [group]);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Duplicate question 1" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save questions" }));
+    await waitFor(() => expect($put).toHaveBeenCalledTimes(1));
+    const [original, copy] = $put.mock.calls[0][0].json.questions;
+    expect(original.config.questions[0].id).toBe(ID_2);
+    expect(copy.config.questions[0].id).toBeUndefined();
+    view.unmount();
+    renderBuilder(FormStatus.Published, [group]);
+    expect(
+      screen
+        .getAllByRole("textbox")
+        .every((input) => input.matches(":disabled")),
+    ).toBe(true);
+    expect(screen.queryByRole("button", { name: "Save questions" })).toBeNull();
+  });
+
+  it("builds, edits, reorders and removes sub-questions and saves repeat settings", async () => {
+    respond(200, { questions: [] });
+    renderBuilder(FormStatus.Draft, []);
+    fireEvent.click(screen.getByRole("button", { name: "Add Question group" }));
+    fireEvent.change(screen.getByLabelText("Question"), {
+      target: { value: "Contacts" },
+    });
+    fireEvent.click(screen.getByLabelText("Allow multiple entries"));
+    fireEvent.change(screen.getByLabelText("Minimum entries"), {
+      target: { value: "2" },
+    });
+    fireEvent.change(screen.getByLabelText("Maximum entries"), {
+      target: { value: "3" },
+    });
+    fireEvent.change(screen.getByLabelText("Add button label"), {
+      target: { value: "Add contact" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add sub-question" }));
+    fireEvent.change(screen.getAllByLabelText("Question")[1], {
+      target: { value: "Name" },
+    });
+    fireEvent.change(screen.getByLabelText("Sub-question type"), {
+      target: { value: FormComponentType.Phone },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Add sub-question" }));
+    fireEvent.change(screen.getAllByLabelText("Question")[2], {
+      target: { value: "Phone" },
+    });
+    const phone = screen.getByRole("region", { name: "2. Phone: Phone" });
+    fireEvent.click(
+      within(phone).getByRole("button", { name: "Move question 2 up" }),
+    );
+    expect(questionLabels()).toEqual(["Contacts", "Phone", "Name"]);
+    fireEvent.click(screen.getByRole("button", { name: "Add sub-question" }));
+    const extra = screen.getByRole("region", { name: "3. Phone: Untitled" });
+    fireEvent.click(
+      within(extra).getByRole("button", { name: "Remove question 3" }),
+    );
+    expect(questionLabels()).toEqual(["Contacts", "Phone", "Name"]);
+    fireEvent.click(screen.getByRole("button", { name: "Save questions" }));
+    await waitFor(() => expect($put).toHaveBeenCalledTimes(1));
+    expect($put.mock.calls[0][0].json.questions[0].config).toMatchObject({
+      repeatable: true,
+      minEntries: 2,
+      maxEntries: 3,
+      addLabel: "Add contact",
+      questions: [
+        { label: "Phone", type: FormComponentType.Phone },
+        { label: "Name", type: FormComponentType.ShortText },
+      ],
+    });
+  });
+
   it("offers every question type in the palette", () => {
     renderBuilder();
     const palette = screen.getByRole("complementary", {

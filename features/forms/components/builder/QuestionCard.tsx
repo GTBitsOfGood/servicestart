@@ -21,6 +21,7 @@ import { FormComponentType } from "@/features/forms/schema";
 import { cn } from "@/core/utils/utils";
 
 type QuestionCardProps = {
+  subQuestion?: boolean;
   question: DraftQuestion;
   index: number;
   count: number;
@@ -49,6 +50,7 @@ export default function QuestionCard({
   onMove,
   onDuplicate,
   onRemove,
+  subQuestion = false,
 }: QuestionCardProps) {
   const { key, type } = question;
   const definition = QUESTION_TYPES[type];
@@ -99,16 +101,18 @@ export default function QuestionCard({
             >
               <ArrowDown size={18} aria-hidden />
             </button>
-            <button
-              type="button"
-              className={actionClass}
-              aria-label={`Duplicate question ${index + 1}`}
-              title="Duplicate"
-              disabled={!canDuplicate}
-              onClick={onDuplicate}
-            >
-              <Copy size={18} aria-hidden />
-            </button>
+            {!subQuestion && (
+              <button
+                type="button"
+                className={actionClass}
+                aria-label={`Duplicate question ${index + 1}`}
+                title="Duplicate"
+                disabled={!canDuplicate}
+                onClick={onDuplicate}
+              >
+                <Copy size={18} aria-hidden />
+              </button>
+            )}
             <button
               type="button"
               className={actionClass}
@@ -142,24 +146,30 @@ export default function QuestionCard({
         <FieldError questionKey={key} path="label" error={label.error} />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor={helpTextId}
-          className="text-paragraph-2 font-semibold text-page-text"
-        >
-          {isHeader ? "Description" : "Help text"}{" "}
-          <span className="font-normal text-grey-text-weak">(optional)</span>
-        </label>
-        <textarea
-          id={helpTextId}
-          rows={2}
-          value={question.helpText}
-          onChange={(event) =>
-            onChange({ ...question, helpText: event.target.value })
-          }
-          className={cn(builderInputClass, inputBorder(undefined), "resize-y")}
-        />
-      </div>
+      {!subQuestion && (
+        <div className="flex flex-col gap-1">
+          <label
+            htmlFor={helpTextId}
+            className="text-paragraph-2 font-semibold text-page-text"
+          >
+            {isHeader ? "Description" : "Help text"}{" "}
+            <span className="font-normal text-grey-text-weak">(optional)</span>
+          </label>
+          <textarea
+            id={helpTextId}
+            rows={2}
+            value={question.helpText}
+            onChange={(event) =>
+              onChange({ ...question, helpText: event.target.value })
+            }
+            className={cn(
+              builderInputClass,
+              inputBorder(undefined),
+              "resize-y",
+            )}
+          />
+        </div>
+      )}
 
       {!isHeader && (
         <label className="flex items-center gap-2 text-paragraph-2 text-page-text">

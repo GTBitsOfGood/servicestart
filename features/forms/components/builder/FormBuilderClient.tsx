@@ -136,6 +136,14 @@ export default function FormBuilderClient({
       key: newKey(),
       id: undefined,
     };
+    if (copy.type === FormComponentType.QuestionGroup) {
+      const config = copy.config as { questions: { id?: string }[] };
+      config.questions = config.questions.map((sub) => {
+        const next = { ...sub };
+        delete next.id;
+        return next;
+      });
+    }
     focusTarget.current = questionFieldId(copy.key, "label");
     update(
       [...drafts.slice(0, index + 1), copy, ...drafts.slice(index + 1)],

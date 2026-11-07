@@ -49,6 +49,7 @@ export enum FormComponentType {
   Dropdown = "dropdown",
   Date = "date",
   YesNo = "yes_no",
+  QuestionGroup = "question_group",
 }
 
 export const FORM_COMPONENT_TYPE_VALUES = Object.values(FormComponentType) as [

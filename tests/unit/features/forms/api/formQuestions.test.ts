@@ -68,6 +68,66 @@ async function load(headers: Record<string, string>, formId: string) {
 }
 
 describe("form questions API", () => {
+  it("assigns IDs to new sub-questions, preserves edits and rejects foreign IDs", async () => {
+    const a = await setup();
+    const b = await setup();
+    const form = await createForm(a.org.id, { components: [] });
+    const otherForm = await createForm(a.org.id, { components: [] });
+    const otherOrg = await createForm(b.org.id, { components: [] });
+    const group: QuestionInput = {
+      type: FormComponentType.QuestionGroup,
+      label: "Contacts",
+      helpText: null,
+      required: true,
+      config: {
+        repeatable: true,
+        minEntries: 2,
+        maxEntries: 3,
+        questions: [
+          {
+            type: FormComponentType.Phone,
+            label: "Phone",
+            required: true,
+            config: {},
+          },
+        ],
+      },
+    };
+    expect((await save(a.headers, form.formId, [group])).status).toBe(200);
+    const saved = (await load(a.headers, form.formId)).questions[0];
+    expect(saved.type).toBe(FormComponentType.QuestionGroup);
+    if (saved.type !== FormComponentType.QuestionGroup)
+      throw new Error("Expected group");
+    expect(saved.config.questions[0].id).toMatch(/^[0-9a-f-]{36}$/);
+    const savedInput = {
+      id: saved.id,
+      type: saved.type,
+      label: saved.label,
+      helpText: saved.helpText,
+      required: saved.required,
+      config: saved.config,
+    };
+    expect((await save(a.headers, form.formId, [savedInput])).status).toBe(200);
+    expect((await load(a.headers, form.formId)).questions[0]).toEqual(saved);
+    const foreign = { ...group, config: saved.config } as QuestionInput;
+    expect((await save(a.headers, otherForm.formId, [foreign])).status).toBe(
+      400,
+    );
+    expect((await save(b.headers, otherOrg.formId, [foreign])).status).toBe(
+      400,
+    );
+    // A top-level question ID also can't be smuggled into a group's config.
+    const stolen = {
+      ...group,
+      config: {
+        ...saved.config,
+        questions: [{ ...saved.config.questions[0], id: saved.id }],
+      },
+    } as QuestionInput;
+    expect((await save(a.headers, form.formId, [stolen])).status).toBe(400);
+    expect((await load(a.headers, form.formId)).questions[0]).toEqual(saved);
+  });
+
   it("returns the form's title, status, and questions in order", async () => {
     const { org, headers } = await setup();
     const form = await createForm(org.id, {

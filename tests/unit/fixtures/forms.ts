@@ -235,30 +235,47 @@ export const VISIONARIES_ATTENDEE_FORMS: FormDefinition[] = [
     "2027-05-01T03:59:00.000Z",
     [
       sectionHeader("Emergency Contact"),
-      shortText("Contact Name"),
-      shortText("Relationship to Camper"),
       {
-        type: FormComponentType.Phone,
-        label: "Contact Phone Number",
-        helpText: null,
+        type: FormComponentType.QuestionGroup,
+        label: "Emergency contacts",
+        helpText: "Provide two contacts we can reach during camp.",
         required: true,
-        config: {},
-      },
-      {
-        type: FormComponentType.Email,
-        label: "Contact Email",
-        helpText: null,
-        required: false,
-        config: {},
-      },
-      sectionHeader("Second Emergency Contact", "Optional, but recommended."),
-      shortText("Second Contact Name", false),
-      {
-        type: FormComponentType.Phone,
-        label: "Second Contact Phone Number",
-        helpText: null,
-        required: false,
-        config: {},
+        config: {
+          repeatable: true,
+          minEntries: 2,
+          maxEntries: 3,
+          addLabel: "Add another contact",
+          questions: [
+            {
+              id: visionariesId(1, 101),
+              type: FormComponentType.ShortText,
+              label: "Contact Name",
+              required: true,
+              config: {},
+            },
+            {
+              id: visionariesId(1, 102),
+              type: FormComponentType.ShortText,
+              label: "Relationship to Camper",
+              required: true,
+              config: {},
+            },
+            {
+              id: visionariesId(1, 103),
+              type: FormComponentType.Phone,
+              label: "Contact Phone Number",
+              required: true,
+              config: {},
+            },
+            {
+              id: visionariesId(1, 104),
+              type: FormComponentType.Email,
+              label: "Contact Email",
+              required: false,
+              config: {},
+            },
+          ],
+        },
       },
     ],
   ),
@@ -289,9 +306,49 @@ export const VISIONARIES_ATTENDEE_FORMS: FormDefinition[] = [
     "2027-05-15T03:59:00.000Z",
     [
       sectionHeader("Medication & Allergies"),
-      shortText(
-        "Does the camper currently take any medication? (Write N/A if none.)",
-      ),
+      {
+        type: FormComponentType.QuestionGroup,
+        label: "Medication Schedule",
+        helpText:
+          "List everything your camper takes, including as-needed medications. Leave empty if none.",
+        required: false,
+        config: {
+          repeatable: true,
+          minEntries: 0,
+          maxEntries: 10,
+          addLabel: "Add another medication",
+          questions: [
+            {
+              id: visionariesId(3, 101),
+              type: FormComponentType.ShortText,
+              label: "Medication name",
+              required: true,
+              config: {},
+            },
+            {
+              id: visionariesId(3, 102),
+              type: FormComponentType.ShortText,
+              label: "Dose",
+              required: true,
+              config: {},
+            },
+            {
+              id: visionariesId(3, 103),
+              type: FormComponentType.ShortText,
+              label: "Time",
+              required: true,
+              config: {},
+            },
+            {
+              id: visionariesId(3, 104),
+              type: FormComponentType.LongText,
+              label: "Notes",
+              required: false,
+              config: { maxWords: 200 },
+            },
+          ],
+        },
+      },
       shortText("Does the camper have any allergies? (Write N/A if none.)"),
       {
         type: FormComponentType.LongText,
@@ -571,6 +628,29 @@ export function buildSampleAnswers(
         break;
       case FormComponentType.Date:
         answers[component.id] = component.config.min ?? "2027-06-02";
+        break;
+      case FormComponentType.QuestionGroup:
+        answers[component.id] = Array.from(
+          {
+            length: component.config.repeatable
+              ? Math.max(
+                  component.required ? 1 : 0,
+                  component.config.minEntries ?? 0,
+                )
+              : 1,
+          },
+          () =>
+            buildSampleAnswers(
+              {
+                components: component.config.questions.map((sub, position) => ({
+                  ...sub,
+                  helpText: null,
+                  position,
+                })),
+              },
+              opts,
+            ) as Record<string, string | number | boolean | string[]>,
+        );
         break;
       case FormComponentType.YesNo:
         answers[component.id] = true;

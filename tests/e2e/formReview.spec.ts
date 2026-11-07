@@ -28,7 +28,7 @@ const [EMERGENCY_CONTACT_FORM, CONSENT_FORM, MEDICAL_HISTORY_FORM] =
 /** The tenant's origin, e.g. http://acme.lvh.me:3000. */
 function tenantUrl(slug: string, baseURL: string | undefined) {
   const url = new URL(baseURL ?? "http://localhost:3000");
-  url.hostname = `${slug}.lvh.me`;
+  url.hostname = `${slug}.${process.env.E2E_TENANT_DOMAIN || "lvh.me"}`;
   return url.origin;
 }
 
@@ -133,6 +133,80 @@ async function setup() {
 }
 
 test.describe("admin submission page", () => {
+  test("an attendee adds a second emergency contact and an admin reads both", async ({
+    page,
+    baseURL,
+  }) => {
+    const org = await createFormsOrg();
+    const source = structuredClone(EMERGENCY_CONTACT_FORM);
+    for (const component of source.components)
+      if (component.type === "question_group") component.config.minEntries = 1;
+    const form = await copyForm(org.id, source);
+    const camper = await createUser(org.id, "member", MemberType.Attendee);
+    const admin = await createUser(org.id, "admin");
+    const origin = tenantUrl(org.slug, baseURL);
+    await signIn(page, origin, camper.cookie);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${origin}/forms/${form.formId}`);
+    await page.getByLabel(/^Contact Name/).fill("Taylor Camper");
+    await page.getByLabel(/^Relationship to Camper/).fill("Parent");
+    await page.getByLabel(/^Contact Phone Number/).fill("4045550123");
+    await page.getByRole("button", { name: "Add another contact" }).click();
+    await page
+      .getByLabel(/^Contact Name/)
+      .nth(1)
+      .fill("Jordan Camper");
+    await page
+      .getByLabel(/^Relationship to Camper/)
+      .nth(1)
+      .fill("Guardian");
+    await page
+      .getByLabel(/^Contact Phone Number/)
+      .nth(1)
+      .fill("4045550456");
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    await test.info().attach("mobile-emergency-contacts", {
+      body: await page.screenshot({ fullPage: true }),
+      contentType: "image/png",
+    });
+    await page.getByRole("button", { name: "Submit", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Response submitted" }),
+    ).toBeVisible();
+    await signIn(page, origin, admin.cookie);
+    await page.setViewportSize({ width: 1440, height: 1100 });
+    await page.goto(`${origin}/settings/forms/${form.formId}/responses`);
+    await page
+      .getByRole("link", { name: /view response/i })
+      .first()
+      .click();
+    await expect(page.getByLabel(/^Contact Name/).nth(0)).toHaveValue(
+      "Taylor Camper",
+    );
+    await expect(page.getByLabel(/^Contact Name/).nth(1)).toHaveValue(
+      "Jordan Camper",
+    );
+    await expect(page.getByLabel(/^Contact Phone Number/).nth(1)).toHaveValue(
+      "4045550456",
+    );
+    const phoneInput = await page
+      .getByLabel(/^Contact Phone Number/)
+      .first()
+      .boundingBox();
+    expect(phoneInput?.width).toBeGreaterThan(150);
+    await expect(
+      page.getByRole("button", { name: "Add another contact" }),
+    ).toHaveCount(0);
+    await test.info().attach("admin-emergency-contacts", {
+      body: await page.screenshot({ fullPage: true }),
+      contentType: "image/png",
+    });
+  });
+
   test("an admin reviews a submission and asks for a missing form", async ({
     page,
     baseURL,
@@ -157,13 +231,16 @@ test.describe("admin submission page", () => {
       name: "Emergency Contact",
       exact: true,
     });
-    const second = page.getByRole("region", {
-      name: "Second Emergency Contact",
-      exact: true,
-    });
-    await expect(first.getByLabel(/^Contact Name/)).toBeVisible();
-    await expect(first.getByLabel(/^Second Contact Name/)).toHaveCount(0);
-    await expect(second.getByLabel(/^Second Contact Name/)).toBeVisible();
+    await expect(
+      first
+        .getByRole("group", { name: "Emergency contacts 1", exact: true })
+        .getByLabel(/^Contact Name/),
+    ).toBeVisible();
+    await expect(
+      first
+        .getByRole("group", { name: "Emergency contacts 2", exact: true })
+        .getByLabel(/^Contact Name/),
+    ).toBeVisible();
 
     const required = page.getByRole("region", {
       name: "Other required forms",

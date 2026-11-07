@@ -152,6 +152,105 @@ export const DateConfigSchema = z
 // Email, phone, image, section header, and yes/no have no settings.
 export const EmptyConfigSchema = z.strictObject({});
 
+// Groups deliberately use only scalar/list questions: no nesting or uploads.
+export const SUB_QUESTION_CONFIG_SCHEMAS = {
+  [FormComponentType.ShortText]: ShortTextConfigSchema,
+  [FormComponentType.LongText]: LongTextConfigSchema,
+  [FormComponentType.Email]: EmptyConfigSchema,
+  [FormComponentType.Phone]: EmptyConfigSchema,
+  [FormComponentType.Number]: NumberConfigSchema,
+  [FormComponentType.SingleChoice]: ChoiceConfigSchema,
+  [FormComponentType.Checkboxes]: CheckboxesConfigSchema,
+  [FormComponentType.Dropdown]: ChoiceConfigSchema,
+  [FormComponentType.Date]: DateConfigSchema,
+  [FormComponentType.YesNo]: EmptyConfigSchema,
+} as const;
+export type SubQuestionType = keyof typeof SUB_QUESTION_CONFIG_SCHEMAS;
+export const SUB_QUESTION_TYPES = Object.keys(
+  SUB_QUESTION_CONFIG_SCHEMAS,
+) as SubQuestionType[];
+
+function subQuestion<T extends SubQuestionType>(type: T) {
+  return z.strictObject({
+    id: z.uuid(),
+    type: z.literal(type),
+    label: z.string().trim().min(1, "Add a label"),
+    required: z.boolean(),
+    config: SUB_QUESTION_CONFIG_SCHEMAS[type],
+  });
+}
+const subQuestionSchemas = [
+  subQuestion(FormComponentType.ShortText),
+  subQuestion(FormComponentType.LongText),
+  subQuestion(FormComponentType.Email),
+  subQuestion(FormComponentType.Phone),
+  subQuestion(FormComponentType.Number),
+  subQuestion(FormComponentType.SingleChoice),
+  subQuestion(FormComponentType.Checkboxes),
+  subQuestion(FormComponentType.Dropdown),
+  subQuestion(FormComponentType.Date),
+  subQuestion(FormComponentType.YesNo),
+] as const;
+export const SubQuestionSchema = z.discriminatedUnion(
+  "type",
+  subQuestionSchemas,
+);
+export type SubQuestion = z.infer<typeof SubQuestionSchema>;
+// IDs on new sub-questions are assigned by the server, just like questions.
+export const SubQuestionInputSchema = z.discriminatedUnion("type", [
+  subQuestionSchemas[0].extend({ id: z.uuid().optional() }),
+  subQuestionSchemas[1].extend({ id: z.uuid().optional() }),
+  subQuestionSchemas[2].extend({ id: z.uuid().optional() }),
+  subQuestionSchemas[3].extend({ id: z.uuid().optional() }),
+  subQuestionSchemas[4].extend({ id: z.uuid().optional() }),
+  subQuestionSchemas[5].extend({ id: z.uuid().optional() }),
+  subQuestionSchemas[6].extend({ id: z.uuid().optional() }),
+  subQuestionSchemas[7].extend({ id: z.uuid().optional() }),
+  subQuestionSchemas[8].extend({ id: z.uuid().optional() }),
+  subQuestionSchemas[9].extend({ id: z.uuid().optional() }),
+]);
+export type SubQuestionInput = z.infer<typeof SubQuestionInputSchema>;
+
+export const GROUP_QUESTIONS_MAX = 10;
+export const GROUP_ENTRIES_MAX = 20;
+function groupConfig<S extends z.ZodType<{ id?: string }>>(question: S) {
+  return z
+    .strictObject({
+      questions: z
+        .array(question)
+        .min(1, "Add at least one sub-question")
+        .max(GROUP_QUESTIONS_MAX)
+        .refine((questions) => {
+          const ids = questions.flatMap(({ id }) => (id ? [id] : []));
+          return new Set(ids).size === ids.length;
+        }, "Sub-question IDs must be unique"),
+      repeatable: z.boolean(),
+      minEntries: z.number().int().min(0).max(GROUP_ENTRIES_MAX).optional(),
+      maxEntries: z.number().int().min(1).max(GROUP_ENTRIES_MAX).optional(),
+      addLabel: z.string().trim().min(1).max(100).optional(),
+    })
+    .refine(
+      ({ minEntries, maxEntries }) =>
+        (minEntries ?? 0) <= (maxEntries ?? GROUP_ENTRIES_MAX),
+      {
+        message: "The minimum entries can't be more than the maximum",
+        path: ["minEntries"],
+      },
+    )
+    .refine(
+      ({ repeatable, minEntries, maxEntries }) =>
+        repeatable || ((minEntries ?? 1) === 1 && (maxEntries ?? 1) === 1),
+      {
+        message: "A non-repeating group has exactly one entry",
+        path: ["minEntries"],
+      },
+    );
+}
+export const QuestionGroupConfigSchema = groupConfig(SubQuestionSchema);
+export const QuestionGroupInputConfigSchema = groupConfig(
+  SubQuestionInputSchema,
+);
+
 export const FORM_COMPONENT_CONFIG_SCHEMAS = {
   [FormComponentType.ShortText]: ShortTextConfigSchema,
   [FormComponentType.LongText]: LongTextConfigSchema,
@@ -165,6 +264,7 @@ export const FORM_COMPONENT_CONFIG_SCHEMAS = {
   [FormComponentType.Dropdown]: ChoiceConfigSchema,
   [FormComponentType.Date]: DateConfigSchema,
   [FormComponentType.YesNo]: EmptyConfigSchema,
+  [FormComponentType.QuestionGroup]: QuestionGroupConfigSchema,
 } as const satisfies Record<FormComponentType, z.ZodType>;
 
 export type FormComponentConfigFor<T extends FormComponentType> = z.infer<
@@ -178,6 +278,15 @@ export type FormComponentConfigValue =
 // Answer values
 
 export const ImageAnswerSchema = z.strictObject({ uploadId: z.uuid() });
+
+export const GroupEntryValueSchema = z.record(
+  z.uuid(),
+  z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]),
+);
+export const QuestionGroupAnswerSchema = z
+  .array(GroupEntryValueSchema)
+  .max(GROUP_ENTRIES_MAX);
+export type GroupEntryValue = z.infer<typeof GroupEntryValueSchema>;
 
 // Shapes only. Required answers, lengths, word counts, ranges, and email and
 // phone formats are checked per form by buildSubmissionSchema (#299).
@@ -197,6 +306,7 @@ export const FORM_ANSWER_VALUE_SCHEMAS = {
   [FormComponentType.Dropdown]: z.string(),
   [FormComponentType.Date]: z.string(),
   [FormComponentType.YesNo]: z.boolean(),
+  [FormComponentType.QuestionGroup]: QuestionGroupAnswerSchema,
 } as const satisfies Record<FormComponentType, z.ZodType>;
 
 export type FormAnswerValueFor<T extends FormComponentType> = z.infer<
@@ -210,13 +320,19 @@ export const FormAnswerValueSchema = z.union([
   z.boolean(),
   z.array(z.string()),
   ImageAnswerSchema,
+  QuestionGroupAnswerSchema,
 ]);
 export type FormAnswerValue = z.infer<typeof FormAnswerValueSchema>;
 
 export function isImageAnswer(
-  value: FormAnswerValue | undefined,
+  value: unknown,
 ): value is FormAnswerValueFor<FormComponentType.Image> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "uploadId" in value &&
+    typeof value.uploadId === "string"
+  );
 }
 
 // Components
@@ -256,6 +372,7 @@ export const FormComponentConfigSchema = z.discriminatedUnion("type", [
   typedConfig(FormComponentType.Dropdown),
   typedConfig(FormComponentType.Date),
   typedConfig(FormComponentType.YesNo),
+  typedConfig(FormComponentType.QuestionGroup),
 ]);
 export type FormComponentConfig = z.infer<typeof FormComponentConfigSchema>;
 
@@ -272,6 +389,7 @@ export const FormComponentSchema = z.discriminatedUnion("type", [
   component(FormComponentType.Dropdown),
   component(FormComponentType.Date),
   component(FormComponentType.YesNo),
+  component(FormComponentType.QuestionGroup),
 ]);
 export type FormComponent = z.infer<typeof FormComponentSchema>;
 export type FormComponentOfType<T extends FormComponentType> = Extract<
@@ -309,6 +427,11 @@ export const FormQuestionInputSchema = z.discriminatedUnion("type", [
   questionInput(FormComponentType.Dropdown),
   questionInput(FormComponentType.Date),
   questionInput(FormComponentType.YesNo),
+  z.strictObject({
+    ...questionInputFields,
+    type: z.literal(FormComponentType.QuestionGroup),
+    config: QuestionGroupInputConfigSchema,
+  }),
 ]);
 export type FormQuestionInput = z.input<typeof FormQuestionInputSchema>;
 

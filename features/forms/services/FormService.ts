@@ -1,3 +1,7 @@
+import {
+  type SubQuestion,
+  QuestionGroupConfigSchema,
+} from "@/features/forms/lib/schema";
 import { and, asc, count, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import db from "@/core/db";
@@ -326,13 +330,25 @@ async function exportCsv(
       answer.value,
     ]),
   );
+  const columns = components.flatMap<{
+    component: (typeof components)[number];
+    sub: SubQuestion | undefined;
+  }>((component) =>
+    component.type === FormComponentType.QuestionGroup
+      ? QuestionGroupConfigSchema.parse(component.config).questions.map(
+          (sub) => ({ component, sub }),
+        )
+      : [{ component, sub: undefined }],
+  );
   const rows: (string | number)[][] = [
     [
       "Submitter name",
       "Submitter email",
       "Submitted at",
       "Review status",
-      ...components.map((component) => component.label),
+      ...columns.map(({ component, sub }) =>
+        sub ? `${component.label} — ${sub.label}` : component.label,
+      ),
     ],
   ];
   for (const submission of submissions)
@@ -341,9 +357,27 @@ async function exportCsv(
       submission.email ?? "",
       submission.submittedAt.toISOString(),
       REVIEW_STATUS_LABELS[submission.reviewStatus],
-      ...components.map((component) => {
+      ...columns.map(({ component, sub }) => {
         const value = values.get(`${submission.id}:${component.id}`);
         if (value === undefined) return "";
+        if (sub)
+          return Array.isArray(value)
+            ? value
+                .map((entry) => {
+                  const cell =
+                    typeof entry === "object" ? entry[sub.id] : undefined;
+                  return cell === undefined
+                    ? ""
+                    : typeof cell === "boolean"
+                      ? cell
+                        ? "Yes"
+                        : "No"
+                      : Array.isArray(cell)
+                        ? cell.join("; ")
+                        : String(cell);
+                })
+                .join("; ")
+            : "";
         if (typeof value === "boolean") return value ? "Yes" : "No";
         if (Array.isArray(value)) return value.join("; ");
         if (typeof value === "object")

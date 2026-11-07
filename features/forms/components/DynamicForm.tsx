@@ -30,6 +30,7 @@ import {
   parseNumberInput,
 } from "@/features/forms/lib/submission";
 import { FormComponentType } from "@/features/forms/schema";
+import { useHydrated } from "@/core/utils/hooks/useHydrated";
 
 export type DynamicFormSubmitResult =
   | { ok: true }
@@ -60,6 +61,21 @@ const noImageSrc = () => null;
 
 const FORM_ERROR_ID = "form-error";
 
+function isBlankGroupEntry(entry: unknown) {
+  return (
+    typeof entry === "object" &&
+    entry !== null &&
+    !Array.isArray(entry) &&
+    Object.values(entry).every(
+      (value) =>
+        value === undefined ||
+        value === null ||
+        (typeof value === "string" && value.trim() === "") ||
+        (Array.isArray(value) && value.length === 0),
+    )
+  );
+}
+
 /** Renders a form's questions in order and validates them as they're filled. */
 export default function DynamicForm({
   definition,
@@ -72,6 +88,7 @@ export default function DynamicForm({
   uploadImage = uploadFormImage,
   imageSrc = noImageSrc,
 }: DynamicFormProps) {
+  const hydrated = useHydrated();
   const [values, setValues] = useState<Record<string, FieldValue>>(() =>
     toFieldValues(initialValues ?? {}),
   );
@@ -92,6 +109,47 @@ export default function DynamicForm({
       const answers: Record<string, unknown> = {};
       for (const component of definition.components) {
         const value = current[component.id];
+        if (component.type === FormComponentType.QuestionGroup) {
+          const entries = Array.isArray(value)
+            ? value
+            : Array.from(
+                {
+                  length: component.config.repeatable
+                    ? Math.max(
+                        component.required ? 1 : 0,
+                        component.config.minEntries ?? 0,
+                      )
+                    : 1,
+                },
+                () => ({}),
+              );
+          const groupAnswers = entries.map((entry) =>
+            typeof entry === "object"
+              ? Object.fromEntries(
+                  Object.entries(entry).map(([id, cell]) => [
+                    id,
+                    component.config.questions.some(
+                      (sub) =>
+                        sub.id === id && sub.type === FormComponentType.Number,
+                    ) && typeof cell === "string"
+                      ? parseNumberInput(cell)
+                      : cell,
+                  ]),
+                )
+              : entry,
+          );
+          // A single entry is always displayed, but a blank optional group
+          // stays unanswered until at least one child has a value.
+          if (
+            !component.required &&
+            !component.config.repeatable &&
+            groupAnswers.length <= 1 &&
+            groupAnswers.every(isBlankGroupEntry)
+          )
+            continue;
+          answers[component.id] = groupAnswers;
+          continue;
+        }
         answers[component.id] =
           component.type === FormComponentType.Number &&
           typeof value === "string"
@@ -118,12 +176,15 @@ export default function DynamicForm({
     current: Record<string, FieldValue>,
     { onlyIfShown = false } = {},
   ) {
-    const error = validate(current).errors[id];
     setErrors((previous) => {
       if (onlyIfShown && !previous[id]) return previous;
       const next = { ...previous };
-      if (error) next[id] = error;
-      else delete next[id];
+      for (const key of Object.keys(next))
+        if (key === id || key.startsWith(`${id}.`)) delete next[key];
+      const fieldErrors = validate(current).errors;
+      for (const key of Object.keys(fieldErrors))
+        if (key === id || key.startsWith(`${id}.`))
+          next[key] = fieldErrors[key];
       return next;
     });
   }
@@ -155,12 +216,16 @@ export default function DynamicForm({
 
   function focusFirstError(fieldErrors: Record<string, string>) {
     const first = definition.components.find(({ id }) => fieldErrors[id]);
-    focusTarget.current = first ? fieldId(first.id) : FORM_ERROR_ID;
+    const nested =
+      first &&
+      Object.keys(fieldErrors).find((key) => key.startsWith(`${first.id}.`));
+    focusTarget.current = first ? fieldId(nested ?? first.id) : FORM_ERROR_ID;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (preview || readOnly || !onSubmit || submittingRef.current) return;
+    if (!hydrated || preview || readOnly || !onSubmit || submittingRef.current)
+      return;
 
     const { answers, errors: fieldErrors } = validate(valuesRef.current);
     setErrors(fieldErrors);
@@ -227,7 +292,8 @@ export default function DynamicForm({
               component={component}
               value={values[component.id]}
               error={errors[component.id]}
-              disabled={submitting}
+              errors={errors}
+              disabled={!hydrated || submitting}
               readOnly={readOnly}
               onChange={(value) => handleChange(component.id, value)}
               onBlur={() => handleBlur(component.id)}
@@ -237,7 +303,7 @@ export default function DynamicForm({
         {!preview && !readOnly && (
           <ThemedButton
             type="submit"
-            disabled={submitting || uploadingIds.length > 0}
+            disabled={!hydrated || submitting || uploadingIds.length > 0}
             aria-busy={submitting}
             className="self-start"
           >
