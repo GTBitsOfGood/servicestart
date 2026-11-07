@@ -61,7 +61,13 @@ test("an admin builds a form with every question type and a member submits it", 
 
   // Open it from the forms list, so Back has somewhere to go.
   await page.goto("/settings/forms");
-  await page
+  const formsTable = page.getByRole("region", {
+    name: "Forms table; scroll horizontally to see all columns",
+  });
+  // Hydration removes the loading status and shifts the table. Wait for the
+  // table to be ready so the link doesn't move between pointer down and up.
+  await expect(formsTable).toHaveAttribute("aria-busy", "false");
+  await formsTable
     .getByRole("row")
     .filter({ hasText: form.formId })
     .getByRole("link", { name: "Edit questions" })

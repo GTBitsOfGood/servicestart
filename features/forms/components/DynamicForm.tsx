@@ -30,6 +30,7 @@ import {
   parseNumberInput,
 } from "@/features/forms/lib/submission";
 import { FormComponentType } from "@/features/forms/schema";
+import { useHydrated } from "@/core/utils/hooks/useHydrated";
 
 export type DynamicFormSubmitResult =
   | { ok: true }
@@ -87,6 +88,7 @@ export default function DynamicForm({
   uploadImage = uploadFormImage,
   imageSrc = noImageSrc,
 }: DynamicFormProps) {
+  const hydrated = useHydrated();
   const [values, setValues] = useState<Record<string, FieldValue>>(() =>
     toFieldValues(initialValues ?? {}),
   );
@@ -222,7 +224,8 @@ export default function DynamicForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (preview || readOnly || !onSubmit || submittingRef.current) return;
+    if (!hydrated || preview || readOnly || !onSubmit || submittingRef.current)
+      return;
 
     const { answers, errors: fieldErrors } = validate(valuesRef.current);
     setErrors(fieldErrors);
@@ -290,7 +293,7 @@ export default function DynamicForm({
               value={values[component.id]}
               error={errors[component.id]}
               errors={errors}
-              disabled={submitting}
+              disabled={!hydrated || submitting}
               readOnly={readOnly}
               onChange={(value) => handleChange(component.id, value)}
               onBlur={() => handleBlur(component.id)}
@@ -300,7 +303,7 @@ export default function DynamicForm({
         {!preview && !readOnly && (
           <ThemedButton
             type="submit"
-            disabled={submitting || uploadingIds.length > 0}
+            disabled={!hydrated || submitting || uploadingIds.length > 0}
             aria-busy={submitting}
             className="self-start"
           >
