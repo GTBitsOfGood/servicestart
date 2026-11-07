@@ -22,7 +22,7 @@ export default async function FormsPage() {
     <Suspense
       fallback={
         <p role="status" className="p-8">
-          Loading formsâ€¦
+          Loading forms…
         </p>
       }
     >

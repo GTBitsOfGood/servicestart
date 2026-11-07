@@ -35,7 +35,7 @@ export default async function ResponsesPage({
     <Suspense
       fallback={
         <p role="status" className="p-8">
-          Loading responsesâ€¦
+          Loading responses…
         </p>
       }
     >
