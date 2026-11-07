@@ -32,7 +32,12 @@ const app = new Hono()
 
     const organization = await resolveOrganization(c, session);
     const mediaRecord = organization
-      ? await MediaService.findById(id, organization.id)
+      ? ((await MediaService.findById(id, organization.id)) ??
+        (await MediaService.findOwnProfileImage(
+          id,
+          organization.id,
+          session.user.id,
+        )))
       : null;
     if (!mediaRecord) {
       throw new NotFoundError("Image not found");
@@ -75,6 +80,7 @@ const app = new Hono()
       if (code === "ENOENT") {
         throw new NotFoundError("Image not found");
       }
+      console.error(err);
       throw new InternalServerError("Failed to load image");
     }
   });
