@@ -105,13 +105,16 @@ on a default host; anonymous default-host pages use platform branding defaults.
 API guards authorize the active session org and reject a conflicting tenant
 host with 403 before data access. A session without an active org is handled by
 the route's existing membership/login rules. Private form images keep their
-concealed 404 response. Server pages resolve the host first and authorize
+concealed 404 response. A user may read their own assigned profile photo across
+organizations while retaining membership in both the current and storage
+organizations; other media stays scoped to the request organization. Server pages resolve the host first and authorize
 membership in that organization. The browser synchronizes only tenant hosts;
 on default hosts it leaves the active organization alone.
 
 HTTP exceptions use the root API's JSON `{ error: message }` renderer. Unexpected
 errors are logged and return a generic 500. Feature-specific adapters retain
-structured validation and business-error details.
+structured validation and business-error details. The separate image-serving
+entrypoint installs the same shared renderer.
 
 ### Routes
 

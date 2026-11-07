@@ -1,3 +1,7 @@
+import { getSlugFromHost } from "@/core/tenant/host";
+import { resolveOrganization } from "@/core/tenant/resolveOrganization";
+import { ForbiddenError, NotFoundError } from "@/core/api/errors";
+import { requireAuth, requireAdmin } from "@/core/auth/authUtils";
 import {
   JOIN_REQUEST_STATUS_VALUES,
   JoinRequestStatus,
@@ -6,8 +10,6 @@ import { Hono } from "hono";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
-import { MembersService } from "@/features/membership/services/MemberService";
-import { auth } from "@/core/auth/auth";
 import { paginationQuerySchema } from "@/core/api/apiUtils";
 
 const patchParamsSchema = z.object({
@@ -20,31 +22,11 @@ const patchParamsSchema = z.object({
 
 const app = new Hono()
   .get("/", zValidator("query", paginationQuerySchema), async (c) => {
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
-
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const activeOrganizationId = session.session.activeOrganizationId;
-
-    if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 400 });
-    }
-
-    const membership = await MembersService.findByUserAndOrganization(
-      session.user.id,
-      activeOrganizationId,
+    const session = await requireAdmin(
+      c,
+      "Forbidden: Admin or owner role required",
     );
-
-    if (!MembersService.isAdminOrOwner(membership?.role)) {
-      return c.json(
-        { error: "Forbidden: Admin or owner role required" },
-        { status: 403 },
-      );
-    }
+    const activeOrganizationId = session.session.activeOrganizationId!;
 
     const { page, pageSize } = c.req.valid("query");
     const offset = (page - 1) * pageSize;
@@ -61,32 +43,11 @@ const app = new Hono()
     });
   })
   .patch("/", zValidator("query", patchParamsSchema), async (c) => {
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
-
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const activeOrganizationId = session.session.activeOrganizationId;
-
-    if (!activeOrganizationId) {
-      return c.json({ error: "No active organization" }, { status: 400 });
-    }
-
-    // Check if user is admin or owner of the active organization
-    const membership = await MembersService.findByUserAndOrganization(
-      session.user.id,
-      activeOrganizationId,
+    const session = await requireAdmin(
+      c,
+      "Forbidden: Admin or owner role required",
     );
-
-    if (!MembersService.isAdminOrOwner(membership?.role)) {
-      return c.json(
-        { error: "Forbidden: Admin or owner role required" },
-        { status: 403 },
-      );
-    }
+    const activeOrganizationId = session.session.activeOrganizationId!;
 
     const {
       id: joinRequestId,
@@ -100,7 +61,7 @@ const app = new Hono()
     );
 
     if (!joinRequest) {
-      return c.json({ error: "Join request not found" }, { status: 404 });
+      throw new NotFoundError("Join request not found");
     }
 
     if (
@@ -125,15 +86,15 @@ const app = new Hono()
     return c.json({ success: true, joinRequest: updatedRequest });
   })
   .get("/:organizationId", async (c) => {
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
-
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await requireAuth(c);
 
     const { organizationId } = c.req.param();
+    const organization = await resolveOrganization(c, session);
+    if (
+      (organization || getSlugFromHost(c.req.header("host"))) &&
+      organization?.id !== organizationId
+    )
+      throw new NotFoundError("Join request not found");
 
     const joinRequest = await JoinRequestsService.findByUserAndOrganization(
       session.user.id,
@@ -141,21 +102,21 @@ const app = new Hono()
     );
 
     if (!joinRequest) {
-      return c.json({ error: "Join request not found" }, { status: 404 });
+      throw new NotFoundError("Join request not found");
     }
 
     return c.json(joinRequest);
   })
   .delete("/:organizationId", async (c) => {
-    const session = await auth.api.getSession({
-      headers: c.req.header(),
-    });
-
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await requireAuth(c);
 
     const { organizationId } = c.req.param();
+    const organization = await resolveOrganization(c, session);
+    if (
+      (organization || getSlugFromHost(c.req.header("host"))) &&
+      organization?.id !== organizationId
+    )
+      throw new NotFoundError("Join request not found");
 
     const joinRequest = await JoinRequestsService.findByUserAndOrganization(
       session.user.id,
@@ -163,24 +124,18 @@ const app = new Hono()
     );
 
     if (!joinRequest) {
-      return c.json({ error: "Join request not found" }, { status: 404 });
+      throw new NotFoundError("Join request not found");
     }
 
     if (joinRequest.status !== JoinRequestStatus.Pending) {
-      return c.json(
-        { error: "Cannot delete a non-pending join request" },
-        { status: 403 },
-      );
+      throw new ForbiddenError("Cannot delete a non-pending join request");
     }
 
     // Removing a member moves their request back to pending. That row is the
     // removal record, so withdrawing it would let AutoApproveSignups re-add them.
     const history = await JoinRequestsService.listHistory(joinRequest.id);
     if (history.some((entry) => entry.action === "removed")) {
-      return c.json(
-        { error: "Cannot delete a join request after removal" },
-        { status: 403 },
-      );
+      throw new ForbiddenError("Cannot delete a join request after removal");
     }
 
     await JoinRequestsService.deleteById(joinRequest.id);

@@ -1,11 +1,17 @@
+import { resolveOrganization } from "@/core/tenant/resolveOrganization";
+import {
+  BadRequestError,
+  InternalServerError,
+  JunoFileDeletionNotSupportedError,
+  NotFoundError,
+} from "@/core/api/errors";
 import { Hono } from "hono";
 import { z } from "zod";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { zValidator } from "@hono/zod-validator";
-import { auth } from "@/core/auth/auth";
-import { requireAdmin } from "@/core/auth/authUtils";
-import { JunoFileDeletionNotSupportedError } from "@/core/api/errors";
+import { requireAdmin, requireAuth } from "@/core/auth/authUtils";
+
 import { MembersService } from "@/features/membership/server";
 import { FileService } from "@/core/files/FileService";
 import { LocalFileService } from "@/core/files/LocalFileService";
@@ -44,27 +50,19 @@ const app = new Hono()
     const file = body["file"];
 
     if (!file || typeof file === "string") {
-      return c.json(
-        {
-          error:
-            "File is required. Send multipart/form-data with a 'file' field",
-        },
-        { status: 400 },
+      throw new BadRequestError(
+        "File is required. Send multipart/form-data with a 'file' field",
       );
     }
 
     if (!file.type.startsWith("image/") || BLOCKED_IMAGE_TYPES.has(file.type)) {
-      return c.json(
-        { error: "Only raster image uploads are supported right now" },
-        { status: 400 },
+      throw new BadRequestError(
+        "Only raster image uploads are supported right now",
       );
     }
 
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      return c.json(
-        { error: "Image must be 10 MB or smaller" },
-        { status: 400 },
-      );
+      throw new BadRequestError("Image must be 10 MB or smaller");
     }
 
     const parsed = postMediaBodySchema.safeParse({
@@ -72,7 +70,7 @@ const app = new Hono()
       altText: body["altText"],
     });
     if (!parsed.success) {
-      return c.json({ error: parsed.error.message }, { status: 400 });
+      throw new BadRequestError(parsed.error.message);
     }
 
     const title =
@@ -109,7 +107,7 @@ const app = new Hono()
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to prepare upload";
-      return c.json({ error: message }, { status: 500 });
+      throw new InternalServerError(message);
     }
   })
   .get("/", zValidator("query", paginationQuerySchema), async (c) => {
@@ -126,15 +124,14 @@ const app = new Hono()
   })
   .get("/:id", async (c) => {
     const { id } = c.req.param();
-    const session = await auth.api.getSession({ headers: c.req.header() });
+    const session = await requireAuth(c);
 
-    if (!session?.user) {
-      return c.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const mediaRecord = await MediaService.findById(id);
+    const organization = await resolveOrganization(c, session);
+    const mediaRecord = organization
+      ? await MediaService.findById(id, organization.id)
+      : null;
     if (!mediaRecord) {
-      return c.json({ error: "Media not found" }, { status: 404 });
+      throw new NotFoundError("Media not found");
     }
 
     const membership = await MembersService.findByUserAndOrganization(
@@ -142,7 +139,7 @@ const app = new Hono()
       mediaRecord.organizationId,
     );
     if (!membership) {
-      return c.json({ error: "Media not found" }, { status: 404 });
+      throw new NotFoundError("Media not found");
     }
 
     return c.json(mediaRecord);
@@ -164,7 +161,7 @@ const app = new Hono()
       updates,
     );
     if (!updated) {
-      return c.json({ error: "Media not found" }, { status: 404 });
+      throw new NotFoundError("Media not found");
     }
 
     return c.json(updated);
@@ -175,9 +172,12 @@ const app = new Hono()
 
     const activeOrganizationId = session.session.activeOrganizationId!;
 
-    const mediaRecord = await MediaService.findById(id);
+    const organization = await resolveOrganization(c, session);
+    const mediaRecord = organization
+      ? await MediaService.findById(id, organization.id)
+      : null;
     if (!mediaRecord || mediaRecord.organizationId !== activeOrganizationId) {
-      return c.json({ error: "Media not found" }, { status: 404 });
+      throw new NotFoundError("Media not found");
     }
 
     try {
@@ -191,13 +191,13 @@ const app = new Hono()
       } else {
         const message =
           err instanceof Error ? err.message : "Failed to delete file";
-        return c.json({ error: message }, { status: 500 });
+        throw new InternalServerError(message);
       }
     }
 
     const deleted = await MediaService.deleteById(id, activeOrganizationId);
     if (!deleted) {
-      return c.json({ error: "Media not found" }, { status: 404 });
+      throw new NotFoundError("Media not found");
     }
 
     return c.json({ success: true });
