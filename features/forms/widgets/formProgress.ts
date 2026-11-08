@@ -25,6 +25,7 @@ export type FormTodoCard = {
   title: string;
   dueAt: string | null;
   pastDue: boolean;
+  draftUpdatedAt: Date | null;
   action: FormTodoAction;
 };
 
@@ -77,6 +78,7 @@ function mapTodo(row: MemberFormProgress, now: Date): FormTodoCard {
     title: form.title,
     dueAt: form.dueAt,
     pastDue,
+    draftUpdatedAt: row.draft?.updatedAt ?? null,
     action: todoAction(form),
   };
 }

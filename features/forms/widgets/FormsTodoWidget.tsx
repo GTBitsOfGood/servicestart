@@ -24,6 +24,7 @@ function availabilityLabel(action: FormTodoAction): string {
 
 function TodoCard({ card }: { card: FormTodoCard }) {
   const statusLabel = availabilityLabel(card.action);
+  const inProgress = card.draftUpdatedAt !== null;
 
   return (
     <li className="border-b border-grey-stroke-weak px-1 py-4 first:pt-0 last:border-b-0">
@@ -42,17 +43,23 @@ function TodoCard({ card }: { card: FormTodoCard }) {
             ) : null}
           </p>
         </div>
-        <span className="inline-flex shrink-0 items-center rounded-full bg-status-amber-fill px-3 py-1 text-small font-semibold text-status-amber-text">
-          Not Started
+        <span
+          className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-small font-semibold ${
+            inProgress
+              ? "bg-status-blue-fill text-status-blue-text"
+              : "bg-status-amber-fill text-status-amber-text"
+          }`}
+        >
+          {inProgress ? "In Progress" : "Not Started"}
         </span>
       </div>
       {card.action.kind === "open" ? (
         <Link
           href={card.action.href}
           className="mt-3 inline-flex text-paragraph-2 font-semibold text-brand-text hover:underline"
-          aria-label={`Open ${card.title}`}
+          aria-label={`${inProgress ? "Continue" : "Open"} ${card.title}`}
         >
-          Open form
+          {inProgress ? "Continue" : "Open form"}
         </Link>
       ) : (
         <p className="mt-3 text-paragraph-2 font-medium text-grey-text-weak">

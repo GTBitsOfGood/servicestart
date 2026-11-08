@@ -114,15 +114,36 @@ describe("getApplicationStatusView", () => {
         title: "Title todo",
         dueAt: "2027-01-01T00:00:00Z",
         done: false,
+        inProgress: false,
       },
-      { formId: "done", title: "Title done", dueAt: null, done: true },
+      {
+        formId: "done",
+        title: "Title done",
+        dueAt: null,
+        done: true,
+        inProgress: false,
+      },
       {
         formId: "closed-done",
         title: "Title closed-done",
         dueAt: null,
         done: true,
+        inProgress: false,
       },
     ]);
+  });
+
+  it("marks application and next-step drafts as in progress", () => {
+    const updatedAt = new Date("2027-03-10T12:00:00Z");
+    const view = getApplicationStatusView(CONFIG, [
+      progressRow("camp-app", { draftUpdatedAt: updatedAt }),
+      progressRow("medical", { draftUpdatedAt: updatedAt }),
+    ]);
+
+    expect(view).toMatchObject({ kind: "application", inProgress: true });
+    expect(view).toMatchObject({
+      nextSteps: [{ formId: "medical", done: false, inProgress: true }],
+    });
   });
 
   it("hides next steps once rejected", () => {

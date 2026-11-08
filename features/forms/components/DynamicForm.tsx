@@ -51,6 +51,10 @@ type DynamicFormProps = {
   onSubmit?: (
     answers: Record<string, FormAnswerValue>,
   ) => Promise<DynamicFormSubmitResult>;
+  /** Reports loosely typed answers after each user change, for draft saving. */
+  onAnswersChange?: (answers: Record<string, FormAnswerValue>) => void;
+  /** Temporarily prevents changes, such as while a draft is being discarded. */
+  disabled?: boolean;
   uploadImage?: typeof uploadFormImage;
   /** Where an already-uploaded image loads from; without it, none is shown. */
   imageSrc?: (uploadId: string) => string | null;
@@ -69,6 +73,8 @@ export default function DynamicForm({
   submitLabel = "Submit",
   submittingLabel = "Submitting…",
   onSubmit,
+  onAnswersChange,
+  disabled = false,
   uploadImage = uploadFormImage,
   imageSrc = noImageSrc,
 }: DynamicFormProps) {
@@ -135,6 +141,26 @@ export default function DynamicForm({
     else next[id] = value;
     valuesRef.current = next;
     setValues(next);
+    if (onAnswersChange) {
+      const answers: Record<string, FormAnswerValue> = {};
+      for (const component of definition.components) {
+        const current = next[component.id];
+        if (current === undefined) continue;
+        if (
+          component.type === FormComponentType.Number &&
+          typeof current === "string"
+        ) {
+          const parsed = parseNumberInput(current);
+          // Blank and temporarily invalid numbers cannot be stored as number
+          // answers, but every other valid answer can still be saved.
+          if (parsed === undefined || Number.isNaN(parsed)) continue;
+          answers[component.id] = parsed;
+        } else {
+          answers[component.id] = current;
+        }
+      }
+      onAnswersChange(answers);
+    }
     // Clears a shown error once the answer is fixed.
     showFieldError(id, next, { onlyIfShown: true });
   }
@@ -227,7 +253,7 @@ export default function DynamicForm({
               component={component}
               value={values[component.id]}
               error={errors[component.id]}
-              disabled={submitting}
+              disabled={submitting || disabled}
               readOnly={readOnly}
               onChange={(value) => handleChange(component.id, value)}
               onBlur={() => handleBlur(component.id)}
@@ -237,7 +263,7 @@ export default function DynamicForm({
         {!preview && !readOnly && (
           <ThemedButton
             type="submit"
-            disabled={submitting || uploadingIds.length > 0}
+            disabled={disabled || submitting || uploadingIds.length > 0}
             aria-busy={submitting}
             className="self-start"
           >

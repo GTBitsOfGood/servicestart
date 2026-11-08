@@ -17,6 +17,7 @@ export type NextStep = {
   title: string;
   dueAt: string | null;
   done: boolean;
+  inProgress: boolean;
 };
 
 export type ApplicationStatusView =
@@ -27,6 +28,8 @@ export type ApplicationStatusView =
       title: string;
       /** Null until they submit. */
       status: SubmissionReviewStatus | null;
+      /** They have saved answers but haven't submitted them. */
+      inProgress: boolean;
       availability: MemberFormProgress["form"]["availability"];
       dueAt: string | null;
       opensAt: string | null;
@@ -83,11 +86,12 @@ export function getApplicationStatusView(
         (form.availability === "open" ||
           (form.availability === "closed" && submission)),
     )
-    .map(({ form, submission }) => ({
+    .map(({ form, submission, draft }) => ({
       formId: form.formId,
       title: form.title,
       dueAt: form.dueAt,
       done: submission !== null,
+      inProgress: submission === null && draft !== null,
     }));
 
   return {
@@ -95,6 +99,7 @@ export function getApplicationStatusView(
     formId,
     title: app.form.title,
     status,
+    inProgress: status === null && app.draft !== null,
     availability: app.form.availability,
     dueAt: app.form.dueAt,
     opensAt: app.form.opensAt,

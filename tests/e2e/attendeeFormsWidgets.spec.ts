@@ -34,7 +34,7 @@ const ATTENDEE_FORMS_LAYOUT: DashboardLayout = {
 const ATTENDEE_FORM_TITLES = [
   "Emergency Contact Information",
   "Consent Form",
-  "Health Information",
+  "Medical History",
   "Media Release",
 ] as const;
 
@@ -221,6 +221,62 @@ test.describe("Attendee forms dashboard widgets", () => {
         }),
       ).toBeVisible();
     }
+  });
+
+  test("resumes an autosaved Medical History draft and completes it", async ({
+    page,
+    baseURL,
+  }) => {
+    const { org, forms } = await createAttendeeWidgetsOrg();
+    const origin = tenantUrl(org.slug, baseURL);
+    await createAttendeeMemberAndSignIn(page, org.id, origin);
+    const medicalHistory = forms.find(
+      (form) => form.title === "Medical History",
+    )!;
+
+    await page.goto(`${origin}/`);
+    const todoWidget = page.locator('[data-widget-id="forms_todo"]');
+    await todoWidget
+      .getByRole("link", { name: `Open ${medicalHistory.title}` })
+      .click();
+
+    await expect(page).toHaveURL(
+      new RegExp(`/forms/${medicalHistory.formId}$`),
+    );
+    await page.waitForLoadState("networkidle");
+    const response = page.getByRole("textbox", { name: "Response" });
+    await response.fill("Camper uses an inhaler as needed.");
+    await expect(page.getByRole("status")).toHaveText("Saved", {
+      timeout: 10_000,
+    });
+
+    // Leaving and returning through the dashboard exercises both persisted
+    // draft loading and the attendee widget's In Progress state.
+    await page.goto(`${origin}/`);
+    await expectGauge(page, 0, 4);
+    await expect(todoWidget.getByText("In Progress")).toBeVisible();
+    await todoWidget
+      .getByRole("link", { name: `Continue ${medicalHistory.title}` })
+      .click();
+
+    await expect(response).toHaveValue("Camper uses an inhaler as needed.");
+    await page.getByRole("button", { name: "Submit" }).click();
+    await expect(
+      page.getByText("Thanks! Your response has been submitted."),
+    ).toBeVisible();
+
+    await page.goto(`${origin}/`);
+    await expectGauge(page, 1, 4);
+    await expect(
+      page.getByRole("link", {
+        name: `View ${medicalHistory.title} response`,
+      }),
+    ).toBeVisible();
+    await expect(
+      todoWidget.getByRole("link", {
+        name: `Continue ${medicalHistory.title}`,
+      }),
+    ).toHaveCount(0);
   });
 
   test("lets a member edit a pending response from the dashboard", async ({

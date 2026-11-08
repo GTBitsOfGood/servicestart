@@ -151,10 +151,17 @@ function NextSteps({ items }: { items: NextStep[] }) {
                 {item.done && <CheckIcon size={10} weight="bold" />}
               </span>
               <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <p className="text-paragraph-2 font-semibold text-app-strong-text">
-                  {item.title}
-                  {item.done && <span className="sr-only"> (completed)</span>}
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-paragraph-2 font-semibold text-app-strong-text">
+                    {item.title}
+                    {item.done && <span className="sr-only"> (completed)</span>}
+                  </p>
+                  {item.inProgress && (
+                    <span className="rounded-full bg-status-blue-fill px-2 py-1 text-small font-semibold text-status-blue-text">
+                      In Progress
+                    </span>
+                  )}
+                </div>
                 {!item.done && item.dueAt && (
                   <p className="text-paragraph-2 text-grey-text-weak">
                     Complete this form by <LocalDateTime iso={item.dueAt} />
@@ -165,7 +172,7 @@ function NextSteps({ items }: { items: NextStep[] }) {
                     href={`/forms/${encodeURIComponent(item.formId)}`}
                     className="theme-control rounded border border-brand-stroke-strong px-3 py-2 text-center text-paragraph-2 font-semibold text-brand-text hover:bg-brand-fill"
                   >
-                    Open form
+                    {item.inProgress ? "Continue" : "Open form"}
                     <span className="sr-only">: {item.title}</span>
                   </Link>
                 )}
@@ -229,7 +236,7 @@ function Description({
                 href={`/forms/${encodeURIComponent(view.formId)}`}
                 className="theme-control rounded bg-brand-text px-4 py-2 text-paragraph-2 font-semibold text-brand-foreground hover:opacity-90"
               >
-                Start application
+                {view.inProgress ? "Continue" : "Start application"}
               </Link>
             </>
           )}
@@ -289,6 +296,11 @@ export function ApplicationStatusWidgetView({
                   {view.title}
                 </h3>
                 {view.status && <ReviewStatusChip status={view.status} />}
+                {!view.status && view.inProgress && (
+                  <span className="rounded-full bg-status-blue-fill px-3 py-1 text-small font-semibold text-status-blue-text">
+                    In Progress
+                  </span>
+                )}
               </div>
               {view.status && (
                 <Link
@@ -311,8 +323,8 @@ export function ApplicationStatusWidgetView({
 
 /**
  * Where the viewer's application stands and what to do next (#318). Reads
- * only the viewer's org-scoped form progress, so a form from another org, a
- * draft, or a missing config shows the empty state.
+ * only the viewer's org-scoped form progress, so another org's form or a
+ * missing config shows the empty state. Drafts appear as In Progress.
  */
 export default async function ApplicationStatusWidget({
   organizationId,

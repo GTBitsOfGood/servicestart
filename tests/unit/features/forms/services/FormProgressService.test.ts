@@ -6,6 +6,7 @@ import {
   SubmissionReviewStatus,
 } from "@/core/db/schema";
 import { FormProgressService } from "@/features/forms/services/FormProgressService";
+import { FormDraftService } from "@/features/forms/services/FormDraftService";
 import {
   buildTestUser,
   createForm,
@@ -63,7 +64,55 @@ describe("FormProgressService.listForMember", () => {
       },
       required: true,
       submission: null,
+      draft: null,
     });
+  });
+
+  it("includes the member's draft updatedAt without treating it as a submission", async () => {
+    const org = await createOrganization("camp-draft");
+    const userId = await createUser();
+    const form = await createForm(org.id, {
+      status: FormStatus.Published,
+      settings: assignedTo([MemberType.Attendee]),
+    });
+    const saved = await FormDraftService.save({
+      organizationId: org.id,
+      formId: form.formId,
+      userId,
+      answers: {},
+    });
+
+    const [progress] = await FormProgressService.listForMember(
+      org.id,
+      userId,
+      MemberType.Attendee,
+    );
+
+    expect(saved).not.toBeNull();
+    expect(progress.submission).toBeNull();
+    expect(progress.draft).toEqual({ updatedAt: saved!.updatedAt });
+  });
+
+  it("includes an unassigned form when the member has a draft", async () => {
+    const org = await createOrganization("optional-draft");
+    const userId = await createUser();
+    const form = await createForm(org.id, { status: FormStatus.Published });
+    await FormDraftService.save({
+      organizationId: org.id,
+      formId: form.formId,
+      userId,
+      answers: {},
+    });
+
+    const progress = await FormProgressService.listForMember(
+      org.id,
+      userId,
+      MemberType.Attendee,
+    );
+
+    expect(progress).toHaveLength(1);
+    expect(progress[0]).toMatchObject({ required: false, submission: null });
+    expect(progress[0].draft?.updatedAt).toBeInstanceOf(Date);
   });
 
   it("leaves out drafts, other types' forms, and unassigned forms", async () => {
@@ -147,6 +196,12 @@ describe("FormProgressService.listForMember", () => {
       settings: assignedTo([MemberType.Attendee]),
     });
     await createFormSubmission(form, { userId: otherId });
+    await FormDraftService.save({
+      organizationId: org.id,
+      formId: form.formId,
+      userId: otherId,
+      answers: {},
+    });
 
     const [progress] = await FormProgressService.listForMember(
       org.id,
@@ -154,6 +209,7 @@ describe("FormProgressService.listForMember", () => {
       MemberType.Attendee,
     );
     expect(progress.submission).toBeNull();
+    expect(progress.draft).toBeNull();
   });
 
   it("never lists another organization's forms or submissions", async () => {
@@ -165,6 +221,12 @@ describe("FormProgressService.listForMember", () => {
       settings: assignedTo([MemberType.Attendee]),
     });
     await createFormSubmission(formA, { userId });
+    await FormDraftService.save({
+      organizationId: orgA.id,
+      formId: formA.formId,
+      userId,
+      answers: {},
+    });
 
     expect(
       await FormProgressService.listForMember(

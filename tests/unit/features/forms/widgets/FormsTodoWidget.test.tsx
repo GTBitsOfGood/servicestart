@@ -26,6 +26,7 @@ function todoCard(overrides: Partial<FormTodoCard> = {}): FormTodoCard {
     title: "Emergency Contact",
     dueAt: "2027-04-01T00:00:00.000Z",
     pastDue: false,
+    draftUpdatedAt: null,
     action: { kind: "open", href: "/forms/emergency-contact" },
     ...overrides,
   };
@@ -58,6 +59,22 @@ describe("FormsTodoWidgetView", () => {
 
     expect(screen.getByText("Past due")).toBeTruthy();
     expect(screen.queryByText(/^Due /)).toBeNull();
+  });
+
+  it("shows In Progress and Continue for a saved draft", () => {
+    render(
+      <FormsTodoWidgetView
+        cards={[todoCard({ draftUpdatedAt: new Date("2027-03-10T12:00:00Z") })]}
+      />,
+    );
+
+    expect(screen.getByText("In Progress")).toBeTruthy();
+    expect(screen.queryByText("Not Started")).toBeNull();
+    expect(
+      screen
+        .getByRole("link", { name: "Continue Emergency Contact" })
+        .getAttribute("href"),
+    ).toBe("/forms/emergency-contact");
   });
 
   it("shows not-yet-open state without a link", () => {

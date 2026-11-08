@@ -12,6 +12,7 @@ import {
   forms,
   formComponents,
   formSubmissions,
+  formResponseDrafts,
   formUploads,
   FormComponentType,
   FormStatus,
@@ -576,6 +577,35 @@ it("seeds a Visionaries account at every stage of the camp process", async () =>
     }).toEqual({ email, memberType, application: status, done });
   }
 
+  const { user: member2 } = await visionariesUser("member2@example.com");
+  const medical = VISIONARIES_ATTENDEE_FORMS.find(
+    ({ formId }) => formId === "medical-history-2027",
+  )!;
+  const [seededDraft] = await db
+    .select()
+    .from(formResponseDrafts)
+    .where(
+      and(
+        eq(formResponseDrafts.organizationId, VISIONARIES),
+        eq(formResponseDrafts.formId, medical.id),
+        eq(formResponseDrafts.userId, member2.id),
+      ),
+    );
+  expect(seededDraft.answers).toEqual({
+    [medical.components.find(({ label }) =>
+      label.startsWith("Does the camper currently take"),
+    )!.id]: "Albuterol inhaler as needed.",
+    [medical.components.find(({ label }) => label.startsWith("Anything else"))!
+      .id]: "The camper has mild asthma and carries their inhaler.",
+    [medical.components.find(({ label }) => label === "Doctor's Name")!.id]:
+      "Dr. Maya Carter",
+  });
+  expect(
+    (await progressOf("member2@example.com")).find(
+      ({ form }) => form.id === medical.id,
+    ),
+  ).toMatchObject({ submission: null, draft: { updatedAt: expect.any(Date) } });
+
   const result = await auth.api.signInEmail({
     headers: new Headers({ host: "visionariestothethrone.lvh.me:3000" }),
     body: {
@@ -600,6 +630,9 @@ it("resets the Visionaries accounts' responses when reseeding", async () => {
     { id: VISIONARIES_ATTENDEE_FORMS[0].id, organizationId: VISIONARIES },
     { userId: member2.id },
   );
+  await db
+    .delete(formResponseDrafts)
+    .where(eq(formResponseDrafts.userId, member2.id));
 
   await main();
 
@@ -612,6 +645,11 @@ it("resets the Visionaries accounts' responses when reseeding", async () => {
       ({ required, submission }) => required && submission,
     ),
   ).toHaveLength(0);
+  expect(
+    (await progressOf("member2@example.com")).find(
+      ({ form }) => form.formId === "medical-history-2027",
+    )?.draft,
+  ).toEqual({ updatedAt: expect.any(Date) });
 });
 
 it("removes requests to complete the seeded forms when reseeding", async () => {

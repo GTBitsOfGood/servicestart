@@ -11,6 +11,7 @@ import {
   FormIdSchema,
   FormSettingsSchema,
   FormSubmissionPayloadSchema,
+  buildDraftSchema,
   getAcceptedMemberType,
   getAssignedMemberTypes,
   getDueAt,
@@ -224,6 +225,56 @@ describe("answer value schemas", () => {
         false,
       );
     });
+  });
+});
+
+describe("buildDraftSchema", () => {
+  const [header, studentName, , studentEmail, , , , , grade, , , headshot] =
+    VISIONARIES_APPLICATION_FORM.components;
+  const schema = buildDraftSchema(VISIONARIES_APPLICATION_FORM);
+
+  it("allows required questions to be missing or blank", () => {
+    expect(schema.parse({})).toEqual({});
+    expect(schema.parse({ [studentName.id]: "" })).toEqual({
+      [studentName.id]: "",
+    });
+  });
+
+  it("accepts partial answers using only their stored value shapes", () => {
+    const answers = {
+      [studentEmail.id]: "unfinished email",
+      [grade.id]: 99,
+      [headshot.id]: { uploadId: UPLOAD_ID },
+    };
+
+    expect(schema.parse(answers)).toEqual(answers);
+  });
+
+  it("rejects an answer with the wrong type for its question", () => {
+    const result = schema.safeParse({ [grade.id]: "9" });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].path).toEqual([grade.id]);
+  });
+
+  it("rejects unknown question IDs", () => {
+    const unknownId = "00000000-0000-4000-8000-0000000000ff";
+    const result = schema.safeParse({ [unknownId]: "extra" });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toBe("Unknown question");
+  });
+
+  it("rejects answers to section headers", () => {
+    const result = schema.safeParse({ [header.id]: "About you" });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].path).toEqual([header.id]);
+  });
+
+  it("rejects answer collections that aren't objects", () => {
+    expect(schema.safeParse([]).success).toBe(false);
+    expect(schema.safeParse("answers").success).toBe(false);
   });
 });
 

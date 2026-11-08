@@ -345,6 +345,26 @@ export const FormDefinitionSchema = z
   });
 export type FormDefinition = z.infer<typeof FormDefinitionSchema>;
 
+/**
+ * Validates answers that are safe to store in a draft. Every question is
+ * optional and only its answer's stored shape is checked; submission-only
+ * rules such as required answers, formats, ranges, and choices are deferred
+ * until the member submits the form.
+ */
+export function buildDraftSchema(
+  definition: Pick<FormDefinition, "components">,
+) {
+  const shape: Record<string, z.ZodType> = {};
+  for (const component of definition.components) {
+    shape[component.id] = FORM_ANSWER_VALUE_SCHEMAS[component.type].optional();
+  }
+
+  return z.strictObject(shape, {
+    error: (issue) =>
+      issue.code === "unrecognized_keys" ? "Unknown question" : undefined,
+  }) as z.ZodType<Record<string, FormAnswerValue>>;
+}
+
 // What the fill-out page submits: answers keyed by component ID. Unanswered
 // optional questions are left out.
 export const FormSubmissionPayloadSchema = z.object({
