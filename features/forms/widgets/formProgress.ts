@@ -115,13 +115,19 @@ export function summarizeFormProgress(
     if (row.submission) {
       completed.push(mapCompleted(row));
     }
+
     if (row.required) {
       gaugeTotal += 1;
       if (row.submission) {
         gaugeDone += 1;
-      } else {
-        todo.push(mapTodo(row, now));
       }
+    }
+
+    // Required forms always belong in To-Do until submitted. Optional forms
+    // join To-Do only after the member has started a draft, so that draft is
+    // still discoverable without changing the required-form progress count.
+    if (!row.submission && (row.required || row.draft !== null)) {
+      todo.push(mapTodo(row, now));
     }
   }
 

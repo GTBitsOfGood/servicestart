@@ -224,6 +224,7 @@ describe("ApplicationStatusWidgetView", () => {
       renderView([
         app(SubmissionReviewStatus.Pending),
         progressRow("medical", {
+          required: false,
           draftUpdatedAt: new Date("2027-03-10T12:00:00Z"),
         }),
       ]);

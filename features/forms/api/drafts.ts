@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { requireMembership } from "@/core/auth/authUtils";
+import { requireAuth } from "@/core/auth/authUtils";
 import { assertFeatureEnabled } from "@/core/auth/featureGuards";
 import { ForbiddenError, NotFoundError } from "@/core/api/errors";
 import { OrganizationConfigKey } from "@/core/config/schema";
+import { findOrganizationByRequestHost } from "@/core/tenant/organizationFromHost";
 import {
   FormIdSchema,
   FormSubmissionPayloadSchema,
@@ -16,6 +17,7 @@ import {
 } from "@/features/forms/lib/submission";
 import { FormDraftService } from "@/features/forms/services/FormDraftService";
 import { FormSubmissionService } from "@/features/forms/services/FormSubmissionService";
+import { MembersService } from "@/features/membership/server";
 
 // A member's saved answers for a form (#338): GET, PUT, and DELETE
 // /api/forms/:formId/draft. Mounted at /api/forms before forms.ts (in
@@ -29,15 +31,20 @@ const app = new Hono<{
   Variables: { organizationId: string; userId: string };
 }>()
   .use("/:formId/draft", async (c, next) => {
-    let session;
-    try {
-      session = await requireMembership(c);
-    } catch (error) {
-      // Don't reveal whether a form or another member's draft exists.
-      if (error instanceof ForbiddenError) throw new NotFoundError();
-      throw error;
-    }
-    const organizationId = session.session.activeOrganizationId!;
+    const session = await requireAuth(c);
+    const organization = await findOrganizationByRequestHost(
+      c.req.header("host"),
+    );
+    if (!organization) throw new NotFoundError();
+
+    const membership = await MembersService.findByUserAndOrganization(
+      session.user.id,
+      organization.id,
+    );
+    // Don't reveal whether a host organization or one of its forms exists.
+    if (!membership) throw new NotFoundError();
+
+    const organizationId = organization.id;
     await assertFeatureEnabled(
       organizationId,
       OrganizationConfigKey.FormsEnabled,

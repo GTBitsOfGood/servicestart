@@ -39,7 +39,10 @@ async function signedInTo(
   );
   if (member) await addMember(user.id, organization.id, "member");
   await setActiveOrganization(session.id, organization.id);
-  return { user, headers };
+  return {
+    user,
+    headers: { ...headers, Host: `${organization.slug}.lvh.me` },
+  };
 }
 
 function putDraft(
@@ -244,5 +247,38 @@ describe("/api/forms/:formId/draft", () => {
     expect(
       (await app.request(draftUrl(formA.formId), { headers })).status,
     ).toBe(404);
+  });
+
+  it("uses the host organization when the session's active organization is stale", async () => {
+    const hostOrganization = await formsOrganization();
+    const activeOrganization = await formsOrganization();
+    const { user, headers } = await signedInTo(activeOrganization);
+    await addMember(user.id, hostOrganization.id, "member");
+
+    const formId = "shared-medical-history";
+    const hostForm = await createForm(hostOrganization.id, {
+      formId,
+      status: FormStatus.Published,
+    });
+    await createForm(activeOrganization.id, {
+      formId,
+      status: FormStatus.Published,
+    });
+    const answerId = hostForm.components.find(
+      ({ type }) => type === FormComponentType.ShortText,
+    )!.id;
+    const hostHeaders = {
+      ...headers,
+      Host: `${hostOrganization.slug}.lvh.me`,
+    };
+
+    expect(
+      (await putDraft(formId, hostHeaders, { [answerId]: "Host answer" }))
+        .status,
+    ).toBe(200);
+    expect(
+      (await app.request(draftUrl(formId), { headers: hostHeaders })).status,
+    ).toBe(200);
+    expect((await app.request(draftUrl(formId), { headers })).status).toBe(404);
   });
 });

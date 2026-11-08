@@ -104,6 +104,22 @@ describe("summarizeFormProgress", () => {
     expect(gauge).toEqual({ done: 0, total: 1 });
   });
 
+  it("keeps an optional draft in todo without adding it to the gauge", () => {
+    const updatedAt = new Date("2027-03-10T12:00:00Z");
+    const { todo, completed, gauge } = summarizeFormProgress(
+      [progressRow({ required: false, draft: { updatedAt } })],
+      NOW,
+    );
+
+    expect(todo).toHaveLength(1);
+    expect(todo[0]).toMatchObject({
+      title: "Emergency Contact",
+      draftUpdatedAt: updatedAt,
+    });
+    expect(completed).toEqual([]);
+    expect(gauge).toEqual({ done: 0, total: 0 });
+  });
+
   it("marks a todo as past due when dueAt is before now", () => {
     const { todo } = summarizeFormProgress(
       [

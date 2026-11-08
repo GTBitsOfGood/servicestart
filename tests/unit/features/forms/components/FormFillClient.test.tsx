@@ -254,6 +254,45 @@ describe("FormFillClient", () => {
     expect(screen.getByRole("status").textContent).toBe("Saved");
   });
 
+  it("starts a queued save directly after the active save finishes", async () => {
+    vi.useFakeTimers();
+    let resolveFirstSave!: (response: { ok: boolean }) => void;
+    const firstSave = new Promise<{ ok: boolean }>((resolve) => {
+      resolveFirstSave = resolve;
+    });
+    $putDraft
+      .mockReturnValueOnce(firstSave)
+      .mockResolvedValueOnce({ ok: true });
+    render(<FormFillClient definition={definition} enableDrafts />);
+
+    fireEvent.change(screen.getByLabelText(/Student Name/), {
+      target: { value: "Ada" },
+    });
+    await act(() => vi.advanceTimersByTimeAsync(2_000));
+
+    fireEvent.change(screen.getByLabelText(/Student Name/), {
+      target: { value: "Ada Lovelace" },
+    });
+    await act(() => vi.advanceTimersByTimeAsync(2_000));
+    expect($putDraft).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveFirstSave({ ok: true });
+      await firstSave;
+      await Promise.resolve();
+    });
+
+    // No additional timer advancement is needed for the queued save.
+    expect($putDraft).toHaveBeenLastCalledWith(
+      {
+        param: { formId: definition.formId },
+        json: { answers: { [NAME_ID]: "Ada Lovelace" } },
+      },
+      { init: { keepalive: false } },
+    );
+    expect($putDraft).toHaveBeenCalledTimes(2);
+  });
+
   it("saves immediately with keepalive when the page becomes hidden", async () => {
     vi.useFakeTimers();
     $putDraft.mockResolvedValueOnce({ ok: true });
@@ -279,6 +318,66 @@ describe("FormFillClient", () => {
       { init: { keepalive: true } },
     );
     expect(screen.getByRole("status").textContent).toBe("Saved");
+  });
+
+  it("saves pending answers with keepalive when the form unmounts", async () => {
+    vi.useFakeTimers();
+    $putDraft.mockResolvedValueOnce({ ok: true });
+    const view = render(
+      <FormFillClient definition={definition} enableDrafts />,
+    );
+    fireEvent.change(screen.getByLabelText(/Student Name/), {
+      target: { value: "Ada" },
+    });
+
+    view.unmount();
+
+    expect($putDraft).toHaveBeenCalledWith(
+      {
+        param: { formId: definition.formId },
+        json: { answers: { [NAME_ID]: "Ada" } },
+      },
+      { init: { keepalive: true } },
+    );
+    await act(() => vi.advanceTimersByTimeAsync(2_000));
+    expect($putDraft).toHaveBeenCalledTimes(1);
+  });
+
+  it("flushes the newest answers after an active save when unmounting", async () => {
+    vi.useFakeTimers();
+    let resolveFirstSave!: (response: { ok: boolean }) => void;
+    const firstSave = new Promise<{ ok: boolean }>((resolve) => {
+      resolveFirstSave = resolve;
+    });
+    $putDraft
+      .mockReturnValueOnce(firstSave)
+      .mockResolvedValueOnce({ ok: true });
+    const view = render(
+      <FormFillClient definition={definition} enableDrafts />,
+    );
+    fireEvent.change(screen.getByLabelText(/Student Name/), {
+      target: { value: "Ada" },
+    });
+    await act(() => vi.advanceTimersByTimeAsync(2_000));
+    fireEvent.change(screen.getByLabelText(/Student Name/), {
+      target: { value: "Ada Lovelace" },
+    });
+
+    view.unmount();
+    await act(async () => {
+      resolveFirstSave({ ok: true });
+      await firstSave;
+      await Promise.resolve();
+    });
+
+    expect($putDraft).toHaveBeenLastCalledWith(
+      {
+        param: { formId: definition.formId },
+        json: { answers: { [NAME_ID]: "Ada Lovelace" } },
+      },
+      { init: { keepalive: true } },
+    );
+    expect($putDraft).toHaveBeenCalledTimes(2);
   });
 
   it("shows a quiet failure and retries without disabling the form", async () => {

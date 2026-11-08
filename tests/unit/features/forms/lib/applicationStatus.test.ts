@@ -137,7 +137,11 @@ describe("getApplicationStatusView", () => {
     const updatedAt = new Date("2027-03-10T12:00:00Z");
     const view = getApplicationStatusView(CONFIG, [
       progressRow("camp-app", { draftUpdatedAt: updatedAt }),
-      progressRow("medical", { draftUpdatedAt: updatedAt }),
+      progressRow("medical", {
+        required: false,
+        draftUpdatedAt: updatedAt,
+      }),
+      progressRow("optional-not-started", { required: false }),
     ]);
 
     expect(view).toMatchObject({ kind: "application", inProgress: true });

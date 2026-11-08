@@ -245,14 +245,21 @@ test.describe("Attendee forms dashboard widgets", () => {
     );
     await page.waitForLoadState("networkidle");
     const response = page.getByRole("textbox", { name: "Response" });
+    const draftSaved = page.waitForResponse(
+      (draftResponse) =>
+        draftResponse.request().method() === "PUT" &&
+        draftResponse
+          .url()
+          .endsWith(`/api/forms/${medicalHistory.formId}/draft`) &&
+        draftResponse.ok(),
+    );
     await response.fill("Camper uses an inhaler as needed.");
-    await expect(page.getByRole("status")).toHaveText("Saved", {
-      timeout: 10_000,
-    });
+    await page.getByRole("link", { name: "Back to home" }).click();
+    await draftSaved;
 
-    // Leaving and returning through the dashboard exercises both persisted
-    // draft loading and the attendee widget's In Progress state.
-    await page.goto(`${origin}/`);
+    // Reload after the exit save finishes so this server-rendered dashboard
+    // includes the draft that was still pending when navigation began.
+    await page.reload();
     await expectGauge(page, 0, 4);
     await expect(todoWidget.getByText("In Progress")).toBeVisible();
     await todoWidget

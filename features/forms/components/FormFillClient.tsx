@@ -64,6 +64,7 @@ function useDraftAutosave({
   const pendingRef = useRef(false);
   const pendingKeepaliveRef = useRef(false);
   const activeRef = useRef(enabled);
+  const flushOnExitRef = useRef(false);
   const mountedRef = useRef(false);
   const saveRef = useRef<(keepalive?: boolean) => Promise<void>>(
     async () => {},
@@ -92,7 +93,7 @@ function useDraftAutosave({
     async (keepalive = false) => {
       clearTimer();
       if (
-        !activeRef.current ||
+        (!activeRef.current && !flushOnExitRef.current) ||
         revisionRef.current <= savedRevisionRef.current
       ) {
         return;
@@ -141,15 +142,18 @@ function useDraftAutosave({
           pendingRef.current = false;
           pendingKeepaliveRef.current = false;
 
-          if (activeRef.current) {
-            if (pending) {
-              scheduleSave(
-                succeeded ? 0 : DRAFT_RETRY_DELAY_MS,
-                pendingKeepalive,
-              );
-            } else if (!succeeded && timerRef.current === null) {
-              scheduleSave(DRAFT_RETRY_DELAY_MS, keepalive);
+          if (pending) {
+            if (succeeded || flushOnExitRef.current) {
+              void saveRef.current(pendingKeepalive);
+            } else if (activeRef.current) {
+              scheduleSave(DRAFT_RETRY_DELAY_MS, pendingKeepalive);
             }
+          } else if (
+            !succeeded &&
+            activeRef.current &&
+            timerRef.current === null
+          ) {
+            scheduleSave(DRAFT_RETRY_DELAY_MS, keepalive);
           }
         }
       })();
@@ -225,8 +229,17 @@ function useDraftAutosave({
   useEffect(() => {
     mountedRef.current = true;
     activeRef.current = enabled;
+    flushOnExitRef.current = false;
     return () => {
       mountedRef.current = false;
+      const hasUnsavedChanges = revisionRef.current > savedRevisionRef.current;
+      if (enabled && activeRef.current && hasUnsavedChanges) {
+        // Client-side navigation doesn't hide the document, so flush the
+        // pending revision before disabling the hook. `keepalive` also gives
+        // a real page exit the best chance to finish the request.
+        flushOnExitRef.current = true;
+        void saveRef.current(true);
+      }
       activeRef.current = false;
       clearTimer();
     };

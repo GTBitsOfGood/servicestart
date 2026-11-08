@@ -80,8 +80,8 @@ export function getApplicationStatusView(
 
   const items = rows
     .filter(
-      ({ required, form, submission }) =>
-        required &&
+      ({ required, form, submission, draft }) =>
+        (required || draft !== null) &&
         form.formId !== formId &&
         (form.availability === "open" ||
           (form.availability === "closed" && submission)),
