@@ -33,6 +33,12 @@ function isCacheDisabled() {
   );
 }
 
+// The cache is per browser and per org, not per user, so a restricted value
+// cached for an admin could be read by whoever signs in next.
+function isCacheable(key: OrganizationConfigKey) {
+  return !isCacheDisabled() && getConfigDefinition(key).visibility === "public";
+}
+
 function buildStateKey(keys: readonly string[], slug?: string) {
   const normalizedKeys = [...keys].sort().join(",");
   return `${CACHE_PREFIX}:${slug ?? "unknown"}:${normalizedKeys}`;
@@ -101,7 +107,7 @@ export default function useOrganizationConfig<
     const missingKeys = new Set<K>();
 
     keys.forEach((key) => {
-      if (isCacheDisabled()) {
+      if (!isCacheable(key)) {
         missingKeys.add(key);
         return;
       }
@@ -159,10 +165,11 @@ export default function useOrganizationConfig<
           data: { ...cachedData, ...responseData },
           status: "ok",
         });
-        if (isCacheDisabled()) return;
-        Object.entries(responseData).forEach(([key, value]) => {
-          writeCache(buildCacheKey(key, slug), value);
-        });
+        for (const key of missingKeysArray) {
+          if (isCacheable(key) && Object.hasOwn(responseData, key)) {
+            writeCache(buildCacheKey(key, slug), responseData[key]);
+          }
+        }
       })
       .catch(() => {
         if (cancelled) return;

@@ -93,7 +93,7 @@ describe("useOrganizationConfig", () => {
   });
 
   it("returns cached values when fresh", async () => {
-    const cacheKey = "org-config:v3:acme:description";
+    const cacheKey = "org-config:v3:acme:tagline";
     window.localStorage.setItem(
       cacheKey,
       JSON.stringify({
@@ -103,11 +103,11 @@ describe("useOrganizationConfig", () => {
     );
 
     const { result } = renderHook(() =>
-      useOrganizationConfig([OrganizationConfigKey.Description]),
+      useOrganizationConfig([OrganizationConfigKey.Tagline]),
     );
 
     await waitFor(() => {
-      expect(result.current[OrganizationConfigKey.Description]).toBe("cached");
+      expect(result.current[OrganizationConfigKey.Tagline]).toBe("cached");
     });
 
     expect(mockGet).not.toHaveBeenCalled();
@@ -115,7 +115,7 @@ describe("useOrganizationConfig", () => {
 
   it("bypasses cache when disabled", async () => {
     process.env.NEXT_PUBLIC_ORG_CONFIG_CACHE_DISABLED = "true";
-    const cacheKey = "org-config:v3:acme:description";
+    const cacheKey = "org-config:v3:acme:tagline";
     window.localStorage.setItem(
       cacheKey,
       JSON.stringify({
@@ -130,58 +130,58 @@ describe("useOrganizationConfig", () => {
         status: 200,
         json: () =>
           Promise.resolve({
-            [OrganizationConfigKey.Description]: "fresh",
+            [OrganizationConfigKey.Tagline]: "fresh",
           }),
       }),
     );
 
     const { result } = renderHook(() =>
-      useOrganizationConfig([OrganizationConfigKey.Description]),
+      useOrganizationConfig([OrganizationConfigKey.Tagline]),
     );
 
     await waitFor(() => {
-      expect(result.current[OrganizationConfigKey.Description]).toBe("fresh");
+      expect(result.current[OrganizationConfigKey.Tagline]).toBe("fresh");
     });
 
     expect(mockGet).toHaveBeenCalledTimes(1);
   });
 
   it("fetches only missing keys when some are cached", async () => {
-    const descriptionKey = "org-config:v3:acme:description";
+    const taglineKey = "org-config:v3:acme:tagline";
     window.localStorage.setItem(
-      descriptionKey,
+      taglineKey,
       JSON.stringify({
         timestamp: Date.now(),
-        value: "cached-description",
+        value: "cached-tagline",
       }),
     );
 
     mockGet.mockImplementation((args) => {
       expect(args.query.organizationSlug).toBe("acme");
-      expect(args.query.keys).toEqual([OrganizationConfigKey.Tagline]);
+      expect(args.query.keys).toEqual([OrganizationConfigKey.PrimaryColor]);
 
       return Promise.resolve({
         ok: true,
         status: 200,
         json: () =>
           Promise.resolve({
-            [OrganizationConfigKey.Tagline]: "fresh-tagline",
+            [OrganizationConfigKey.PrimaryColor]: "#000000",
           }),
       });
     });
 
     const keys = [
-      OrganizationConfigKey.Description,
       OrganizationConfigKey.Tagline,
+      OrganizationConfigKey.PrimaryColor,
     ] as const;
     const { result } = renderHook(() => useOrganizationConfig(keys));
 
     await waitFor(() => {
-      expect(result.current[OrganizationConfigKey.Description]).toBe(
-        "cached-description",
-      );
       expect(result.current[OrganizationConfigKey.Tagline]).toBe(
-        "fresh-tagline",
+        "cached-tagline",
+      );
+      expect(result.current[OrganizationConfigKey.PrimaryColor]).toBe(
+        "#000000",
       );
     });
 
@@ -251,22 +251,22 @@ describe("useOrganizationConfig", () => {
         status: 200,
         json: () =>
           Promise.resolve({
-            [OrganizationConfigKey.Description]: "value1",
+            [OrganizationConfigKey.Tagline]: "value1",
           }),
       }),
     );
 
     const { result } = renderHook(() =>
-      useOrganizationConfig([OrganizationConfigKey.Description]),
+      useOrganizationConfig([OrganizationConfigKey.Tagline]),
     );
 
     await waitFor(() => {
       expect(result.current.status).toBe("ok");
     });
 
-    expect(
-      window.localStorage.getItem("org-config:v3:acme:description"),
-    ).toContain("value1");
+    expect(window.localStorage.getItem("org-config:v3:acme:tagline")).toContain(
+      "value1",
+    );
   });
 
   // An org that exists but has no branding rows is NOT missing: the server
@@ -415,40 +415,63 @@ describe("useOrganizationConfig", () => {
     expect(result.current[OrganizationConfigKey.LogoUrl]).toBeNull();
   });
 
-  it("caches typed values and reads them back without a request", async () => {
+  it("caches a public value that isn't a string", async () => {
+    mockGet.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ [OrganizationConfigKey.LogoUrl]: null }),
+      }),
+    );
+
+    const first = renderHook(() =>
+      useOrganizationConfig([OrganizationConfigKey.LogoUrl]),
+    );
+    await waitFor(() => {
+      expect(first.result.current[OrganizationConfigKey.LogoUrl]).toBeNull();
+    });
+    expect(mockGet).toHaveBeenCalledTimes(1);
+
+    const second = renderHook(() =>
+      useOrganizationConfig([OrganizationConfigKey.LogoUrl]),
+    );
+    await waitFor(() => {
+      expect(second.result.current[OrganizationConfigKey.LogoUrl]).toBeNull();
+    });
+    expect(mockGet).toHaveBeenCalledTimes(1);
+  });
+
+  it("never reads or writes a restricted key in the cache", async () => {
+    window.localStorage.setItem(
+      "org-config:v3:acme:forms_enabled",
+      JSON.stringify({ timestamp: Date.now(), value: true }),
+    );
     mockGet.mockImplementation(() =>
       Promise.resolve({
         ok: true,
         status: 200,
         json: () =>
-          Promise.resolve({ [OrganizationConfigKey.FormsEnabled]: true }),
+          Promise.resolve({
+            [OrganizationConfigKey.FormsEnabled]: false,
+            [OrganizationConfigKey.Description]: "Admin only",
+          }),
       }),
     );
 
-    const first = renderHook(() =>
-      useOrganizationConfig([OrganizationConfigKey.FormsEnabled]),
-    );
-    await waitFor(() => {
-      expect(first.result.current[OrganizationConfigKey.FormsEnabled]).toBe(
-        true,
-      );
-    });
-    expect(mockGet).toHaveBeenCalledTimes(1);
-    expect(
-      JSON.parse(
-        window.localStorage.getItem("org-config:v3:acme:forms_enabled")!,
-      ).value,
-    ).toBe(true);
+    const keys = [
+      OrganizationConfigKey.FormsEnabled,
+      OrganizationConfigKey.Description,
+    ] as const;
+    const { result } = renderHook(() => useOrganizationConfig(keys));
 
-    const second = renderHook(() =>
-      useOrganizationConfig([OrganizationConfigKey.FormsEnabled]),
-    );
     await waitFor(() => {
-      expect(second.result.current[OrganizationConfigKey.FormsEnabled]).toBe(
-        true,
-      );
+      expect(result.current[OrganizationConfigKey.FormsEnabled]).toBe(false);
     });
     expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(mockGet.mock.calls[0][0].query.keys).toEqual([...keys]);
+    expect(
+      window.localStorage.getItem("org-config:v3:acme:description"),
+    ).toBeNull();
   });
 
   it("leaves out keys the server didn't return", async () => {
