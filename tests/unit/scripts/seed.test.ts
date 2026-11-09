@@ -975,10 +975,10 @@ it("configures Visionaries' logo, dashboards, header, navbar, and footer", async
     "forms_completed",
     "forms_progress",
   ]);
-  expect(config[OrganizationConfigKey.DashboardHeader].attendee.title).toBe(
+  expect(config[OrganizationConfigKey.DashboardHeader].attendee?.title).toBe(
     "My Building Your Throne Summer 2027 Dashboard",
   );
-  expect(config[OrganizationConfigKey.NavbarConfig].applicant.hidden).toEqual([
+  expect(config[OrganizationConfigKey.NavbarConfig].applicant?.hidden).toEqual([
     "/events",
   ]);
   expect(config[OrganizationConfigKey.OrganizationFooter].ein).toBe(

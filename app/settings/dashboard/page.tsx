@@ -9,7 +9,7 @@ import {
   MEMBER_AUDIENCES,
   type MemberAudience,
 } from "@/features/membership/lib/audience";
-import { getMemberTypeDashboardLayout } from "@/features/dashboard/config";
+import { getMemberTypeDashboardLayout } from "@/features/dashboard/server";
 import DashboardLayoutBuilder from "@/features/dashboard/components/DashboardLayoutBuilder";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import { FormStatus } from "@/features/forms/schema";

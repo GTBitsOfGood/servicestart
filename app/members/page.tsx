@@ -22,9 +22,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
     OrganizationConfigKey.MembersPageEnabled,
     OrganizationConfigKey.MemberTypesEnabled,
   ]);
-  const memberTypesEnabled = Boolean(
-    config[OrganizationConfigKey.MemberTypesEnabled],
-  );
+  const memberTypesEnabled = config[OrganizationConfigKey.MemberTypesEnabled];
 
   if (!config[OrganizationConfigKey.MembersPageEnabled]) {
     redirect("/");

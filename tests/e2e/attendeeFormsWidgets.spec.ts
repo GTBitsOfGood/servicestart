@@ -8,7 +8,7 @@ import {
   OrganizationConfigKey,
   SubmissionReviewStatus,
 } from "@/core/db/schema";
-import { setMemberTypeDashboardLayout } from "@/features/dashboard/config";
+import { setMemberTypeDashboardLayout } from "@/features/dashboard/server";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,
