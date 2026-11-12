@@ -15,7 +15,6 @@ import {
   formUploads,
   FormComponentType,
   FormStatus,
-  MemberType,
   NotificationType,
   SubmissionReviewStatus,
   events,
@@ -25,6 +24,7 @@ import {
   JoinRequestStatus,
 } from "@/core/db/schema";
 import { FormDefinitionSchema } from "@/features/forms/lib/schema";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { FormProgressService } from "@/features/forms/services/FormProgressService";
 import { FormQuestionService } from "@/features/forms/services/FormQuestionService";
 import { FormSubmissionService } from "@/features/forms/services/FormSubmissionService";
@@ -438,7 +438,7 @@ it("seeds a Visionaries applicant who can sign in", async () => {
       ),
     );
   expect(membership.role).toBe("member");
-  expect(membership.memberType).toBe(MemberType.Applicant);
+  expect(membership.memberType).toBe("applicant");
 
   // Reseeding restores the type on an existing membership.
   await db
@@ -450,7 +450,7 @@ it("seeds a Visionaries applicant who can sign in", async () => {
     .select()
     .from(members)
     .where(eq(members.id, membership.id));
-  expect(retyped.memberType).toBe(MemberType.Applicant);
+  expect(retyped.memberType).toBe("applicant");
   expect(
     await db
       .select()
@@ -534,34 +534,24 @@ it("seeds a Visionaries account at every stage of the camp process", async () =>
     ).length;
 
   for (const [email, memberType, status, done] of [
-    ["applicant@example.com", MemberType.Applicant, null, 0],
+    ["applicant@example.com", "applicant", null, 0],
     [
       "applicant-pending@example.com",
-      MemberType.Applicant,
+      "applicant",
       SubmissionReviewStatus.Pending,
       1,
     ],
     [
       "applicant-review@example.com",
-      MemberType.Applicant,
+      "applicant",
       SubmissionReviewStatus.UnderReview,
       1,
     ],
-    [
-      "member2@example.com",
-      MemberType.Attendee,
-      SubmissionReviewStatus.Accepted,
-      0,
-    ],
-    [
-      "member1@example.com",
-      MemberType.Attendee,
-      SubmissionReviewStatus.Accepted,
-      2,
-    ],
+    ["member2@example.com", "attendee", SubmissionReviewStatus.Accepted, 0],
+    ["member1@example.com", "attendee", SubmissionReviewStatus.Accepted, 2],
     [
       "attendee-complete@example.com",
-      MemberType.Attendee,
+      "attendee",
       SubmissionReviewStatus.Accepted,
       4,
     ],
@@ -883,7 +873,7 @@ it("configures Visionaries' logo, dashboards, header, navbar, and footer", async
     (
       await OrganizationConfigService.getDashboardLayoutFor(
         VISIONARIES,
-        "applicant",
+        MemberTypeKeySchema.parse("applicant"),
       )
     ).widgets.map(({ id }) => id),
   ).toEqual(["application_status", "notifications"]);
@@ -891,7 +881,7 @@ it("configures Visionaries' logo, dashboards, header, navbar, and footer", async
     (
       await OrganizationConfigService.getDashboardLayoutFor(
         VISIONARIES,
-        "attendee",
+        MemberTypeKeySchema.parse("attendee"),
       )
     ).widgets.map(({ id }) => id),
   ).toEqual([
@@ -1061,7 +1051,7 @@ it("seeds independent development tenants with useful volunteer and application 
     const progress = await FormProgressService.listForMember(
       "org_applicationstart",
       member.id,
-      MemberType.Attendee,
+      MemberTypeKeySchema.parse("attendee"),
     );
     expect(progress.filter((item) => item.required)).toHaveLength(4);
     expect(
@@ -1076,7 +1066,7 @@ it("seeds independent development tenants with useful volunteer and application 
       await FormProgressService.listForMember(
         "org_volunteerstart",
         member.id,
-        MemberType.Attendee,
+        MemberTypeKeySchema.parse("attendee"),
       ),
     ).toEqual([]);
   }

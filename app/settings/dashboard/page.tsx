@@ -5,17 +5,14 @@ import {
   getWidgetOptions,
   WIDGET_FEATURE_KEYS,
 } from "@/features/dashboard/widgets";
-import {
-  MEMBER_AUDIENCES,
-  type MemberAudience,
-} from "@/features/membership/lib/audience";
+import type { MemberAudience } from "@/features/membership/lib/audience";
 import { getMemberTypeDashboardLayout } from "@/features/dashboard/config";
 import DashboardLayoutBuilder from "@/features/dashboard/components/DashboardLayoutBuilder";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import { FormStatus } from "@/features/forms/schema";
-import { MemberType } from "@/features/membership/schema";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { OrganizationConfigKey } from "@/core/config/schema";
-import { MEMBER_TYPE_PLURAL_LABELS } from "@/features/membership/lib/memberTypes";
+import { MemberTypeService } from "@/features/membership/server";
 import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 import { cn } from "@/core/utils/utils";
 import { clearDashboardLayout, saveDashboardLayout } from "./actions";
@@ -24,14 +21,24 @@ export const metadata = {
   title: "Customize Dashboards",
 };
 
-const AUDIENCE_LABELS: Record<MemberAudience, string> = {
-  member: "Members",
-  applicant: MEMBER_TYPE_PLURAL_LABELS[MemberType.Applicant],
-  attendee: MEMBER_TYPE_PLURAL_LABELS[MemberType.Attendee],
-};
-
 type DashboardSettingsPageProps = {
   searchParams: Promise<{ audience?: string | string[] }>;
+};
+
+const resolveAudience = (
+  requested: string | string[] | undefined,
+  memberTypesEnabled: boolean,
+  typeKeys: Set<string>,
+): MemberAudience => {
+  const raw = Array.isArray(requested) ? requested[0] : requested;
+  if (!memberTypesEnabled || raw === "member" || raw == null) {
+    return "member";
+  }
+  const parsed = MemberTypeKeySchema.safeParse(raw);
+  if (parsed.success && typeKeys.has(parsed.data)) {
+    return parsed.data;
+  }
+  return "member";
 };
 
 export default async function DashboardSettingsPage({
@@ -43,7 +50,6 @@ export default async function DashboardSettingsPage({
     await Promise.all([
       OrganizationConfigService.getMemberTypesEnabled(organizationId),
       OrganizationConfigService.getConfig(organizationId, WIDGET_FEATURE_KEYS),
-      // Only the application status widget's settings need forms.
       OrganizationConfigService.getConfig(organizationId, [
         OrganizationConfigKey.FormsEnabled,
       ]).then((config) =>
@@ -53,12 +59,12 @@ export default async function DashboardSettingsPage({
       ),
       searchParams,
     ]);
-  const audience: MemberAudience =
-    memberTypesEnabled && MEMBER_AUDIENCES.includes(requested as MemberAudience)
-      ? (requested as MemberAudience)
-      : "member";
+  const memberTypes = memberTypesEnabled
+    ? await MemberTypeService.list(organizationId)
+    : [];
+  const typeKeys = new Set(memberTypes.map((row) => row.key));
+  const audience = resolveAudience(requested, memberTypesEnabled, typeKeys);
 
-  // Applicants and attendees without their own layout get the member one.
   const ownLayout: DashboardLayout | null =
     audience === "member"
       ? null
@@ -67,10 +73,19 @@ export default async function DashboardSettingsPage({
     ownLayout ??
     (await OrganizationConfigService.getDashboardLayout(organizationId));
 
+  const audienceOptions: { value: MemberAudience; label: string }[] =
+    memberTypesEnabled
+      ? [
+          { value: "member", label: "Members" },
+          ...memberTypes.map((row) => ({
+            value: row.key,
+            label: row.pluralLabel,
+          })),
+        ]
+      : [];
+
   return (
     <DashboardLayoutBuilder
-      // Remount when the audience or its layout's source changes, e.g. after
-      // "Use the member layout", so the builder starts from the new layout.
       key={`${audience}:${ownLayout ? "own" : "member"}`}
       availableWidgets={getWidgetOptions(features)}
       initialLayout={layout}
@@ -81,19 +96,19 @@ export default async function DashboardSettingsPage({
     >
       {memberTypesEnabled && (
         <nav aria-label="Dashboard audience" className="mt-6 flex gap-2">
-          {MEMBER_AUDIENCES.map((option) => (
+          {audienceOptions.map((option) => (
             <Link
-              key={option}
-              href={`?audience=${option}`}
-              aria-current={option === audience ? "page" : undefined}
+              key={option.value}
+              href={`?audience=${option.value}`}
+              aria-current={option.value === audience ? "page" : undefined}
               className={cn(
                 "theme-control rounded px-3 py-2 text-paragraph-2 font-semibold",
-                option === audience
+                option.value === audience
                   ? "bg-brand-text text-brand-foreground"
                   : "text-brand-text hover:bg-brand-fill",
               )}
             >
-              {AUDIENCE_LABELS[option]}
+              {option.label}
             </Link>
           ))}
         </nav>
@@ -111,14 +126,17 @@ export default async function DashboardSettingsPage({
               Use the member layout
             </button>
             <p className="text-paragraph-2 text-grey-text-weak">
-              Deletes the {AUDIENCE_LABELS[audience]} layout, so they see the
-              member layout.
+              Deletes the{" "}
+              {audienceOptions.find((o) => o.value === audience)?.label ??
+                "type"}{" "}
+              layout, so they see the member layout.
             </p>
           </form>
         ) : (
           <p className="mt-4 text-paragraph-2 text-grey-text-weak">
             Using the member layout. Saving creates a separate{" "}
-            {AUDIENCE_LABELS[audience]} layout.
+            {audienceOptions.find((o) => o.value === audience)?.label ?? "type"}{" "}
+            layout.
           </p>
         ))}
     </DashboardLayoutBuilder>

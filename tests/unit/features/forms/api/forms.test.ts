@@ -9,6 +9,7 @@ import { FileService } from "@/core/files/FileService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { OrganizationConfigKey, FormStatus } from "@/core/db/schema";
 import { app } from "@/features/app";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import {
   addMember,
   buildTestUser,
@@ -262,5 +263,75 @@ describe("forms admin API", () => {
       Object.assign(new Error("Missing"), { code: "ENOENT" }),
     );
     expect((await route.$get(args, { headers })).status).toBe(404);
+  });
+
+  it("rejects unknown and foreign-organization member type keys on save", async () => {
+    const { headers } = await setup();
+    await testApi.forms.$post(
+      { json: { title: "Application", formId: "application" } },
+      { headers },
+    );
+    const route = testApi.forms[":formId"];
+    const before = await (
+      await route.$get({ param: { formId: "application" } }, { headers })
+    ).json();
+
+    const unknown = await route.$patch(
+      {
+        param: { formId: "application" },
+        json: {
+          settings: {
+            ...before.settings,
+            assignedMemberTypes: ["volunteer"],
+          },
+        },
+      },
+      { headers },
+    );
+    expect(unknown.status).toBe(400);
+    expect(await unknown.json()).toMatchObject({ field: "settings" });
+    const unchanged = await (
+      await route.$get({ param: { formId: "application" } }, { headers })
+    ).json();
+    expect(unchanged.settings).toEqual(before.settings);
+
+    const orgWithoutAttendee = await createOrganization(
+      `forms-mt-${randomUUID()}`,
+      {
+        memberTypes: [
+          {
+            key: MemberTypeKeySchema.parse("volunteer"),
+            label: "Volunteer",
+            pluralLabel: "Volunteers",
+          },
+        ],
+      },
+    );
+    await OrganizationConfigService.setConfig(
+      orgWithoutAttendee.id,
+      OrganizationConfigKey.FormsEnabled,
+      "true",
+    );
+    const member = await signUpAndGetSession(buildTestUser());
+    await addMember(member.user.id, orgWithoutAttendee.id, "admin");
+    await setActiveOrganization(member.session.id, orgWithoutAttendee.id);
+    const formB = await createForm(orgWithoutAttendee.id, {
+      formId: "onboarding",
+    });
+    const routeB = testApi.forms[":formId"];
+    const foreignKey = await routeB.$patch(
+      {
+        param: { formId: formB.formId },
+        json: {
+          settings: {
+            ...before.settings,
+            assignedMemberTypes: ["attendee"],
+          },
+        },
+      },
+      { headers: member.headers },
+    );
+    expect(foreignKey.status).toBe(400);
+    expect(await foreignKey.json()).toMatchObject({ field: "settings" });
   });
 });

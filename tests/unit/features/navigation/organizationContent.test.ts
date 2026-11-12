@@ -20,8 +20,14 @@ describe("DashboardHeaderConfigSchema", () => {
     expect(DashboardHeaderConfigSchema.parse(config)).toEqual(config);
   });
 
+  it("accepts an extra audience key for legacy rows", () => {
+    expect(
+      DashboardHeaderConfigSchema.safeParse({ volunteer: { title: "Hi" } })
+        .success,
+    ).toBe(true);
+  });
+
   it.each([
-    ["an unknown audience", { volunteer: { title: "Hi" } }],
     ["an unknown field", { default: { banner: "x" } }],
     ["a blank title", { default: { title: "  " } }],
     ["a title that's too long", { default: { title: "x".repeat(121) } }],

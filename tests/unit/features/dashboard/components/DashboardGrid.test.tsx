@@ -8,6 +8,7 @@ vi.mock("@/features/communications/widgets/NotificationsWidget", () => ({
 
 import DashboardGrid from "@/features/dashboard/components/DashboardGrid";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 
 type Props = Record<string, unknown> & { children?: ReactNode };
 
@@ -42,7 +43,7 @@ describe("DashboardGrid", () => {
         layout,
         organizationId: "org_1",
         userId: "user_1",
-        audience: "applicant",
+        audience: MemberTypeKeySchema.parse("applicant"),
       }),
     );
 
@@ -59,7 +60,7 @@ describe("DashboardGrid", () => {
     expect(widgets[0]?.props).toEqual({
       organizationId: "org_1",
       userId: "user_1",
-      audience: "applicant",
+      audience: MemberTypeKeySchema.parse("applicant"),
       config: statusConfig,
     });
     expect(widgets[1]?.props.config).toBeUndefined();
@@ -89,7 +90,7 @@ describe("DashboardGrid", () => {
         },
         organizationId: "org_1",
         userId: "user_1",
-        audience: "attendee",
+        audience: MemberTypeKeySchema.parse("attendee"),
       }),
     );
 

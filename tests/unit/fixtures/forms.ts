@@ -1,5 +1,6 @@
-import { FormComponentType, FormStatus, MemberType } from "@/core/db/schema";
+import { FormComponentType, FormStatus } from "@/core/db/schema";
 import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import type {
   FormAnswerValue,
   FormComponent,
@@ -33,9 +34,9 @@ export const VISIONARIES_APPLICATION_FORM: FormDefinition = {
     ...DEFAULT_FORM_SETTINGS,
     confirmationMessage:
       "Thanks for applying! Your application has been submitted.",
-    assignedMemberTypes: [MemberType.Applicant],
+    assignedMemberTypes: [MemberTypeKeySchema.parse("applicant")],
     dueAt: "2027-04-01T03:59:00.000Z",
-    acceptedMemberType: MemberType.Attendee,
+    acceptedMemberType: MemberTypeKeySchema.parse("attendee"),
   },
   components: [
     {
@@ -216,7 +217,7 @@ function attendeeForm(
         ...DEFAULT_FORM_SETTINGS,
         closesAt: "2027-06-01T03:59:00.000Z",
         confirmationMessage: "Thanks! We've saved this form.",
-        assignedMemberTypes: [MemberType.Attendee],
+        assignedMemberTypes: [MemberTypeKeySchema.parse("attendee")],
         dueAt,
         acceptedMemberType: null,
       },

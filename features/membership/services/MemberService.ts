@@ -5,47 +5,15 @@ import {
   events,
   eventRsvps,
   members,
-  MemberType,
-  memberTypes,
   shifts,
   shiftRSVPs,
   users,
 } from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import {
-  MEMBER_TYPE_LABELS,
-  MEMBER_TYPE_PLURAL_LABELS,
-} from "@/features/membership/lib/memberTypes";
+import type { MemberTypeKey } from "@/features/membership/lib/memberTypeKey";
+import { MemberTypeService } from "@/features/membership/server";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-/**
- * Creates the organization's applicant and attendee member types if it doesn't
- * have them yet. A member's type must be one of their organization's
- * member_types rows, so call this before giving a member a type. Until #336
- * lets admins define their own types, every organization uses these two, the
- * same rows the Sprint 5 migration backfilled.
- */
-async function ensureBuiltInMemberTypes(
-  organizationId: string,
-  tx: Transaction | typeof db = db,
-) {
-  await tx
-    .insert(memberTypes)
-    .values(
-      [MemberType.Applicant, MemberType.Attendee].map((key, position) => ({
-        organizationId,
-        key,
-        label: MEMBER_TYPE_LABELS[key],
-        pluralLabel: MEMBER_TYPE_PLURAL_LABELS[key],
-        position,
-        isSignupDefault: key === MemberType.Applicant,
-      })),
-    )
-    .onConflictDoNothing({
-      target: [memberTypes.organizationId, memberTypes.key],
-    });
-}
 
 async function findByUserAndOrganization(
   userId: string,
@@ -71,7 +39,7 @@ async function findByUserAndOrganization(
 
 async function getUserIdsByOrganization(
   organizationId: string,
-  memberTypes?: MemberType[],
+  memberTypes?: MemberTypeKey[],
 ) {
   const organizationMembers = await db
     .select({ userId: members.userId })
@@ -115,7 +83,7 @@ async function listMemberContacts(organizationId: string) {
   return Array.from(contactsByEmail.values());
 }
 
-function memberFilter(organizationId: string, memberType?: MemberType) {
+function memberFilter(organizationId: string, memberType?: MemberTypeKey) {
   return and(
     eq(members.organizationId, organizationId),
     memberType ? eq(members.memberType, memberType) : undefined,
@@ -128,7 +96,7 @@ async function listMembers(
     limit,
     offset,
     memberType,
-  }: { limit: number; offset: number; memberType?: MemberType },
+  }: { limit: number; offset: number; memberType?: MemberTypeKey },
 ) {
   return db
     .select({
@@ -150,7 +118,7 @@ async function listMembers(
 
 async function countByOrganization(
   organizationId: string,
-  memberType?: MemberType,
+  memberType?: MemberTypeKey,
 ) {
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -166,7 +134,7 @@ async function countByOrganization(
 async function setMemberTypes(
   organizationId: string,
   userIds: string[],
-  memberType: MemberType,
+  memberType: MemberTypeKey | null,
   transaction?: Transaction,
 ): Promise<{ error: "not_found" | "admin" } | { updated: number }> {
   const uniqueIds = Array.from(new Set(userIds));
@@ -191,7 +159,6 @@ async function setMemberTypes(
       return { error: "admin" as const };
     }
 
-    await ensureBuiltInMemberTypes(organizationId, tx);
     const updated = await tx
       .update(members)
       .set({ memberType })
@@ -217,14 +184,16 @@ async function addSignupMember(userId: string, organizationId: string) {
 
   const memberTypesEnabled =
     await OrganizationConfigService.getMemberTypesEnabled(organizationId);
-  if (memberTypesEnabled) await ensureBuiltInMemberTypes(organizationId);
+  const signupType = memberTypesEnabled
+    ? ((await MemberTypeService.getSignupDefault(organizationId))?.key ?? null)
+    : null;
 
   await db.insert(members).values({
     id: randomUUID(),
     userId,
     organizationId,
     role: "member",
-    memberType: memberTypesEnabled ? MemberType.Applicant : null,
+    memberType: signupType,
   });
 }
 
@@ -378,7 +347,6 @@ async function addMemberDirectly(
   });
 }
 export const MembersService = {
-  ensureBuiltInMemberTypes,
   findByUserAndOrganization,
   getMemberActivity,
   getUserIdsByOrganization,

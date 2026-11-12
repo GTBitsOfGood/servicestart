@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import db from "@/core/db";
 import {
@@ -8,6 +8,7 @@ import {
   formAnswers,
   formUploads,
   users,
+  memberTypes,
   FormStatus,
   FormComponentType,
 } from "@/core/db/schema";
@@ -20,6 +21,13 @@ import {
   FormError,
   csvCell,
 } from "@/features/forms/lib/management";
+import {
+  getAcceptedMemberType,
+  getAssignedMemberTypes,
+  type FormSettings,
+} from "@/features/forms/lib/schema";
+import type { MemberTypeKey } from "@/features/membership";
+import { MemberTypeService } from "@/features/membership/server";
 
 const scope = (organizationId: string, formId: string) =>
   and(eq(forms.organizationId, organizationId), eq(forms.formId, formId));
@@ -136,6 +144,46 @@ async function get(organizationId: string, formId: string) {
   return form;
 }
 
+const memberTypeKeysFromSettings = (
+  settings: FormSettings,
+): MemberTypeKey[] => {
+  const keys = [...getAssignedMemberTypes(settings)];
+  const accepted = getAcceptedMemberType(settings);
+  if (accepted) keys.push(accepted);
+  return [...new Set(keys)];
+};
+
+async function assertMemberTypeKeys(
+  tx: Transaction,
+  organizationId: string,
+  settings: FormSettings,
+) {
+  const keys = memberTypeKeysFromSettings(settings);
+  if (!keys.length) return;
+  await tx
+    .select({ key: memberTypes.key })
+    .from(memberTypes)
+    .where(
+      and(
+        eq(memberTypes.organizationId, organizationId),
+        inArray(memberTypes.key, keys),
+      ),
+    )
+    .for("share");
+  const unknown = await MemberTypeService.findUnknownKeys(
+    organizationId,
+    keys,
+    tx,
+  );
+  if (unknown.length) {
+    throw new FormError(
+      "invalid",
+      "Choose member types that exist in this organization",
+      "settings",
+    );
+  }
+}
+
 async function update(
   organizationId: string,
   formId: string,
@@ -155,6 +203,9 @@ async function update(
           "Only draft form IDs can change",
           "formId",
         );
+      if (values.settings) {
+        await assertMemberTypeKeys(tx, organizationId, values.settings);
+      }
       const [updated] = await tx
         .update(forms)
         .set({ ...values, updatedAt: new Date() })

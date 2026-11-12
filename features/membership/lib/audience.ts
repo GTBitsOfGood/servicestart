@@ -1,34 +1,24 @@
-import { MemberType } from "@/features/membership/schema";
+import type { MemberTypeKey } from "@/features/membership/lib/memberTypeKey";
 
 /**
  * Who a dashboard (and its navbar and header) is for. Member types only count
  * while the org has MemberTypesEnabled on; otherwise every non-admin is a
  * member.
  */
-export const DASHBOARD_AUDIENCES = [
-  "admin",
-  "member",
-  "applicant",
-  "attendee",
-] as const;
-export type DashboardAudience = (typeof DASHBOARD_AUDIENCES)[number];
+export type DashboardAudience = "admin" | "member" | MemberTypeKey;
 
 /** The audiences besides admins, which an org can configure separately. */
-export const MEMBER_AUDIENCES = ["member", "applicant", "attendee"] as const;
-export type MemberAudience = (typeof MEMBER_AUDIENCES)[number];
+export type MemberAudience = "member" | MemberTypeKey;
 
 export function getDashboardAudience(
-  membership: { role: string; memberType: MemberType | null } | null,
+  membership: { role: string; memberType: MemberTypeKey | null } | null,
   memberTypesEnabled: boolean,
 ): DashboardAudience {
   if (membership?.role === "admin" || membership?.role === "owner") {
     return "admin";
   }
-  if (memberTypesEnabled && membership?.memberType === MemberType.Applicant) {
-    return "applicant";
-  }
-  if (memberTypesEnabled && membership?.memberType === MemberType.Attendee) {
-    return "attendee";
+  if (memberTypesEnabled && membership?.memberType) {
+    return membership.memberType;
   }
   return "member";
 }
@@ -36,8 +26,20 @@ export function getDashboardAudience(
 /** The member type whose forms an audience sees, or null for none. */
 export function memberTypeFromAudience(
   audience: DashboardAudience,
-): MemberType | null {
-  if (audience === "applicant") return MemberType.Applicant;
-  if (audience === "attendee") return MemberType.Attendee;
-  return null;
+): MemberTypeKey | null {
+  if (audience === "admin" || audience === "member") {
+    return null;
+  }
+  return audience;
+}
+
+/** Maps a type audience to `member` when that key is no longer in the org. */
+export function audienceIfCurrent(
+  audience: DashboardAudience,
+  keys: readonly MemberTypeKey[],
+): DashboardAudience {
+  if (audience === "admin" || audience === "member") {
+    return audience;
+  }
+  return keys.includes(audience) ? audience : "member";
 }

@@ -1,7 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { FormDefinition } from "@/features/forms/lib/schema";
 import {
-  MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
 } from "@/core/db/schema";
@@ -61,7 +60,7 @@ function copyForm(organizationId: string, form: FormDefinition) {
 async function createUser(
   organizationId: string,
   role: string,
-  memberType: MemberType | null = null,
+  memberType: string | null = null,
 ) {
   const { user, session, headers } = await signUpAndGetSession(buildTestUser());
   await addMember(user.id, organizationId, role, memberType);
@@ -103,7 +102,7 @@ async function setup() {
   ]);
 
   const admin = await createUser(org.id, "admin");
-  const camper = await createUser(org.id, "member", MemberType.Attendee);
+  const camper = await createUser(org.id, "member", "attendee");
   const emergencyContactSubmission = await createFormSubmission(
     emergencyContact,
     { userId: camper.user.id, answers: buildSampleAnswers(emergencyContact) },
@@ -113,7 +112,7 @@ async function setup() {
     answers: buildSampleAnswers(consent),
   });
 
-  const applicant = await createUser(org.id, "member", MemberType.Applicant);
+  const applicant = await createUser(org.id, "member", "applicant");
   const uploadId = await createFormUpload(application, {
     uploadedBy: applicant.user.id,
   });

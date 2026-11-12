@@ -1,11 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import {
-  FormStatus,
-  MemberType,
-  SubmissionReviewStatus,
-} from "@/core/db/schema";
+import { FormStatus, SubmissionReviewStatus } from "@/core/db/schema";
 import { FormProgressService } from "@/features/forms/services/FormProgressService";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import {
   buildTestUser,
   createForm,
@@ -19,8 +16,13 @@ async function createUser() {
   return user.id;
 }
 
-function assignedTo(memberTypes: MemberType[], dueAt: string | null = null) {
-  return { assignedMemberTypes: memberTypes, dueAt };
+function assignedTo(memberTypes: string[], dueAt: string | null = null) {
+  return {
+    assignedMemberTypes: memberTypes.map((key) =>
+      MemberTypeKeySchema.parse(key),
+    ),
+    dueAt,
+  };
 }
 
 describe("FormProgressService.listForMember", () => {
@@ -30,23 +32,23 @@ describe("FormProgressService.listForMember", () => {
     const later = await createForm(org.id, {
       title: "Consent Form",
       status: FormStatus.Published,
-      settings: assignedTo([MemberType.Attendee], "2027-05-01T00:00:00Z"),
+      settings: assignedTo(["attendee"], "2027-05-01T00:00:00Z"),
     });
     const sooner = await createForm(org.id, {
       title: "Medical History",
       status: FormStatus.Published,
-      settings: assignedTo([MemberType.Attendee], "2027-04-01T00:00:00Z"),
+      settings: assignedTo(["attendee"], "2027-04-01T00:00:00Z"),
     });
     const undated = await createForm(org.id, {
       title: "A Survey",
       status: FormStatus.Published,
-      settings: assignedTo([MemberType.Attendee, MemberType.Applicant]),
+      settings: assignedTo(["attendee", "applicant"]),
     });
 
     const progress = await FormProgressService.listForMember(
       org.id,
       userId,
-      MemberType.Attendee,
+      MemberTypeKeySchema.parse("attendee"),
     );
 
     expect(progress.map(({ form }) => form.id)).toEqual([
@@ -71,11 +73,11 @@ describe("FormProgressService.listForMember", () => {
     const userId = await createUser();
     await createForm(org.id, {
       status: FormStatus.Draft,
-      settings: assignedTo([MemberType.Attendee]),
+      settings: assignedTo(["attendee"]),
     });
     await createForm(org.id, {
       status: FormStatus.Published,
-      settings: assignedTo([MemberType.Applicant]),
+      settings: assignedTo(["applicant"]),
     });
     await createForm(org.id, { status: FormStatus.Published });
 
@@ -83,7 +85,7 @@ describe("FormProgressService.listForMember", () => {
       await FormProgressService.listForMember(
         org.id,
         userId,
-        MemberType.Attendee,
+        MemberTypeKeySchema.parse("attendee"),
       ),
     ).toEqual([]);
   });
@@ -93,13 +95,13 @@ describe("FormProgressService.listForMember", () => {
     const userId = await createUser();
     await createForm(org.id, {
       status: FormStatus.Closed,
-      settings: assignedTo([MemberType.Attendee]),
+      settings: assignedTo(["attendee"]),
     });
 
     const [progress] = await FormProgressService.listForMember(
       org.id,
       userId,
-      MemberType.Attendee,
+      MemberTypeKeySchema.parse("attendee"),
     );
     expect(progress.form.availability).toBe("closed");
   });
@@ -144,16 +146,54 @@ describe("FormProgressService.listForMember", () => {
     const otherId = await createUser();
     const form = await createForm(org.id, {
       status: FormStatus.Published,
-      settings: assignedTo([MemberType.Attendee]),
+      settings: assignedTo(["attendee"]),
     });
     await createFormSubmission(form, { userId: otherId });
 
     const [progress] = await FormProgressService.listForMember(
       org.id,
       userId,
-      MemberType.Attendee,
+      MemberTypeKeySchema.parse("attendee"),
     );
     expect(progress.submission).toBeNull();
+  });
+
+  it("lists a form assigned to volunteer for a volunteer member", async () => {
+    const org = await createOrganization("volunteer-org", {
+      memberTypes: [
+        {
+          key: MemberTypeKeySchema.parse("volunteer"),
+          label: "Volunteer",
+          pluralLabel: "Volunteers",
+        },
+        {
+          key: MemberTypeKeySchema.parse("staff"),
+          label: "Staff",
+          pluralLabel: "Staff",
+        },
+      ],
+    });
+    const userId = await createUser();
+    const volunteerForm = await createForm(org.id, {
+      title: "Volunteer intake",
+      status: FormStatus.Published,
+      settings: assignedTo(["volunteer"]),
+    });
+    await createForm(org.id, {
+      title: "Staff only",
+      status: FormStatus.Published,
+      settings: assignedTo(["staff"]),
+    });
+
+    const progress = await FormProgressService.listForMember(
+      org.id,
+      userId,
+      MemberTypeKeySchema.parse("volunteer"),
+    );
+
+    expect(progress).toHaveLength(1);
+    expect(progress[0].form.id).toBe(volunteerForm.id);
+    expect(progress[0].required).toBe(true);
   });
 
   it("never lists another organization's forms or submissions", async () => {
@@ -162,7 +202,7 @@ describe("FormProgressService.listForMember", () => {
     const userId = await createUser();
     const formA = await createForm(orgA.id, {
       status: FormStatus.Published,
-      settings: assignedTo([MemberType.Attendee]),
+      settings: assignedTo(["attendee"]),
     });
     await createFormSubmission(formA, { userId });
 
@@ -170,7 +210,7 @@ describe("FormProgressService.listForMember", () => {
       await FormProgressService.listForMember(
         orgB.id,
         userId,
-        MemberType.Attendee,
+        MemberTypeKeySchema.parse("attendee"),
       ),
     ).toEqual([]);
   });

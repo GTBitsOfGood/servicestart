@@ -1,6 +1,23 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { resolveDashboardHeader } from "@/features/dashboard/lib/header";
+import {
+  DashboardHeaderConfigSchema,
+  resolveDashboardHeader,
+} from "@/features/dashboard/lib/header";
+import { audienceIfCurrent } from "@/features/membership/lib/audience";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
+
+const volunteer = MemberTypeKeySchema.parse("volunteer");
+
+describe("DashboardHeaderConfigSchema", () => {
+  it("parses a pre-Sprint-5 row unchanged", () => {
+    const config = {
+      applicant: { title: "Hello" },
+      attendee: { subtitle: "Camp" },
+    };
+    expect(DashboardHeaderConfigSchema.parse(config)).toEqual(config);
+  });
+});
 
 describe("resolveDashboardHeader", () => {
   it("uses the entry for the viewer's audience", () => {
@@ -8,17 +25,17 @@ describe("resolveDashboardHeader", () => {
       resolveDashboardHeader(
         {
           default: { title: "Welcome" },
-          attendee: {
-            title: "My Camp Dashboard",
-            subtitle: "Ready for camp?",
+          [volunteer]: {
+            title: "Volunteer Dashboard",
+            subtitle: "Thanks for serving",
           },
         },
-        "attendee",
+        volunteer,
         "Tiffany Pham",
       ),
     ).toEqual({
-      title: "My Camp Dashboard",
-      subtitle: "Ready for camp?",
+      title: "Volunteer Dashboard",
+      subtitle: "Thanks for serving",
     });
   });
 
@@ -26,17 +43,29 @@ describe("resolveDashboardHeader", () => {
     expect(
       resolveDashboardHeader(
         { default: { title: "Welcome", location: "Atlanta" } },
-        "applicant",
+        volunteer,
         "Tiffany Pham",
       ),
     ).toEqual({ title: "Welcome", location: "Atlanta" });
   });
 
+  it("ignores a type entry when that key is not current", () => {
+    expect(
+      resolveDashboardHeader(
+        {
+          default: { title: "Welcome" },
+          [volunteer]: { title: "Volunteer Dashboard" },
+        },
+        audienceIfCurrent(volunteer, []),
+        "Tiffany Pham",
+      ),
+    ).toEqual({ title: "Welcome" });
+  });
+
   it.each([
     ["admin", "Admin Dashboard"],
     ["member", "Dashboard"],
-    ["applicant", "Dashboard"],
-    ["attendee", "Dashboard"],
+    [volunteer, "Dashboard"],
   ] as const)(
     "uses the built-in heading for the %s audience",
     (audience, title) => {
@@ -49,8 +78,8 @@ describe("resolveDashboardHeader", () => {
   it("replaces every first-name placeholder in the title", () => {
     expect(
       resolveDashboardHeader(
-        { attendee: { title: "Hi {firstName} — welcome, {firstName}!" } },
-        "attendee",
+        { [volunteer]: { title: "Hi {firstName} — welcome, {firstName}!" } },
+        volunteer,
         "  Tiffany   Pham  ",
       ).title,
     ).toBe("Hi Tiffany — welcome, Tiffany!");
@@ -61,11 +90,11 @@ describe("resolveDashboardHeader", () => {
       resolveDashboardHeader(
         {
           default: { title: "Welcome", description: "Default description" },
-          attendee: { subtitle: "Attendee details" },
+          [volunteer]: { subtitle: "Volunteer details" },
         },
-        "attendee",
+        volunteer,
         "Tiffany Pham",
       ),
-    ).toEqual({ title: "Dashboard", subtitle: "Attendee details" });
+    ).toEqual({ title: "Dashboard", subtitle: "Volunteer details" });
   });
 });

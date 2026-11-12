@@ -17,12 +17,17 @@ import {
   PostDashboardAlertSchema,
   type PostDashboardAlert,
 } from "@/features/communications";
-import { MemberType } from "@/features/membership";
+import type {
+  MemberAudience,
+  MemberTypeKey,
+  MemberTypeRow,
+} from "@/features/membership";
+import { pruneAudienceRecord } from "@/features/dashboard/lib/audienceRecord";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import SaveBanner from "@/components/SaveBanner";
 import BogButton from "@/components/theme/ThemedButton";
 
-type EditableAudience = "member" | "applicant" | "attendee";
+type EditableAudience = MemberAudience;
 type HeaderField = keyof DashboardHeaderContent;
 type FieldErrors = Record<string, string>;
 
@@ -50,14 +55,6 @@ const HEADER_FIELDS: ReadonlyArray<{
     multiline: true,
   },
 ];
-
-const ALL_HEADER_AUDIENCES = [
-  "default",
-  "admin",
-  "member",
-  "applicant",
-  "attendee",
-] as const;
 
 const SOCIAL_LABELS: Record<SocialPlatform, string> = {
   instagram: "Instagram",
@@ -101,7 +98,7 @@ function footerToForm(footer: OrganizationFooter): FooterForm {
 
 function cleanHeader(config: DashboardHeaderConfig): DashboardHeaderConfig {
   const result: DashboardHeaderConfig = {};
-  for (const audience of ALL_HEADER_AUDIENCES) {
+  for (const audience of Object.keys(config)) {
     const content = config[audience];
     if (!content) continue;
 
@@ -209,18 +206,23 @@ export type DashboardContentSettingsProps = {
   initialHeader: DashboardHeaderConfig;
   initialFooter: OrganizationFooter;
   memberTypesEnabled: boolean;
+  memberTypes: MemberTypeRow[];
 };
 
 export default function DashboardContentSettings({
   initialHeader,
   initialFooter,
   memberTypesEnabled,
+  memberTypes,
 }: DashboardContentSettingsProps) {
   const audiences: ReadonlyArray<{ value: EditableAudience; label: string }> =
     memberTypesEnabled
       ? [
-          { value: "applicant", label: "Applicants" },
-          { value: "attendee", label: "Current Attendees" },
+          { value: "member", label: "Members" },
+          ...memberTypes.map((row) => ({
+            value: row.key,
+            label: row.pluralLabel,
+          })),
         ]
       : [{ value: "member", label: "All Members" }];
 
@@ -241,7 +243,7 @@ export default function DashboardContentSettings({
 
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMessage, setAlertMessage] = useState("");
-  const [alertMemberTypes, setAlertMemberTypes] = useState<MemberType[]>([]);
+  const [alertMemberTypes, setAlertMemberTypes] = useState<MemberTypeKey[]>([]);
   const [alertErrors, setAlertErrors] = useState<FieldErrors>({});
   const [alertStatus, setAlertStatus] = useState<string | null>(null);
   const [alertError, setAlertError] = useState<string | null>(null);
@@ -346,7 +348,12 @@ export default function DashboardContentSettings({
   }
 
   async function saveContent() {
-    const cleanedHeader = cleanHeader(header);
+    const cleanedHeader = memberTypesEnabled
+      ? pruneAudienceRecord(
+          cleanHeader(header),
+          memberTypes.map((row) => row.key),
+        )
+      : cleanHeader(header);
     const cleanedFooter = cleanFooter(footer);
     if (!validateContent(cleanedHeader, cleanedFooter)) {
       setSaveStatus("error");
@@ -396,7 +403,7 @@ export default function DashboardContentSettings({
     }
   }
 
-  function toggleAlertMemberType(memberType: MemberType) {
+  function toggleAlertMemberType(memberType: MemberTypeKey) {
     setAlertMemberTypes((current) =>
       current.includes(memberType)
         ? current.filter((value) => value !== memberType)
@@ -633,10 +640,7 @@ export default function DashboardContentSettings({
                 Recipients
               </legend>
               <div className="mt-3 flex flex-wrap gap-6">
-                {[
-                  { value: MemberType.Applicant, label: "Applicants" },
-                  { value: MemberType.Attendee, label: "Current attendees" },
-                ].map(({ value, label }) => (
+                {memberTypes.map(({ key: value, pluralLabel: label }) => (
                   <label
                     key={value}
                     className="flex items-center gap-2 text-paragraph-2"
@@ -652,7 +656,7 @@ export default function DashboardContentSettings({
                 ))}
               </div>
               <p className="mt-2 text-small text-grey-text-weak">
-                Leave both unchecked to send the alert to all members.
+                Leave all unchecked to send the alert to all members.
               </p>
             </fieldset>
           )}

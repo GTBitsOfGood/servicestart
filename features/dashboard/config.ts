@@ -4,6 +4,7 @@ import {
   DEFAULT_ADMIN_LAYOUT,
   DEFAULT_MEMBER_LAYOUT,
 } from "@/features/dashboard/lib/constants";
+import { pruneAudienceRecord } from "@/features/dashboard/lib/audienceRecord";
 import {
   DashboardHeaderConfigSchema,
   DEFAULT_DASHBOARD_HEADER_CONFIG,
@@ -13,7 +14,15 @@ import {
   DashboardLayoutSchema,
   MemberTypeDashboardLayoutsSchema,
 } from "@/features/dashboard/lib/schema";
-import type { DashboardAudience } from "@/features/membership";
+import {
+  audienceIfCurrent,
+  type DashboardAudience,
+  MemberTypeError,
+  type MemberTypeKey,
+} from "@/features/membership";
+
+const isJsonObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 /*
  * The dashboard's config keys. OrganizationConfigService registers these
@@ -37,33 +46,84 @@ export const dashboardLayout = jsonConfig(
 
 // Member types' own layouts, in one row keyed by member type. A type without
 // one gets the member layout (see getDashboardLayoutFor).
-export const memberTypeDashboardLayouts = jsonConfig(
+const baseMemberTypeDashboardLayouts = jsonConfig(
   OrganizationConfigKey.MemberTypeDashboardLayouts,
   "member type dashboard layouts",
   MemberTypeDashboardLayoutsSchema,
   {},
 );
 
-export const dashboardHeader = jsonConfig(
+export const memberTypeDashboardLayouts = {
+  ...baseMemberTypeDashboardLayouts,
+  async set(organizationId: string, value: string) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      throw new Error("Invalid JSON for member type dashboard layouts");
+    }
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
+      throw new Error("Invalid JSON for member type dashboard layouts");
+    }
+    const keys = await orgMemberTypeKeys(organizationId);
+    await baseMemberTypeDashboardLayouts.set(
+      organizationId,
+      JSON.stringify(pruneAudienceRecord(parsed, keys)),
+    );
+  },
+};
+
+const baseDashboardHeader = jsonConfig(
   OrganizationConfigKey.DashboardHeader,
   "dashboard header",
   DashboardHeaderConfigSchema,
   DEFAULT_DASHBOARD_HEADER_CONFIG,
 );
 
+const orgMemberTypeKeys = async (organizationId: string) => {
+  const { MemberTypeService } = await import("@/features/membership/server");
+  return (await MemberTypeService.list(organizationId)).map((row) => row.key);
+};
+
+export const dashboardHeader = {
+  ...baseDashboardHeader,
+  async set(organizationId: string, value: string) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      throw new Error("Invalid JSON for dashboard header");
+    }
+    if (!isJsonObject(parsed)) {
+      throw new Error("Invalid JSON for dashboard header");
+    }
+    const keys = await orgMemberTypeKeys(organizationId);
+    await baseDashboardHeader.set(
+      organizationId,
+      JSON.stringify(pruneAudienceRecord(parsed, keys)),
+    );
+  },
+};
+
 /** The dashboard layout for an audience, falling back to the member layout. */
 export async function getDashboardLayoutFor(
   organizationId: string,
   audience: DashboardAudience,
 ): Promise<DashboardLayout> {
-  switch (audience) {
+  const keys = await orgMemberTypeKeys(organizationId);
+  const current = audienceIfCurrent(audience, keys);
+  switch (current) {
     case "admin":
       return adminDashboardLayout.get(organizationId);
     case "member":
       return dashboardLayout.get(organizationId);
     default:
       return (
-        (await getMemberTypeDashboardLayout(organizationId, audience)) ??
+        (await getMemberTypeDashboardLayout(organizationId, current)) ??
         dashboardLayout.get(organizationId)
       );
   }
@@ -92,11 +152,16 @@ export async function setMemberTypeDashboardLayout(
       `Invalid ${memberType} dashboard layout${where}: ${issue.message}`,
     );
   }
+  const keys = await orgMemberTypeKeys(organizationId);
+  if (!keys.includes(memberType as MemberTypeKey)) {
+    throw new MemberTypeError("not_found", "Member type not found");
+  }
   const layouts = await memberTypeDashboardLayouts.get(organizationId);
-  await memberTypeDashboardLayouts.set(
-    organizationId,
-    JSON.stringify({ ...layouts, [memberType]: result.data }),
+  const pruned = pruneAudienceRecord(
+    { ...layouts, [memberType]: result.data },
+    keys,
   );
+  await memberTypeDashboardLayouts.set(organizationId, JSON.stringify(pruned));
 }
 
 /** Deletes a member type's own layout, so it gets the member layout again. */
@@ -104,7 +169,9 @@ export async function clearMemberTypeDashboardLayout(
   organizationId: string,
   memberType: string,
 ) {
-  const rest = { ...(await memberTypeDashboardLayouts.get(organizationId)) };
+  const layouts = await memberTypeDashboardLayouts.get(organizationId);
+  const keys = await orgMemberTypeKeys(organizationId);
+  const rest = pruneAudienceRecord(layouts, keys);
   delete rest[memberType];
   if (Object.keys(rest).length === 0) {
     await clearStoredConfigValue(

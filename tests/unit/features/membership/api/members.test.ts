@@ -3,7 +3,8 @@ import { randomUUID } from "node:crypto";
 import { and, eq, inArray } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/core/db";
-import { members, MemberType, OrganizationConfigKey } from "@/core/db/schema";
+import { members, memberTypes, OrganizationConfigKey } from "@/core/db/schema";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,
@@ -153,6 +154,19 @@ describe("GET /api/members/activity", () => {
     );
 
     expect(response.status).toBe(403);
+  });
+
+  it("returns 400 when userIds is empty", async () => {
+    const { headers } = await setupOrgAndUser("admin");
+
+    const response = await testApi.members.activity.$get(
+      { query: { userIds: [] } },
+      { headers },
+    );
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body).toEqual({ error: "userIds must not be empty" });
   });
 
   it("returns zero hours and null lastActive for user with no RSVPs", async () => {
@@ -358,7 +372,7 @@ describe("PATCH /api/members/type", () => {
         userId: user.id,
         organizationId,
         role: "member",
-        memberType: MemberType.Applicant,
+        memberType: MemberTypeKeySchema.parse("applicant"),
       });
       userIds.push(user.id);
     }
@@ -383,15 +397,13 @@ describe("PATCH /api/members/type", () => {
     const userIds = await addApplicants(organization.id, 1);
 
     const response = await testApi.members.type.$patch(
-      { json: { userIds, memberType: MemberType.Attendee } },
+      { json: { userIds, memberType: "attendee" } },
       { headers },
     );
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ updated: 1 });
-    expect(await getTypes(organization.id, userIds)).toEqual([
-      MemberType.Attendee,
-    ]);
+    expect(await getTypes(organization.id, userIds)).toEqual(["attendee"]);
   });
 
   it("changes many members' types", async () => {
@@ -399,22 +411,22 @@ describe("PATCH /api/members/type", () => {
     const userIds = await addApplicants(organization.id, 3);
 
     const response = await testApi.members.type.$patch(
-      { json: { userIds, memberType: MemberType.Attendee } },
+      { json: { userIds, memberType: "attendee" } },
       { headers },
     );
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ updated: 3 });
     expect(await getTypes(organization.id, userIds)).toEqual([
-      MemberType.Attendee,
-      MemberType.Attendee,
-      MemberType.Attendee,
+      "attendee",
+      "attendee",
+      "attendee",
     ]);
   });
 
   it("returns 401 when not logged in", async () => {
     const response = await testApi.members.type.$patch({
-      json: { userIds: ["anyone"], memberType: MemberType.Attendee },
+      json: { userIds: ["anyone"], memberType: "attendee" },
     });
 
     expect(response.status).toBe(401);
@@ -425,14 +437,12 @@ describe("PATCH /api/members/type", () => {
     const userIds = await addApplicants(organization.id, 1);
 
     const response = await testApi.members.type.$patch(
-      { json: { userIds, memberType: MemberType.Attendee } },
+      { json: { userIds, memberType: "attendee" } },
       { headers },
     );
 
     expect(response.status).toBe(403);
-    expect(await getTypes(organization.id, userIds)).toEqual([
-      MemberType.Applicant,
-    ]);
+    expect(await getTypes(organization.id, userIds)).toEqual(["applicant"]);
   });
 
   it("returns 404 when member types are off", async () => {
@@ -440,23 +450,53 @@ describe("PATCH /api/members/type", () => {
     const userIds = await addApplicants(organization.id, 1);
 
     const response = await testApi.members.type.$patch(
-      { json: { userIds, memberType: MemberType.Attendee } },
+      { json: { userIds, memberType: "attendee" } },
       { headers },
     );
 
     expect(response.status).toBe(404);
   });
 
-  it("returns 400 for a type that isn't a MemberType", async () => {
+  it("returns 400 for an unknown member type key", async () => {
     const { organization, headers } = await setupTypesOrg();
     const userIds = await addApplicants(organization.id, 1);
 
     const response = await testApi.members.type.$patch(
-      { json: { userIds, memberType: "camper" as MemberType } },
+      { json: { userIds, memberType: "camper" } },
       { headers },
     );
 
     expect(response.status).toBe(400);
+    expect(await getTypes(organization.id, userIds)).toEqual(["applicant"]);
+  });
+
+  it("returns 400 when the key belongs to another organization", async () => {
+    const orgA = await setupTypesOrg();
+    const orgB = await setupTypesOrg();
+    const orgBUserIds = await addApplicants(orgB.organization.id, 1);
+
+    await db.insert(memberTypes).values({
+      organizationId: orgA.organization.id,
+      key: "board-member",
+      label: "Board",
+      pluralLabel: "Board",
+      position: 2,
+    });
+
+    const response = await testApi.members.type.$patch(
+      {
+        json: {
+          userIds: orgBUserIds,
+          memberType: MemberTypeKeySchema.parse("board-member"),
+        },
+      },
+      { headers: orgB.headers },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await getTypes(orgB.organization.id, orgBUserIds)).toEqual([
+      "applicant",
+    ]);
   });
 
   it("returns 400 when a target is an admin", async () => {
@@ -467,16 +507,14 @@ describe("PATCH /api/members/type", () => {
       {
         json: {
           userIds: [...userIds, user.id],
-          memberType: MemberType.Attendee,
+          memberType: "attendee",
         },
       },
       { headers },
     );
 
     expect(response.status).toBe(400);
-    expect(await getTypes(organization.id, userIds)).toEqual([
-      MemberType.Applicant,
-    ]);
+    expect(await getTypes(organization.id, userIds)).toEqual(["applicant"]);
   });
 
   it("doesn't let an org B admin change org A's members", async () => {
@@ -485,14 +523,14 @@ describe("PATCH /api/members/type", () => {
     const orgB = await setupTypesOrg();
 
     const response = await testApi.members.type.$patch(
-      { json: { userIds: orgAUserIds, memberType: MemberType.Attendee } },
+      { json: { userIds: orgAUserIds, memberType: "attendee" } },
       { headers: orgB.headers },
     );
 
     expect(response.status).toBe(404);
     expect(await getTypes(orgA.organization.id, orgAUserIds)).toEqual([
-      MemberType.Applicant,
-      MemberType.Applicant,
+      "applicant",
+      "applicant",
     ]);
   });
 });

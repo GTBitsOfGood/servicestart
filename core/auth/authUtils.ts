@@ -24,11 +24,8 @@ import {
 } from "@/core/tenant/clientAuthUtils";
 // import { User } from "better-auth/client";
 import { NotificationService } from "@/features/communications/services/NotificationService";
-import {
-  JoinRequestStatus,
-  MemberType,
-  NotificationType,
-} from "@/core/db/schema";
+import type { MemberTypeKey } from "@/features/membership/lib/memberTypeKey";
+import { JoinRequestStatus, NotificationType } from "@/core/db/schema";
 
 type AppSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 
@@ -194,7 +191,7 @@ export async function requireAdmin(c: Context) {
  * organization whose member type is in `allowed`. Admins and owners always
  * pass, and so does everyone while MemberTypesEnabled is off.
  */
-export async function requireMemberType(c: Context, allowed: MemberType[]) {
+export async function requireMemberType(c: Context, allowed: MemberTypeKey[]) {
   const session = await requireMembership(c);
   const organizationId = session.session.activeOrganizationId!;
 

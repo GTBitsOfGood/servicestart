@@ -6,12 +6,9 @@ import {
 import type { DashboardHeaderConfig } from "@/features/dashboard/lib/header";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import type { OrganizationFooter } from "@/features/navigation/footer";
-import {
-  MemberType,
-  NotificationType,
-  OrganizationConfigKey,
-} from "@/core/db/schema";
+import { NotificationType, OrganizationConfigKey } from "@/core/db/schema";
 import { NotificationService } from "@/features/communications/services/NotificationService";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { setMemberTypeDashboardLayout } from "@/features/dashboard/config";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
@@ -62,7 +59,7 @@ async function createOrganizationUser(
   organization: { id: string; slug: string },
   options: {
     role: "admin" | "member";
-    memberType?: MemberType | null;
+    memberType?: string | null;
     name: string;
     baseUrl?: string;
   },
@@ -116,7 +113,11 @@ async function configureCampDashboard(organizationId: string) {
       OrganizationConfigKey.NavbarVariant,
       "horizontal-center",
     ),
-    setMemberTypeDashboardLayout(organizationId, MemberType.Attendee, layout),
+    setMemberTypeDashboardLayout(
+      organizationId,
+      MemberTypeKeySchema.parse("attendee"),
+      layout,
+    ),
     OrganizationConfigService.setConfig(
       organizationId,
       OrganizationConfigKey.DashboardHeader,
@@ -157,7 +158,7 @@ test.describe("Configurable dashboard content", () => {
 
     const { baseUrl } = await createOrganizationUser(page, organization, {
       role: "member",
-      memberType: MemberType.Attendee,
+      memberType: "attendee",
       name: "Camp Attendee",
     });
 
@@ -238,7 +239,7 @@ test.describe("Configurable dashboard content", () => {
     });
     await createOrganizationUser(attendeePage, organization, {
       role: "member",
-      memberType: MemberType.Attendee,
+      memberType: "attendee",
       name: "Camp Attendee",
     });
 

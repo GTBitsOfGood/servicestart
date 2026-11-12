@@ -6,7 +6,6 @@ import {
   joinRequestHistory,
   joinRequests,
   JoinRequestStatus,
-  MemberType,
   OrganizationConfigKey,
 } from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
@@ -394,7 +393,7 @@ describe("JoinRequestsService.updateStatus", () => {
   });
 
   it.each([
-    ["applicant", "true", MemberType.Applicant],
+    ["applicant", "true", "applicant"],
     ["untyped", "false", null],
   ] as const)(
     "adds an %s member when member types are %s",

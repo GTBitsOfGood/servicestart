@@ -6,7 +6,6 @@ import { NotificationService } from "@/features/communications/services/Notifica
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   FormStatus,
-  MemberType,
   NotificationType,
   OrganizationConfigKey,
 } from "@/core/db/schema";
@@ -31,7 +30,7 @@ async function setup(role = "admin", enabled = true) {
     String(enabled),
   );
   const { user: member } = await signUpAndGetSession(buildTestUser());
-  await addMember(member.id, org.id, "member", MemberType.Attendee);
+  await addMember(member.id, org.id, "member", "attendee");
   const form = await createForm(org.id, {
     title: "Medical History",
     status: FormStatus.Published,

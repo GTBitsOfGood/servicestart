@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import ApplicationStatusWidget, {
@@ -11,7 +12,6 @@ import {
 import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";
 import {
   FormStatus,
-  MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
 } from "@/core/db/schema";
@@ -233,7 +233,7 @@ describe("ApplicationStatusWidget (database)", () => {
       { ...buildTestUser(), name },
       org.slug,
     );
-    await addMember(user.id, org.id, "member", MemberType.Applicant);
+    await addMember(user.id, org.id, "member", "applicant");
     const form = await createForm(org.id, {
       formId: `camp-${org.slug}`,
       title: `Camp ${org.slug}`,
@@ -252,7 +252,7 @@ describe("ApplicationStatusWidget (database)", () => {
       await ApplicationStatusWidget({
         organizationId,
         userId,
-        audience: "applicant",
+        audience: MemberTypeKeySchema.parse("applicant"),
         config,
       }),
     );

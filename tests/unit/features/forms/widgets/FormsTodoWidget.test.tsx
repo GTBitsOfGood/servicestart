@@ -5,11 +5,7 @@ import FormsTodoWidget, {
   FormsTodoWidgetView,
 } from "@/features/forms/widgets/FormsTodoWidget";
 import type { FormTodoCard } from "@/features/forms/widgets/formProgress";
-import {
-  FormStatus,
-  MemberType,
-  OrganizationConfigKey,
-} from "@/core/db/schema";
+import { FormStatus, OrganizationConfigKey } from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,
@@ -18,6 +14,7 @@ import {
   createOrganization,
   signUpAndGetSession,
 } from "@/tests/unit/testUtils";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 
 function todoCard(overrides: Partial<FormTodoCard> = {}): FormTodoCard {
   return {
@@ -121,7 +118,7 @@ describe("FormsTodoWidget", () => {
   it("renders nothing when FormsEnabled is off", async () => {
     const org = await createOrganization(`todo-off-${crypto.randomUUID()}`);
     const { user } = await signUpAndGetSession(buildTestUser());
-    await addMember(user.id, org.id, "member", MemberType.Attendee);
+    await addMember(user.id, org.id, "member", "attendee");
     await OrganizationConfigService.setConfig(
       org.id,
       OrganizationConfigKey.FormsEnabled,
@@ -131,7 +128,7 @@ describe("FormsTodoWidget", () => {
     const tree = await FormsTodoWidget({
       organizationId: org.id,
       userId: user.id,
-      audience: "attendee",
+      audience: MemberTypeKeySchema.parse("attendee"),
     });
 
     const { container } = render(tree);
@@ -142,7 +139,7 @@ describe("FormsTodoWidget", () => {
     const orgA = await createOrganization(`todo-a-${crypto.randomUUID()}`);
     const orgB = await createOrganization(`todo-b-${crypto.randomUUID()}`);
     const { user } = await signUpAndGetSession(buildTestUser());
-    await addMember(user.id, orgA.id, "member", MemberType.Attendee);
+    await addMember(user.id, orgA.id, "member", "attendee");
     await OrganizationConfigService.setConfig(
       orgA.id,
       OrganizationConfigKey.FormsEnabled,
@@ -156,18 +153,22 @@ describe("FormsTodoWidget", () => {
     await createForm(orgA.id, {
       title: "Org A Required Form",
       status: FormStatus.Published,
-      settings: { assignedMemberTypes: [MemberType.Attendee] },
+      settings: {
+        assignedMemberTypes: [MemberTypeKeySchema.parse("attendee")],
+      },
     });
     await createForm(orgB.id, {
       title: "Org B Secret Title",
       status: FormStatus.Published,
-      settings: { assignedMemberTypes: [MemberType.Attendee] },
+      settings: {
+        assignedMemberTypes: [MemberTypeKeySchema.parse("attendee")],
+      },
     });
 
     const tree = await FormsTodoWidget({
       organizationId: orgA.id,
       userId: user.id,
-      audience: "attendee",
+      audience: MemberTypeKeySchema.parse("attendee"),
     });
     render(tree);
 

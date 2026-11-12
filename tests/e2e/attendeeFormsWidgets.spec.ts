@@ -1,10 +1,10 @@
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import {
   FormComponentType,
   FormStatus,
-  MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
 } from "@/core/db/schema";
@@ -63,11 +63,7 @@ async function createAttendeeWidgetsOrg() {
     OrganizationConfigKey.MemberTypesEnabled,
     "true",
   );
-  await setMemberTypeDashboardLayout(
-    org.id,
-    MemberType.Attendee,
-    ATTENDEE_FORMS_LAYOUT,
-  );
+  await setMemberTypeDashboardLayout(org.id, "attendee", ATTENDEE_FORMS_LAYOUT);
 
   const forms: TestForm[] = [];
   for (const title of ATTENDEE_FORM_TITLES) {
@@ -77,7 +73,7 @@ async function createAttendeeWidgetsOrg() {
         formId: `attendee-${randomUUID().slice(0, 8)}`,
         status: FormStatus.Published,
         settings: {
-          assignedMemberTypes: [MemberType.Attendee],
+          assignedMemberTypes: [MemberTypeKeySchema.parse("attendee")],
           dueAt: "2030-05-01T12:00:00.000Z",
           closesAt: "2030-12-01T12:00:00.000Z",
         },
@@ -104,12 +100,7 @@ async function createAttendeeMemberAndSignIn(
 ) {
   const user = buildTestUser();
   const { session, headers } = await signUpAndGetSession(user);
-  await addMember(
-    session.userId,
-    organizationId,
-    "member",
-    MemberType.Attendee,
-  );
+  await addMember(session.userId, organizationId, "member", "attendee");
   await setActiveOrganization(session.id, organizationId);
 
   const cookieHeader = headers["Cookie"];

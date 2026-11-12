@@ -18,6 +18,7 @@ import {
   dashboardLayout,
   getDashboardLayoutFor,
 } from "@/features/dashboard/config";
+import { pruneAudienceRecord } from "@/features/dashboard/lib/audienceRecord";
 import {
   DEFAULT_ORGANIZATION_FOOTER,
   OrganizationFooterSchema,
@@ -26,6 +27,7 @@ import {
   DEFAULT_NAVBAR_CONFIG,
   NavbarConfigSchema,
 } from "@/features/navigation/navbarConfig";
+import { MemberTypeService } from "@/features/membership/server";
 import { DEFAULT_BRANDING } from "@/core/config/branding";
 import {
   assertCornerStyle,
@@ -1021,12 +1023,37 @@ async function clearConfig(organizationId: string, key: OrganizationConfigKey) {
   await clearStoredConfigValue(organizationId, key);
 }
 
-const navbarConfig = jsonConfig(
-  OrganizationConfigKey.NavbarConfig,
-  "navbar config",
-  NavbarConfigSchema,
-  DEFAULT_NAVBAR_CONFIG,
-);
+const navbarConfig = (() => {
+  const base = jsonConfig(
+    OrganizationConfigKey.NavbarConfig,
+    "navbar config",
+    NavbarConfigSchema,
+    DEFAULT_NAVBAR_CONFIG,
+  );
+  const isJsonObject = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null && !Array.isArray(value);
+  return {
+    ...base,
+    async set(organizationId: string, value: string) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(value);
+      } catch {
+        throw new Error("Invalid JSON for navbar config");
+      }
+      if (!isJsonObject(parsed)) {
+        throw new Error("Invalid JSON for navbar config");
+      }
+      const keys = (await MemberTypeService.list(organizationId)).map(
+        (row) => row.key,
+      );
+      await base.set(
+        organizationId,
+        JSON.stringify(pruneAudienceRecord(parsed, keys)),
+      );
+    },
+  };
+})();
 const organizationFooter = jsonConfig(
   OrganizationConfigKey.OrganizationFooter,
   "footer",

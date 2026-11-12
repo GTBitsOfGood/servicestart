@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { test, expect, type Page } from "@playwright/test";
 import { and, eq } from "drizzle-orm";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import db from "@/core/db";
 import { auth } from "@/core/auth/auth";
 import { EmailService } from "@/core/email/EmailService";
@@ -16,13 +17,7 @@ import {
   signUpAndGetSession,
 } from "../unit/testUtils";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import {
-  invitations,
-  members,
-  MemberType,
-  OrganizationConfigKey,
-} from "@/core/db/schema";
-
+import { invitations, members, OrganizationConfigKey } from "@/core/db/schema";
 test.describe("Members Page", () => {
   test("admin-only access: guests, pending join, and non-admins are redirected", async ({
     page,
@@ -226,7 +221,7 @@ async function setMemberTypesEnabled(organizationId: string, enabled: boolean) {
   );
 }
 
-async function addTypedMember(organizationId: string, memberType: MemberType) {
+async function addTypedMember(organizationId: string, memberType: string) {
   const user = buildTestUser();
   const { session } = await signUpAndGetSession(user);
   await db.insert(members).values({
@@ -234,7 +229,7 @@ async function addTypedMember(organizationId: string, memberType: MemberType) {
     userId: session.userId,
     organizationId,
     role: "member",
-    memberType,
+    memberType: MemberTypeKeySchema.parse(memberType),
   });
   return user;
 }
@@ -303,15 +298,15 @@ async function pendingInvitations(organizationId: string, email: string) {
 }
 
 test.describe("Members Page - member types", () => {
-  test("an admin filters to applicants and marks them as current attendees", async ({
+  test("an admin filters to applicants and sets type in bulk", async ({
     page,
   }) => {
     const { org } = await createTestAdminAndSignIn(page);
     await setMemberTypesEnabled(org.id, true);
     try {
-      const rowApplicant = await addTypedMember(org.id, MemberType.Applicant);
-      const bulkApplicant = await addTypedMember(org.id, MemberType.Applicant);
-      const attendee = await addTypedMember(org.id, MemberType.Attendee);
+      const rowApplicant = await addTypedMember(org.id, "applicant");
+      const bulkApplicant = await addTypedMember(org.id, "applicant");
+      const attendee = await addTypedMember(org.id, "attendee");
       const row = (name: string) =>
         page.getByRole("row").filter({ hasText: name });
 
@@ -337,9 +332,11 @@ test.describe("Members Page - member types", () => {
 
       // In bulk.
       await row(bulkApplicant.name).getByRole("checkbox").click();
-      await page
-        .getByRole("button", { name: "Mark as current attendee" })
-        .click();
+      await openWith(
+        page.getByRole("button", { name: "Set type" }),
+        page.getByRole("menuitem", { name: "Current Attendee" }),
+      );
+      await page.getByRole("menuitem", { name: "Current Attendee" }).click();
       await expect(row(bulkApplicant.name)).not.toBeVisible();
 
       await page.getByRole("button", { name: "Applicants" }).click();
@@ -347,7 +344,7 @@ test.describe("Members Page - member types", () => {
       await expect(page).toHaveURL(/type=attendee/);
       for (const user of [rowApplicant, bulkApplicant, attendee]) {
         await expect(page.getByLabel(`Type for ${user.name}`)).toHaveValue(
-          MemberType.Attendee,
+          "attendee",
         );
       }
     } finally {
@@ -359,7 +356,7 @@ test.describe("Members Page - member types", () => {
     page,
   }) => {
     const { org } = await createTestAdminAndSignIn(page);
-    await addTypedMember(org.id, MemberType.Applicant);
+    await addTypedMember(org.id, "applicant");
 
     await page.goto("/members");
 

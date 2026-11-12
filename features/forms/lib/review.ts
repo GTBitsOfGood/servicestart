@@ -32,7 +32,7 @@ export const ReviewNotificationMetadataSchema = z.object({
 
 /*
  * How review statuses read everywhere they're shown: the responses pages
- * (#316, #317) and the applicant's status card (#318).
+ * (#316, #317) and the member-facing status card (#318).
  */
 
 export const REVIEW_STATUS_LABELS: Record<SubmissionReviewStatus, string> = {
