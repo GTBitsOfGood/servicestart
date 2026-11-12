@@ -62,11 +62,7 @@ export const memberTypeDashboardLayouts = {
     } catch {
       throw new Error("Invalid JSON for member type dashboard layouts");
     }
-    if (
-      typeof parsed !== "object" ||
-      parsed === null ||
-      Array.isArray(parsed)
-    ) {
+    if (!isJsonObject(parsed)) {
       throw new Error("Invalid JSON for member type dashboard layouts");
     }
     const keys = await orgMemberTypeKeys(organizationId);

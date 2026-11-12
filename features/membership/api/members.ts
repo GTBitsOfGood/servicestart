@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { HTTPException } from "hono/http-exception";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { NotFoundError } from "@/core/api/errors";
@@ -31,10 +30,6 @@ const app = new Hono()
     const organizationId = session.session.activeOrganizationId!;
 
     const { userIds } = c.req.valid("query");
-    if (userIds.length === 0) {
-      throw new HTTPException(400, { message: "userIds must not be empty" });
-    }
-
     const result = await MembersService.getMemberActivity(
       userIds,
       organizationId,

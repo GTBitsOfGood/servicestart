@@ -177,13 +177,11 @@ describe("generic org-defined member types", () => {
         org.id,
         audience,
       );
-      if (audience === board) {
-        expect(layout).toEqual(boardLayout);
-      } else {
-        expect(layout).toEqual(
-          await OrganizationConfigService.getDashboardLayout(org.id),
-        );
-      }
+      expect(layout).toEqual(
+        audience === board
+          ? boardLayout
+          : await OrganizationConfigService.getDashboardLayout(org.id),
+      );
       const header = await OrganizationConfigService.getDashboardHeader(org.id);
       expect(
         resolveDashboardHeader(header, audience, session.user.name).title,

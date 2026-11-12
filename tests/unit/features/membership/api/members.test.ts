@@ -165,8 +165,6 @@ describe("GET /api/members/activity", () => {
     );
 
     expect(response.status).toBe(400);
-    const body = await response.json();
-    expect(body).toEqual({ error: "userIds must not be empty" });
   });
 
   it("returns zero hours and null lastActive for user with no RSVPs", async () => {

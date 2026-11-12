@@ -8,6 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import type { MemberTypeKey } from "@/features/membership/lib/memberTypeKey";
 
 const mocks = vi.hoisted(() => ({
@@ -59,6 +60,19 @@ const memberTypes = [
   },
 ];
 
+const initialHeader = {
+  [volunteer]: { title: "Hello, {firstName}!" },
+  [staff]: { title: "Staff dashboard" },
+};
+
+const initialFooter = {
+  email: "hello@camp.org",
+  ein: "84-4516921",
+  socialLinks: [
+    { platform: "instagram" as const, url: "https://instagram.com/camp" },
+  ],
+};
+
 describe("DashboardContentSettings", () => {
   beforeEach(() => {
     mocks.putConfig.mockResolvedValue({ ok: true });
@@ -86,6 +100,103 @@ describe("DashboardContentSettings", () => {
     expect(screen.getByRole("tab", { name: "Members" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Volunteers" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Staff" })).toBeTruthy();
+  });
+
+  it("edits audience content and saves the header and footer configs", async () => {
+    render(
+      <DashboardContentSettings
+        initialHeader={initialHeader}
+        initialFooter={initialFooter}
+        memberTypesEnabled
+        memberTypes={memberTypes}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Staff" }));
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Updated staff dashboard" },
+    });
+
+    expect(screen.getByTestId("save-banner").textContent).toBe("unsaved");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save dashboard content" }),
+    );
+
+    await waitFor(() => expect(mocks.putConfig).toHaveBeenCalledTimes(2));
+    const requests = mocks.putConfig.mock.calls.map(
+      ([request]) => request.json,
+    );
+    expect(requests).toContainEqual({
+      key: OrganizationConfigKey.DashboardHeader,
+      value: JSON.stringify({
+        [volunteer]: { title: "Hello, {firstName}!" },
+        [staff]: { title: "Updated staff dashboard" },
+      }),
+    });
+    expect(requests).toContainEqual({
+      key: OrganizationConfigKey.OrganizationFooter,
+      value: JSON.stringify(initialFooter),
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("save-banner").textContent).toBe("success"),
+    );
+  });
+
+  it("shows schema validation errors inline before saving", async () => {
+    render(
+      <DashboardContentSettings
+        initialHeader={initialHeader}
+        initialFooter={initialFooter}
+        memberTypesEnabled
+        memberTypes={memberTypes}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Contact email"), {
+      target: { value: "not-an-email" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save dashboard content" }),
+    );
+
+    expect(await screen.findByText("Enter a valid email address")).toBeTruthy();
+    expect(mocks.putConfig).not.toHaveBeenCalled();
+  });
+
+  it("preserves additional links for a social platform when saving", async () => {
+    const footerWithAdditionalLink = {
+      ...initialFooter,
+      socialLinks: [
+        ...initialFooter.socialLinks,
+        {
+          platform: "instagram" as const,
+          url: "https://instagram.com/camp-volunteers",
+        },
+      ],
+    };
+    render(
+      <DashboardContentSettings
+        initialHeader={initialHeader}
+        initialFooter={footerWithAdditionalLink}
+        memberTypesEnabled
+        memberTypes={memberTypes}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Updated member dashboard" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save dashboard content" }),
+    );
+
+    await waitFor(() => expect(mocks.putConfig).toHaveBeenCalledTimes(2));
+    expect(mocks.putConfig).toHaveBeenCalledWith({
+      json: {
+        key: OrganizationConfigKey.OrganizationFooter,
+        value: JSON.stringify(footerWithAdditionalLink),
+      },
+    });
   });
 
   it("posts an alert to selected member types", async () => {
@@ -131,14 +242,19 @@ describe("DashboardContentSettings", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Everyone, welcome" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save dashboard content" }),
+    );
 
     await waitFor(() => {
       expect(mocks.putConfig).toHaveBeenCalledWith({
         json: {
-          key: expect.any(String),
+          key: OrganizationConfigKey.DashboardHeader,
           value: JSON.stringify({
-            member: { title: "Everyone" },
+            member: { title: "Everyone, welcome" },
             [volunteer]: { title: "Volunteer home" },
           }),
         },

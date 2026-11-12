@@ -141,7 +141,7 @@ test.describe("admin submission page", () => {
     for (const component of source.components)
       if (component.type === "question_group") component.config.minEntries = 1;
     const form = await copyForm(org.id, source);
-    const camper = await createUser(org.id, "member", MemberType.Attendee);
+    const camper = await createUser(org.id, "member", "attendee");
     const admin = await createUser(org.id, "admin");
     const origin = tenantUrl(org.slug, baseURL);
     await signIn(page, origin, camper.cookie);
