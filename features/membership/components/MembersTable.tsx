@@ -22,6 +22,7 @@ import {
   MemberTypeKeySchema,
   type MemberTypeKey,
 } from "@/features/membership/lib/memberTypeKey";
+import { memberTypeChoices } from "@/features/membership/lib/memberTypeChoices";
 import { useEmailRecipients } from "@/features/communications";
 import { SendEmailModal } from "@/features/communications/ui";
 import {
@@ -167,42 +168,27 @@ export default function MembersTable({
     [memberTypesEnabled],
   );
 
-  const typeFilterOptions = useMemo(() => {
-    const pluralCounts = new Map<string, number>();
-    for (const row of memberTypes) {
-      pluralCounts.set(
-        row.pluralLabel,
-        (pluralCounts.get(row.pluralLabel) ?? 0) + 1,
-      );
-    }
-    return [
-      { option: ALL_TYPES_FILTER, value: null as MemberTypeKey | null },
-      ...memberTypes.map((row) => ({
-        option:
-          (pluralCounts.get(row.pluralLabel) ?? 0) > 1
-            ? `${row.pluralLabel} (${row.key})`
-            : row.pluralLabel,
-        value: row.key,
-      })),
-    ];
-  }, [memberTypes]);
+  const typeFilterOptions = useMemo(
+    () =>
+      memberTypeChoices({
+        types: memberTypes.map((row) => ({
+          key: row.key,
+          text: row.pluralLabel,
+        })),
+        builtIns: [{ option: ALL_TYPES_FILTER, value: null }],
+      }),
+    [memberTypes],
+  );
 
-  const bulkTypeChoices = useMemo(() => {
-    const labelCounts = new Map<string, number>();
-    for (const row of memberTypes) {
-      labelCounts.set(row.label, (labelCounts.get(row.label) ?? 0) + 1);
-    }
-    return [
-      { option: BULK_NO_TYPE_OPTION, value: null as MemberTypeKey | null },
-      ...memberTypes.map((row) => ({
-        option:
-          (labelCounts.get(row.label) ?? 0) > 1
-            ? `${row.label} (${row.key})`
-            : row.label,
-        value: row.key,
-      })),
-    ];
-  }, [memberTypes]);
+  const bulkTypeChoices = useMemo(
+    () =>
+      memberTypeChoices({
+        types: memberTypes.map((row) => ({ key: row.key, text: row.label })),
+        builtIns: [{ option: BULK_NO_TYPE_OPTION, value: null }],
+        reserved: [BULK_TYPE_PLACEHOLDER],
+      }),
+    [memberTypes],
+  );
 
   const setMemberTypes = useCallback(
     async (userIds: string[], memberType: MemberTypeKey | null) => {
@@ -229,15 +215,14 @@ export default function MembersTable({
 
   const applyBulkMemberType = useCallback(
     async (selection: string) => {
-      if (selection === BULK_TYPE_PLACEHOLDER) return;
-      const memberType =
-        bulkTypeChoices.find((choice) => choice.option === selection)?.value ??
-        undefined;
-      if (memberType === undefined) return;
+      const choice = bulkTypeChoices.find(
+        (candidate) => candidate.option === selection,
+      );
+      if (!choice) return;
       const userIds = members
         .filter((m) => selectedRows.has(m.userId) && !isAdminRole(m.role))
         .map((m) => m.userId);
-      await setMemberTypes(userIds, memberType);
+      await setMemberTypes(userIds, choice.value);
       setSelectedRows(new Set());
       setBulkTypeValue(BULK_TYPE_PLACEHOLDER);
     },

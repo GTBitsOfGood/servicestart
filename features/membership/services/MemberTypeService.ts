@@ -1,7 +1,13 @@
 import { and, asc, count, eq, inArray, max, sql } from "drizzle-orm";
 import { z } from "zod";
 import db from "@/core/db";
-import { forms, memberTypes, members } from "@/core/db/schema";
+import {
+  AUDIENCE_KEYED_CONFIG_KEYS,
+  forms,
+  memberTypes,
+  members,
+  organizationConfig,
+} from "@/core/db/schema";
 import {
   MemberTypeError,
   memberTypeInUseError,
@@ -108,10 +114,15 @@ async function findByKey(
   return row ? toRow(row) : null;
 }
 
+/**
+ * Locks the row against deletion until `tx` ends, so a caller can insert a
+ * member with this type without racing `delete`.
+ */
 async function getSignupDefault(
   organizationId: string,
+  tx: Transaction | typeof db = db,
 ): Promise<MemberTypeRow | null> {
-  const [row] = await db
+  const [row] = await tx
     .select(rowColumns)
     .from(memberTypes)
     .where(
@@ -120,7 +131,8 @@ async function getSignupDefault(
         eq(memberTypes.isSignupDefault, true),
       ),
     )
-    .limit(1);
+    .limit(1)
+    .for("key share");
   return row ? toRow(row) : null;
 }
 
@@ -413,6 +425,20 @@ async function deleteType(
           and(
             eq(memberTypes.organizationId, organizationId),
             eq(memberTypes.key, key),
+          ),
+        );
+
+      // A later type can reuse this key, and must not inherit these entries.
+      await tx
+        .update(organizationConfig)
+        .set({
+          value: sql`(${organizationConfig.value}::jsonb - ${key}::text)::text`,
+        })
+        .where(
+          and(
+            eq(organizationConfig.organizationId, organizationId),
+            inArray(organizationConfig.key, [...AUDIENCE_KEYED_CONFIG_KEYS]),
+            sql`${organizationConfig.value}::jsonb ? ${key}::text`,
           ),
         );
     });

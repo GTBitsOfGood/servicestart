@@ -271,7 +271,16 @@ function TypeRow({
   return (
     <li className="flex flex-col gap-4 rounded-control border border-grey-stroke-weak bg-page-bg p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-3">
+        <div
+          className="min-w-0 flex-1 space-y-3"
+          onBlur={(event) => {
+            const next = event.relatedTarget;
+            if (next instanceof Node && event.currentTarget.contains(next)) {
+              return;
+            }
+            void commitRename();
+          }}
+        >
           <label
             className="block text-grey-text-strong"
             htmlFor={`type-${type.key}-label`}
@@ -283,16 +292,6 @@ function TypeRow({
               value={label}
               disabled={rowDisabled}
               onChange={(event) => setLabel(event.target.value)}
-              onBlur={(event) => {
-                const next = event.relatedTarget;
-                if (
-                  next instanceof Node &&
-                  event.currentTarget.closest("li")?.contains(next)
-                ) {
-                  return;
-                }
-                void commitRename();
-              }}
             />
           </label>
           <label
@@ -306,16 +305,6 @@ function TypeRow({
               value={pluralLabel}
               disabled={rowDisabled}
               onChange={(event) => setPluralLabel(event.target.value)}
-              onBlur={(event) => {
-                const next = event.relatedTarget;
-                if (
-                  next instanceof Node &&
-                  event.currentTarget.closest("li")?.contains(next)
-                ) {
-                  return;
-                }
-                void commitRename();
-              }}
             />
           </label>
           <p className="text-paragraph-2 text-grey-text-weak">

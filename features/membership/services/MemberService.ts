@@ -184,16 +184,20 @@ async function addSignupMember(userId: string, organizationId: string) {
 
   const memberTypesEnabled =
     await OrganizationConfigService.getMemberTypesEnabled(organizationId);
-  const signupType = memberTypesEnabled
-    ? ((await MemberTypeService.getSignupDefault(organizationId))?.key ?? null)
-    : null;
 
-  await db.insert(members).values({
-    id: randomUUID(),
-    userId,
-    organizationId,
-    role: "member",
-    memberType: signupType,
+  await db.transaction(async (tx) => {
+    const signupType = memberTypesEnabled
+      ? ((await MemberTypeService.getSignupDefault(organizationId, tx))?.key ??
+        null)
+      : null;
+
+    await tx.insert(members).values({
+      id: randomUUID(),
+      userId,
+      organizationId,
+      role: "member",
+      memberType: signupType,
+    });
   });
 }
 

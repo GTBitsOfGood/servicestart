@@ -168,6 +168,31 @@ describe("MemberTypesClient", () => {
     });
   });
 
+  it("saves an edited label when focus moves to the row's other controls", async () => {
+    mocks.patchType.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ...alpha, label: "Mentor" }),
+    });
+    render(<MemberTypesClient initialTypes={[alpha]} />);
+    const label = screen.getByLabelText("Label", { exact: true });
+    const plural = screen.getByLabelText("Plural label");
+
+    fireEvent.change(label, { target: { value: "Mentor" } });
+    fireEvent.blur(label, { relatedTarget: plural });
+    expect(mocks.patchType).not.toHaveBeenCalled();
+
+    fireEvent.blur(plural, {
+      relatedTarget: screen.getByLabelText("Signup default for Alpha"),
+    });
+
+    await waitFor(() => {
+      expect(mocks.patchType).toHaveBeenCalledWith({
+        param: { key: alpha.key },
+        json: { label: "Mentor", pluralLabel: "Alphas" },
+      });
+    });
+  });
+
   it("shows the server 409 message in the delete confirm", async () => {
     const message = memberTypeInUseMessage(2, 0, "Beta");
     mocks.deleteType.mockResolvedValue({

@@ -42,6 +42,13 @@ export type ToggleableOrganizationFeature = Extract<
   | OrganizationConfigKey.AutoApproveSignups
 >;
 
+/** Keys whose value is a JSON object with an entry per audience. */
+export const AUDIENCE_KEYED_CONFIG_KEYS = [
+  OrganizationConfigKey.DashboardHeader,
+  OrganizationConfigKey.NavbarConfig,
+  OrganizationConfigKey.MemberTypeDashboardLayouts,
+] as const satisfies readonly OrganizationConfigKey[];
+
 // Array of enum values for use with Zod
 export const ORGANIZATION_CONFIG_KEY_VALUES = Object.values(
   OrganizationConfigKey,

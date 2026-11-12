@@ -1,9 +1,14 @@
 // @vitest-environment node
 import { randomUUID } from "node:crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/core/db";
-import { members, OrganizationConfigKey, users } from "@/core/db/schema";
+import {
+  members,
+  memberTypes,
+  OrganizationConfigKey,
+  users,
+} from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { MembersService } from "@/features/membership/services/MemberService";
@@ -527,7 +532,64 @@ describe("MembersService.addSignupMember member type", () => {
         ?.memberType,
     ).toBeNull();
   });
+
+  it("still adds the member when its signup default is deleted mid-signup", async () => {
+    const volunteer = MemberTypeKeySchema.parse("volunteer");
+    const org = await createOrganization("signup-default-deleted", {
+      memberTypes: [
+        {
+          key: volunteer,
+          label: "Volunteer",
+          pluralLabel: "Volunteers",
+          isSignupDefault: true,
+        },
+      ],
+    });
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.MemberTypesEnabled,
+      "true",
+    );
+    const { user } = await signUpAndGetSession(buildTestUser(), org.slug);
+    const typeRow = and(
+      eq(memberTypes.organizationId, org.id),
+      eq(memberTypes.key, volunteer),
+    );
+    const deleted = Promise.withResolvers<void>();
+    const commit = Promise.withResolvers<void>();
+
+    const deleting = db.transaction(async (tx) => {
+      await tx.select().from(memberTypes).where(typeRow).for("update");
+      await tx.delete(memberTypes).where(typeRow);
+      deleted.resolve();
+      await commit.promise;
+    });
+    await deleted.promise;
+    const signup = MembersService.addSignupMember(user.id, org.id);
+    await waitForBlockedSignup();
+    commit.resolve();
+    await deleting;
+    await signup;
+
+    expect(
+      await MembersService.findByUserAndOrganization(user.id, org.id),
+    ).toMatchObject({ memberType: null });
+  });
 });
+
+async function waitForBlockedSignup() {
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    const { rows } = await db.execute<{ blocked: number }>(sql`
+      SELECT count(*)::int AS blocked FROM pg_stat_activity
+      WHERE wait_event_type = 'Lock'
+        AND (query ILIKE '%"member_types"%' OR query ILIKE 'insert into "members"%')
+    `);
+    if ((rows[0]?.blocked ?? 0) > 0) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error("signup never waited on the deleted member type");
+}
 
 describe("MembersService member type filter", () => {
   it("lists and counts only members of the given type", async () => {

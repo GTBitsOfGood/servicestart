@@ -2,7 +2,13 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import db from "@/core/db";
-import { members, users } from "@/core/db/schema";
+import { members, OrganizationConfigKey, users } from "@/core/db/schema";
+import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import {
+  getMemberTypeDashboardLayout,
+  setMemberTypeDashboardLayout,
+} from "@/features/dashboard/config";
+import { DEFAULT_MEMBER_LAYOUT } from "@/features/dashboard/lib/constants";
 import {
   MemberTypeError,
   memberTypeInUseMessage,
@@ -191,6 +197,53 @@ describe("MemberTypeService", () => {
         error.message === memberTypeInUseMessage(2, 1, "Helper"),
     );
     expect(await MemberTypeService.findByKey(org.id, type.key)).not.toBeNull();
+  });
+
+  it("does not give a deleted type's settings to a new type with its key", async () => {
+    const org = await createOrganization(
+      `mts-reuse-${randomUUID().slice(0, 8)}`,
+      { memberTypes: [] },
+    );
+    const original = await MemberTypeService.create(org.id, {
+      label: "Mentor",
+      pluralLabel: "Mentors",
+    });
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.NavbarConfig,
+      JSON.stringify({
+        member: { hidden: ["/media"] },
+        [original.key]: { hidden: ["/members"] },
+      }),
+    );
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.DashboardHeader,
+      JSON.stringify({
+        default: { title: "Welcome" },
+        [original.key]: { title: "Mentor hub" },
+      }),
+    );
+    await setMemberTypeDashboardLayout(
+      org.id,
+      original.key,
+      DEFAULT_MEMBER_LAYOUT,
+    );
+
+    await MemberTypeService.delete(org.id, original.key);
+    const reused = await MemberTypeService.create(org.id, {
+      label: "Mentor",
+      pluralLabel: "Mentors",
+    });
+
+    expect(reused.key).toBe(original.key);
+    expect(await OrganizationConfigService.getNavbarConfig(org.id)).toEqual({
+      member: { hidden: ["/media"] },
+    });
+    expect(await OrganizationConfigService.getDashboardHeader(org.id)).toEqual({
+      default: { title: "Welcome" },
+    });
+    expect(await getMemberTypeDashboardLayout(org.id, reused.key)).toBeNull();
   });
 
   it("rejects update bodies that include key", async () => {
