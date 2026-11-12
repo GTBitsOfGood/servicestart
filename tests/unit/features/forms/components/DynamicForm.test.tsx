@@ -7,6 +7,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderToString } from "react-dom/server";
 import DynamicForm, {
   type DynamicFormSubmitResult,
 } from "@/features/forms/components/DynamicForm";
@@ -69,6 +70,37 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("DynamicForm", () => {
+  it("enables editing and submission only once hydrated handlers can preserve answers", async () => {
+    const onSubmit = vi.fn(async () => ({ ok: true as const }));
+    const controls = (
+      <DynamicForm
+        definition={{ formId: "hydration", components: [form.components[1]] }}
+        onSubmit={onSubmit}
+      />
+    );
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(controls);
+    document.body.append(container);
+    expect(container.querySelector("input")!.disabled).toBe(true);
+    expect(
+      container.querySelector<HTMLButtonElement>('button[type="submit"]')!
+        .disabled,
+    ).toBe(true);
+
+    const view = render(controls, { container, hydrate: true });
+    const input = view.getByLabelText(/^Student Name/) as HTMLInputElement;
+    const submit = view.getByRole("button", {
+      name: "Submit",
+    }) as HTMLButtonElement;
+    expect(input.disabled).toBe(false);
+    expect(submit.disabled).toBe(false);
+    fireEvent.change(input, { target: { value: "Ada" } });
+    fireEvent.click(submit);
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith({ [nameId]: "Ada" }),
+    );
+  });
+
   it("renders every question in order", () => {
     renderForm();
 

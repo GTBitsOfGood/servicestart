@@ -1,3 +1,4 @@
+import QuestionGroup from "@/features/forms/components/questions/QuestionGroup";
 import type { ComponentType } from "react";
 import CheckboxesQuestion from "@/features/forms/components/questions/CheckboxesQuestion";
 import DateQuestion from "@/features/forms/components/questions/DateQuestion";
@@ -33,4 +34,5 @@ export const FORM_RENDERERS: {
   [FormComponentType.Dropdown]: DropdownQuestion,
   [FormComponentType.Date]: DateQuestion,
   [FormComponentType.YesNo]: YesNoQuestion,
+  [FormComponentType.QuestionGroup]: QuestionGroup,
 };

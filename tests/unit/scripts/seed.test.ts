@@ -13,6 +13,7 @@ import {
   formComponents,
   formSubmissions,
   formUploads,
+  formAnswers,
   FormComponentType,
   FormStatus,
   NotificationType,
@@ -23,6 +24,7 @@ import {
   joinRequestHistory,
   JoinRequestStatus,
 } from "@/core/db/schema";
+import { buildSubmissionSchema } from "@/features/forms/lib/submission";
 import { FormDefinitionSchema } from "@/features/forms/lib/schema";
 import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { FormProgressService } from "@/features/forms/services/FormProgressService";
@@ -404,6 +406,79 @@ it("seeds one copy of each Visionaries form", async () => {
     expect(creator.email).toBe("admin@example.com");
     expect(creator.organizationId).toBe("org_visionariestothethrone");
   }
+});
+
+it("upgrades legacy seeded camp questions and recreates valid grouped answers", async () => {
+  await main();
+  for (const form of [
+    VISIONARIES_ATTENDEE_FORMS[0],
+    VISIONARIES_ATTENDEE_FORMS[2],
+  ]) {
+    await db
+      .update(formComponents)
+      .set({ type: FormComponentType.ShortText, config: {} })
+      .where(
+        and(
+          eq(formComponents.formId, form.id),
+          eq(formComponents.type, FormComponentType.QuestionGroup),
+        ),
+      );
+  }
+  await main();
+  for (const form of [
+    VISIONARIES_ATTENDEE_FORMS[0],
+    VISIONARIES_ATTENDEE_FORMS[2],
+  ]) {
+    expect((await storedDefinition(form.id)).definition).toEqual(form);
+    const responses = await db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.formId, form.id));
+    expect(responses.length).toBeGreaterThan(0);
+    for (const response of responses) {
+      const answers = await db
+        .select()
+        .from(formAnswers)
+        .where(eq(formAnswers.submissionId, response.id));
+      expect(
+        buildSubmissionSchema(form).safeParse(
+          Object.fromEntries(
+            answers.map((answer) => [answer.componentId, answer.value]),
+          ),
+        ).success,
+      ).toBe(true);
+    }
+  }
+});
+
+it("leaves non-fixture responses intact when a legacy seed cannot be upgraded", async () => {
+  await main();
+  const form = VISIONARIES_ATTENDEE_FORMS[0];
+  await db
+    .update(formComponents)
+    .set({ type: FormComponentType.ShortText, config: {} })
+    .where(
+      and(
+        eq(formComponents.formId, form.id),
+        eq(formComponents.type, FormComponentType.QuestionGroup),
+      ),
+    );
+  const custom = await createFormSubmission(
+    { id: form.id, organizationId: "org_visionariestothethrone" },
+    { answers: {} },
+  );
+  await expect(main()).rejects.toThrow("non-fixture responses");
+  expect(
+    await db
+      .select()
+      .from(formSubmissions)
+      .where(eq(formSubmissions.id, custom)),
+  ).toHaveLength(1);
+  expect(
+    (await storedDefinition(form.id)).definition.components.some(
+      (question) => question.type === FormComponentType.QuestionGroup,
+    ),
+  ).toBe(false);
 });
 
 it("won't overwrite another form with the application's form ID", async () => {

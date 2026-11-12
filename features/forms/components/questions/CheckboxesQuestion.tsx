@@ -32,7 +32,10 @@ export default function CheckboxesQuestion({
   onBlur,
 }: QuestionProps<FormComponentOfType<FormComponentType.Checkboxes>>) {
   const { options, minSelected, maxSelected } = component.config;
-  const selected = Array.isArray(value) ? value : [];
+  const selected =
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+      ? (value as string[])
+      : [];
   const hint = selectionHint(minSelected, maxSelected);
   const hintId = `${fieldId(component.id)}-hint`;
   const descriptionIds = describedBy(

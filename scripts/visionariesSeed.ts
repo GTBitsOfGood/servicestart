@@ -4,6 +4,7 @@ import db from "@/core/db";
 import {
   EventVisibility,
   FormStatus,
+  FormComponentType,
   NotificationType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
@@ -296,12 +297,64 @@ export function createApplicationSeed(options: {
             settings: values.settings,
           })
           .where(eq(schema.forms.id, form.id));
-        // Questions lock once a form is published, so only a draft's change.
-        // Its questions may have been edited in the builder, so reset them.
-        if (form.status !== FormStatus.Draft) return;
+        // Upgrade the two legacy camp fixtures once. Published forms normally
+        // stay locked; only replace these seed-owned questions when every
+        // response is also a fixture that seedSubmissions will recreate.
+        const storedQuestions = await tx
+          .select({ type: schema.formComponents.type })
+          .from(schema.formComponents)
+          .where(
+            and(
+              eq(schema.formComponents.organizationId, ORG_ID),
+              eq(schema.formComponents.formId, form.id),
+            ),
+          );
+        const formIndex = SEEDED_FORMS.findIndex(({ id }) => id === form.id);
+        const upgradeGroups =
+          formIndex >= 0 &&
+          components.some(
+            (question) => question.type === FormComponentType.QuestionGroup,
+          ) &&
+          !storedQuestions.some(
+            (question) => question.type === FormComponentType.QuestionGroup,
+          );
+        if (form.status !== FormStatus.Draft && !upgradeGroups) return;
+        if (upgradeGroups) {
+          const fixtureIds = PERSONAS.map((_, persona) =>
+            submissionId(persona, formIndex),
+          );
+          const [customResponse] = await tx
+            .select({ id: schema.formSubmissions.id })
+            .from(schema.formSubmissions)
+            .where(
+              and(
+                eq(schema.formSubmissions.organizationId, ORG_ID),
+                eq(schema.formSubmissions.formId, form.id),
+                notInArray(schema.formSubmissions.id, fixtureIds),
+              ),
+            )
+            .limit(1);
+          if (customResponse)
+            throw new Error(
+              `Cannot upgrade seeded form "${form.formId}" to question groups while it has non-fixture responses. Export those responses and recreate this development fixture first.`,
+            );
+          await tx
+            .delete(schema.formSubmissions)
+            .where(
+              and(
+                eq(schema.formSubmissions.organizationId, ORG_ID),
+                eq(schema.formSubmissions.formId, form.id),
+              ),
+            );
+        }
         await tx
           .delete(schema.formComponents)
-          .where(eq(schema.formComponents.formId, form.id));
+          .where(
+            and(
+              eq(schema.formComponents.organizationId, ORG_ID),
+              eq(schema.formComponents.formId, form.id),
+            ),
+          );
       } else {
         await tx
           .insert(schema.forms)
@@ -440,6 +493,28 @@ export function createApplicationSeed(options: {
         persona % 2 ? "Peanuts" : "N/A",
       "Today's Date": "10/01/2026",
     };
+    for (const component of form.components) {
+      if (component.type !== FormComponentType.QuestionGroup) continue;
+      byLabel[component.label] =
+        component.label === "Emergency contacts"
+          ? [parentName, `Jordan ${lastName}`].map((name, index) =>
+              Object.fromEntries(
+                component.config.questions.map((sub) => [
+                  sub.id,
+                  sub.label === "Contact Name"
+                    ? name
+                    : sub.label === "Relationship to Camper"
+                      ? index === 0
+                        ? "Parent"
+                        : "Guardian"
+                      : sub.type === FormComponentType.Phone
+                        ? phone
+                        : `contact${index}.${lastName.toLowerCase()}@example.com`,
+                ]),
+              ),
+            )
+          : [];
+    }
     const answers = Object.fromEntries(
       form.components.flatMap((component) =>
         component.label in byLabel

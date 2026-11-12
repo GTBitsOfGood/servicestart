@@ -193,6 +193,30 @@ function answerSchema(component: FormComponent): z.ZodType | null {
           message: dateRangeMessage(min, max),
         });
     }
+    case FormComponentType.QuestionGroup: {
+      const { questions, repeatable, minEntries, maxEntries } =
+        component.config;
+      const entrySchema = buildSubmissionSchema({
+        components: questions.map((question, position) => ({
+          ...question,
+          helpText: null,
+          position,
+        })),
+      });
+      const minimum = repeatable
+        ? Math.max(component.required ? 1 : 0, minEntries ?? 0)
+        : 1;
+      return z
+        .array(entrySchema, { error: typeError("Add an entry") })
+        .min(
+          minimum,
+          `Add at least ${minimum} ${minimum === 1 ? "entry" : "entries"}`,
+        )
+        .max(
+          repeatable ? (maxEntries ?? 20) : 1,
+          `Use ${repeatable ? (maxEntries ?? 20) : 1} entries or fewer`,
+        );
+    }
     case FormComponentType.YesNo:
       return z.boolean({ error: typeError(YES_NO_MESSAGE) });
   }
@@ -233,7 +257,15 @@ export function buildSubmissionSchema(
       answers && typeof answers === "object" && !Array.isArray(answers)
         ? Object.fromEntries(
             Object.entries(answers).filter(
-              ([id, value]) => !sectionHeaderIds.has(id) && !isBlank(value),
+              ([id, value]) =>
+                !sectionHeaderIds.has(id) &&
+                (definition.components.some(
+                  (component) =>
+                    component.id === id &&
+                    component.type === FormComponentType.QuestionGroup,
+                )
+                  ? value !== undefined && value !== null
+                  : !isBlank(value)),
             ),
           )
         : answers,
@@ -253,6 +285,7 @@ export function getAnswerErrors(error: z.ZodError) {
   for (const issue of error.issues) {
     const [id] = issue.path;
     errors[typeof id === "string" ? id : ""] ??= issue.message;
+    if (issue.path.length > 1) errors[issue.path.join(".")] ??= issue.message;
   }
   return errors;
 }

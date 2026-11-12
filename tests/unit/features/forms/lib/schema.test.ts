@@ -95,6 +95,28 @@ const CONFIG_EXAMPLES: Record<
       { min: "2027-06-02T00:00:00Z" },
     ],
   },
+  [FormComponentType.QuestionGroup]: {
+    valid: [
+      {
+        questions: [
+          {
+            id: UPLOAD_ID,
+            type: FormComponentType.ShortText,
+            label: "Name",
+            required: true,
+            config: {},
+          },
+        ],
+        repeatable: true,
+        minEntries: 2,
+        maxEntries: 3,
+      },
+    ],
+    invalid: [
+      { questions: [], repeatable: false },
+      { questions: [], repeatable: true, maxEntries: 21 },
+    ],
+  },
   [FormComponentType.YesNo]: {
     valid: [{}],
     invalid: [{ options: ["Yes", "No"] }],
@@ -153,6 +175,10 @@ const ANSWER_EXAMPLES: Record<
   [FormComponentType.Date]: {
     valid: ["2027-06-02"],
     invalid: [20270602, new Date("2027-06-02")],
+  },
+  [FormComponentType.QuestionGroup]: {
+    valid: [[], [{ [UPLOAD_ID]: "Ada" }]],
+    invalid: ["Ada", [{}, { [UPLOAD_ID]: { uploadId: UPLOAD_ID } }]],
   },
   [FormComponentType.YesNo]: {
     valid: [true, false],

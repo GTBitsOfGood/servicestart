@@ -6,10 +6,16 @@ import type {
   FormComponent,
 } from "@/features/forms/lib/schema";
 
+export type GroupFieldEntry = Record<
+  string,
+  string | string[] | boolean | undefined
+>;
+
 /** What a question holds while it's being filled out. Numbers stay text. */
 export type FieldValue =
   | string
   | string[]
+  | GroupFieldEntry[]
   | boolean
   | FormAnswerValueFor<FormComponentType.Image>;
 
@@ -17,6 +23,7 @@ export type QuestionProps<C extends FormComponent = FormComponent> = {
   component: C;
   value: FieldValue | undefined;
   error?: string;
+  errors?: Record<string, string>;
   disabled: boolean;
   /**
    * Shows the answer without letting it change, e.g. on a submitted response.
@@ -34,9 +41,22 @@ export function toFieldValues(
   return Object.fromEntries(
     Object.entries(answers).map(([id, value]) => [
       id,
-      typeof value === "number" ? String(value) : value,
+      typeof value === "number"
+        ? String(value)
+        : Array.isArray(value)
+          ? value.map((entry) =>
+              typeof entry === "object"
+                ? Object.fromEntries(
+                    Object.entries(entry).map(([key, cell]) => [
+                      key,
+                      typeof cell === "number" ? String(cell) : cell,
+                    ]),
+                  )
+                : entry,
+            )
+          : value,
     ]),
-  );
+  ) as Record<string, FieldValue>;
 }
 
 export function fieldId(componentId: string) {

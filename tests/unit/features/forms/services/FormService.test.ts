@@ -24,6 +24,60 @@ import {
 const org = () => createOrganization(`forms-${randomUUID()}`);
 
 describe("FormService", () => {
+  it("exports one column per sub-question and joins repeated entries", async () => {
+    const a = await org();
+    const name = randomUUID();
+    const phone = randomUUID();
+    const form = await createForm(a.id, {
+      components: [
+        {
+          type: FormComponentType.QuestionGroup,
+          label: "Emergency contacts",
+          helpText: null,
+          required: true,
+          config: {
+            repeatable: true,
+            questions: [
+              {
+                id: name,
+                type: FormComponentType.ShortText,
+                label: "Name",
+                required: true,
+                config: {},
+              },
+              {
+                id: phone,
+                type: FormComponentType.Phone,
+                label: "Phone",
+                required: true,
+                config: {},
+              },
+            ],
+          },
+        },
+      ],
+    });
+    await createFormSubmission(form, {
+      answers: {
+        [form.components[0].id]: [
+          { [name]: '=Ada, "A"', [phone]: "4045550123" },
+          { [name]: "Grace", [phone]: "4045550456" },
+        ],
+      },
+    });
+    const csv = await FormService.exportCsv(
+      a.id,
+      form.formId,
+      "https://example.com",
+    );
+    expect(csv.split("\r\n")[0]).toContain(
+      '"Emergency contacts — Name","Emergency contacts — Phone"',
+    );
+    expect(csv.split("\r\n")[1]).toContain(
+      '"\'=Ada, ""A""; Grace","4045550123; 4045550456"',
+    );
+  });
+
   it("creates empty drafts with shared defaults and validates IDs", async () => {
     const organization = await org();
     const actor = await signUpAndGetSession(buildTestUser());
