@@ -1,3 +1,5 @@
+import { resolveOrganization } from "@/core/tenant/resolveOrganization";
+import { getSlugFromHost } from "@/core/tenant/host";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -32,16 +34,22 @@ async function resolveViewer(): Promise<{
   userId: string | null;
   viewer: Viewer;
 }> {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const requestHeaders = await headers();
+  const session = await auth.api.getSession({ headers: requestHeaders });
+  const organization = await resolveOrganization(requestHeaders, session);
 
   if (!session?.user) {
     return {
       userId: null,
-      viewer: { organizationId: null, isMember: false, isAdmin: false },
+      viewer: {
+        organizationId: organization?.id ?? null,
+        isMember: false,
+        isAdmin: false,
+      },
     };
   }
 
-  const organizationId = session.session.activeOrganizationId ?? null;
+  const organizationId = organization?.id ?? null;
   const membership = organizationId
     ? await MembersService.findByUserAndOrganization(
         session.user.id,
@@ -66,7 +74,12 @@ export default async function EventDetailPage({
   const { userId, viewer } = await resolveViewer();
   const event = await EventService.findById(id);
 
-  if (!event || !canViewEvent(event, viewer)) {
+  if (
+    !event ||
+    (getSlugFromHost((await headers()).get("host")) &&
+      event.organizationId !== viewer.organizationId) ||
+    !canViewEvent(event, viewer)
+  ) {
     redirect(userId ? "/events" : "/login");
   }
 

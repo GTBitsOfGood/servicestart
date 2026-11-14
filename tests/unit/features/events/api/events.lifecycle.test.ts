@@ -132,7 +132,7 @@ describe("creating drafts and published events", () => {
     );
 
     expect(response.status).toBe(400);
-    const data = (await response.json()) as { error: string };
+    const data = (await response.json()) as unknown as { error: string };
     expect(data.error).toMatch(/before publishing/i);
   });
 
@@ -147,7 +147,7 @@ describe("creating drafts and published events", () => {
     );
 
     expect(response.status).toBe(400);
-    const data = (await response.json()) as { error: string };
+    const data = (await response.json()) as unknown as { error: string };
     expect(data.error).toMatch(/deadline/i);
   });
 
