@@ -95,7 +95,10 @@ export default async function DashboardSettingsPage({
         .map(({ formId, title }) => ({ formId, title }))}
     >
       {memberTypesEnabled && (
-        <nav aria-label="Dashboard audience" className="mt-6 flex gap-2">
+        <nav
+          aria-label="Dashboard audience"
+          className="mt-6 flex flex-wrap gap-2"
+        >
           {audienceOptions.map((option) => (
             <Link
               key={option.value}
