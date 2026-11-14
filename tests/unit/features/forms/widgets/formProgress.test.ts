@@ -120,6 +120,35 @@ describe("summarizeFormProgress", () => {
     expect(gauge).toEqual({ done: 0, total: 0 });
   });
 
+  it("drops an optional draft's card once its form closes", () => {
+    const updatedAt = new Date("2027-03-10T12:00:00Z");
+    const optionalDraft = (availability: "open" | "not_yet_open" | "closed") =>
+      progressRow({
+        required: false,
+        draft: { updatedAt },
+        form: { availability },
+      });
+
+    expect(summarizeFormProgress([optionalDraft("closed")], NOW).todo).toEqual(
+      [],
+    );
+    expect(
+      summarizeFormProgress([optionalDraft("not_yet_open")], NOW).todo,
+    ).toHaveLength(1);
+    // A required form stays until it's submitted, closed or not.
+    expect(
+      summarizeFormProgress(
+        [
+          progressRow({
+            draft: { updatedAt },
+            form: { availability: "closed" },
+          }),
+        ],
+        NOW,
+      ).todo,
+    ).toHaveLength(1);
+  });
+
   it("marks a todo as past due when dueAt is before now", () => {
     const { todo } = summarizeFormProgress(
       [
