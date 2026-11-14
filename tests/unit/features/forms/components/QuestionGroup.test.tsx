@@ -60,6 +60,37 @@ const optionalDefinition = { formId: "health", components: [optionalSingle] };
 afterEach(cleanup);
 
 describe("question group renderer", () => {
+  it("reports a group's answers for a draft, with numbers parsed", () => {
+    const onAnswersChange = vi.fn();
+    render(
+      <DynamicForm
+        definition={optionalDefinition}
+        onSubmit={vi.fn()}
+        onAnswersChange={onAnswersChange}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/^Instructions/), {
+      target: { value: "Morning" },
+    });
+    expect(onAnswersChange).toHaveBeenLastCalledWith({
+      [id]: [{ [notesId]: "Morning" }],
+    });
+    fireEvent.change(screen.getByLabelText(/^Dose /), {
+      target: { value: "2" },
+    });
+    expect(onAnswersChange).toHaveBeenLastCalledWith({
+      [id]: [{ [notesId]: "Morning", [subId]: 2 }],
+    });
+    // A half-typed number is left out rather than failing the whole draft.
+    fireEvent.change(screen.getByLabelText(/^Dose /), {
+      target: { value: "-" },
+    });
+    expect(onAnswersChange).toHaveBeenLastCalledWith({
+      [id]: [{ [notesId]: "Morning" }],
+    });
+  });
+
   it("omits an untouched optional single-entry group with required children", async () => {
     const onSubmit = vi.fn(async () => ({ ok: true as const }));
     render(<DynamicForm definition={optionalDefinition} onSubmit={onSubmit} />);
