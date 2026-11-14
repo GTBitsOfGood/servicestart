@@ -11,13 +11,40 @@ import {
 
 // Branding and theme keys, which every feature shares.
 
-const HTML_TAG = /<(?:"[^"]*"['"]*|'[^']*'['"]*|[^'">])+>/;
+/**
+ * Whether `text` contains something shaped like an HTML tag: "<", one or more
+ * characters, then ">". A quoted value may contain ">", and stray quotes may
+ * follow it. Accepts exactly what /<(?:"[^"]*"['"]*|'[^']*'['"]*|[^'">])+>/
+ * did, in one pass: that regex backtracks exponentially on runs of quotes.
+ */
+export function containsHtmlTag(text: string): boolean {
+  // Every way a tag could be in progress: just after "<", after a character,
+  // inside a double- or single-quoted value, or after a quoted value.
+  let open = false;
+  let afterChar = false;
+  let inDouble = false;
+  let inSingle = false;
+  let afterQuoted = false;
+  for (const char of text) {
+    if (char === ">" && (afterChar || afterQuoted)) return true;
+    const isQuote: boolean = char === '"' || char === "'";
+    const betweenTokens: boolean = open || afterChar || afterQuoted;
+    const closes: boolean =
+      (inDouble && char === '"') || (inSingle && char === "'");
+    afterQuoted = closes || (afterQuoted && isQuote);
+    inDouble = (inDouble && char !== '"') || (betweenTokens && char === '"');
+    inSingle = (inSingle && char !== "'") || (betweenTokens && char === "'");
+    afterChar = betweenTokens && !isQuote && char !== ">";
+    open = char === "<";
+  }
+  return false;
+}
 
 function plainText(name: string, maxLength: number) {
   return z
     .string()
     .max(maxLength, `${name} must be no longer than ${maxLength} characters`)
-    .refine((value) => !HTML_TAG.test(value), {
+    .refine((value) => !containsHtmlTag(value), {
       message: `${name} must not contain HTML tags`,
     });
 }
