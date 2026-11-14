@@ -1,11 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getSlugFromHost } from "@/core/tenant/clientAuthUtils";
+import { getSlugFromHost } from "@/core/tenant/host";
 import { ORGANIZATION_NOT_FOUND_PATH } from "@/core/tenant/organizationRoutes";
 
 export async function proxy(request: NextRequest) {
   const slug = getSlugFromHost(request.headers.get("host") ?? undefined);
   // Loopback also supports test sessions with an explicit active organization.
-  if (slug === "servicestart") return NextResponse.next();
+  if (!slug) return NextResponse.next();
 
   // Netlify bundles this proxy for its edge runtime. Resolve through the public
   // server API so PostgreSQL and its Node dependencies stay in the server bundle.

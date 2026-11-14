@@ -6,6 +6,7 @@ import {
   type SubmissionReviewStatus,
   formAnswers,
   formComponents,
+  formResponseDrafts,
   formSubmissions,
   formUploads,
   forms,
@@ -234,6 +235,20 @@ async function submit({
       value,
     }));
     if (rows.length > 0) await tx.insert(formAnswers).values(rows);
+
+    // A successful member submission makes its autosaved draft obsolete. Keep
+    // this in the transaction so a failed submission never loses their work.
+    if (userId) {
+      await tx
+        .delete(formResponseDrafts)
+        .where(
+          and(
+            eq(formResponseDrafts.organizationId, organizationId),
+            eq(formResponseDrafts.formId, form.id),
+            eq(formResponseDrafts.userId, userId),
+          ),
+        );
+    }
 
     return submission.id;
   });

@@ -5,9 +5,9 @@ import {
   formSubmissions,
   members,
   users,
-  MemberType,
   SubmissionReviewStatus,
 } from "@/core/db/schema";
+import type { MemberTypeKey } from "@/features/membership";
 import { getAcceptedMemberType } from "@/features/forms/lib/schema";
 import { REVIEW_STATUS_LABELS } from "@/features/forms/lib/review";
 import { FormService } from "@/features/forms/services/FormService";
@@ -167,7 +167,7 @@ async function effectsFor(
     (await OrganizationConfigService.getMemberTypesEnabled(
       input.organizationId,
     ));
-  const memberChanges = new Map<string, MemberType>();
+  const memberChanges = new Map<string, MemberTypeKey>();
   for (const row of changed) {
     const form = formMap.get(row.formId);
     const target = form ? getAcceptedMemberType(form.settings) : null;

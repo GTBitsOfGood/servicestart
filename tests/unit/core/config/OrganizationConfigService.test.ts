@@ -5,6 +5,8 @@ import { eq } from "drizzle-orm";
 import db from "@/core/db";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { organizationConfig, OrganizationConfigKey } from "@/core/db/schema";
+import type { DashboardAudience } from "@/features/membership/lib/audience";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { createOrganization } from "@/tests/unit/testUtils";
 import {
   DEFAULT_ADMIN_LAYOUT,
@@ -652,7 +654,11 @@ describe("OrganizationConfigService - Sprint 4 dashboard config", () => {
       JSON.stringify(layout("events")),
     );
 
-    for (const audience of ["member", "applicant", "attendee"] as const) {
+    for (const audience of [
+      "member",
+      MemberTypeKeySchema.parse("applicant"),
+      MemberTypeKeySchema.parse("attendee"),
+    ] satisfies DashboardAudience[]) {
       expect(
         await OrganizationConfigService.getDashboardLayoutFor(org.id, audience),
       ).toEqual(layout("events"));
@@ -671,12 +677,15 @@ describe("OrganizationConfigService - Sprint 4 dashboard config", () => {
     );
 
     expect(
-      await OrganizationConfigService.getDashboardLayoutFor(org.id, "attendee"),
+      await OrganizationConfigService.getDashboardLayoutFor(
+        org.id,
+        MemberTypeKeySchema.parse("attendee"),
+      ),
     ).toEqual(layout("forms_todo"));
     expect(
       await OrganizationConfigService.getDashboardLayoutFor(
         org.id,
-        "applicant",
+        MemberTypeKeySchema.parse("applicant"),
       ),
     ).toEqual(DEFAULT_MEMBER_LAYOUT);
 
@@ -685,7 +694,10 @@ describe("OrganizationConfigService - Sprint 4 dashboard config", () => {
       OrganizationConfigKey.MemberTypeDashboardLayouts,
     );
     expect(
-      await OrganizationConfigService.getDashboardLayoutFor(org.id, "attendee"),
+      await OrganizationConfigService.getDashboardLayoutFor(
+        org.id,
+        MemberTypeKeySchema.parse("attendee"),
+      ),
     ).toEqual(DEFAULT_MEMBER_LAYOUT);
   });
 

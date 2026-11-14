@@ -2,11 +2,11 @@ import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import {
   FormStatus,
-  MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
 } from "@/core/db/schema";
-import { setMemberTypeDashboardLayout } from "@/features/dashboard/config";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
+import { setMemberTypeDashboardLayout } from "@/features/dashboard/server";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { VISIONARIES_APPLICATION_FORM } from "@/tests/unit/fixtures/forms";
 import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";
@@ -38,33 +38,41 @@ for (const width of [1280, 768]) {
       OrganizationConfigKey.MemberTypesEnabled,
       "true",
     );
-    await setMemberTypeDashboardLayout(org.id, MemberType.Applicant, {
-      layout: "horizontal",
-      widgets: [
-        {
-          id: "application_status",
-          size: "tall",
-          config: {
-            formId: VISIONARIES_APPLICATION_FORM.formId,
-            steps: DEFAULT_APPLICATION_STATUS_STEPS,
+    await setMemberTypeDashboardLayout(
+      org.id,
+      MemberTypeKeySchema.parse("applicant"),
+      {
+        layout: "horizontal",
+        widgets: [
+          {
+            id: "application_status",
+            size: "tall",
+            config: {
+              formId: VISIONARIES_APPLICATION_FORM.formId,
+              steps: DEFAULT_APPLICATION_STATUS_STEPS,
+            },
           },
-        },
-      ],
-    });
-    await setMemberTypeDashboardLayout(org.id, MemberType.Attendee, {
-      layout: "horizontal",
-      widgets: [
-        { id: "forms_todo", size: "small" },
-        { id: "forms_completed", size: "tall" },
-      ],
-    });
+        ],
+      },
+    );
+    await setMemberTypeDashboardLayout(
+      org.id,
+      MemberTypeKeySchema.parse("attendee"),
+      {
+        layout: "horizontal",
+        widgets: [
+          { id: "forms_todo", size: "small" },
+          { id: "forms_completed", size: "tall" },
+        ],
+      },
+    );
     const form = await createForm(org.id, {
       formId: VISIONARIES_APPLICATION_FORM.formId,
       title: VISIONARIES_APPLICATION_FORM.title,
       status: FormStatus.Published,
       settings: {
         ...VISIONARIES_APPLICATION_FORM.settings,
-        acceptedMemberType: MemberType.Attendee,
+        acceptedMemberType: MemberTypeKeySchema.parse("attendee"),
       },
     });
     const applicant = await signUpAndGetSession(
@@ -75,7 +83,7 @@ for (const width of [1280, 768]) {
       },
       org.slug,
     );
-    await addMember(applicant.user.id, org.id, "member", MemberType.Applicant);
+    await addMember(applicant.user.id, org.id, "member", "applicant");
     await setActiveOrganization(applicant.session.id, org.id);
     const submissionId = await createFormSubmission(form, {
       userId: applicant.user.id,

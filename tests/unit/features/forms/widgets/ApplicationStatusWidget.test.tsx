@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import ApplicationStatusWidget, {
@@ -11,7 +12,6 @@ import {
 import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";
 import {
   FormStatus,
-  MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
 } from "@/core/db/schema";
@@ -90,6 +90,18 @@ describe("ApplicationStatusWidgetView", () => {
     expect(
       screen.queryByRole("link", { name: "Start application" }),
     ).toBeNull();
+  });
+
+  it("shows In Progress and Continue for an application draft", () => {
+    renderView([
+      app(null, { draftUpdatedAt: new Date("2027-03-10T12:00:00Z") }),
+    ]);
+
+    expect(screen.getByText("In Progress")).toBeTruthy();
+    expect(screen.queryByText("Start application")).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Continue" }).getAttribute("href"),
+    ).toBe("/forms/camp-app");
   });
 
   it("pending: chip, review text, step 1 complete, View Application", () => {
@@ -208,6 +220,25 @@ describe("ApplicationStatusWidgetView", () => {
       expect(screen.getByText("All caught up!")).toBeTruthy();
     });
 
+    it("shows In Progress and Continue for a next-step draft", () => {
+      renderView([
+        app(SubmissionReviewStatus.Pending),
+        progressRow("medical", {
+          required: false,
+          draftUpdatedAt: new Date("2027-03-10T12:00:00Z"),
+        }),
+      ]);
+
+      const item = screen.getByText("Title medical").closest("li")!;
+      expect(within(item).getByText("In Progress")).toBeTruthy();
+      expect(
+        within(item)
+          .getByRole("link", { name: /^Continue\W+Title medical$/ })
+          .getAttribute("href"),
+      ).toBe("/forms/medical");
+      expect(screen.getByText("0 of 1 completed")).toBeTruthy();
+    });
+
     it("is all caught up once every item is submitted", () => {
       renderView([
         app(SubmissionReviewStatus.Pending),
@@ -233,7 +264,7 @@ describe("ApplicationStatusWidget (database)", () => {
       { ...buildTestUser(), name },
       org.slug,
     );
-    await addMember(user.id, org.id, "member", MemberType.Applicant);
+    await addMember(user.id, org.id, "member", "applicant");
     const form = await createForm(org.id, {
       formId: `camp-${org.slug}`,
       title: `Camp ${org.slug}`,
@@ -252,7 +283,7 @@ describe("ApplicationStatusWidget (database)", () => {
       await ApplicationStatusWidget({
         organizationId,
         userId,
-        audience: "applicant",
+        audience: MemberTypeKeySchema.parse("applicant"),
         config,
       }),
     );

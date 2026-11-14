@@ -8,6 +8,8 @@ import {
   NotificationType,
 } from "@/core/db/schema";
 import { MembersService } from "@/features/membership/services/MemberService";
+import { MemberTypeService } from "@/features/membership/services/MemberTypeService";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { DEFAULT_TEST_PASSWORD } from "@/tests/unit/testUtils";
 import type { SeedOrg, SeedUser } from "./seedTypes";
@@ -158,7 +160,18 @@ export async function main() {
     const orgUsers = [...usersData, ...(org.extraUsers ?? [])];
     // A member's type has to be one of the organization's member types.
     if (orgUsers.some((u) => u.memberType ?? org.memberTypes?.[u.email])) {
-      await MembersService.ensureBuiltInMemberTypes(org.id);
+      await MemberTypeService.ensure(org.id, {
+        key: MemberTypeKeySchema.parse("applicant"),
+        label: "Applicant",
+        pluralLabel: "Applicants",
+        isSignupDefault: true,
+      });
+      await MemberTypeService.ensure(org.id, {
+        key: MemberTypeKeySchema.parse("attendee"),
+        label: "Current Attendee",
+        pluralLabel: "Current Attendees",
+        isSignupDefault: false,
+      });
     }
     for (const userData of orgUsers) {
       const memberType =

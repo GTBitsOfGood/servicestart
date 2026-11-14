@@ -3,7 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { requireAuth } from "@/core/auth/authUtils";
-import { findOrganizationByRequestHost } from "@/core/tenant/organizationFromHost";
+import { resolveOrganization } from "@/core/tenant/resolveOrganization";
 import { InvitationService } from "@/features/membership/services/InvitationService";
 
 const paramsSchema = z.object({ id: z.string().min(1) });
@@ -15,9 +15,7 @@ const app = new Hono().post(
     const session = await requireAuth(c);
     const { id } = c.req.valid("param");
 
-    const organization = await findOrganizationByRequestHost(
-      c.req.header("host"),
-    );
+    const organization = await resolveOrganization(c, session);
     if (!organization) {
       throw new HTTPException(404, { message: "Organization not found" });
     }

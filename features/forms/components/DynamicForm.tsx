@@ -16,6 +16,7 @@ import {
   fieldId,
   toFieldValues,
   type FieldValue,
+  type GroupFieldEntry,
   type QuestionProps,
 } from "@/features/forms/components/types";
 import ThemedButton from "@/components/theme/ThemedButton";
@@ -23,6 +24,7 @@ import { uploadFormImage } from "@/features/forms/components/uploadFormImage";
 import type {
   FormAnswerValue,
   FormDefinition,
+  GroupEntryValue,
 } from "@/features/forms/lib/schema";
 import {
   buildSubmissionSchema,
@@ -52,6 +54,10 @@ type DynamicFormProps = {
   onSubmit?: (
     answers: Record<string, FormAnswerValue>,
   ) => Promise<DynamicFormSubmitResult>;
+  /** Reports loosely typed answers after each user change, for draft saving. */
+  onAnswersChange?: (answers: Record<string, FormAnswerValue>) => void;
+  /** Temporarily prevents changes, such as while a draft is being discarded. */
+  disabled?: boolean;
   uploadImage?: typeof uploadFormImage;
   /** Where an already-uploaded image loads from; without it, none is shown. */
   imageSrc?: (uploadId: string) => string | null;
@@ -76,6 +82,59 @@ function isBlankGroupEntry(entry: unknown) {
   );
 }
 
+/**
+ * A number as typed, or undefined while it's blank or not yet a number. A
+ * number answer must be a number, so a draft leaves those out.
+ */
+function draftNumber(text: string) {
+  const parsed = parseNumberInput(text);
+  return parsed === undefined || Number.isNaN(parsed) ? undefined : parsed;
+}
+
+/**
+ * The answers so far, for a draft (#338): numbers parsed, including inside a
+ * question group's entries, and blank or half-typed numbers left out. Every
+ * other answer is saved as it is, even if it isn't valid yet.
+ */
+function toDraftAnswers(
+  components: FormDefinition["components"],
+  values: Record<string, FieldValue>,
+): Record<string, FormAnswerValue> {
+  const answers: Record<string, FormAnswerValue> = {};
+  for (const component of components) {
+    const value = values[component.id];
+    if (value === undefined) continue;
+    if (component.type === FormComponentType.Number) {
+      const parsed = typeof value === "string" ? draftNumber(value) : undefined;
+      if (parsed !== undefined) answers[component.id] = parsed;
+    } else if (component.type === FormComponentType.QuestionGroup) {
+      if (!Array.isArray(value)) continue;
+      const numberIds = new Set(
+        component.config.questions
+          .filter(({ type }) => type === FormComponentType.Number)
+          .map(({ id }) => id),
+      );
+      // Blank entries stay, so the member gets back as many as they had.
+      answers[component.id] = (value as GroupFieldEntry[]).map((entry) => {
+        const cells: GroupEntryValue = {};
+        for (const [id, cell] of Object.entries(entry)) {
+          if (cell === undefined) continue;
+          if (numberIds.has(id) && typeof cell === "string") {
+            const parsed = draftNumber(cell);
+            if (parsed !== undefined) cells[id] = parsed;
+          } else {
+            cells[id] = cell;
+          }
+        }
+        return cells;
+      });
+    } else {
+      answers[component.id] = value as FormAnswerValue;
+    }
+  }
+  return answers;
+}
+
 /** Renders a form's questions in order and validates them as they're filled. */
 export default function DynamicForm({
   definition,
@@ -85,6 +144,8 @@ export default function DynamicForm({
   submitLabel = "Submit",
   submittingLabel = "Submitting…",
   onSubmit,
+  onAnswersChange,
+  disabled = false,
   uploadImage = uploadFormImage,
   imageSrc = noImageSrc,
 }: DynamicFormProps) {
@@ -101,6 +162,14 @@ export default function DynamicForm({
   const dirtyIds = useRef(new Set<string>());
   const submittingRef = useRef(false);
   const focusTarget = useRef<string | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const schema = useMemo(() => buildSubmissionSchema(definition), [definition]);
 
@@ -190,12 +259,16 @@ export default function DynamicForm({
   }
 
   function handleChange(id: string, value: FieldValue | undefined) {
+    // A form that's been replaced, such as after discarding a draft, can still
+    // hear from an upload that finishes late. Its answers are gone.
+    if (!mountedRef.current) return;
     dirtyIds.current.add(id);
     const next = { ...valuesRef.current };
     if (value === undefined) delete next[id];
     else next[id] = value;
     valuesRef.current = next;
     setValues(next);
+    onAnswersChange?.(toDraftAnswers(definition.components, next));
     // Clears a shown error once the answer is fixed.
     showFieldError(id, next, { onlyIfShown: true });
   }
@@ -293,7 +366,7 @@ export default function DynamicForm({
               value={values[component.id]}
               error={errors[component.id]}
               errors={errors}
-              disabled={!hydrated || submitting}
+              disabled={!hydrated || submitting || disabled}
               readOnly={readOnly}
               onChange={(value) => handleChange(component.id, value)}
               onBlur={() => handleBlur(component.id)}
@@ -303,7 +376,9 @@ export default function DynamicForm({
         {!preview && !readOnly && (
           <ThemedButton
             type="submit"
-            disabled={!hydrated || submitting || uploadingIds.length > 0}
+            disabled={
+              !hydrated || disabled || submitting || uploadingIds.length > 0
+            }
             aria-busy={submitting}
             className="self-start"
           >

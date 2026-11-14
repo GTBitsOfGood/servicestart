@@ -14,7 +14,7 @@ export type BrandingConfig = {
 };
 
 export function resolveBranding(
-  config: Partial<Record<OrganizationConfigKey, string>>,
+  config: Partial<BrandingConfig>,
 ): BrandingConfig {
   return {
     [OrganizationConfigKey.PrimaryColor]:

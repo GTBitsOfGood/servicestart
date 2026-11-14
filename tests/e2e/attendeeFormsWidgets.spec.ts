@@ -1,14 +1,14 @@
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import {
   FormComponentType,
   FormStatus,
-  MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
 } from "@/core/db/schema";
-import { setMemberTypeDashboardLayout } from "@/features/dashboard/config";
+import { setMemberTypeDashboardLayout } from "@/features/dashboard/server";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,
@@ -34,7 +34,7 @@ const ATTENDEE_FORMS_LAYOUT: DashboardLayout = {
 const ATTENDEE_FORM_TITLES = [
   "Emergency Contact Information",
   "Consent Form",
-  "Health Information",
+  "Medical History",
   "Media Release",
 ] as const;
 
@@ -63,11 +63,7 @@ async function createAttendeeWidgetsOrg() {
     OrganizationConfigKey.MemberTypesEnabled,
     "true",
   );
-  await setMemberTypeDashboardLayout(
-    org.id,
-    MemberType.Attendee,
-    ATTENDEE_FORMS_LAYOUT,
-  );
+  await setMemberTypeDashboardLayout(org.id, "attendee", ATTENDEE_FORMS_LAYOUT);
 
   const forms: TestForm[] = [];
   for (const title of ATTENDEE_FORM_TITLES) {
@@ -77,7 +73,7 @@ async function createAttendeeWidgetsOrg() {
         formId: `attendee-${randomUUID().slice(0, 8)}`,
         status: FormStatus.Published,
         settings: {
-          assignedMemberTypes: [MemberType.Attendee],
+          assignedMemberTypes: [MemberTypeKeySchema.parse("attendee")],
           dueAt: "2030-05-01T12:00:00.000Z",
           closesAt: "2030-12-01T12:00:00.000Z",
         },
@@ -104,12 +100,7 @@ async function createAttendeeMemberAndSignIn(
 ) {
   const user = buildTestUser();
   const { session, headers } = await signUpAndGetSession(user);
-  await addMember(
-    session.userId,
-    organizationId,
-    "member",
-    MemberType.Attendee,
-  );
+  await addMember(session.userId, organizationId, "member", "attendee");
   await setActiveOrganization(session.id, organizationId);
 
   const cookieHeader = headers["Cookie"];
@@ -221,6 +212,69 @@ test.describe("Attendee forms dashboard widgets", () => {
         }),
       ).toBeVisible();
     }
+  });
+
+  test("resumes an autosaved Medical History draft and completes it", async ({
+    page,
+    baseURL,
+  }) => {
+    const { org, forms } = await createAttendeeWidgetsOrg();
+    const origin = tenantUrl(org.slug, baseURL);
+    await createAttendeeMemberAndSignIn(page, org.id, origin);
+    const medicalHistory = forms.find(
+      (form) => form.title === "Medical History",
+    )!;
+
+    await page.goto(`${origin}/`);
+    const todoWidget = page.locator('[data-widget-id="forms_todo"]');
+    await todoWidget
+      .getByRole("link", { name: `Open ${medicalHistory.title}` })
+      .click();
+
+    await expect(page).toHaveURL(
+      new RegExp(`/forms/${medicalHistory.formId}$`),
+    );
+    await page.waitForLoadState("networkidle");
+    const response = page.getByRole("textbox", { name: "Response" });
+    const draftSaved = page.waitForResponse(
+      (draftResponse) =>
+        draftResponse.request().method() === "PUT" &&
+        draftResponse
+          .url()
+          .endsWith(`/api/forms/${medicalHistory.formId}/draft`) &&
+        draftResponse.ok(),
+    );
+    await response.fill("Camper uses an inhaler as needed.");
+    await page.getByRole("link", { name: "Back to home" }).click();
+    await draftSaved;
+
+    // Reload after the exit save finishes so this server-rendered dashboard
+    // includes the draft that was still pending when navigation began.
+    await page.reload();
+    await expectGauge(page, 0, 4);
+    await expect(todoWidget.getByText("In Progress")).toBeVisible();
+    await todoWidget
+      .getByRole("link", { name: `Continue ${medicalHistory.title}` })
+      .click();
+
+    await expect(response).toHaveValue("Camper uses an inhaler as needed.");
+    await page.getByRole("button", { name: "Submit" }).click();
+    await expect(
+      page.getByText("Thanks! Your response has been submitted."),
+    ).toBeVisible();
+
+    await page.goto(`${origin}/`);
+    await expectGauge(page, 1, 4);
+    await expect(
+      page.getByRole("link", {
+        name: `View ${medicalHistory.title} response`,
+      }),
+    ).toBeVisible();
+    await expect(
+      todoWidget.getByRole("link", {
+        name: `Continue ${medicalHistory.title}`,
+      }),
+    ).toHaveCount(0);
   });
 
   test("lets a member edit a pending response from the dashboard", async ({

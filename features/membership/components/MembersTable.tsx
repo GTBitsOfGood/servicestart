@@ -17,11 +17,12 @@ import BogBanner from "@/components/bog/BogBanner/BogBanner";
 import BogButton from "@/components/theme/ThemedButton";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogDropdown from "@/components/bog/BogDropdown/BogDropdown";
-import { MemberType } from "@/features/membership/schema";
+import type { MemberTypeRow } from "@/features/membership";
 import {
-  MEMBER_TYPE_LABELS,
-  MEMBER_TYPE_PLURAL_LABELS,
-} from "@/features/membership/lib/memberTypes";
+  MemberTypeKeySchema,
+  type MemberTypeKey,
+} from "@/features/membership/lib/memberTypeKey";
+import { memberTypeChoices } from "@/features/membership/lib/memberTypeChoices";
 import { useEmailRecipients } from "@/features/communications";
 import { SendEmailModal } from "@/features/communications/ui";
 import {
@@ -38,7 +39,7 @@ interface MemberRow {
   email: string;
   phoneNumber: string | null;
   role: string;
-  memberType: MemberType | null;
+  memberType: MemberTypeKey | null;
   createdAt: Date;
 }
 
@@ -55,7 +56,8 @@ interface MembersTableProps {
   organizationId: string;
   currentUserId: string;
   memberTypesEnabled: boolean;
-  memberTypeFilter: MemberType | null;
+  memberTypes: MemberTypeRow[];
+  memberTypeFilter: MemberTypeKey | null;
   onAddDirectly?: (
     organizationId: string,
     email: string,
@@ -95,13 +97,9 @@ const CONTACT_SUB_KEYS = ["phone", "email"] as const;
 
 const DEFAULT_VISIBLE = new Set([...ALL_TOGGLEABLE_KEYS, ...CONTACT_SUB_KEYS]);
 
-const TYPE_FILTER_OPTIONS: { label: string; value: MemberType | null }[] = [
-  { label: "All types", value: null },
-  ...Object.values(MemberType).map((value) => ({
-    label: MEMBER_TYPE_PLURAL_LABELS[value],
-    value,
-  })),
-];
+const BULK_TYPE_PLACEHOLDER = "Set type";
+const BULK_NO_TYPE_OPTION = "No type";
+const ALL_TYPES_FILTER = "All types";
 
 function isAdminRole(role: string) {
   return role === "admin" || role === "owner";
@@ -115,6 +113,7 @@ export default function MembersTable({
   organizationId,
   currentUserId,
   memberTypesEnabled,
+  memberTypes,
   memberTypeFilter,
   onAddDirectly,
 }: MembersTableProps) {
@@ -161,6 +160,7 @@ export default function MembersTable({
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [typeUpdating, setTypeUpdating] = useState(false);
   const [typeError, setTypeError] = useState<string | null>(null);
+  const [bulkTypeValue, setBulkTypeValue] = useState(BULK_TYPE_PLACEHOLDER);
 
   const toggleableKeys = useMemo(
     () =>
@@ -168,8 +168,30 @@ export default function MembersTable({
     [memberTypesEnabled],
   );
 
+  const typeFilterOptions = useMemo(
+    () =>
+      memberTypeChoices({
+        types: memberTypes.map((row) => ({
+          key: row.key,
+          text: row.pluralLabel,
+        })),
+        builtIns: [{ option: ALL_TYPES_FILTER, value: null }],
+      }),
+    [memberTypes],
+  );
+
+  const bulkTypeChoices = useMemo(
+    () =>
+      memberTypeChoices({
+        types: memberTypes.map((row) => ({ key: row.key, text: row.label })),
+        builtIns: [{ option: BULK_NO_TYPE_OPTION, value: null }],
+        reserved: [BULK_TYPE_PLACEHOLDER],
+      }),
+    [memberTypes],
+  );
+
   const setMemberTypes = useCallback(
-    async (userIds: string[], memberType: MemberType) => {
+    async (userIds: string[], memberType: MemberTypeKey | null) => {
       if (userIds.length === 0) return;
       setTypeUpdating(true);
       setTypeError(null);
@@ -191,15 +213,23 @@ export default function MembersTable({
     [router],
   );
 
-  const markSelectedAsAttendees = useCallback(async () => {
-    const userIds = members
-      .filter((m) => selectedRows.has(m.userId) && !isAdminRole(m.role))
-      .map((m) => m.userId);
-    await setMemberTypes(userIds, MemberType.Attendee);
-    setSelectedRows(new Set());
-  }, [members, selectedRows, setMemberTypes]);
+  const applyBulkMemberType = useCallback(
+    async (selection: string) => {
+      const choice = bulkTypeChoices.find(
+        (candidate) => candidate.option === selection,
+      );
+      if (!choice) return;
+      const userIds = members
+        .filter((m) => selectedRows.has(m.userId) && !isAdminRole(m.role))
+        .map((m) => m.userId);
+      await setMemberTypes(userIds, choice.value);
+      setSelectedRows(new Set());
+      setBulkTypeValue(BULK_TYPE_PLACEHOLDER);
+    },
+    [bulkTypeChoices, members, selectedRows, setMemberTypes],
+  );
 
-  function filterByType(memberType: MemberType | null) {
+  function filterByType(memberType: MemberTypeKey | null) {
     const params = new URLSearchParams(searchParams.toString());
     if (memberType) params.set("type", memberType);
     else params.delete("type");
@@ -401,19 +431,23 @@ export default function MembersTable({
                 aria-label={`Type for ${member.name}`}
                 value={member.memberType ?? ""}
                 disabled={typeUpdating}
-                onChange={(e) =>
-                  setMemberTypes([member.userId], e.target.value as MemberType)
-                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "") {
+                    void setMemberTypes([member.userId], null);
+                    return;
+                  }
+                  const parsed = MemberTypeKeySchema.safeParse(value);
+                  if (parsed.success) {
+                    void setMemberTypes([member.userId], parsed.data);
+                  }
+                }}
                 className="max-w-full cursor-pointer rounded-full border border-brand-stroke-strong bg-white px-2 py-1 text-[13px] text-brand-text disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {!member.memberType && (
-                  <option value="" disabled>
-                    —
-                  </option>
-                )}
-                {Object.values(MemberType).map((type) => (
-                  <option key={type} value={type}>
-                    {MEMBER_TYPE_LABELS[type]}
+                <option value="">No type</option>
+                {memberTypes.map((type) => (
+                  <option key={type.key} value={type.key}>
+                    {type.label}
                   </option>
                 ))}
               </select>
@@ -506,6 +540,7 @@ export default function MembersTable({
       visibleColumns,
       typeUpdating,
       setMemberTypes,
+      memberTypes,
     ],
   );
 
@@ -705,17 +740,18 @@ export default function MembersTable({
           <div role="group" aria-label="Filter by type" className="shrink-0">
             <BogDropdown
               name="memberTypeFilter"
-              options={TYPE_FILTER_OPTIONS.map((o) => o.label)}
+              options={typeFilterOptions.map((o) => o.option)}
               value={
-                TYPE_FILTER_OPTIONS.find((o) => o.value === memberTypeFilter)
-                  ?.label
+                typeFilterOptions.find((o) => o.value === memberTypeFilter)
+                  ?.option
               }
-              onSelectionChange={(selection) =>
+              onSelectionChange={(selection) => {
+                if (Array.isArray(selection)) return;
                 filterByType(
-                  TYPE_FILTER_OPTIONS.find((o) => o.label === selection)
+                  typeFilterOptions.find((o) => o.option === selection)
                     ?.value ?? null,
-                )
-              }
+                );
+              }}
               variant="primary"
               radius="full"
               size="small"
@@ -887,16 +923,32 @@ export default function MembersTable({
                 color="var(--color-grey-icon-strong)"
               />
             </button>
-            {memberTypesEnabled && (
-              <BogButton
-                variant="secondary"
-                size="small"
-                onClick={markSelectedAsAttendees}
-                disabled={typeUpdating || selectedNonAdminCount === 0}
-                className="whitespace-nowrap"
+            {memberTypesEnabled && memberTypes.length > 0 && (
+              <div
+                role="group"
+                aria-label="Set type for selected members"
+                className="shrink-0"
               >
-                Mark as current attendee
-              </BogButton>
+                <BogDropdown
+                  name="bulkSetMemberType"
+                  options={[
+                    BULK_TYPE_PLACEHOLDER,
+                    ...bulkTypeChoices.map((c) => c.option),
+                  ]}
+                  value={bulkTypeValue}
+                  onSelectionChange={(selection) => {
+                    if (Array.isArray(selection)) return;
+                    setBulkTypeValue(selection);
+                    void applyBulkMemberType(selection);
+                  }}
+                  variant="primary"
+                  radius="full"
+                  size="small"
+                  showClearIcon={false}
+                  disabled={typeUpdating || selectedNonAdminCount === 0}
+                  className="w-44"
+                />
+              </div>
             )}
           </>
         ) : (

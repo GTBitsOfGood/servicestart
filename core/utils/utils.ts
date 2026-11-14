@@ -1,11 +1,5 @@
 import clsx, { type ClassValue } from "clsx";
 
-const ROOT_DOMAIN =
-  typeof process !== "undefined" && process.env.E2E_TENANT_DOMAIN
-    ? process.env.E2E_TENANT_DOMAIN
-    : "lvh.me";
-export const DEFAULT_SLUG = "servicestart";
-
 export function cn(...inputs: ClassValue[]) {
   return clsx(...inputs);
 }
@@ -28,15 +22,6 @@ export function formatTime(dateString: string) {
     day: "numeric",
     year: "numeric",
   });
-}
-
-export function getSlugFromHostname(hostname: string): string {
-  if (hostname === ROOT_DOMAIN) return DEFAULT_SLUG;
-  if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
-    const subdomain = hostname.slice(0, -ROOT_DOMAIN.length - 1);
-    return subdomain || DEFAULT_SLUG;
-  }
-  return DEFAULT_SLUG;
 }
 
 // Any origin works; it only tells local paths from external URLs.

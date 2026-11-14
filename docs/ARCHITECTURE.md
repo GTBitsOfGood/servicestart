@@ -43,23 +43,23 @@ The code is organized around features, not layers. Everything lives in one of tw
 
 `app/` stays as Next.js routes only. Pages compose contexts, so they may import any context's internals. `components/` is shared UI with no feature logic: the generated BoG primitives in `components/bog/`, the themed wrappers in `components/theme/`, icons, `SaveBanner`, and `TagInput`. (The BoG CLI also generates `utils/design-system/`, which `components/bog/` imports.)
 
-| Folder                     | What's in it                                                                                                                        |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `core/db/`                 | The Drizzle client (`index.ts`), the schema barrel (`schema.ts`), and shared column types (`columns.ts`)                            |
-| `core/auth/`               | BetterAuth (`auth.ts`, `authClient.ts`), the route and page guards (`authUtils.ts`, `featureGuards.ts`), the auth pages' components |
-| `core/tenant/`             | Organizations and finding the one a request is for (host parsing, `OrganizationService`, `useActiveOrganization`)                   |
-| `core/config/`             | `organization_config`, `OrganizationConfigService`, its route and hook, `jsonConfig`, branding and theme                            |
-| `core/api/`                | The typed RPC client (`client.ts`), typed errors, `ping`                                                                            |
-| `core/files/`              | `FileService` and its local and Juno implementations, serving images                                                                |
-| `core/email/`              | `EmailService` and email setup                                                                                                      |
-| `core/utils/`              | Generic helpers and hooks, and `env.ts`                                                                                             |
-| `features/membership/`     | Members, roles, member types, invitations, join requests, profiles, audiences                                                       |
-| `features/events/`         | Events, shifts, RSVPs, tags, and the events and weekly calendar widgets                                                             |
-| `features/forms/`          | Forms, questions, responses, review, information requests, and the forms and application status widgets                             |
-| `features/communications/` | Notifications, alerts, announcements, messages, email to members, and the notifications and newsletter widgets                      |
-| `features/media/`          | The media library                                                                                                                   |
-| `features/dashboard/`      | The dashboard grid, header, layout schema and builder, the widget registry, and the dashboard config keys (`config.ts`)             |
-| `features/navigation/`     | The navbar (`navItems.ts`, `navbarConfig.ts`, `getNavbarItems.ts`), the footer, and the organization logo                           |
+| Folder                     | What's in it                                                                                                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `core/db/`                 | The Drizzle client (`index.ts`), the schema barrel (`schema.ts`), and shared column types (`columns.ts`)                                                                  |
+| `core/auth/`               | BetterAuth (`auth.ts`, `authClient.ts`), the route and page guards (`authUtils.ts`, `featureGuards.ts`), the auth pages' components                                       |
+| `core/tenant/`             | Organizations and finding the one a request is for (host parsing, `OrganizationService`, `useActiveOrganization`)                                                         |
+| `core/config/`             | `organization_config`, `defineConfig` and the key registry, the store, `OrganizationConfigService`, its route and hook, branding and theme                                |
+| `core/api/`                | The typed RPC client (`client.ts`), typed errors, `ping`                                                                                                                  |
+| `core/files/`              | `FileService` and its local and Juno implementations, serving images                                                                                                      |
+| `core/email/`              | `EmailService` and email setup                                                                                                                                            |
+| `core/utils/`              | Generic helpers and hooks, and `env.ts`                                                                                                                                   |
+| `features/membership/`     | Members, roles, member types, invitations, join requests, profiles, audiences                                                                                             |
+| `features/events/`         | Events, shifts, RSVPs, tags, and the events and weekly calendar widgets                                                                                                   |
+| `features/forms/`          | Forms, questions, responses, review, information requests, and the forms and application status widgets                                                                   |
+| `features/communications/` | Notifications, alerts, announcements, messages, email to members, and the notifications and newsletter widgets                                                            |
+| `features/media/`          | The media library                                                                                                                                                         |
+| `features/dashboard/`      | The dashboard grid, header, layout schema and builder, the widget registry, the dashboard config keys (`config.ts`), and member types' layouts (`DashboardLayoutService`) |
+| `features/navigation/`     | The navbar (`navItems.ts`, `navbarConfig.ts`, `getNavbarItems.ts`), the footer, and the organization logo                                                                 |
 
 A dashboard widget lives in the context whose data it shows (`features/forms/widgets/FormsTodoWidget.tsx`), along with its helpers. `features/dashboard/` only lays widgets out. If a file doesn't fit the table, put it in the context that owns its data, and add it here.
 
@@ -85,6 +85,37 @@ Each context has only the folders it needs:
 
 Each context owns its tables in its `schema.ts`. `core/db/schema.ts` re-exports every context's tables and defines the relations between them; Drizzle (`drizzle.config.ts` and the client in `core/db/index.ts`) reads that barrel. Services import tables from `@/core/db/schema`. Everything else imports enums and types from the context that owns them, through its `index.ts`. Add a table to `tests/unit/setup.ts`'s cleanup list too.
 
+### Finding the request's organization
+
+`core/tenant/host.ts` is the only host parser, shared by the browser, server,
+and edge proxy. `NEXT_PUBLIC_TENANT_ROOT_DOMAIN` (or the existing
+`E2E_TENANT_DOMAIN` at build time) selects the root; `lvh.me` also works locally.
+Only a single tenant label is accepted. Root hosts, `www`, loopback hosts,
+unrelated domains, and Netlify preview names do not name an organization.
+Unlike the old permissive parser, an arbitrary three-label domain is never a
+tenant, and default hosts no longer implicitly select `servicestart`.
+
+`resolveOrganization(headersOrContext, session)` in `core/tenant/resolveOrganization.ts`
+returns the host's organization, or the active session organization on a default
+host. An unknown tenant returns null, even when the session has an active org.
+Callers load the session and pass it in, so BetterAuth hooks cannot recurse into
+session loading. Identity endpoints may use an explicit organization hint only
+on a default host; anonymous default-host pages use platform branding defaults.
+
+API guards authorize the active session org and reject a conflicting tenant
+host with 403 before data access. A session without an active org is handled by
+the route's existing membership/login rules. Private form images keep their
+concealed 404 response. A user may read their own assigned profile photo across
+organizations while retaining membership in both the current and storage
+organizations; other media stays scoped to the request organization. Server pages resolve the host first and authorize
+membership in that organization. The browser synchronizes only tenant hosts;
+on default hosts it leaves the active organization alone.
+
+HTTP exceptions use the root API's JSON `{ error: message }` renderer. Unexpected
+errors are logged and return a generic 500. Feature-specific adapters retain
+structured validation and business-error details. The separate image-serving
+entrypoint installs the same shared renderer.
+
 ### Routes
 
 `features/app.ts` is the only Hono root. `app/api/[[...route]]/route.ts` serves it, and the typed RPC client and the tests call it. Add a sub-app to its `.route()` chain, which is what types the RPC client.
@@ -94,7 +125,7 @@ Each context owns its tables in its `schema.ts`. `core/db/schema.ts` re-exports 
 `eslint.config.mjs` enforces these with `no-restricted-imports`:
 
 - A context imports another only through its public API, `@/features/<context>`, `@/features/<context>/server`, or `@/features/<context>/ui`, never through any other file inside it.
-- `core/` never imports `features/`. The two exceptions are by design: `core/db/schema.ts` collects every context's tables, and the RPC client imports `type { AppType }` from `features/app.ts`.
+- `core/` never imports `features/`. The exceptions are by design: `core/db/schema.ts` collects every context's tables, `core/config/registry.ts` collects every context's config keys, and the RPC client imports `type { AppType }` from `features/app.ts`.
 - `@/core/db` and `drizzle-orm` are only for a context's `services/`, `core/`, `scripts/`, and `tests/`. A context's `schema.ts` may define tables, and type-only Drizzle imports are allowed anywhere.
 - `app/`, `scripts/`, `tests/`, and `features/app.ts` are composition code and may import any context's internals.
 

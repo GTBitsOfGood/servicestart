@@ -1,4 +1,8 @@
-import type { DashboardAudience } from "@/features/membership";
+import {
+  audienceIfCurrent,
+  type DashboardAudience,
+} from "@/features/membership";
+import { MemberTypeService } from "@/features/membership/server";
 import { CalendarDotsIcon, MapPinIcon } from "@phosphor-icons/react/ssr";
 import type { Icon } from "@phosphor-icons/react";
 import { DashboardAlertBanner } from "@/features/communications/ui";
@@ -64,9 +68,17 @@ export default async function DashboardHeader({
   audience,
   user,
 }: DashboardHeaderProps) {
-  const config =
-    await OrganizationConfigService.getDashboardHeader(organizationId);
-  const content = resolveDashboardHeader(config, audience, user.name);
+  const [config, typeKeys] = await Promise.all([
+    OrganizationConfigService.getDashboardHeader(organizationId),
+    MemberTypeService.list(organizationId).then((rows) =>
+      rows.map((row) => row.key),
+    ),
+  ]);
+  const content = resolveDashboardHeader(
+    config,
+    audienceIfCurrent(audience, typeKeys),
+    user.name,
+  );
   const hasDetails = Boolean(
     content.subtitle ||
     content.location ||

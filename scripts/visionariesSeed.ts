@@ -5,7 +5,6 @@ import {
   EventVisibility,
   FormStatus,
   FormComponentType,
-  MemberType,
   NotificationType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
@@ -15,9 +14,10 @@ import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import type { DashboardHeaderConfig } from "@/features/dashboard/lib/header";
 import type { OrganizationFooter } from "@/features/navigation/footer";
 import type { NavbarConfig } from "@/features/navigation/navbarConfig";
-import type {
-  FormAnswerValue,
-  FormDefinition,
+import {
+  buildDraftSchema,
+  type FormAnswerValue,
+  type FormDefinition,
 } from "@/features/forms/lib/schema";
 import { buildSubmissionSchema } from "@/features/forms/lib/submission";
 import { FileService } from "@/core/files/FileService";
@@ -28,6 +28,8 @@ import {
   VISIONARIES_DEMO_FORMS,
   visionariesId,
 } from "@/tests/unit/fixtures/forms";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
+import { MemberTypeService } from "@/features/membership/services/MemberTypeService";
 import type { SeedOrg } from "./seedTypes";
 
 // ===========================================================================
@@ -53,6 +55,15 @@ export function createApplicationSeed(options: {
   demoForms: FormDefinition[];
   id: (group: number, item: number) => string;
   includeRejected?: boolean;
+  /**
+   * Optional seeded member drafts, keyed by stable question labels. A question
+   * group's entries are keyed by its questions' labels too.
+   */
+  formDrafts?: {
+    email: string;
+    formId: string;
+    answersByLabel: Record<string, FormAnswerValue>;
+  }[];
 }) {
   const ORG_ID = options.organizationId;
   const CAMP_NAME = options.campName;
@@ -154,8 +165,8 @@ export function createApplicationSeed(options: {
       [OrganizationConfigKey.MemberTypesEnabled]: "true",
       [OrganizationConfigKey.AutoApproveSignups]: "true",
       [OrganizationConfigKey.MemberTypeDashboardLayouts]: JSON.stringify({
-        [MemberType.Applicant]: APPLICANT_LAYOUT,
-        [MemberType.Attendee]: ATTENDEE_LAYOUT,
+        applicant: APPLICANT_LAYOUT,
+        attendee: ATTENDEE_LAYOUT,
       }),
       [OrganizationConfigKey.DashboardHeader]: JSON.stringify(DASHBOARD_HEADER),
       [OrganizationConfigKey.NavbarConfig]: JSON.stringify(NAVBAR),
@@ -167,34 +178,34 @@ export function createApplicationSeed(options: {
         email: "applicant@example.com",
         role: "member",
         phoneNumber: null,
-        memberType: MemberType.Applicant,
+        memberType: MemberTypeKeySchema.parse("applicant"),
       },
       {
         name: "Jada Brooks",
         email: "applicant-pending@example.com",
         role: "member",
         phoneNumber: null,
-        memberType: MemberType.Applicant,
+        memberType: MemberTypeKeySchema.parse("applicant"),
       },
       {
         name: "Marcus Hill",
         email: "applicant-review@example.com",
         role: "member",
         phoneNumber: null,
-        memberType: MemberType.Applicant,
+        memberType: MemberTypeKeySchema.parse("applicant"),
       },
       {
         name: "Aaliyah Grant",
         email: "attendee-complete@example.com",
         role: "member",
         phoneNumber: null,
-        memberType: MemberType.Attendee,
+        memberType: MemberTypeKeySchema.parse("attendee"),
       },
     ],
     // The shared member accounts are accepted campers here.
     memberTypes: {
-      "member1@example.com": MemberType.Attendee,
-      "member2@example.com": MemberType.Attendee,
+      "member1@example.com": MemberTypeKeySchema.parse("attendee"),
+      "member2@example.com": MemberTypeKeySchema.parse("attendee"),
     },
   };
 
@@ -240,7 +251,7 @@ export function createApplicationSeed(options: {
       email: "applicant-rejected@example.com",
       role: "member",
       phoneNumber: null,
-      memberType: MemberType.Applicant,
+      memberType: MemberTypeKeySchema.parse("applicant"),
     });
     PERSONAS.push({
       email: "applicant-rejected@example.com",
@@ -624,6 +635,73 @@ export function createApplicationSeed(options: {
     }
   }
 
+  /** Restores the configured draft and removes drafts made while testing. */
+  async function seedDrafts(userIds: Map<string, string>) {
+    await db.delete(schema.formResponseDrafts).where(
+      and(
+        eq(schema.formResponseDrafts.organizationId, ORG_ID),
+        inArray(
+          schema.formResponseDrafts.userId,
+          PERSONAS.map(({ email }) => userIds.get(email)!),
+        ),
+        inArray(
+          schema.formResponseDrafts.formId,
+          SEEDED_FORMS.map(({ id }) => id),
+        ),
+      ),
+    );
+
+    for (const draft of options.formDrafts ?? []) {
+      const form = SEEDED_FORMS.find(({ formId }) => formId === draft.formId);
+      const userId = userIds.get(draft.email);
+      if (!form || !userId) {
+        throw new Error(
+          `Cannot seed ${draft.email}'s draft: form or user is not seeded`,
+        );
+      }
+
+      const componentsByLabel = new Map(
+        form.components.map((component) => [component.label, component]),
+      );
+      const missing = (label: string) =>
+        new Error(
+          `Cannot seed ${draft.email}'s draft: question "${label}" is not in ${form.formId}`,
+        );
+      const answers: Record<string, FormAnswerValue> = {};
+      for (const [label, value] of Object.entries(draft.answersByLabel)) {
+        const component = componentsByLabel.get(label);
+        if (!component) throw missing(label);
+        if (
+          component.type !== FormComponentType.QuestionGroup ||
+          !Array.isArray(value)
+        ) {
+          answers[component.id] = value;
+          continue;
+        }
+        const subIdsByLabel = new Map(
+          component.config.questions.map(({ id, label }) => [label, id]),
+        );
+        answers[component.id] = (value as Record<string, unknown>[]).map(
+          (entry) =>
+            Object.fromEntries(
+              Object.entries(entry).map(([subLabel, cell]) => {
+                const subId = subIdsByLabel.get(subLabel);
+                if (!subId) throw missing(`${label} › ${subLabel}`);
+                return [subId, cell];
+              }),
+            ),
+        ) as FormAnswerValue;
+      }
+
+      await db.insert(schema.formResponseDrafts).values({
+        organizationId: ORG_ID,
+        formId: form.id,
+        userId,
+        answers: buildDraftSchema(form).parse(answers),
+      });
+    }
+  }
+
   /**
    * Seeds the demo forms. Their responses only come from trying them out, so
    * they're deleted, and each form goes back to its seeded status (and a
@@ -835,12 +913,25 @@ export function createApplicationSeed(options: {
    * user ID.
    */
   async function seedVisionaries(userIds: Map<string, string>) {
+    await MemberTypeService.ensure(ORG_ID, {
+      key: MemberTypeKeySchema.parse("applicant"),
+      label: "Applicant",
+      pluralLabel: "Applicants",
+      isSignupDefault: true,
+    });
+    await MemberTypeService.ensure(ORG_ID, {
+      key: MemberTypeKeySchema.parse("attendee"),
+      label: "Current Attendee",
+      pluralLabel: "Current Attendees",
+      isSignupDefault: false,
+    });
     const now = new Date();
     const admin = userIds.get("admin@example.com")!;
     for (const form of SEEDED_FORMS) {
       await seedForm(form, admin);
     }
     await seedSubmissions(userIds);
+    await seedDrafts(userIds);
     await seedDemoForms(admin);
     await seedInvitations(userIds, now);
     await seedEvents(now);
@@ -866,6 +957,24 @@ const visionaries = createApplicationSeed({
   attendeeForms: VISIONARIES_ATTENDEE_FORMS,
   demoForms: VISIONARIES_DEMO_FORMS,
   id: visionariesId,
+  formDrafts: [
+    {
+      email: "member2@example.com",
+      formId: "medical-history-2027",
+      answersByLabel: {
+        "Medication Schedule": [
+          {
+            "Medication name": "Albuterol inhaler",
+            Dose: "2 puffs",
+            Time: "As needed",
+          },
+        ],
+        "Anything else our staff should know about the camper's health?":
+          "The camper has mild asthma and carries their inhaler.",
+        "Doctor's Name": "Dr. Maya Carter",
+      },
+    },
+  ],
 });
 export const VISIONARIES_ORG = visionaries.organization;
 export const seedVisionaries = visionaries.seed;

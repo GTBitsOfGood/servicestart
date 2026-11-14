@@ -7,11 +7,14 @@ import {
   type MobileDrawerSide,
 } from "@/features/navigation/components/MobileSidebarNav";
 import { OrganizationConfigKey } from "@/core/config/schema";
-import OrganizationConfigService, {
-  ALLOWED_NAVBAR_VARIANTS,
-  ALLOWED_MOBILE_NAVBAR_VARIANTS,
+import OrganizationConfigService from "@/core/config/OrganizationConfigService";
+import {
+  mobileNavbarShowIcons,
+  mobileNavbarVariant,
+  mobileVariantShowsIcons,
+  navbarVariant,
   resolveMobileShowIcons,
-} from "@/core/config/OrganizationConfigService";
+} from "@/features/navigation/config";
 import { auth } from "@/core/auth/auth";
 import { headers } from "next/headers";
 import getNavbarItems from "@/features/navigation/getNavbarItems";
@@ -28,26 +31,19 @@ export default async function Navbar({ children }: NavbarProps) {
   const session = await auth.api.getSession({ headers: headerList });
   const orgId = await getActiveOrganizationIdFromHeaders(headerList);
 
-  const [variantConfig, mobileConfig] = await Promise.all([
-    orgId
-      ? OrganizationConfigService.getConfig(orgId, [
-          OrganizationConfigKey.NavbarVariant,
-        ])
-      : null,
-    orgId
-      ? OrganizationConfigService.getConfig(orgId, [
-          OrganizationConfigKey.MobileNavbarVariant,
-          OrganizationConfigKey.MobileNavbarShowIcons,
-        ])
-      : null,
-  ]);
+  const config = orgId
+    ? await OrganizationConfigService.getConfig(orgId, [
+        OrganizationConfigKey.NavbarVariant,
+        OrganizationConfigKey.MobileNavbarVariant,
+        OrganizationConfigKey.MobileNavbarShowIcons,
+      ])
+    : null;
 
-  const variant: (typeof ALLOWED_NAVBAR_VARIANTS)[number] =
-    variantConfig?.[OrganizationConfigKey.NavbarVariant] ?? "vertical-sidebar";
-
-  const mobileVariant: (typeof ALLOWED_MOBILE_NAVBAR_VARIANTS)[number] =
-    mobileConfig?.[OrganizationConfigKey.MobileNavbarVariant] ??
-    "mobile-left-sidebar";
+  const variant =
+    config?.[OrganizationConfigKey.NavbarVariant] ?? navbarVariant.default;
+  const mobileVariant =
+    config?.[OrganizationConfigKey.MobileNavbarVariant] ??
+    mobileNavbarVariant.default;
 
   const navbarItems = await getNavbarItems(session, orgId);
 
@@ -55,12 +51,10 @@ export default async function Navbar({ children }: NavbarProps) {
     ? "right"
     : "left";
   const mobilePinnedUser = mobileVariant.includes("pinned");
-  const mobileShowIconsFromVariant =
-    mobileVariant.includes("icons") ||
-    (mobileDrawerSide === "right" && !mobileVariant.includes("no-icons"));
   const mobileShowIcons = resolveMobileShowIcons(
-    String(mobileConfig?.[OrganizationConfigKey.MobileNavbarShowIcons] ?? ""),
-    mobileShowIconsFromVariant,
+    config?.[OrganizationConfigKey.MobileNavbarShowIcons] ??
+      mobileNavbarShowIcons.default,
+    mobileVariantShowsIcons(mobileVariant),
   );
 
   let pinnedProfileDisplayName = "";

@@ -1,9 +1,7 @@
 import { Hono } from "hono";
-import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { requireAdmin } from "@/core/auth/authUtils";
-import { NotFoundError } from "@/core/api/errors";
 import { FormIdSchema } from "@/features/forms/lib/schema";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import {
@@ -12,7 +10,8 @@ import {
   InformationRequestService,
   RecentInformationRequestError,
 } from "@/features/forms/services/InformationRequestService";
-import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { assertFeatureEnabled } from "@/core/auth/featureGuards";
+import { handleError } from "@/core/api/handleError";
 
 const requestSchema = z.strictObject({
   userId: z.string().min(1),
@@ -37,18 +36,15 @@ const app = new Hono<{
       error instanceof FormNotOpenError
     )
       return c.json({ error: error.message }, 409);
-    if (error instanceof HTTPException)
-      return c.json({ error: error.message }, error.status);
-    console.error(error);
-    return c.json({ error: "Unable to send the request" }, 500);
+    return handleError(error, c);
   })
   .use("*", async (c, next) => {
     const session = await requireAdmin(c);
     const organizationId = session.session.activeOrganizationId!;
-    const config = await OrganizationConfigService.getConfig(organizationId, [
+    await assertFeatureEnabled(
+      organizationId,
       OrganizationConfigKey.FormsEnabled,
-    ]);
-    if (!config[OrganizationConfigKey.FormsEnabled]) throw new NotFoundError();
+    );
     c.set("organizationId", organizationId);
     c.set("userId", session.user.id);
     await next();

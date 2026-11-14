@@ -172,6 +172,31 @@ describe("DynamicForm", () => {
     ]);
   });
 
+  it("reports loosely validated answers for draft saving", () => {
+    const onAnswersChange = vi.fn();
+    render(
+      <DynamicForm
+        definition={form}
+        onSubmit={vi.fn()}
+        onAnswersChange={onAnswersChange}
+      />,
+    );
+
+    type(/^Student Email/, "not-yet-an-email");
+    type(/^What grade/, "9");
+    expect(onAnswersChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        [studentEmailId]: "not-yet-an-email",
+        [gradeId]: 9,
+      }),
+    );
+
+    // A transient invalid number is omitted so it cannot make the entire
+    // otherwise-valid draft fail its per-type validation.
+    type(/^What grade/, "-");
+    expect(onAnswersChange.mock.lastCall?.[0]).not.toHaveProperty(gradeId);
+  });
+
   it("doesn't submit twice while a submission is in flight", async () => {
     let finish!: (result: DynamicFormSubmitResult) => void;
     const onSubmit = renderForm(
@@ -288,6 +313,36 @@ describe("DynamicForm", () => {
       expect(screen.queryByText("Upload an image")).toBeNull(),
     );
     expect(screen.queryAllByText("This question is required")).toHaveLength(7);
+  });
+
+  it("ignores an upload that finishes after the form is replaced", async () => {
+    // FormFillClient remounts the form when a member discards a draft, and
+    // the old form's answers must not come back as a new draft.
+    let finish!: (value: { id: string }) => void;
+    const onAnswersChange = vi.fn();
+    const { unmount } = render(
+      <DynamicForm
+        definition={form}
+        onSubmit={vi.fn()}
+        onAnswersChange={onAnswersChange}
+        uploadImage={() => new Promise((resolve) => (finish = resolve))}
+      />,
+    );
+    type(/^Student Name/, "Ada Lovelace");
+    onAnswersChange.mockClear();
+    fireEvent.change(
+      document.querySelector<HTMLInputElement>('input[type="file"]')!,
+      {
+        target: {
+          files: [new File(["png"], "me.png", { type: "image/png" })],
+        },
+      },
+    );
+
+    unmount();
+    await act(async () => finish({ id: UPLOAD_ID }));
+
+    expect(onAnswersChange).not.toHaveBeenCalled();
   });
 
   it("keeps both answers when two uploads finish out of order", async () => {

@@ -1,11 +1,16 @@
 import { Hono } from "hono";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";
+import { NotFoundError } from "@/core/api/errors";
 import { requireAdmin } from "@/core/auth/authUtils";
+import { assertFeatureEnabled } from "@/core/auth/featureGuards";
 import { MembersService } from "@/features/membership/services/MemberService";
-import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { OrganizationConfigKey } from "@/core/config/schema";
 import { paginationQuerySchema } from "@/core/api/apiUtils";
-import { MemberType } from "@/features/membership/schema";
+import { MemberTypeError } from "@/features/membership/lib/memberTypeErrors";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
+import { MemberTypeService } from "@/features/membership/server";
+import { handleMemberTypeRouteError } from "@/features/membership/api/memberTypeRouteErrors";
 
 const activityQuerySchema = z.object({
   userIds: z
@@ -15,19 +20,16 @@ const activityQuerySchema = z.object({
 
 const setMemberTypeSchema = z.object({
   userIds: z.array(z.string()).min(1).max(100),
-  memberType: z.enum(MemberType),
+  memberType: MemberTypeKeySchema.nullable(),
 });
 
 const app = new Hono()
+  .onError(handleMemberTypeRouteError)
   .get("/activity", zValidator("query", activityQuerySchema), async (c) => {
     const session = await requireAdmin(c);
     const organizationId = session.session.activeOrganizationId!;
 
     const { userIds } = c.req.valid("query");
-    if (userIds.length === 0) {
-      return c.json({ error: "userIds must not be empty" }, 400);
-    }
-
     const result = await MembersService.getMemberActivity(
       userIds,
       organizationId,
@@ -52,13 +54,22 @@ const app = new Hono()
     const session = await requireAdmin(c);
     const organizationId = session.session.activeOrganizationId!;
 
-    if (
-      !(await OrganizationConfigService.getMemberTypesEnabled(organizationId))
-    ) {
-      return c.json({ error: "Member types are not enabled" }, 404);
-    }
+    await assertFeatureEnabled(
+      organizationId,
+      OrganizationConfigKey.MemberTypesEnabled,
+    );
 
     const { userIds, memberType } = c.req.valid("json");
+
+    if (memberType !== null) {
+      const unknown = await MemberTypeService.findUnknownKeys(organizationId, [
+        memberType,
+      ]);
+      if (unknown.length > 0) {
+        throw new MemberTypeError("invalid", "Unknown member type");
+      }
+    }
+
     const result = await MembersService.setMemberTypes(
       organizationId,
       userIds,
@@ -66,9 +77,10 @@ const app = new Hono()
     );
 
     if ("error" in result) {
-      return result.error === "not_found"
-        ? c.json({ error: "Member not found" }, 404)
-        : c.json({ error: "Admins can't have a member type" }, 400);
+      if (result.error === "not_found") {
+        throw new NotFoundError("Member not found");
+      }
+      throw new MemberTypeError("invalid", "Admins can't have a member type");
     }
 
     return c.json({ updated: result.updated });

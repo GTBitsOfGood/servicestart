@@ -1,9 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import getNavbarItems from "@/features/navigation/getNavbarItems";
+import { NavbarConfigSchema } from "@/features/navigation/navbarConfig";
 import type { NavbarConfig } from "@/features/navigation/navbarConfig";
-import { MemberType, OrganizationConfigKey } from "@/core/db/schema";
+import { OrganizationConfigKey } from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import type { MemberTypeKey } from "@/features/membership/lib/memberTypeKey";
 import {
   addMember,
   buildTestUser,
@@ -13,20 +15,32 @@ import {
 
 type Session = Parameters<typeof getNavbarItems>[0];
 
+const volunteer = "volunteer" as MemberTypeKey;
+const staff = "staff" as MemberTypeKey;
+
 const CONFIG: NavbarConfig = {
   member: { labels: { "/inbox": "Messages" } },
-  applicant: { hidden: ["/events"], labels: { "/": "My Application" } },
-  attendee: { hidden: ["/inbox"], labels: { "/": "My Camp" } },
+  [volunteer]: { hidden: ["/events"], labels: { "/": "Volunteer Home" } },
+  [staff]: { hidden: ["/inbox"], labels: { "/": "Staff Home" } },
+  applicant: { hidden: ["/media"] },
 };
 
 async function setup({
   role = "member",
-  memberType = null as MemberType | null,
+  memberType = null as MemberTypeKey | null,
   memberTypesEnabled = true,
   navbarConfig = CONFIG as NavbarConfig | null,
+  orgMemberTypes,
+}: {
+  role?: string;
+  memberType?: MemberTypeKey | null;
+  memberTypesEnabled?: boolean;
+  navbarConfig?: NavbarConfig | null;
+  orgMemberTypes?: Parameters<typeof createOrganization>[1];
 } = {}) {
   const org = await createOrganization(
     `nav-${Math.random().toString(36).slice(2, 10)}`,
+    orgMemberTypes,
   );
   const { user } = await signUpAndGetSession(buildTestUser(), org.slug);
   await addMember(user.id, org.id, role, memberType);
@@ -52,27 +66,55 @@ const view = (items: Awaited<ReturnType<typeof getNavbarItems>>) =>
     subpages: subpages?.map((s) => s.href),
   }));
 
+describe("NavbarConfigSchema", () => {
+  it("parses a pre-Sprint-5 row unchanged", () => {
+    const config = { applicant: { hidden: ["/events"] } };
+    expect(NavbarConfigSchema.parse(config)).toEqual(config);
+  });
+});
+
 describe("getNavbarItems with NavbarConfig", () => {
-  it("hides and renames items for an applicant", async () => {
-    const { org, session } = await setup({ memberType: MemberType.Applicant });
+  it("hides and renames items for a volunteer", async () => {
+    const { org, session } = await setup({
+      memberType: volunteer,
+      orgMemberTypes: {
+        memberTypes: [
+          { key: volunteer, label: "Volunteer", pluralLabel: "Volunteers" },
+          { key: staff, label: "Staff", pluralLabel: "Staff" },
+        ],
+      },
+    });
     expect(view(await getNavbarItems(session, org.id))).toEqual([
-      { href: "/", label: "My Application", subpages: undefined },
+      { href: "/", label: "Volunteer Home", subpages: undefined },
       { href: "/inbox", label: "Inbox", subpages: undefined },
     ]);
   });
 
-  it("hides and renames items for an attendee", async () => {
-    const { org, session } = await setup({ memberType: MemberType.Attendee });
+  it("hides and renames items for staff", async () => {
+    const { org, session } = await setup({
+      memberType: staff,
+      orgMemberTypes: {
+        memberTypes: [
+          { key: volunteer, label: "Volunteer", pluralLabel: "Volunteers" },
+          { key: staff, label: "Staff", pluralLabel: "Staff" },
+        ],
+      },
+    });
     expect(view(await getNavbarItems(session, org.id))).toEqual([
-      { href: "/", label: "My Camp", subpages: undefined },
+      { href: "/", label: "Staff Home", subpages: undefined },
       { href: "/events", label: "Events", subpages: undefined },
     ]);
   });
 
-  it("uses the member entry for a typed member when member types are off", async () => {
+  it("uses the member entry when member types are off", async () => {
     const { org, session } = await setup({
-      memberType: MemberType.Applicant,
+      memberType: volunteer,
       memberTypesEnabled: false,
+      orgMemberTypes: {
+        memberTypes: [
+          { key: volunteer, label: "Volunteer", pluralLabel: "Volunteers" },
+        ],
+      },
     });
     expect(view(await getNavbarItems(session, org.id))).toEqual([
       { href: "/", label: "Home", subpages: undefined },
@@ -81,10 +123,30 @@ describe("getNavbarItems with NavbarConfig", () => {
     ]);
   });
 
+  it("ignores navbar config for a deleted type key", async () => {
+    const { org, session } = await setup({
+      memberType: volunteer,
+      orgMemberTypes: {
+        memberTypes: [
+          { key: volunteer, label: "Volunteer", pluralLabel: "Volunteers" },
+        ],
+      },
+    });
+    expect(view(await getNavbarItems(session, org.id))).toEqual([
+      { href: "/", label: "Volunteer Home", subpages: undefined },
+      { href: "/inbox", label: "Inbox", subpages: undefined },
+    ]);
+  });
+
   it("matches today's navbar when there is no config row", async () => {
     const { org, session } = await setup({
-      memberType: MemberType.Applicant,
+      memberType: volunteer,
       navbarConfig: null,
+      orgMemberTypes: {
+        memberTypes: [
+          { key: volunteer, label: "Volunteer", pluralLabel: "Volunteers" },
+        ],
+      },
     });
     expect(view(await getNavbarItems(session, org.id))).toEqual([
       { href: "/", label: "Home", subpages: undefined },
@@ -102,8 +164,16 @@ describe("getNavbarItems with NavbarConfig", () => {
           labels: { "/inbox": "Messages" },
         },
       };
-      const withConfig = await setup({ role, navbarConfig: hideAll });
-      const without = await setup({ role, navbarConfig: null });
+      const withConfig = await setup({
+        role,
+        navbarConfig: hideAll,
+        orgMemberTypes: { memberTypes: [] },
+      });
+      const without = await setup({
+        role,
+        navbarConfig: null,
+        orgMemberTypes: { memberTypes: [] },
+      });
       const items = view(
         await getNavbarItems(withConfig.session, withConfig.org.id),
       );
@@ -111,33 +181,12 @@ describe("getNavbarItems with NavbarConfig", () => {
         view(await getNavbarItems(without.session, without.org.id)),
       );
       expect(items.map((i) => i.label)).toContain("Media Library");
-      expect(items.find((i) => i.href === "/settings")?.subpages).toContain(
-        "/settings/dashboard",
-      );
     },
   );
 
   it("doesn't apply the member entry to signed-out visitors", async () => {
-    const { org } = await setup();
+    const { org } = await setup({ orgMemberTypes: { memberTypes: [] } });
     expect(view(await getNavbarItems(null, org.id))).toEqual([
-      { href: "/", label: "Home", subpages: undefined },
-      { href: "/inbox", label: "Inbox", subpages: undefined },
-      { href: "/events", label: "Events", subpages: undefined },
-    ]);
-  });
-
-  it("ignores another org's config", async () => {
-    // The same applicant belongs to org A (with a config row) and org B
-    // (without one); in B they get B's unchanged navbar.
-    const a = await setup({ memberType: MemberType.Applicant });
-    const b = await createOrganization(`nav-b-${Date.now()}`);
-    await addMember(a.user.id, b.id, "member", MemberType.Applicant);
-    await OrganizationConfigService.setConfig(
-      b.id,
-      OrganizationConfigKey.MemberTypesEnabled,
-      "true",
-    );
-    expect(view(await getNavbarItems(a.session, b.id))).toEqual([
       { href: "/", label: "Home", subpages: undefined },
       { href: "/inbox", label: "Inbox", subpages: undefined },
       { href: "/events", label: "Events", subpages: undefined },

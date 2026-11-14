@@ -1,12 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { and, count, desc, eq, inArray } from "drizzle-orm";
 import db from "@/core/db";
-import {
-  notifications,
-  NotificationType,
-  members,
-  type MemberType,
-} from "@/core/db/schema";
+import { notifications, NotificationType, members } from "@/core/db/schema";
+import type { MemberTypeKey } from "@/features/membership";
 import { MembersService } from "@/features/membership/server";
 
 const ADMIN_ROLES = ["admin", "owner"];
@@ -94,7 +90,7 @@ async function notifyAllMembers(
   text: string,
   options: {
     type?: NotificationType;
-    memberTypes?: MemberType[];
+    memberTypes?: MemberTypeKey[];
     metadata?: Record<string, unknown> | null;
   } = {},
 ) {

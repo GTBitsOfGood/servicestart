@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { FormComponentType, FormStatus } from "@/features/forms/schema";
-import { MemberType } from "@/features/membership";
+import { MemberTypeKeySchema, type MemberTypeKey } from "@/features/membership";
 
 /*
  * Shared contract for forms. The builder, the renderer, the submission route,
@@ -30,7 +30,7 @@ export const FormSettingsSchema = z
     // through getAssignedMemberTypes, getDueAt, and getAcceptedMemberType.
     /** Member types this form is required for. Empty means nobody's. */
     assignedMemberTypes: z
-      .array(z.enum(MemberType))
+      .array(MemberTypeKeySchema)
       .refine((types) => new Set(types).size === types.length, {
         message: "Choose each member type once",
       })
@@ -38,7 +38,7 @@ export const FormSettingsSchema = z
     /** When it's due, shown on dashboards. `closesAt` is when it stops. */
     dueAt: z.iso.datetime({ offset: true }).nullable().optional(),
     /** The member type a submitter moves to once their response is accepted. */
-    acceptedMemberType: z.enum(MemberType).nullable().optional(),
+    acceptedMemberType: MemberTypeKeySchema.nullable().optional(),
   })
   .refine(
     ({ opensAt, closesAt }) =>
@@ -50,7 +50,9 @@ export const FormSettingsSchema = z
   );
 export type FormSettings = z.infer<typeof FormSettingsSchema>;
 
-export function getAssignedMemberTypes(settings: FormSettings): MemberType[] {
+export function getAssignedMemberTypes(
+  settings: FormSettings,
+): MemberTypeKey[] {
   return settings.assignedMemberTypes ?? [];
 }
 
@@ -60,7 +62,7 @@ export function getDueAt(settings: FormSettings): string | null {
 
 export function getAcceptedMemberType(
   settings: FormSettings,
-): MemberType | null {
+): MemberTypeKey | null {
   return settings.acceptedMemberType ?? null;
 }
 
@@ -467,6 +469,26 @@ export const FormDefinitionSchema = z
     });
   });
 export type FormDefinition = z.infer<typeof FormDefinitionSchema>;
+
+/**
+ * Validates answers that are safe to store in a draft. Every question is
+ * optional and only its answer's stored shape is checked; submission-only
+ * rules such as required answers, formats, ranges, and choices are deferred
+ * until the member submits the form.
+ */
+export function buildDraftSchema(
+  definition: Pick<FormDefinition, "components">,
+) {
+  const shape: Record<string, z.ZodType> = {};
+  for (const component of definition.components) {
+    shape[component.id] = FORM_ANSWER_VALUE_SCHEMAS[component.type].optional();
+  }
+
+  return z.strictObject(shape, {
+    error: (issue) =>
+      issue.code === "unrecognized_keys" ? "Unknown question" : undefined,
+  }) as z.ZodType<Record<string, FormAnswerValue>>;
+}
 
 // What the fill-out page submits: answers keyed by component ID. Unanswered
 // optional questions are left out.

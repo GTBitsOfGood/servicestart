@@ -26,6 +26,7 @@ function progressRow(
   return {
     required: overrides.required ?? true,
     submission: overrides.submission ?? null,
+    draft: overrides.draft ?? null,
     form: { ...DEFAULT_FORM, ...overrides.form },
   };
 }
@@ -88,6 +89,64 @@ describe("summarizeFormProgress", () => {
 
     expect(completed).toHaveLength(2);
     expect(gauge).toEqual({ done: 1, total: 2 });
+  });
+
+  it("keeps a draft in todo as in progress without counting it completed", () => {
+    const updatedAt = new Date("2027-03-10T12:00:00Z");
+    const { todo, completed, gauge } = summarizeFormProgress(
+      [progressRow({ draft: { updatedAt } })],
+      NOW,
+    );
+
+    expect(todo).toHaveLength(1);
+    expect(todo[0].draftUpdatedAt).toEqual(updatedAt);
+    expect(completed).toEqual([]);
+    expect(gauge).toEqual({ done: 0, total: 1 });
+  });
+
+  it("keeps an optional draft in todo without adding it to the gauge", () => {
+    const updatedAt = new Date("2027-03-10T12:00:00Z");
+    const { todo, completed, gauge } = summarizeFormProgress(
+      [progressRow({ required: false, draft: { updatedAt } })],
+      NOW,
+    );
+
+    expect(todo).toHaveLength(1);
+    expect(todo[0]).toMatchObject({
+      title: "Emergency Contact",
+      draftUpdatedAt: updatedAt,
+    });
+    expect(completed).toEqual([]);
+    expect(gauge).toEqual({ done: 0, total: 0 });
+  });
+
+  it("drops an optional draft's card once its form closes", () => {
+    const updatedAt = new Date("2027-03-10T12:00:00Z");
+    const optionalDraft = (availability: "open" | "not_yet_open" | "closed") =>
+      progressRow({
+        required: false,
+        draft: { updatedAt },
+        form: { availability },
+      });
+
+    expect(summarizeFormProgress([optionalDraft("closed")], NOW).todo).toEqual(
+      [],
+    );
+    expect(
+      summarizeFormProgress([optionalDraft("not_yet_open")], NOW).todo,
+    ).toHaveLength(1);
+    // A required form stays until it's submitted, closed or not.
+    expect(
+      summarizeFormProgress(
+        [
+          progressRow({
+            draft: { updatedAt },
+            form: { availability: "closed" },
+          }),
+        ],
+        NOW,
+      ).todo,
+    ).toHaveLength(1);
   });
 
   it("marks a todo as past due when dueAt is before now", () => {

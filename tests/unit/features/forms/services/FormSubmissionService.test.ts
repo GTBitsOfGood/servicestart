@@ -12,6 +12,7 @@ import {
   forms,
 } from "@/core/db/schema";
 import type { FormSettings } from "@/features/forms/lib/schema";
+import { FormDraftService } from "@/features/forms/services/FormDraftService";
 import {
   DuplicateSubmissionError,
   FormSubmissionService,
@@ -144,6 +145,87 @@ describe("FormSubmissionService.submit", () => {
         answers: {},
       }),
     ).rejects.toBeInstanceOf(DuplicateSubmissionError);
+  });
+
+  it("deletes the member's draft after a successful submission", async () => {
+    const org = await createOrganization("acme");
+    const form = await createForm(org.id, {
+      status: FormStatus.Published,
+      components: [],
+    });
+    const userId = await createUser();
+    await FormDraftService.save({
+      organizationId: org.id,
+      formId: form.formId,
+      userId,
+      answers: {},
+    });
+
+    await FormSubmissionService.submit({
+      form,
+      organizationId: org.id,
+      userId,
+      answers: {},
+    });
+
+    await expect(
+      FormDraftService.get(org.id, form.formId, userId),
+    ).resolves.toBeNull();
+  });
+
+  it("keeps the member's draft when submission fails", async () => {
+    const org = await createOrganization("acme");
+    const form = await createForm(org.id, {
+      status: FormStatus.Published,
+      components: [],
+    });
+    const userId = await createUser();
+    await FormDraftService.save({
+      organizationId: org.id,
+      formId: form.formId,
+      userId,
+      answers: {},
+    });
+    await createFormSubmission(form, { userId });
+
+    await expect(
+      FormSubmissionService.submit({
+        form,
+        organizationId: org.id,
+        userId,
+        answers: {},
+      }),
+    ).rejects.toBeInstanceOf(DuplicateSubmissionError);
+    await expect(
+      FormDraftService.get(org.id, form.formId, userId),
+    ).resolves.not.toBeNull();
+  });
+
+  it("does not delete a member's draft for an anonymous submission", async () => {
+    const org = await createOrganization("acme");
+    const form = await createForm(org.id, {
+      status: FormStatus.Published,
+      settings: { requireLogin: false, allowMultipleSubmissions: true },
+      components: [],
+    });
+    const userId = await createUser();
+    await FormDraftService.save({
+      organizationId: org.id,
+      formId: form.formId,
+      userId,
+      answers: {},
+    });
+
+    await FormSubmissionService.submit({
+      form,
+      organizationId: org.id,
+      userId: null,
+      answers: {},
+    });
+
+    await expect(
+      FormDraftService.get(org.id, form.formId, userId),
+    ).resolves.not.toBeNull();
   });
 
   it("writes nothing when an upload is invalid", async () => {

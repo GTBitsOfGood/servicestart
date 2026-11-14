@@ -49,6 +49,12 @@ export const NAVBAR_ITEMS: NavbarItem[] = [
         requireAdmin: true,
         requireConfig: OrganizationConfigKey.FormsEnabled,
       },
+      {
+        label: "Member types",
+        href: "/settings/member-types",
+        requireAdmin: true,
+        requireConfig: OrganizationConfigKey.MemberTypesEnabled,
+      },
       { label: "Admin Dashboard", href: "/settings/admindashboard" },
       { label: "Dashboard", href: "/settings/dashboard" },
       {

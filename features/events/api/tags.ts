@@ -1,3 +1,4 @@
+import { NotFoundError } from "@/core/api/errors";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -41,7 +42,7 @@ const app = new Hono()
         data.tag,
       );
       if (!updated) {
-        return c.json({ error: "Tag not found" }, { status: 404 });
+        throw new NotFoundError("Tag not found");
       }
       return c.json({ success: true });
     },
@@ -54,7 +55,7 @@ const app = new Hono()
 
     const deleted = await TagService.deleteTag(tagId, organizationId);
     if (!deleted) {
-      return c.json({ error: "Tag not found" }, { status: 404 });
+      throw new NotFoundError("Tag not found");
     }
     return c.json({ success: true });
   });

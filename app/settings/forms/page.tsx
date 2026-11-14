@@ -1,9 +1,10 @@
-import { notFound } from "next/navigation";
+import { notFoundIfFeatureDisabled } from "@/core/auth/featureGuards";
 import { Suspense } from "react";
 import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { FormService } from "@/features/forms/services/FormService";
+import { MemberTypeService } from "@/features/membership/server";
 import FormsClient from "@/features/forms/components/FormsClient";
 
 export const metadata = { title: "Forms" };
@@ -11,10 +12,12 @@ export const metadata = { title: "Forms" };
 export default async function FormsPage() {
   const { organizationId } = await redirectIfNotAdmin();
   const config = await OrganizationConfigService.getConfig(organizationId, [
-    OrganizationConfigKey.FormsEnabled,
     OrganizationConfigKey.MemberTypesEnabled,
   ]);
-  if (!config[OrganizationConfigKey.FormsEnabled]) notFound();
+  await notFoundIfFeatureDisabled(
+    organizationId,
+    OrganizationConfigKey.FormsEnabled,
+  );
   // Start streaming only after access checks, so disabled forms return HTTP 404.
   return (
     <Suspense
@@ -41,10 +44,13 @@ async function FormsList({
   organizationId: string;
   memberTypesEnabled: boolean;
 }) {
+  const memberTypes = memberTypesEnabled
+    ? await MemberTypeService.list(organizationId)
+    : [];
   const forms = await FormService.list(organizationId);
   return (
     <FormsClient
-      memberTypesEnabled={memberTypesEnabled}
+      memberTypes={memberTypes}
       forms={forms.map((form) => ({
         ...form,
         createdAt: form.createdAt.toISOString(),

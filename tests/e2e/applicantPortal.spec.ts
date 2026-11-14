@@ -4,7 +4,6 @@ import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schem
 import type { NavbarConfig } from "@/features/navigation/navbarConfig";
 import {
   FormStatus,
-  MemberType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
 } from "@/core/db/schema";
@@ -62,7 +61,7 @@ async function createApplicantOrg() {
     [OrganizationConfigKey.MemberTypesEnabled, "true"],
     [
       OrganizationConfigKey.MemberTypeDashboardLayouts,
-      JSON.stringify({ [MemberType.Applicant]: layout }),
+      JSON.stringify({ applicant: layout }),
     ],
     [OrganizationConfigKey.NavbarConfig, JSON.stringify(NAVBAR)],
   ] as const) {
@@ -77,7 +76,7 @@ async function signIn(
   origin: string,
   organizationId: string,
   role: "member" | "admin",
-  memberType: MemberType | null = null,
+  memberType: string | null = null,
 ) {
   const { user, session, headers } = await signUpAndGetSession(buildTestUser());
   await addMember(user.id, organizationId, role, memberType);
@@ -107,7 +106,7 @@ async function signInApplicant(
     origin,
     form.organizationId,
     "member",
-    MemberType.Applicant,
+    "applicant",
   );
   if (reviewStatus) {
     await createFormSubmission(form, { userId: user.id, reviewStatus });

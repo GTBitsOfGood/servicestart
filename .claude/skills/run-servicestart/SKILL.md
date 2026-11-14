@@ -18,7 +18,7 @@ RESET_DB=1 .claude/skills/run-servicestart/setup.sh   # also wipe + reseed the d
 
 It starts Postgres clusters `main` (:5432, user `dev`/`root`, dev DB) and `test` (:5433, user `test`/`root`, for unit tests), writes `.env` if missing, runs `pnpm install`, migrates, seeds the DB if it has no notifications yet (the seed's last step, so an interrupted seed is retried), starts the Juno stub on :8888 and `next dev` on :3000, and waits until `/login` answers. `RESET_DB=1` resets the database `DB_URL` in `.env` points at, and refuses unless it's on localhost. Logs go to `/tmp/servicestart/` (`dev.log`, `seed.log`, …). Every request the app sends to "Juno" (for example emails) is appended to `/tmp/servicestart/juno-requests.log`.
 
-Seeded accounts (password `password123`) on http://localhost:3000, which is the `servicestart` org: `owner@example.com`, `admin@example.com` (admins), `member1@example.com`, `member2@example.com`, `joinrequest-pending@example.com`, `nonmember@example.com`.
+Seeded accounts (password `password123`) on http://servicestart.lvh.me:3000, the `servicestart` org: `owner@example.com`, `admin@example.com` (admins), `member1@example.com`, `member2@example.com`, `joinrequest-pending@example.com`, `nonmember@example.com`.
 
 ## Drive it (agent path)
 
@@ -82,20 +82,20 @@ EOF
 tail -3 /tmp/servicestart/juno-requests.log
 ```
 
-| command                         | what it does                                                                                                              |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `login <email> [origin]`        | Fresh browser context, signs in with `password123`, waits out the post-login redirect. Origin defaults to localhost:3000. |
-| `anon [origin]`                 | Fresh signed-out context.                                                                                                 |
-| `viewport <width> <height>`     | Resize the page, e.g. `viewport 390 844` for a phone.                                                                     |
-| `nav <path or url>`             | Go to a page (paths are relative to the current origin) and wait for network idle.                                        |
-| `click` / `hover` / `wait-for`  | Act on the first match of a Playwright selector. Quote selectors that contain spaces.                                     |
-| `fill <selector> <text>`        | Fill an input; the rest of the line is the value.                                                                         |
-| `press <key>` / `wait <ms>`     | Keyboard press / fixed pause.                                                                                             |
-| `text <sel>` / `count <sel>`    | Print innerText / number of matches (`count` does not wait).                                                              |
-| `shot <name> [full]`            | Screenshot (full page with `full`).                                                                                       |
-| `api <METHOD> <path> [json]`    | `fetch` from the page with the user's cookies; prints status and body. Use this for the shift API, which has no UI yet.   |
-| `eval <js>` / `set <name> <js>` | Evaluate an expression in the page (promises are awaited); `set` stores the result for `{{name}}` in later lines.         |
-| `url` / `errors` / `quit`       | Current URL / console errors and 5xx responses since the last `errors` or `login` / stop.                                 |
+| command                         | what it does                                                                                                                        |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `login <email> [origin]`        | Fresh browser context, signs in with `password123`, waits out the post-login redirect. Origin defaults to servicestart.lvh.me:3000. |
+| `anon [origin]`                 | Fresh signed-out context.                                                                                                           |
+| `viewport <width> <height>`     | Resize the page, e.g. `viewport 390 844` for a phone.                                                                               |
+| `nav <path or url>`             | Go to a page (paths are relative to the current origin) and wait for network idle.                                                  |
+| `click` / `hover` / `wait-for`  | Act on the first match of a Playwright selector. Quote selectors that contain spaces.                                               |
+| `fill <selector> <text>`        | Fill an input; the rest of the line is the value.                                                                                   |
+| `press <key>` / `wait <ms>`     | Keyboard press / fixed pause.                                                                                                       |
+| `text <sel>` / `count <sel>`    | Print innerText / number of matches (`count` does not wait).                                                                        |
+| `shot <name> [full]`            | Screenshot (full page with `full`).                                                                                                 |
+| `api <METHOD> <path> [json]`    | `fetch` from the page with the user's cookies; prints status and body. Use this for the shift API, which has no UI yet.             |
+| `eval <js>` / `set <name> <js>` | Evaluate an expression in the page (promises are awaited); `set` stores the result for `{{name}}` in later lines.                   |
+| `url` / `errors` / `quit`       | Current URL / console errors and 5xx responses since the last `errors` or `login` / stop.                                           |
 
 ## Test
 
@@ -122,7 +122,8 @@ With Docker Desktop, the README's `pnpm dev` (Juno + database containers + `next
 
 ## Gotchas
 
-- **Playwright's automation flag makes the app skip the active org.** `core/tenant/hooks/useActiveOrganization.ts` skips `organization.setActive` when `navigator.webdriver` is true on localhost (an escape hatch for the e2e suite). Plain Playwright then gets `activeOrganizationId: null`, the bell shows nothing, and `/api/notifications/*` returns `400 No active organization`. The driver launches Chromium with `--disable-blink-features=AutomationControlled` so it behaves like a real browser.
+- **`localhost:3000` belongs to no organization.** Since #335 only a tenant host selects an org for a signed-out visitor, so sign-in on localhost fails with `404 Organization not found` (the page says "Couldn't log in"). Use `servicestart.lvh.me:3000` or another tenant host. `setup.sh` still polls `localhost:3000/login`, which renders without an org.
+- **The first request to a route compiles it.** Under `next dev` the first `/` and `/api/...` requests take 10–40s. `proxy.ts` gives its organization lookup 5s, so a cold `/login` on a tenant host can show "Organization lookup is unavailable"; request `/api/organizationConfig?organizationSlug=servicestart&keys=tagline` once to warm it, then retry.
 - **The sandbox's HTTPS proxy intercepts `*.lvh.me`.** The dev server's hot-reload websocket then gets 403, the page keeps reloading and filled forms reset. The driver passes `--no-proxy-server` and maps `*.lvh.me` to 127.0.0.1. External images (placehold.co covers in the seed) fail to load; ignore them.
 - **Other seeded orgs live on subdomains.** Use `login member1@example.com http://vertical-icon.lvh.me:3000` (also `horizontal-left`, `horizontal-center`). Each org has its own accounts under the same emails. `core/auth/auth.ts` trusts `*.<tenant domain>` and, outside production, `*.lvh.me`; without that, `set-active` fails with `403 INVALID_ORIGIN` and the session has no active org.
 - **Unknown-tenant hosts don't hydrate under `next dev`.** For a host with no org (e.g. `nosuchorg.lvh.me`), the hot-reload websocket upgrade hangs and the page stays as server-rendered HTML, so the "Organization not found" screen never appears. The e2e spec `tests/e2e/auth-tenant-origin.spec.ts` covers it against `pnpm run build && pnpm run start` (see `playwright.config.ts`). My one `pnpm build` attempt here ended with the container restarting (exit 137).
@@ -137,7 +138,7 @@ With Docker Desktop, the README's `pnpm dev` (Juno + database containers + `next
 ## Troubleshooting
 
 - **`failed to connect to the docker API at unix:///var/run/docker.sock`**: no Docker daemon in the container. Use `setup.sh` (native Postgres) instead of `pnpm run db:create` / `pnpm dev`.
-- **`400 No active organization` from `/api/notifications/unreadCount`**: the session has no active org, usually because the browser has `navigator.webdriver` set (see Gotchas). Use the driver.
+- **`400 No active organization` from `/api/notifications/unreadCount`**: the session has no active org. Sign in on a tenant host (see Gotchas), with the driver.
 - **`WebSocket connection to 'ws://<tenant>.lvh.me:3000/_next/webpack-hmr' failed … 403`** and forms emptying themselves: Chromium is going through the proxy. Launch with `--no-proxy-server`.
 - **`500` on `POST /api/emails` with `JUNO_API_KEY is required` in `dev.log`**: `.env` has no Juno key. `setup.sh` writes `JUNO_API_KEY=local-stub-key` only when it creates `.env`, so add it by hand and restart the dev server.
 - **`pg_lsclusters` shows `down`** (e.g. after a container restart): re-run `setup.sh`.

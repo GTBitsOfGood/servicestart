@@ -2,11 +2,12 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import db from "@/core/db";
 import {
   FormStatus,
+  formResponseDrafts,
   formSubmissions,
   forms,
-  type MemberType,
   type SubmissionReviewStatus,
 } from "@/core/db/schema";
+import type { MemberTypeKey } from "@/features/membership";
 import { getAssignedMemberTypes, getDueAt } from "@/features/forms/lib/schema";
 import {
   getFormAvailability,
@@ -37,6 +38,10 @@ export type MemberFormProgress = {
     updatedAt: Date | null;
     reviewStatus: SubmissionReviewStatus;
   } | null;
+  /** Their saved, unsubmitted answers, or null if they haven't started. */
+  draft: {
+    updatedAt: Date;
+  } | null;
 };
 
 function byDueDateThenTitle(a: MemberFormProgress, b: MemberFormProgress) {
@@ -55,10 +60,10 @@ function byDueDateThenTitle(a: MemberFormProgress, b: MemberFormProgress) {
 async function listForMember(
   organizationId: string,
   userId: string,
-  memberType: MemberType | null,
+  memberType: MemberTypeKey | null,
   now = new Date(),
 ): Promise<MemberFormProgress[]> {
-  const [formRows, submissionRows] = await Promise.all([
+  const [formRows, submissionRows, draftRows] = await Promise.all([
     db
       .select({
         id: forms.id,
@@ -91,6 +96,18 @@ async function listForMember(
         ),
       )
       .orderBy(desc(formSubmissions.submittedAt), desc(formSubmissions.id)),
+    db
+      .select({
+        formId: formResponseDrafts.formId,
+        updatedAt: formResponseDrafts.updatedAt,
+      })
+      .from(formResponseDrafts)
+      .where(
+        and(
+          eq(formResponseDrafts.organizationId, organizationId),
+          eq(formResponseDrafts.userId, userId),
+        ),
+      ),
   ]);
 
   // Rows are newest first, so the first one per form is the latest.
@@ -98,6 +115,7 @@ async function listForMember(
   for (const row of submissionRows) {
     if (!latest.has(row.formId)) latest.set(row.formId, row);
   }
+  const drafts = new Map(draftRows.map((row) => [row.formId, row]));
 
   return formRows
     .flatMap((form): MemberFormProgress[] => {
@@ -105,7 +123,8 @@ async function listForMember(
         memberType !== null &&
         getAssignedMemberTypes(form.settings).includes(memberType);
       const submission = latest.get(form.id) ?? null;
-      if (!required && !submission) return [];
+      const draft = drafts.get(form.id) ?? null;
+      if (!required && !submission && !draft) return [];
       return [
         {
           form: {
@@ -126,6 +145,7 @@ async function listForMember(
             updatedAt: submission.updatedAt,
             reviewStatus: submission.reviewStatus,
           },
+          draft: draft && { updatedAt: draft.updatedAt },
         },
       ];
     })

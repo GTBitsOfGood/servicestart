@@ -224,8 +224,8 @@ describe("POST /api/forms/:formId/submissions", () => {
   });
 
   it("returns 404 for a missing form or a malformed form ID", async () => {
-    await createOrg("acme");
-    const { cookie } = await signIn();
+    const org = await createOrg("acme");
+    const { cookie } = await signIn(org.id);
 
     expect((await submit("acme", "missing", {}, cookie)).status).toBe(404);
     expect((await submit("acme", "Not_A_Form", {}, cookie)).status).toBe(404);
@@ -465,7 +465,7 @@ describe("POST /api/forms/:formId/submissions", () => {
     });
   });
 
-  it("returns 404 for org A's form from org B's host", async () => {
+  it("returns 404 for org A's form from org B's host without a session", async () => {
     const orgA = await createOrg("org-a");
     await createOrg("org-b");
     const form = await publishedForm(orgA.id, { requireLogin: false });
@@ -686,7 +686,7 @@ describe("POST /api/forms/:formId/uploads", () => {
     expect((await upload("acme", form.formId, png(), cookie)).status).toBe(400);
   });
 
-  it("returns 404 for org A's form from org B's host", async () => {
+  it("returns 404 for org A's form from org B's host without a session", async () => {
     const orgA = await createOrg("org-a");
     await createOrg("org-b");
     const form = await publishedForm(orgA.id, { requireLogin: false });
@@ -924,13 +924,13 @@ describe("PUT /api/forms/:formId/submissions/mine", () => {
     });
   });
 
-  it("returns 404 for org A's form from org B's host", async () => {
+  it("returns 403 for a host that conflicts with the active organization", async () => {
     const { form, answers, cookie } = await submitted();
     await createOrg("org-b");
 
     const res = await edit("org-b", form.formId, answers, cookie);
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(403);
     const [submission] = await db.select().from(formSubmissions);
     expect(submission.updatedAt).toBeNull();
   });

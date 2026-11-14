@@ -11,7 +11,7 @@ import {
 } from "@/core/auth/components/AcceptInvitationActions";
 import { AUTH_PRIMARY_LINK_CLASS } from "@/core/auth/components/authStyles";
 import { auth } from "@/core/auth/auth";
-import { findOrganizationByRequestHost } from "@/core/tenant/organizationFromHost";
+import { resolveOrganization } from "@/core/tenant/resolveOrganization";
 import {
   InvitationService,
   type Invitation,
@@ -46,9 +46,8 @@ export default async function AcceptInvitationPage({
 }) {
   const { id: invitationId } = await params;
   const requestHeaders = await headers();
-  const organization = await findOrganizationByRequestHost(
-    requestHeaders.get("host"),
-  );
+  const session = await auth.api.getSession({ headers: requestHeaders });
+  const organization = await resolveOrganization(requestHeaders, session);
   if (!organization) notFound();
 
   const invitation = await InvitationService.findByIdAndOrganization(
@@ -57,7 +56,6 @@ export default async function AcceptInvitationPage({
   );
   if (!invitation) notFound();
 
-  const session = await auth.api.getSession({ headers: requestHeaders });
   const signedInUser = session?.user;
   const isInvitee =
     signedInUser !== undefined &&

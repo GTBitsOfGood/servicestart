@@ -23,13 +23,10 @@ export type DashboardHeaderContent = z.infer<
   typeof DashboardHeaderContentSchema
 >;
 
-export const DashboardHeaderConfigSchema = z.strictObject({
-  default: DashboardHeaderContentSchema.optional(),
-  admin: DashboardHeaderContentSchema.optional(),
-  member: DashboardHeaderContentSchema.optional(),
-  applicant: DashboardHeaderContentSchema.optional(),
-  attendee: DashboardHeaderContentSchema.optional(),
-});
+export const DashboardHeaderConfigSchema = z.record(
+  z.string(),
+  DashboardHeaderContentSchema.optional(),
+);
 export type DashboardHeaderConfig = z.infer<typeof DashboardHeaderConfigSchema>;
 
 /** With no config, every audience gets today's built-in heading. */

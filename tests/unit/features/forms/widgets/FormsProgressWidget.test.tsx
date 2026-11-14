@@ -4,6 +4,7 @@ import FormsProgressWidget, {
   FormsProgressView,
 } from "@/features/forms/widgets/FormsProgressWidget";
 import type { WidgetProps } from "@/features/dashboard/widgets";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 
 const { mockLoadFormProgress } = vi.hoisted(() => ({
   mockLoadFormProgress: vi.fn(),
@@ -16,7 +17,7 @@ vi.mock("@/features/forms/widgets/formProgress", () => ({
 const widgetProps: WidgetProps = {
   organizationId: "org-1",
   userId: "user-1",
-  audience: "attendee",
+  audience: MemberTypeKeySchema.parse("attendee"),
 };
 
 afterEach(() => {

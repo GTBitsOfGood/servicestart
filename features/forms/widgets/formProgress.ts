@@ -25,6 +25,7 @@ export type FormTodoCard = {
   title: string;
   dueAt: string | null;
   pastDue: boolean;
+  draftUpdatedAt: Date | null;
   action: FormTodoAction;
 };
 
@@ -77,6 +78,7 @@ function mapTodo(row: MemberFormProgress, now: Date): FormTodoCard {
     title: form.title,
     dueAt: form.dueAt,
     pastDue,
+    draftUpdatedAt: row.draft?.updatedAt ?? null,
     action: todoAction(form),
   };
 }
@@ -113,13 +115,23 @@ export function summarizeFormProgress(
     if (row.submission) {
       completed.push(mapCompleted(row));
     }
+
     if (row.required) {
       gaugeTotal += 1;
       if (row.submission) {
         gaugeDone += 1;
-      } else {
-        todo.push(mapTodo(row, now));
       }
+    }
+
+    // Required forms always belong in To-Do until submitted. Optional forms
+    // join To-Do only after the member has started a draft, so that draft is
+    // still discoverable without changing the required-form progress count.
+    // A closed optional form's card would offer nothing to do, so it leaves
+    // To-Do; the draft is kept, and the card returns if the form reopens.
+    const startedOptional =
+      row.draft !== null && row.form.availability !== "closed";
+    if (!row.submission && (row.required || startedOptional)) {
+      todo.push(mapTodo(row, now));
     }
   }
 

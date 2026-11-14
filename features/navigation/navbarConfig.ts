@@ -19,11 +19,17 @@ export type NavbarAudienceConfig = z.infer<typeof NavbarAudienceConfigSchema>;
  * How the navbar differs per audience (#318). Admins always get the full
  * admin navbar. Hiding an item only hides it; it doesn't restrict the page.
  */
-export const NavbarConfigSchema = z.strictObject({
-  member: NavbarAudienceConfigSchema.optional(),
-  applicant: NavbarAudienceConfigSchema.optional(),
-  attendee: NavbarAudienceConfigSchema.optional(),
-});
+export const NavbarConfigSchema = z
+  .record(z.string(), NavbarAudienceConfigSchema)
+  .superRefine((record, ctx) => {
+    if (Object.hasOwn(record, "admin")) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Admin audience cannot be configured in the navbar",
+        path: ["admin"],
+      });
+    }
+  });
 export type NavbarConfig = z.infer<typeof NavbarConfigSchema>;
 
 export const DEFAULT_NAVBAR_CONFIG: NavbarConfig = {};

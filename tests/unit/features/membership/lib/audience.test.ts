@@ -5,31 +5,24 @@ import {
   memberTypeFromAudience,
 } from "@/features/membership/lib/audience";
 import { getWidgetOptions } from "@/features/dashboard/widgets";
-import { MemberType, OrganizationConfigKey } from "@/core/db/schema";
+import { OrganizationConfigKey } from "@/core/db/schema";
+import type { MemberTypeKey } from "@/features/membership/lib/memberTypeKey";
+
+const volunteer = "volunteer" as MemberTypeKey;
+const staff = "staff" as MemberTypeKey;
+const board = "board" as MemberTypeKey;
 
 describe("getDashboardAudience", () => {
   it.each([
-    ["an owner", "owner", MemberType.Applicant, true, "admin"],
+    ["an owner", "owner", volunteer, true, "admin"],
     ["an admin", "admin", null, true, "admin"],
-    ["an applicant", "member", MemberType.Applicant, true, "applicant"],
-    ["an attendee", "member", MemberType.Attendee, true, "attendee"],
+    ["a volunteer", "member", volunteer, true, volunteer],
+    ["staff", "member", staff, true, staff],
+    ["board", "member", board, true, board],
     ["an untyped member", "member", null, true, "member"],
-    [
-      "an applicant while types are off",
-      "member",
-      MemberType.Applicant,
-      false,
-      "member",
-    ],
-    [
-      "an attendee while types are off",
-      "member",
-      MemberType.Attendee,
-      false,
-      "member",
-    ],
+    ["a volunteer while types are off", "member", volunteer, false, "member"],
   ] as const)(
-    "puts %s in the %s audience",
+    "puts %s in the expected audience",
     (_, role, memberType, enabled, expected) => {
       expect(getDashboardAudience({ role, memberType }, enabled)).toBe(
         expected,
@@ -66,8 +59,7 @@ describe("getWidgetOptions", () => {
 
 describe("memberTypeFromAudience", () => {
   it.each([
-    ["applicant", MemberType.Applicant],
-    ["attendee", MemberType.Attendee],
+    [volunteer, volunteer],
     ["member", null],
     ["admin", null],
   ] as const)("maps %s to %s", (audience, memberType) => {

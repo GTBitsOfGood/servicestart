@@ -7,8 +7,12 @@ import { AuthFieldError } from "@/core/auth/authValidation";
 import { buildTestUser, signUpAndGetSession } from "../unit/testUtils";
 import { ensureServicestartOrganization } from "./testUtils";
 
+const tenantBaseUrl = new URL(process.env.BASE_URL ?? "http://localhost:3000");
+tenantBaseUrl.hostname = "servicestart.lvh.me";
+test.use({ baseURL: tenantBaseUrl.href });
+
 test.describe("Auth pages", () => {
-  // localhost resolves to the `servicestart` tenant.
+  // Anonymous auth flows select their organization through a tenant host.
   test.beforeAll(async () => {
     await ensureServicestartOrganization();
   });
