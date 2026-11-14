@@ -140,7 +140,7 @@ describe("central API access", () => {
   it.each([false, true])(
     "member forms access is independent of reverse mount order: %s",
     async (reverse) => {
-      const { org, user, headers } = await caller("member");
+      const { org, headers } = await caller("member");
       await createForm(org.id, {
         formId: "application",
         status: FormStatus.Published,
@@ -150,14 +150,22 @@ describe("central API access", () => {
       const memberApps = new Hono()
         .route("/", formQuestions)
         .route("/", formSubmissions)
-        .route("/", drafts)
-        // #338 will supply the draft handlers. This verifies that its member guard
-        // reaches a handler without an unrelated forms admin guard intercepting.
-        .get("/application/draft", (c) => c.json({ userId: user.id }));
+        .route("/", drafts);
       const root = new Hono().onError(handleError);
       const router = reverse
         ? root.route("/api/forms", forms).route("/api/forms", memberApps)
         : root.route("/api/forms", memberApps).route("/api/forms", forms);
+      // The member reaches the draft handlers (#338) without the forms admin
+      // guard intercepting.
+      expect(
+        (
+          await router.request("/api/forms/application/draft", {
+            method: "PUT",
+            headers: { ...headers, "content-type": "application/json" },
+            body: JSON.stringify({ answers: {} }),
+          })
+        ).status,
+      ).toBe(200);
       expect(
         (await router.request("/api/forms/application/draft", { headers }))
           .status,
