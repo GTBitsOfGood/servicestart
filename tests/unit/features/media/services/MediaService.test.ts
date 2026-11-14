@@ -80,6 +80,18 @@ describe("MediaService", () => {
   });
 
   describe("findById", () => {
+    it("returns null for another organization's media", async () => {
+      const org = await createOrganization("media-find-own");
+      const other = await createOrganization("media-find-other");
+      const record = await MediaService.create({
+        organizationId: org.id,
+        title: "Private",
+        fileName: "private.jpg",
+        type: "image",
+        altText: "",
+      });
+      expect(await MediaService.findById(record.id, other.id)).toBeNull();
+    });
     it("returns the media record when it exists", async () => {
       const org = await createOrganization("media-find");
       const input = {
@@ -91,7 +103,7 @@ describe("MediaService", () => {
       };
       const created = await MediaService.create(input);
 
-      const found = await MediaService.findById(created!.id);
+      const found = await MediaService.findById(created!.id, org.id);
 
       expect(found).toBeDefined();
       expect(found?.id).toBe(created!.id);
@@ -99,7 +111,8 @@ describe("MediaService", () => {
     });
 
     it("returns null when media does not exist", async () => {
-      const found = await MediaService.findById("nonexistent-id");
+      const org = await createOrganization("media-find-missing");
+      const found = await MediaService.findById("nonexistent-id", org.id);
       expect(found).toBeNull();
     });
   });
@@ -185,7 +198,7 @@ describe("MediaService", () => {
       expect(deleted).toBeDefined();
       expect(deleted?.id).toBe(created!.id);
 
-      const found = await MediaService.findById(created!.id);
+      const found = await MediaService.findById(created!.id, org.id);
       expect(found).toBeNull();
     });
 
@@ -204,7 +217,7 @@ describe("MediaService", () => {
 
       expect(deleted).toBeNull();
 
-      const found = await MediaService.findById(created!.id);
+      const found = await MediaService.findById(created!.id, org.id);
       expect(found).toBeDefined();
     });
   });

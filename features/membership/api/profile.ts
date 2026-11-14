@@ -1,3 +1,4 @@
+import { BadRequestError, InternalServerError } from "@/core/api/errors";
 import { Hono } from "hono";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -26,23 +27,19 @@ const app = new Hono().post("/picture", async (c) => {
   const file = body["file"];
 
   if (!file || typeof file === "string") {
-    return c.json(
-      {
-        error: "File is required. Send multipart/form-data with a 'file' field",
-      },
-      { status: 400 },
+    throw new BadRequestError(
+      "File is required. Send multipart/form-data with a 'file' field",
     );
   }
 
   if (!file.type.startsWith("image/") || BLOCKED_IMAGE_TYPES.has(file.type)) {
-    return c.json(
-      { error: "Only raster image uploads are supported right now" },
-      { status: 400 },
+    throw new BadRequestError(
+      "Only raster image uploads are supported right now",
     );
   }
 
   if (file.size > MAX_IMAGE_SIZE_BYTES) {
-    return c.json({ error: "Image must be 10 MB or smaller" }, { status: 400 });
+    throw new BadRequestError("Image must be 10 MB or smaller");
   }
 
   const fileName = buildStoredFileName(file.name ?? `pfp-${Date.now()}`);
@@ -61,7 +58,7 @@ const app = new Hono().post("/picture", async (c) => {
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Failed to upload file";
-    return c.json({ error: message }, { status: 500 });
+    throw new InternalServerError(message);
   }
 });
 
