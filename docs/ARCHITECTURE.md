@@ -109,6 +109,10 @@ concealed 404 response. Server pages resolve the host first and authorize
 membership in that organization. The browser synchronizes only tenant hosts;
 on default hosts it leaves the active organization alone.
 
+HTTP exceptions use the root API's JSON `{ error: message }` renderer. Unexpected
+errors are logged and return a generic 500. Feature-specific adapters retain
+structured validation and business-error details.
+
 ### Routes
 
 `features/app.ts` is the only Hono root. `app/api/[[...route]]/route.ts` serves it, and the typed RPC client and the tests call it. Add a sub-app to its `.route()` chain, which is what types the RPC client.

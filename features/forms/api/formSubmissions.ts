@@ -1,3 +1,11 @@
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  InternalServerError,
+  NotFoundError,
+  UnauthorizedError,
+} from "@/core/api/errors";
 import { randomUUID } from "node:crypto";
 import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
@@ -10,11 +18,8 @@ import {
   resolveOrganization,
   assertOrganizationMatchesHost,
 } from "@/core/tenant/resolveOrganization";
-import {
-  ForbiddenError,
-  NotFoundError,
-  UnauthorizedError,
-} from "@/core/api/errors";
+import { assertFeatureEnabled } from "@/core/auth/featureGuards";
+
 import {
   FORM_UPLOAD_CONTENT_TYPES,
   FORM_UPLOAD_MAX_BYTES,
@@ -39,7 +44,6 @@ import {
   SubmissionNotEditableError,
 } from "@/features/forms/services/FormSubmissionService";
 import { MembersService } from "@/features/membership/server";
-import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 
 const FORM_NOT_FOUND = "Form not found";
 const TOO_LARGE = "Images must be 5 MB or smaller";
@@ -105,12 +109,11 @@ const requireFormsOrganization = createMiddleware<{
   }
   const organization = await resolveOrganization(c, session);
   if (!organization) throw new NotFoundError(FORM_NOT_FOUND);
-  const config = await OrganizationConfigService.getConfig(organization.id, [
+  await assertFeatureEnabled(
+    organization.id,
     OrganizationConfigKey.FormsEnabled,
-  ]);
-  if (!config[OrganizationConfigKey.FormsEnabled]) {
-    throw new NotFoundError(FORM_NOT_FOUND);
-  }
+    FORM_NOT_FOUND,
+  );
   c.set("organizationId", organization.id);
   await next();
 });
@@ -168,8 +171,8 @@ const submissionJsonValidator = zValidator(
 const app = new Hono()
   .post(
     "/:formId/submissions",
-    zValidator("param", paramSchema, (result, c) => {
-      if (!result.success) return c.json({ error: FORM_NOT_FOUND }, 404);
+    zValidator("param", paramSchema, (result) => {
+      if (!result.success) throw new NotFoundError(FORM_NOT_FOUND);
     }),
     requireFormsOrganization,
     submissionJsonValidator,
@@ -211,7 +214,7 @@ const app = new Hono()
         );
       } catch (err) {
         if (err instanceof DuplicateSubmissionError) {
-          return c.json({ error: ALREADY_SUBMITTED }, 409);
+          throw new ConflictError(ALREADY_SUBMITTED);
         }
         if (err instanceof InvalidUploadError) {
           const message = "Upload this image again";
@@ -224,8 +227,8 @@ const app = new Hono()
   )
   .put(
     "/:formId/submissions/mine",
-    zValidator("param", paramSchema, (result, c) => {
-      if (!result.success) return c.json({ error: FORM_NOT_FOUND }, 404);
+    zValidator("param", paramSchema, (result) => {
+      if (!result.success) throw new NotFoundError(FORM_NOT_FOUND);
     }),
     requireFormsOrganization,
     submissionJsonValidator,
@@ -262,7 +265,7 @@ const app = new Hono()
           userId: session.user.id,
           answers: parsed.data,
         });
-        if (!id) return c.json({ error: NO_SUBMISSION }, 404);
+        if (!id) throw new NotFoundError(NO_SUBMISSION);
         return c.json(
           { id, confirmationMessage: form.settings.confirmationMessage },
           200,
@@ -282,8 +285,8 @@ const app = new Hono()
   )
   .post(
     "/:formId/uploads",
-    zValidator("param", paramSchema, (result, c) => {
-      if (!result.success) return c.json({ error: FORM_NOT_FOUND }, 404);
+    zValidator("param", paramSchema, (result) => {
+      if (!result.success) throw new NotFoundError(FORM_NOT_FOUND);
     }),
     requireFormsOrganization,
     // Stops reading oversized bodies early; the room is for multipart fields.
@@ -309,7 +312,7 @@ const app = new Hono()
       if (
         !form.components.some(({ type }) => type === FormComponentType.Image)
       ) {
-        return c.json({ error: "This form doesn't take images" }, 400);
+        throw new BadRequestError("This form doesn't take images");
       }
       const userId = await getRespondentId(
         c,
@@ -325,13 +328,13 @@ const app = new Hono()
           userId,
         })) === false
       ) {
-        return c.json({ error: ALREADY_SUBMITTED }, 409);
+        throw new ConflictError(ALREADY_SUBMITTED);
       }
 
       const { file } = c.req.valid("form");
       const contentType = file.type as FormUploadContentType;
       if (!(await matchesImageType(file, contentType))) {
-        return c.json({ error: WRONG_TYPE }, 400);
+        throw new BadRequestError(WRONG_TYPE);
       }
 
       // Headshots never get media rows, so they stay out of the media library.
@@ -349,7 +352,7 @@ const app = new Hono()
         await FileService.upload({ organizationId, fileName }, file);
       } catch {
         await FormSubmissionService.deleteUpload(id, organizationId);
-        return c.json({ error: "Couldn't save the image. Try again." }, 500);
+        throw new InternalServerError("Couldn't save the image. Try again.");
       }
       return c.json({ id }, 201);
     },
@@ -361,8 +364,8 @@ const app = new Hono()
     zValidator(
       "param",
       paramSchema.extend({ uploadId: z.uuid() }),
-      (result, c) => {
-        if (!result.success) return c.json({ error: FILE_NOT_FOUND }, 404);
+      (result) => {
+        if (!result.success) throw new NotFoundError(FILE_NOT_FOUND);
       },
     ),
     requireFormsOrganization,
@@ -378,13 +381,13 @@ const app = new Hono()
             session.user.id,
           )
         : null;
-      if (!upload) return c.json({ error: FILE_NOT_FOUND }, 404);
+      if (!upload) throw new NotFoundError(FILE_NOT_FOUND);
 
       let buffer: Buffer;
       try {
         buffer = await FileService.readFile(organizationId, upload.fileName);
       } catch {
-        return c.json({ error: FILE_NOT_FOUND }, 404);
+        throw new NotFoundError(FILE_NOT_FOUND);
       }
       return new Response(new Uint8Array(buffer), {
         headers: {
