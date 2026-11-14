@@ -51,4 +51,22 @@ describe("memberTypeChoices", () => {
       "Lead (lead-2)",
     ]);
   });
+
+  it("keeps options distinct when another type is labeled like a suffixed one", () => {
+    const choices = memberTypeChoices({
+      types: [
+        { key: key("lead"), text: "Lead" },
+        { key: key("lead-2"), text: "Lead" },
+        { key: key("lead-lead"), text: "Lead (lead)" },
+      ],
+      builtIns: [],
+    });
+
+    expect(choices).toEqual([
+      { option: "Lead (lead) 2", value: key("lead") },
+      { option: "Lead (lead-2)", value: key("lead-2") },
+      { option: "Lead (lead)", value: key("lead-lead") },
+    ]);
+    expect(new Set(choices.map((choice) => choice.option)).size).toBe(3);
+  });
 });

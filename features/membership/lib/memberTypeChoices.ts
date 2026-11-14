@@ -7,7 +7,9 @@ export type MemberTypeChoice = {
 
 /**
  * Choices for a dropdown that identifies options by their text. A type whose
- * text matches any other option, built-in or reserved, gets its key appended.
+ * text matches any other option, built-in or reserved, gets its key appended,
+ * and then a number if that text is taken too (another type can be labeled
+ * "Lead (lead)"), so every option's text is distinct.
  */
 export function memberTypeChoices({
   types,
@@ -26,11 +28,21 @@ export function memberTypeChoices({
   ]) {
     counts.set(text, (counts.get(text) ?? 0) + 1);
   }
+  const isUnique = (text: string) => counts.get(text) === 1;
+  // Texts already shown as they are: unique type labels, built-ins, reserved.
+  const taken = new Set<string>([
+    ...reserved,
+    ...builtIns.map((choice) => choice.option),
+    ...types.map((type) => type.text).filter(isUnique),
+  ]);
   return [
     ...builtIns,
-    ...types.map(({ key, text }) => ({
-      option: (counts.get(text) ?? 0) > 1 ? `${text} (${key})` : text,
-      value: key,
-    })),
+    ...types.map(({ key, text }) => {
+      if (isUnique(text)) return { option: text, value: key };
+      let option = `${text} (${key})`;
+      for (let n = 2; taken.has(option); n++) option = `${text} (${key}) ${n}`;
+      taken.add(option);
+      return { option, value: key };
+    }),
   ];
 }
