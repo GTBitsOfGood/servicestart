@@ -1,3 +1,4 @@
+import { getTenantOrigin } from "@/core/tenant/urls";
 import { juno } from "@/core/files/junoClient";
 import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
@@ -145,7 +146,10 @@ async function sendInvitationEmail({
   }
 
   const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
-  const acceptUrl = `${getBaseUrl()}/accept-invitation/${id}`;
+  const acceptUrl = new URL(
+    `/accept-invitation/${encodeURIComponent(id)}`,
+    getTenantOrigin(organization.slug, getBaseUrl()),
+  ).href;
 
   await juno.email.sendEmail({
     recipients: [{ email }],

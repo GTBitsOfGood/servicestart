@@ -1,5 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
+import { ensureServicestartOrganization } from "./testUtils";
 import { OrganizationConfigKey } from "@/core/db/schema";
+
+const tenantBaseUrl = new URL(process.env.BASE_URL ?? "http://localhost:3000");
+tenantBaseUrl.hostname = "servicestart.lvh.me";
+test.use({ baseURL: tenantBaseUrl.href });
 
 const unauthenticatedPages = [
   "/login",
@@ -85,6 +90,9 @@ async function expectLoadedLogo(page: Page, src: string) {
 }
 
 test.describe("Unauthenticated organization branding", () => {
+  test.beforeAll(async () => {
+    await ensureServicestartOrganization();
+  });
   for (const path of unauthenticatedPages) {
     test(`loads the configured logo while signed out on ${path}`, async ({
       page,

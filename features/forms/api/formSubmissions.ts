@@ -6,7 +6,10 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { auth } from "@/core/auth/auth";
 import { requireAuth } from "@/core/auth/authUtils";
-import { getSlugFromHost } from "@/core/tenant/clientAuthUtils";
+import {
+  resolveOrganization,
+  assertOrganizationMatchesHost,
+} from "@/core/tenant/resolveOrganization";
 import {
   ForbiddenError,
   NotFoundError,
@@ -37,7 +40,6 @@ import {
 } from "@/features/forms/services/FormSubmissionService";
 import { MembersService } from "@/features/membership/server";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import { OrganizationsService } from "@/core/tenant/OrganizationService";
 
 const FORM_NOT_FOUND = "Form not found";
 const TOO_LARGE = "Images must be 5 MB or smaller";
@@ -88,9 +90,20 @@ async function matchesImageType(file: File, type: FormUploadContentType) {
 const requireFormsOrganization = createMiddleware<{
   Variables: { organizationId: string };
 }>(async (c, next) => {
-  const organization = await OrganizationsService.findBySlug(
-    getSlugFromHost(c.req.header("host")),
-  );
+  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (session) {
+    try {
+      await assertOrganizationMatchesHost(c, session);
+    } catch (error) {
+      if (
+        c.req.path.includes("/my-uploads/") &&
+        error instanceof ForbiddenError
+      )
+        throw new NotFoundError(FILE_NOT_FOUND);
+      throw error;
+    }
+  }
+  const organization = await resolveOrganization(c, session);
   if (!organization) throw new NotFoundError(FORM_NOT_FOUND);
   const config = await OrganizationConfigService.getConfig(organization.id, [
     OrganizationConfigKey.FormsEnabled,

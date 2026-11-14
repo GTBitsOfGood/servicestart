@@ -5,6 +5,8 @@ import { OrganizationConfigKey } from "@/core/db/schema";
 import useOrganizationConfig from "@/core/config/hooks/useOrganizationConfig";
 import { DEFAULT_BRANDING, resolveBranding } from "@/core/config/branding";
 
+const mockGetSlugFromHost = vi.fn<() => string | null>();
+const mockActiveOrganization = vi.fn();
 const mockSetActive = vi.fn();
 const mockUseSession = vi.fn();
 
@@ -21,11 +23,11 @@ vi.mock("@/core/auth/authClient", () => ({
 }));
 
 vi.mock("@/core/tenant/hooks/useActiveOrganization", () => ({
-  useActiveOrganization: () => ({ organization: { data: null } }),
+  useActiveOrganization: () => mockActiveOrganization(),
 }));
 
 vi.mock("@/core/tenant/clientAuthUtils", () => ({
-  getSlugFromHost: () => "acme",
+  getSlugFromHost: () => mockGetSlugFromHost(),
 }));
 
 const mockGet = vi.fn();
@@ -43,6 +45,8 @@ describe("useOrganizationConfig", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSlugFromHost.mockReturnValue("acme");
+    mockActiveOrganization.mockReturnValue({ organization: { data: null } });
     window.localStorage.clear();
     delete process.env.NEXT_PUBLIC_ORG_CONFIG_CACHE_DISABLED;
     Object.defineProperty(window, "location", {
@@ -373,6 +377,41 @@ describe("useOrganizationConfig", () => {
       [OrganizationConfigKey.PrimaryColor]: "#000000",
       [OrganizationConfigKey.SecondaryColor]:
         DEFAULT_BRANDING[OrganizationConfigKey.SecondaryColor],
+    });
+  });
+  it("uses platform defaults without reading cached config or fetching on an anonymous default host", async () => {
+    mockGetSlugFromHost.mockReturnValue(null);
+    window.localStorage.setItem(
+      "org-config:v2:unknown:description",
+      JSON.stringify({ timestamp: Date.now(), value: "Stale organization" }),
+    );
+    const { result } = renderHook(() =>
+      useOrganizationConfig([OrganizationConfigKey.Description]),
+    );
+    await waitFor(() => expect(result.current.status).toBe("ok"));
+    expect(result.current[OrganizationConfigKey.Description]).toBeUndefined();
+    expect(mockGet).not.toHaveBeenCalled();
+  });
+
+  it("uses the tenant host ahead of stale active organization data", async () => {
+    mockActiveOrganization.mockReturnValue({
+      organization: { data: { slug: "other" } },
+    });
+    mockGet.mockResolvedValue({
+      ok: true,
+      json: async () => ({ description: "Host organization" }),
+    });
+    const { result } = renderHook(() =>
+      useOrganizationConfig([OrganizationConfigKey.Description]),
+    );
+    await waitFor(() =>
+      expect(result.current.description).toBe("Host organization"),
+    );
+    expect(mockGet).toHaveBeenCalledWith({
+      query: {
+        keys: [OrganizationConfigKey.Description],
+        organizationSlug: "acme",
+      },
     });
   });
 });

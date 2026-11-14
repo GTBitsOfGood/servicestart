@@ -186,7 +186,7 @@ test.describe("Members Page", () => {
     ).toBeVisible();
   });
 
-  test("redirects to / when members_page_enabled is false", async ({
+  test("returns not found when members_page_enabled is false", async ({
     page,
   }) => {
     const { org } = await createTestAdminAndSignIn(page);
@@ -197,8 +197,11 @@ test.describe("Members Page", () => {
       "false",
     );
 
-    await page.goto("/members");
-    await expect(page).not.toHaveURL(/\/members/);
+    const response = await page.goto("/members");
+    expect(response?.status()).toBe(404);
+    await expect(
+      page.getByRole("heading", { name: /member directory/i }),
+    ).toHaveCount(0);
   });
 
   test("previous page button is disabled on first page", async ({ page }) => {

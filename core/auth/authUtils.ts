@@ -1,3 +1,7 @@
+import {
+  resolveOrganization,
+  assertOrganizationMatchesHost,
+} from "@/core/tenant/resolveOrganization";
 import { ORGANIZATION_NOT_FOUND_PATH } from "@/core/tenant/organizationRoutes";
 import type { Context } from "hono";
 import { headers } from "next/headers";
@@ -13,15 +17,11 @@ import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { InvitationService } from "@/features/membership/services/InvitationService";
-import { findOrganizationByRequestHost } from "@/core/tenant/organizationFromHost";
 import { UserService } from "@/features/membership/services/UserService";
 import { User } from "better-auth";
 import db from "@/core/db";
 import { users } from "@/core/auth/schema";
-import {
-  getSlugFromHost,
-  INVITATION_ID_HEADER,
-} from "@/core/tenant/clientAuthUtils";
+import { INVITATION_ID_HEADER } from "@/core/tenant/clientAuthUtils";
 // import { User } from "better-auth/client";
 import { NotificationService } from "@/features/communications/services/NotificationService";
 import {
@@ -74,8 +74,7 @@ export async function afterUserCreated(
   headers?: Headers,
 ): Promise<void> {
   try {
-    const host = headers?.get("host") || undefined;
-    const organization = await findOrganizationByRequestHost(host);
+    const organization = await resolveOrganization(headers ?? new Headers());
     if (!organization) return;
 
     const membership = await MembersService.findByUserAndOrganization(
@@ -138,6 +137,7 @@ export async function requireAuth(c: Context) {
     throw new UnauthorizedError();
   }
 
+  await assertOrganizationMatchesHost(c, session);
   return session;
 }
 
@@ -169,7 +169,7 @@ export async function requireMembership(c: Context) {
  * Returns the current session only if the user has an active organization
  * and is an admin/owner of it; otherwise throws an auth-related error.
  */
-export async function requireAdmin(c: Context) {
+export async function requireAdmin(c: Context, message = "Forbidden") {
   const session = await requireAuth(c);
   const organizationId = session.session.activeOrganizationId;
 
@@ -183,7 +183,7 @@ export async function requireAdmin(c: Context) {
   );
 
   if (!MembersService.isAdminOrOwner(membership?.role)) {
-    throw new ForbiddenError();
+    throw new ForbiddenError(message);
   }
 
   return session;
@@ -226,21 +226,7 @@ export async function getActiveOrganizationIdFromHeaders(
     headers,
   });
 
-  if (session?.session.activeOrganizationId) {
-    return session.session.activeOrganizationId;
-  }
-
-  const slug = getSlugFromHost(headers.get("host") ?? undefined);
-  if (!slug) {
-    return null;
-  }
-
-  const organization = await OrganizationsService.findBySlug(slug);
-  if (!organization) {
-    return null;
-  }
-
-  return organization.id;
+  return (await resolveOrganization(headers, session))?.id ?? null;
 }
 
 /** Resolves a real organization or stops at the unguarded missing-org page. */

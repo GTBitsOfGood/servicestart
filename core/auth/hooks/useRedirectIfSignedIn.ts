@@ -27,12 +27,16 @@ export function useRedirectIfSignedIn() {
       const session = await authClient.getSession();
       if (!session?.data?.user) return;
 
-      if (org?.slug === getSlugFromHost(window.location.host)) {
+      if (
+        org?.organization?.data &&
+        (!getSlugFromHost(window.location.host) ||
+          org.slug === getSlugFromHost(window.location.host))
+      ) {
         router.replace(getRedirectPath());
         router.refresh();
       }
     };
 
     void checkLoggedIn();
-  }, [org?.slug, router]);
+  }, [org?.slug, org?.organization?.data, router]);
 }
