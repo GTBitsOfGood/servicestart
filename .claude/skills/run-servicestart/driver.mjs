@@ -11,7 +11,8 @@ import readline from "node:readline";
 import { chromium } from "@playwright/test";
 
 const SHOTS = process.env.SHOTS_DIR ?? "/tmp/servicestart/shots";
-const DEFAULT_ORIGIN = "http://localhost:3000";
+// localhost belongs to no organization (#335); this is the servicestart org.
+const DEFAULT_ORIGIN = "http://servicestart.lvh.me:3000";
 const PASSWORD = "password123"; // every seeded account
 fs.mkdirSync(SHOTS, { recursive: true });
 

@@ -11,7 +11,7 @@ These two ordinary organizations are compact sandboxes for sprint reviews and fe
 
 With your local database migrated, run `pnpm run db:seed`. No additional server or deployment is required. `scripts/seedDemo.ts` also includes these tenants because it calls the regular seed.
 
-Both tenant hosts are included in `next.config.js` development origins, alongside any `ALLOWED_DEV_ORIGINS` entries from `.env`. Keep `BETTER_AUTH_URL=http://localhost:3000` for ordinary development. Use the tenant hostname to select the organization.
+Both tenant hosts, and ServiceStart's own `servicestart.lvh.me`, are included in `next.config.js` development origins, alongside any `ALLOWED_DEV_ORIGINS` entries from `.env`. Keep `BETTER_AUTH_URL=http://localhost:3000` for ordinary development. Use the tenant hostname to select the organization; `localhost:3000` belongs to no organization, so you can't sign in there.
 
 Seeds contain known development passwords; use a local or disposable preview database, never a production database.
 

@@ -106,7 +106,7 @@ Use Node.js compatible with the installed Next.js version and pnpm 10.17.1 (`npm
    pnpm run email:setup
    ```
 
-   Open http://localhost:3000 and sign in. Invite a test address or send a member email to exercise the local flow. Default Juno uses `NODE_ENV=test`: it simulates domain registration and accepts emails without delivering them. Its DNS records are fake and must not be published. A successful request here does **not** prove inbox delivery.
+   Open http://servicestart.lvh.me:3000, the seeded ServiceStart organization, and sign in (for example as `admin@example.com` with `password123`). Each organization has its own host, and `localhost:3000` belongs to none, so you can't sign in there. Invite a test address or send a member email to exercise the local flow. Default Juno uses `NODE_ENV=test`: it simulates domain registration and accepts emails without delivering them. Its DNS records are fake and must not be published. A successful request here does **not** prove inbox delivery.
 
 For the Visionaries tenant, see [Visionaries development setup](docs/VISIONARIES_DEVELOPMENT.md)
 for local URLs, branding defaults, and student/admin test accounts.

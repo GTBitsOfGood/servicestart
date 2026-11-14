@@ -64,4 +64,4 @@ if ! lsof -ti:3000 -sTCP:LISTEN >/dev/null; then
 fi
 # The first request compiles the route (~30s with Turbopack).
 timeout 180 bash -c 'until curl -sf -o /dev/null http://localhost:3000/login; do sleep 2; done'
-echo "ready: http://localhost:3000 (logs in $LOG_DIR)"
+echo "ready: http://servicestart.lvh.me:3000 (logs in $LOG_DIR)"
