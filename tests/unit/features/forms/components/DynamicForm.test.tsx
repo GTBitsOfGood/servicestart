@@ -315,6 +315,36 @@ describe("DynamicForm", () => {
     expect(screen.queryAllByText("This question is required")).toHaveLength(7);
   });
 
+  it("ignores an upload that finishes after the form is replaced", async () => {
+    // FormFillClient remounts the form when a member discards a draft, and
+    // the old form's answers must not come back as a new draft.
+    let finish!: (value: { id: string }) => void;
+    const onAnswersChange = vi.fn();
+    const { unmount } = render(
+      <DynamicForm
+        definition={form}
+        onSubmit={vi.fn()}
+        onAnswersChange={onAnswersChange}
+        uploadImage={() => new Promise((resolve) => (finish = resolve))}
+      />,
+    );
+    type(/^Student Name/, "Ada Lovelace");
+    onAnswersChange.mockClear();
+    fireEvent.change(
+      document.querySelector<HTMLInputElement>('input[type="file"]')!,
+      {
+        target: {
+          files: [new File(["png"], "me.png", { type: "image/png" })],
+        },
+      },
+    );
+
+    unmount();
+    await act(async () => finish({ id: UPLOAD_ID }));
+
+    expect(onAnswersChange).not.toHaveBeenCalled();
+  });
+
   it("keeps both answers when two uploads finish out of order", async () => {
     const [headshot] = form.components.slice(-1);
     const twoImages = {

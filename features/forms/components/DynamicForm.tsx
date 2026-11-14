@@ -162,6 +162,14 @@ export default function DynamicForm({
   const dirtyIds = useRef(new Set<string>());
   const submittingRef = useRef(false);
   const focusTarget = useRef<string | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const schema = useMemo(() => buildSubmissionSchema(definition), [definition]);
 
@@ -251,6 +259,9 @@ export default function DynamicForm({
   }
 
   function handleChange(id: string, value: FieldValue | undefined) {
+    // A form that's been replaced, such as after discarding a draft, can still
+    // hear from an upload that finishes late. Its answers are gone.
+    if (!mountedRef.current) return;
     dirtyIds.current.add(id);
     const next = { ...valuesRef.current };
     if (value === undefined) delete next[id];
