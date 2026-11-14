@@ -170,7 +170,14 @@ export async function requireMembership(c: Context) {
  * and is an admin/owner of it; otherwise throws an auth-related error.
  */
 export async function requireAdmin(c: Context, message = "Forbidden") {
-  const session = await requireAuth(c);
+  return requireAdminSession(await requireAuth(c), message);
+}
+
+/** Check an already authenticated session without loading or validating it twice. */
+export async function requireAdminSession(
+  session: AppSession,
+  message = "Forbidden",
+) {
   const organizationId = session.session.activeOrganizationId;
 
   if (!organizationId) {

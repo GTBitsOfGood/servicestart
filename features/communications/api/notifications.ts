@@ -1,9 +1,10 @@
+import { ForbiddenError, NotFoundError } from "@/core/api/errors";
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { paginationQuerySchema } from "@/core/api/apiUtils";
 import { requireMembership, requireAdmin } from "@/core/auth/authUtils";
-import { ForbiddenError } from "@/core/api/errors";
+
 import { NotificationService } from "@/features/communications/services/NotificationService";
 import { NotificationType } from "@/features/communications/schema";
 import { JoinRequestsService } from "@/features/membership/server";
@@ -63,7 +64,7 @@ const app = new Hono()
     const notification = await NotificationService.findById(id);
 
     if (!notification) {
-      return c.json({ error: "Notification not found" }, 404);
+      throw new NotFoundError("Notification not found");
     }
 
     if (
@@ -96,7 +97,7 @@ const app = new Hono()
     const notification = await NotificationService.findById(id);
 
     if (!notification) {
-      return c.json({ error: "Notification not found" }, 404);
+      throw new NotFoundError("Notification not found");
     }
 
     if (
@@ -118,7 +119,7 @@ const app = new Hono()
     const notification = await NotificationService.findById(id);
 
     if (!notification) {
-      return c.json({ error: "Notification not found" }, 404);
+      throw new NotFoundError("Notification not found");
     }
 
     if (
@@ -138,7 +139,7 @@ const app = new Hono()
     const { id: notificationId } = c.req.param();
 
     const notification = await NotificationService.findById(notificationId);
-    if (!notification) return c.json({ error: "Notification not found" }, 404);
+    if (!notification) throw new NotFoundError("Notification not found");
 
     if (
       notification.userId !== session.user.id ||
@@ -149,10 +150,13 @@ const app = new Hono()
 
     const metadata = notification.metadata as { joinRequestId?: string } | null;
     const joinRequestId = metadata?.joinRequestId;
-    if (!joinRequestId) return c.json({ error: "Join request not found" }, 404);
+    if (!joinRequestId) throw new NotFoundError("Join request not found");
 
-    const joinRequest = await JoinRequestsService.findById(joinRequestId);
-    if (!joinRequest) return c.json({ error: "Join request not found" }, 404);
+    const joinRequest = await JoinRequestsService.findByIdAndOrganization(
+      joinRequestId,
+      activeOrganizationId,
+    );
+    if (!joinRequest) throw new NotFoundError("Join request not found");
 
     await JoinRequestsService.updateStatus(
       joinRequest.id,
@@ -174,7 +178,7 @@ const app = new Hono()
     const { id: notificationId } = c.req.param();
 
     const notification = await NotificationService.findById(notificationId);
-    if (!notification) return c.json({ error: "Notification not found" }, 404);
+    if (!notification) throw new NotFoundError("Notification not found");
 
     if (
       notification.userId !== session.user.id ||
@@ -185,10 +189,13 @@ const app = new Hono()
 
     const metadata = notification.metadata as { joinRequestId?: string } | null;
     const joinRequestId = metadata?.joinRequestId;
-    if (!joinRequestId) return c.json({ error: "Join request not found" }, 404);
+    if (!joinRequestId) throw new NotFoundError("Join request not found");
 
-    const joinRequest = await JoinRequestsService.findById(joinRequestId);
-    if (!joinRequest) return c.json({ error: "Join request not found" }, 404);
+    const joinRequest = await JoinRequestsService.findByIdAndOrganization(
+      joinRequestId,
+      activeOrganizationId,
+    );
+    if (!joinRequest) throw new NotFoundError("Join request not found");
 
     await JoinRequestsService.updateStatus(
       joinRequest.id,
