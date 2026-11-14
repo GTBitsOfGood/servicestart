@@ -16,8 +16,8 @@ import {
   OrganizationConfigKey,
   ORGANIZATION_CONFIG_KEY_VALUES,
 } from "@/core/config/schema";
-import { getSlugFromHost } from "@/core/tenant/clientAuthUtils";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
+import { resolveOrganization } from "@/core/tenant/resolveOrganization";
 import { pruneAudienceRecord } from "@/features/dashboard";
 import {
   MembersService,
@@ -107,26 +107,14 @@ const app = new Hono<{ Variables: { organizationId: string } }>()
 
         organizationId = organization.id;
       } else {
-        const hostHeader =
-          c.req.header("x-forwarded-host") ?? c.req.header("host") ?? undefined;
-        const derivedSlug = getSlugFromHost(hostHeader);
-
-        if (derivedSlug && derivedSlug !== "servicestart") {
-          const organization =
-            await OrganizationsService.findBySlug(derivedSlug);
-          if (organization) {
-            organizationId = organization.id;
-          }
+        // The tenant host's org, or the session's active org on the default
+        // host (#335).
+        session = await auth.api.getSession({ headers: c.req.header() });
+        const organization = await resolveOrganization(c, session);
+        if (!organization) {
+          return c.json({ error: "No organizationId provided" }, 400);
         }
-
-        if (!organizationId) {
-          session = await auth.api.getSession({ headers: c.req.header() });
-          if (session?.session.activeOrganizationId) {
-            organizationId = session.session.activeOrganizationId;
-          } else {
-            return c.json({ error: "No organizationId provided" }, 400);
-          }
-        }
+        organizationId = organization.id;
       }
 
       // Signed-out pages only ask for public keys, so skip the session lookup.

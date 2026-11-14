@@ -19,6 +19,7 @@ import {
   testApi,
 } from "@/tests/unit/testUtils";
 import { DEFAULT_BRANDING } from "@/core/config/branding";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 
 /** Signs up a user with this role in the org, active there. */
 async function signInTo(organizationId: string, role: "admin" | "member") {
@@ -642,14 +643,14 @@ describe("GET /api/organizationConfig visibility", () => {
 
     const byHost = await testApi.organizationConfig.$get(
       { query: { keys } },
-      { headers: { ...headers, host: `${orgB.slug}.servicestart.com` } },
+      { headers: { ...headers, host: buildHost(orgB.slug) } },
     );
     expect(await byHost.json()).toEqual({ tagline: "Welcome" });
 
     // Their own org, by host, still gets everything.
     const ownHost = await testApi.organizationConfig.$get(
       { query: { keys } },
-      { headers: { ...headers, host: `${orgA.slug}.servicestart.com` } },
+      { headers: { ...headers, host: buildHost(orgA.slug) } },
     );
     expect(Object.keys(await ownHost.json()).sort()).toEqual([...keys].sort());
   });
@@ -720,5 +721,84 @@ describe("PUT /api/organizationConfig typed values", () => {
     );
 
     expect(response.status).toBe(403);
+  });
+});
+
+describe("PUT /api/organizationConfig audience-keyed values", () => {
+  const volunteer = MemberTypeKeySchema.parse("volunteer");
+
+  async function adminOfVolunteerOrg() {
+    const org = await createOrganization(`cfg-audience-${randomUUID()}`, {
+      memberTypes: [
+        { key: volunteer, label: "Volunteer", pluralLabel: "Volunteers" },
+      ],
+    });
+    return { org, headers: await signInTo(org.id, "admin") };
+  }
+
+  it("drops entries for member types the organization doesn't have", async () => {
+    const { org, headers } = await adminOfVolunteerOrg();
+
+    // The text form, as the dashboard content settings send it.
+    const header = await testApi.organizationConfig.$put(
+      {
+        json: {
+          key: OrganizationConfigKey.DashboardHeader,
+          value: JSON.stringify({
+            default: { title: "Welcome" },
+            volunteer: { title: "Volunteer hub" },
+            deleted: { title: "Left over" },
+          }),
+        },
+      },
+      { headers },
+    );
+    // And a typed value.
+    const navbar = await testApi.organizationConfig.$put(
+      {
+        json: {
+          key: OrganizationConfigKey.NavbarConfig,
+          value: {
+            member: { hidden: ["/media"] },
+            deleted: { hidden: ["/members"] },
+          },
+        },
+      },
+      { headers },
+    );
+
+    expect(header.status).toBe(200);
+    expect(navbar.status).toBe(200);
+    expect(await OrganizationConfigService.getDashboardHeader(org.id)).toEqual({
+      default: { title: "Welcome" },
+      volunteer: { title: "Volunteer hub" },
+    });
+    expect(await OrganizationConfigService.getNavbarConfig(org.id)).toEqual({
+      member: { hidden: ["/media"] },
+    });
+  });
+
+  it("still rejects an invalid value before dropping anything", async () => {
+    const { org, headers } = await adminOfVolunteerOrg();
+
+    const response = await testApi.organizationConfig.$put(
+      {
+        json: {
+          key: OrganizationConfigKey.DashboardHeader,
+          value: { volunteer: { title: "" } },
+        },
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: expect.stringMatching(
+        /^Invalid dashboard header \(volunteer\.title\)/,
+      ),
+    });
+    expect(await OrganizationConfigService.getDashboardHeader(org.id)).toEqual(
+      {},
+    );
   });
 });
