@@ -1,16 +1,16 @@
 // @vitest-environment node
 import { randomUUID } from "node:crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/core/db";
 import {
   members,
-  MemberType,
   memberTypes,
   OrganizationConfigKey,
   users,
 } from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { MembersService } from "@/features/membership/services/MemberService";
 import {
   addMember,
@@ -330,7 +330,7 @@ describe("MembersService.countByOrganization", () => {
 
 async function addTypedMembers(
   organizationId: string,
-  types: (MemberType | null)[],
+  types: (string | null)[],
   role = "member",
 ) {
   const userIds: string[] = [];
@@ -341,7 +341,8 @@ async function addTypedMembers(
       userId: user.id,
       organizationId,
       role,
-      memberType,
+      memberType:
+        memberType === null ? null : MemberTypeKeySchema.parse(memberType),
     });
     userIds.push(user.id);
   }
@@ -364,106 +365,106 @@ async function getTypes(organizationId: string, userIds: string[]) {
 describe("MembersService.setMemberTypes", () => {
   it("sets the type for one member", async () => {
     const org = await createOrganization("types-single");
-    const [userId] = await addTypedMembers(org.id, [MemberType.Applicant]);
+    const [userId] = await addTypedMembers(org.id, ["applicant"]);
 
     const result = await MembersService.setMemberTypes(
       org.id,
       [userId],
-      MemberType.Attendee,
+      MemberTypeKeySchema.parse("attendee"),
     );
 
     expect(result).toEqual({ updated: 1 });
     expect(await getTypes(org.id, [userId])).toEqual({
-      [userId]: MemberType.Attendee,
+      [userId]: "attendee",
     });
   });
 
   it("sets the type for many members, ignoring duplicate IDs", async () => {
     const org = await createOrganization("types-bulk");
     const userIds = await addTypedMembers(org.id, [
-      MemberType.Applicant,
+      MemberTypeKeySchema.parse("applicant"),
       null,
-      MemberType.Attendee,
+      MemberTypeKeySchema.parse("attendee"),
     ]);
 
     const result = await MembersService.setMemberTypes(
       org.id,
       [...userIds, userIds[0]],
-      MemberType.Attendee,
+      MemberTypeKeySchema.parse("attendee"),
     );
 
     expect(result).toEqual({ updated: 3 });
     expect(Object.values(await getTypes(org.id, userIds))).toEqual([
-      MemberType.Attendee,
-      MemberType.Attendee,
-      MemberType.Attendee,
+      MemberTypeKeySchema.parse("attendee"),
+      "attendee",
+      MemberTypeKeySchema.parse("attendee"),
     ]);
   });
 
   it("returns not_found for another org's members and leaves them unchanged", async () => {
     const orgA = await createOrganization("types-tenant-a");
     const orgB = await createOrganization("types-tenant-b");
-    const orgAIds = await addTypedMembers(orgA.id, [MemberType.Applicant]);
+    const orgAIds = await addTypedMembers(orgA.id, ["applicant"]);
 
     const result = await MembersService.setMemberTypes(
       orgB.id,
       orgAIds,
-      MemberType.Attendee,
+      MemberTypeKeySchema.parse("attendee"),
     );
 
     expect(result).toEqual({ error: "not_found" });
     expect(await getTypes(orgA.id, orgAIds)).toEqual({
-      [orgAIds[0]]: MemberType.Applicant,
+      [orgAIds[0]]: "applicant",
     });
   });
 
   it("writes nothing when a batch mixes in an unknown ID", async () => {
     const org = await createOrganization("types-mixed");
     const userIds = await addTypedMembers(org.id, [
-      MemberType.Applicant,
-      MemberType.Applicant,
+      MemberTypeKeySchema.parse("applicant"),
+      "applicant",
     ]);
 
     const result = await MembersService.setMemberTypes(
       org.id,
       [...userIds, randomUUID()],
-      MemberType.Attendee,
+      MemberTypeKeySchema.parse("attendee"),
     );
 
     expect(result).toEqual({ error: "not_found" });
     expect(Object.values(await getTypes(org.id, userIds))).toEqual([
-      MemberType.Applicant,
-      MemberType.Applicant,
+      MemberTypeKeySchema.parse("applicant"),
+      "applicant",
     ]);
   });
 
   it("returns not_found when a duplicate row hides an unknown ID", async () => {
     const org = await createOrganization("types-duplicate");
-    const [userId] = await addTypedMembers(org.id, [MemberType.Applicant]);
+    const [userId] = await addTypedMembers(org.id, ["applicant"]);
     // members has no unique (user, org), so this user has two rows.
     await db.insert(members).values({
       id: randomUUID(),
       userId,
       organizationId: org.id,
       role: "member",
-      memberType: MemberType.Applicant,
+      memberType: MemberTypeKeySchema.parse("applicant"),
     });
 
     const result = await MembersService.setMemberTypes(
       org.id,
       [userId, randomUUID()],
-      MemberType.Attendee,
+      MemberTypeKeySchema.parse("attendee"),
     );
 
     expect(result).toEqual({ error: "not_found" });
     expect(await getTypes(org.id, [userId])).toEqual({
-      [userId]: MemberType.Applicant,
+      [userId]: "applicant",
     });
   });
 
   it("rejects admins and owners and writes nothing", async () => {
     const org = await createOrganization("types-admin");
-    const [memberId] = await addTypedMembers(org.id, [MemberType.Applicant]);
+    const [memberId] = await addTypedMembers(org.id, ["applicant"]);
     const [adminId] = await addTypedMembers(org.id, [null], "admin");
     const [ownerId] = await addTypedMembers(org.id, [null], "owner");
 
@@ -471,109 +472,155 @@ describe("MembersService.setMemberTypes", () => {
       const result = await MembersService.setMemberTypes(
         org.id,
         ids,
-        MemberType.Attendee,
+        MemberTypeKeySchema.parse("attendee"),
       );
       expect(result).toEqual({ error: "admin" });
     }
     expect(await getTypes(org.id, [memberId, adminId, ownerId])).toEqual({
-      [memberId]: MemberType.Applicant,
+      [memberId]: "applicant",
       [adminId]: null,
       [ownerId]: null,
     });
   });
 });
 
-describe("MembersService member type rows", () => {
-  // An org created before member types existed, or one that turned them on
-  // after the Sprint 5 migration, has no member_types rows yet.
-  async function orgWithoutTypes(slug: string) {
-    const org = await createOrganization(slug);
-    await db.delete(memberTypes).where(eq(memberTypes.organizationId, org.id));
-    return org;
-  }
-  const keysOf = async (organizationId: string) =>
-    (
-      await db
-        .select({
-          key: memberTypes.key,
-          isSignupDefault: memberTypes.isSignupDefault,
-        })
-        .from(memberTypes)
-        .where(eq(memberTypes.organizationId, organizationId))
-        .orderBy(memberTypes.position)
-    ).map(({ key, isSignupDefault }) => [key, isSignupDefault]);
-
-  it("creates the applicant and attendee types once", async () => {
-    const org = await orgWithoutTypes("types-ensure");
-    await MembersService.ensureBuiltInMemberTypes(org.id);
-    await MembersService.ensureBuiltInMemberTypes(org.id);
-    expect(await keysOf(org.id)).toEqual([
-      [MemberType.Applicant, true],
-      [MemberType.Attendee, false],
-    ]);
-  });
-
-  it("creates them before setting a type", async () => {
-    const org = await orgWithoutTypes("types-set");
-    const user = await signUpAndGetSession(buildTestUser(), org.slug);
-    await db.insert(members).values({
-      id: randomUUID(),
-      userId: user.user.id,
-      organizationId: org.id,
-      role: "member",
+describe("MembersService.addSignupMember member type", () => {
+  it("assigns the org signup default when one is set", async () => {
+    const org = await createOrganization("signup-default-volunteer", {
+      memberTypes: [
+        {
+          key: MemberTypeKeySchema.parse("volunteer"),
+          label: "Volunteer",
+          pluralLabel: "Volunteers",
+          isSignupDefault: true,
+        },
+        {
+          key: MemberTypeKeySchema.parse("staff"),
+          label: "Staff",
+          pluralLabel: "Staff",
+        },
+      ],
     });
-
-    expect(
-      await MembersService.setMemberTypes(
-        org.id,
-        [user.user.id],
-        MemberType.Attendee,
-      ),
-    ).toEqual({ updated: 1 });
-    expect(await keysOf(org.id)).toHaveLength(2);
-  });
-
-  it("creates them before a signup becomes an applicant", async () => {
-    const org = await orgWithoutTypes("types-signup");
     await OrganizationConfigService.setConfig(
       org.id,
       OrganizationConfigKey.MemberTypesEnabled,
       "true",
     );
-    const user = await signUpAndGetSession(buildTestUser(), org.slug);
+    const { user } = await signUpAndGetSession(buildTestUser(), org.slug);
 
-    await MembersService.addSignupMember(user.user.id, org.id);
+    await MembersService.addSignupMember(user.id, org.id);
     expect(
-      (await MembersService.findByUserAndOrganization(user.user.id, org.id))
+      (await MembersService.findByUserAndOrganization(user.id, org.id))
         ?.memberType,
-    ).toBe(MemberType.Applicant);
+    ).toBe("volunteer");
+  });
+
+  it("assigns null when the org has no member types", async () => {
+    const org = await createOrganization("signup-no-types", {
+      memberTypes: [],
+    });
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.MemberTypesEnabled,
+      "true",
+    );
+    const { user } = await signUpAndGetSession(buildTestUser(), org.slug);
+
+    await MembersService.addSignupMember(user.id, org.id);
+    expect(
+      (await MembersService.findByUserAndOrganization(user.id, org.id))
+        ?.memberType,
+    ).toBeNull();
+  });
+
+  it("still adds the member when its signup default is deleted mid-signup", async () => {
+    const volunteer = MemberTypeKeySchema.parse("volunteer");
+    const org = await createOrganization("signup-default-deleted", {
+      memberTypes: [
+        {
+          key: volunteer,
+          label: "Volunteer",
+          pluralLabel: "Volunteers",
+          isSignupDefault: true,
+        },
+      ],
+    });
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.MemberTypesEnabled,
+      "true",
+    );
+    const { user } = await signUpAndGetSession(buildTestUser(), org.slug);
+    const typeRow = and(
+      eq(memberTypes.organizationId, org.id),
+      eq(memberTypes.key, volunteer),
+    );
+    const deleted = Promise.withResolvers<void>();
+    const commit = Promise.withResolvers<void>();
+
+    const deleting = db.transaction(async (tx) => {
+      await tx.select().from(memberTypes).where(typeRow).for("update");
+      await tx.delete(memberTypes).where(typeRow);
+      deleted.resolve();
+      await commit.promise;
+    });
+    await deleted.promise;
+    const signup = MembersService.addSignupMember(user.id, org.id);
+    await waitForBlockedSignup();
+    commit.resolve();
+    await deleting;
+    await signup;
+
+    expect(
+      await MembersService.findByUserAndOrganization(user.id, org.id),
+    ).toMatchObject({ memberType: null });
   });
 });
+
+async function waitForBlockedSignup() {
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    const { rows } = await db.execute<{ blocked: number }>(sql`
+      SELECT count(*)::int AS blocked FROM pg_stat_activity
+      WHERE wait_event_type = 'Lock'
+        AND (query ILIKE '%"member_types"%' OR query ILIKE 'insert into "members"%')
+    `);
+    if ((rows[0]?.blocked ?? 0) > 0) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error("signup never waited on the deleted member type");
+}
 
 describe("MembersService member type filter", () => {
   it("lists and counts only members of the given type", async () => {
     const org = await createOrganization("types-filter");
     const [applicantId] = await addTypedMembers(org.id, [
-      MemberType.Applicant,
-      MemberType.Attendee,
+      MemberTypeKeySchema.parse("applicant"),
+      MemberTypeKeySchema.parse("attendee"),
       null,
     ]);
     const otherOrg = await createOrganization("types-filter-other");
-    await addTypedMembers(otherOrg.id, [MemberType.Applicant]);
+    await addTypedMembers(otherOrg.id, ["applicant"]);
 
     const applicants = await MembersService.listMembers(org.id, {
       limit: 10,
       offset: 0,
-      memberType: MemberType.Applicant,
+      memberType: MemberTypeKeySchema.parse("applicant"),
     });
 
     expect(applicants.map((m) => m.userId)).toEqual([applicantId]);
-    expect(applicants[0].memberType).toBe(MemberType.Applicant);
+    expect(applicants[0].memberType).toBe("applicant");
     expect(
-      await MembersService.countByOrganization(org.id, MemberType.Applicant),
+      await MembersService.countByOrganization(
+        org.id,
+        MemberTypeKeySchema.parse("applicant"),
+      ),
     ).toBe(1);
     expect(
-      await MembersService.countByOrganization(org.id, MemberType.Attendee),
+      await MembersService.countByOrganization(
+        org.id,
+        MemberTypeKeySchema.parse("attendee"),
+      ),
     ).toBe(1);
     expect(await MembersService.countByOrganization(org.id)).toBe(3);
     expect(

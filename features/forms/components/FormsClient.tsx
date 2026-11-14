@@ -5,7 +5,6 @@ import Link from "next/link";
 import api from "@/core/api/client";
 import { useHydrated } from "@/core/utils/hooks/useHydrated";
 import { FormStatus } from "@/features/forms/schema";
-import { MemberType } from "@/features/membership";
 import {
   FormIdSchema,
   FormSettingsSchema,
@@ -15,10 +14,7 @@ import {
   type FormSettings,
 } from "@/features/forms/lib/schema";
 import { suggestFormId } from "@/features/forms/lib/management";
-import {
-  MEMBER_TYPE_LABELS,
-  MEMBER_TYPE_PLURAL_LABELS,
-} from "@/features/membership";
+import { MemberTypeKeySchema, type MemberTypeRow } from "@/features/membership";
 import type { FormService } from "@/features/forms/services/FormService";
 import BogButton from "@/components/bog/BogButton/BogButton";
 import BogTable from "@/components/bog/BogTable/BogTable";
@@ -88,12 +84,12 @@ function FormDialog({
   form,
   onSaved,
   disabled,
-  memberTypesEnabled,
+  memberTypes,
 }: {
   form?: FormRow;
   onSaved: () => Promise<void>;
   disabled: boolean;
-  memberTypesEnabled: boolean;
+  memberTypes: MemberTypeRow[];
 }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(form?.title ?? "");
@@ -310,30 +306,30 @@ function FormDialog({
                   <p id={`${prefix}-due-help`} className="text-sm">
                     Shown on dashboards. The form stays open until it closes.
                   </p>
-                  {memberTypesEnabled && (
+                  {memberTypes.length > 0 && (
                     <>
                       <fieldset className="space-y-2">
                         <legend>Required for</legend>
-                        {Object.values(MemberType).map((type) => (
-                          <label key={type} className="flex gap-2">
+                        {memberTypes.map((type) => (
+                          <label key={type.key} className="flex gap-2">
                             <input
                               type="checkbox"
                               checked={getAssignedMemberTypes(
                                 settings,
-                              ).includes(type)}
+                              ).includes(type.key)}
                               onChange={(event) => {
                                 const others = getAssignedMemberTypes(
                                   settings,
-                                ).filter((assigned) => assigned !== type);
+                                ).filter((assigned) => assigned !== type.key);
                                 changeSetting(
                                   "assignedMemberTypes",
                                   event.target.checked
-                                    ? [...others, type]
+                                    ? [...others, type.key]
                                     : others,
                                 );
                               }}
                             />
-                            {MEMBER_TYPE_PLURAL_LABELS[type]}
+                            {type.pluralLabel}
                           </label>
                         ))}
                       </fieldset>
@@ -342,17 +338,22 @@ function FormDialog({
                         <select
                           className={inputClass}
                           value={getAcceptedMemberType(settings) ?? ""}
-                          onChange={(event) =>
-                            changeSetting(
-                              "acceptedMemberType",
-                              (event.target.value as MemberType) || null,
-                            )
-                          }
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            if (value === "") {
+                              changeSetting("acceptedMemberType", null);
+                              return;
+                            }
+                            const parsed = MemberTypeKeySchema.safeParse(value);
+                            if (parsed.success) {
+                              changeSetting("acceptedMemberType", parsed.data);
+                            }
+                          }}
                         >
                           <option value="">No change</option>
-                          {Object.values(MemberType).map((type) => (
-                            <option key={type} value={type}>
-                              {MEMBER_TYPE_LABELS[type]}
+                          {memberTypes.map((type) => (
+                            <option key={type.key} value={type.key}>
+                              {type.label}
                             </option>
                           ))}
                         </select>
@@ -439,11 +440,10 @@ function DeleteDialog({
 
 export default function FormsClient({
   forms,
-  memberTypesEnabled = false,
+  memberTypes = [],
 }: {
   forms: FormRow[];
-  /** Shows the member type settings (#302's MemberTypesEnabled). */
-  memberTypesEnabled?: boolean;
+  memberTypes?: MemberTypeRow[];
 }) {
   const hydrated = useHydrated();
   const [refreshing, setRefreshing] = useState(false);
@@ -525,7 +525,7 @@ export default function FormsClient({
         <FormDialog
           onSaved={refresh}
           disabled={busy}
-          memberTypesEnabled={memberTypesEnabled}
+          memberTypes={memberTypes}
         />
       </div>
       <p>Create forms, manage publication, and export responses.</p>
@@ -609,7 +609,7 @@ export default function FormsClient({
                         form={form}
                         onSaved={refresh}
                         disabled={busy}
-                        memberTypesEnabled={memberTypesEnabled}
+                        memberTypes={memberTypes}
                       />
                       <BogButton
                         variant="secondary"

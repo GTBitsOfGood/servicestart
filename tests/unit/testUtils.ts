@@ -25,14 +25,13 @@ import {
   formUploads,
   FormStatus,
   invitations,
-  MemberType,
   type SubmissionReviewStatus,
 } from "@/core/db/schema";
 import { InvitationStatus } from "@/features/membership/services/InvitationService";
 import {
-  MEMBER_TYPE_LABELS,
-  MEMBER_TYPE_PLURAL_LABELS,
-} from "@/features/membership/lib/memberTypes";
+  MemberTypeKeySchema,
+  type MemberTypeKey,
+} from "@/features/membership/lib/memberTypeKey";
 import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import type {
   FormAnswerValue,
@@ -94,33 +93,66 @@ export function buildTestUser() {
 /**
  * Builds a host header value for a given organization slug.
  */
+export type CreateOrganizationMemberType = {
+  key: MemberTypeKey;
+  label: string;
+  pluralLabel: string;
+  position?: number;
+  isSignupDefault?: boolean;
+};
+
 export function buildHost(slug: string) {
   return `${slug}.${getTenantRootDomain()}`;
 }
 
+const DEFAULT_ORG_MEMBER_TYPES: CreateOrganizationMemberType[] = [
+  {
+    key: MemberTypeKeySchema.parse("applicant"),
+    label: "Applicant",
+    pluralLabel: "Applicants",
+    position: 0,
+    isSignupDefault: true,
+  },
+  {
+    key: MemberTypeKeySchema.parse("attendee"),
+    label: "Current Attendee",
+    pluralLabel: "Current Attendees",
+    position: 1,
+    isSignupDefault: false,
+  },
+];
+
 /**
  * Creates an organization in the database, with the applicant and attendee
- * member types, so tests can give its members a type directly.
+ * member types by default, so tests can give its members a type directly. Pass
+ * `memberTypes: []` for no types, or a custom list to seed specific rows.
  */
-export async function createOrganization(slug: string) {
+export async function createOrganization(
+  slug: string,
+  opts?: { memberTypes?: CreateOrganizationMemberType[] },
+) {
   const id = randomUUID();
   await db.insert(organizations).values({
     id,
     name: `Organization ${slug}`,
     slug,
   });
-  // The same rows MembersService.ensureBuiltInMemberTypes creates, inserted
-  // here so tests that mock MembersService can still create organizations.
-  await db.insert(memberTypes).values(
-    [MemberType.Applicant, MemberType.Attendee].map((key, position) => ({
-      organizationId: id,
-      key,
-      label: MEMBER_TYPE_LABELS[key],
-      pluralLabel: MEMBER_TYPE_PLURAL_LABELS[key],
-      position,
-      isSignupDefault: key === MemberType.Applicant,
-    })),
-  );
+
+  const types =
+    opts && "memberTypes" in opts ? opts.memberTypes : DEFAULT_ORG_MEMBER_TYPES;
+
+  if (types && types.length > 0) {
+    await db.insert(memberTypes).values(
+      types.map((type, position) => ({
+        organizationId: id,
+        key: type.key,
+        label: type.label,
+        pluralLabel: type.pluralLabel,
+        position: type.position ?? position,
+        isSignupDefault: type.isSignupDefault ?? false,
+      })),
+    );
+  }
 
   return { id, slug };
 }
@@ -200,14 +232,20 @@ export async function addMember(
   userId: string,
   organizationId: string,
   role: string,
-  memberType: MemberType | null = null,
+  memberType: MemberTypeKey | string | null = null,
 ) {
+  const resolved =
+    memberType === null
+      ? null
+      : typeof memberType === "string"
+        ? MemberTypeKeySchema.parse(memberType)
+        : memberType;
   await db.insert(members).values({
     id: randomUUID(),
     userId,
     organizationId,
     role,
-    memberType,
+    memberType: resolved,
   });
 }
 

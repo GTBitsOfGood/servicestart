@@ -4,9 +4,9 @@ import {
   FormStatus,
   formSubmissions,
   forms,
-  type MemberType,
   type SubmissionReviewStatus,
 } from "@/core/db/schema";
+import type { MemberTypeKey } from "@/features/membership";
 import { getAssignedMemberTypes, getDueAt } from "@/features/forms/lib/schema";
 import {
   getFormAvailability,
@@ -55,7 +55,7 @@ function byDueDateThenTitle(a: MemberFormProgress, b: MemberFormProgress) {
 async function listForMember(
   organizationId: string,
   userId: string,
-  memberType: MemberType | null,
+  memberType: MemberTypeKey | null,
   now = new Date(),
 ): Promise<MemberFormProgress[]> {
   const [formRows, submissionRows] = await Promise.all([

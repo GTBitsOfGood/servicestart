@@ -3,12 +3,13 @@ import { describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import db from "@/core/db";
 import {
-  MemberType,
   NotificationType,
   notifications,
   OrganizationConfigKey,
 } from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { PostDashboardAlertSchema } from "@/features/communications/lib/alerts";
+import type { MemberTypeKey } from "@/features/membership/lib/memberTypeKey";
 import {
   addMember,
   buildTestUser,
@@ -18,10 +19,22 @@ import {
   testApi,
 } from "@/tests/unit/testUtils";
 
+const volunteer = "volunteer" as MemberTypeKey;
+const staff = "staff" as MemberTypeKey;
+const board = "board" as MemberTypeKey;
+
+const ORG_TYPES = {
+  memberTypes: [
+    { key: volunteer, label: "Volunteer", pluralLabel: "Volunteers" },
+    { key: staff, label: "Staff", pluralLabel: "Staff" },
+    { key: board, label: "Board", pluralLabel: "Board" },
+  ],
+};
+
 async function addUser(
   organization: { id: string; slug: string },
   role: "owner" | "admin" | "member",
-  memberType: MemberType | null = null,
+  memberType: MemberTypeKey | null = null,
 ) {
   const { user, session, headers } = await signUpAndGetSession(
     buildTestUser(),
@@ -44,6 +57,18 @@ async function alertsFor(organizationId: string) {
     .from(notifications)
     .where(eq(notifications.organizationId, organizationId));
 }
+
+describe("PostDashboardAlertSchema", () => {
+  it('still parses ["applicant"] from before Sprint 5', () => {
+    expect(
+      PostDashboardAlertSchema.parse({
+        title: "Hello",
+        message: "World",
+        memberTypes: ["applicant"],
+      }).memberTypes,
+    ).toEqual(["applicant"]);
+  });
+});
 
 describe("POST /api/alerts", () => {
   it("returns 401 when signed out", async () => {
@@ -69,7 +94,7 @@ describe("POST /api/alerts", () => {
 
   it("sends an announcement to every member in the active organization", async () => {
     const organization = await createOrganization("alerts-all");
-    const { headers } = await addUser(organization, "admin");
+    const admin = await addUser(organization, "admin");
     const firstMember = await addUser(organization, "member");
     const secondMember = await addUser(organization, "member");
 
@@ -80,40 +105,32 @@ describe("POST /api/alerts", () => {
           message: "  Camp is closed today.  ",
         },
       },
-      { headers },
+      { headers: admin.headers },
     );
 
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ sent: 3 });
-
     const created = await alertsFor(organization.id);
-    expect(created).toHaveLength(3);
-    expect(created.map(({ userId }) => userId)).toEqual(
-      expect.arrayContaining([firstMember.user.id, secondMember.user.id]),
+    expect(created.map(({ userId }) => userId).sort()).toEqual(
+      [admin.user.id, firstMember.user.id, secondMember.user.id].sort(),
     );
-    expect(
-      created.every(({ organizationId }) => organizationId === organization.id),
-    ).toBe(true);
-    expect(
-      created.every(({ type }) => type === NotificationType.Announcement),
-    ).toBe(true);
     expect(
       created.every(
-        ({ text }) => text === "Weather update\nCamp is closed today.",
+        ({ type, text, read }) =>
+          type === NotificationType.Announcement &&
+          text === "Weather update\nCamp is closed today." &&
+          read === false,
       ),
     ).toBe(true);
-    expect(created.every(({ read }) => read === false)).toBe(true);
   });
 
-  it("targets only the requested member types when the feature is enabled", async () => {
-    const organization = await createOrganization("alerts-types");
+  it("sends only to members of the requested org-defined types", async () => {
+    const organization = await createOrganization("alerts-three", ORG_TYPES);
     const { headers } = await addUser(organization, "owner");
-    const applicant = await addUser(
-      organization,
-      "member",
-      MemberType.Applicant,
-    );
-    const attendee = await addUser(organization, "member", MemberType.Attendee);
+    const volunteerMember = await addUser(organization, "member", volunteer);
+    const staffMember = await addUser(organization, "member", staff);
+    const boardMember = await addUser(organization, "member", board);
+    await addUser(organization, "member");
     await OrganizationConfigService.setConfig(
       organization.id,
       OrganizationConfigKey.MemberTypesEnabled,
@@ -123,38 +140,42 @@ describe("POST /api/alerts", () => {
     const response = await testApi.alerts.$post(
       {
         json: {
-          title: "Attendee update",
-          message: "Bring your permission slip.",
-          memberTypes: [MemberType.Attendee],
+          title: "Update",
+          message: "Please read this.",
+          memberTypes: [volunteer, staff, board],
         },
       },
       { headers },
     );
 
     expect(response.status).toBe(201);
-    expect(await response.json()).toEqual({ sent: 1 });
+    expect(await response.json()).toEqual({ sent: 3 });
     expect(
-      (await alertsFor(organization.id)).map(({ userId }) => userId),
-    ).toEqual([attendee.user.id]);
-    expect(
-      (await alertsFor(organization.id)).some(
-        ({ userId }) => userId === applicant.user.id,
-      ),
-    ).toBe(false);
+      (await alertsFor(organization.id)).map(({ userId }) => userId).sort(),
+    ).toEqual(
+      [
+        volunteerMember.user.id,
+        staffMember.user.id,
+        boardMember.user.id,
+      ].sort(),
+    );
   });
 
   it("ignores member-type targeting when member types are disabled", async () => {
-    const organization = await createOrganization("alerts-types-off");
+    const organization = await createOrganization(
+      "alerts-types-off",
+      ORG_TYPES,
+    );
     const { headers } = await addUser(organization, "admin");
-    await addUser(organization, "member", MemberType.Applicant);
-    await addUser(organization, "member", MemberType.Attendee);
+    await addUser(organization, "member", volunteer);
+    await addUser(organization, "member", staff);
 
     const response = await testApi.alerts.$post(
       {
         json: {
           title: "Everyone update",
           message: "This goes to the whole organization.",
-          memberTypes: [MemberType.Attendee],
+          memberTypes: [staff],
         },
       },
       { headers },
@@ -166,30 +187,66 @@ describe("POST /api/alerts", () => {
   });
 
   it("never sends an alert to another organization's members", async () => {
-    const activeOrganization = await createOrganization("alerts-active");
-    const otherOrganization = await createOrganization("alerts-other");
+    const activeOrganization = await createOrganization(
+      "alerts-active",
+      ORG_TYPES,
+    );
+    const otherOrganization = await createOrganization(
+      "alerts-other",
+      ORG_TYPES,
+    );
     const { headers } = await addUser(activeOrganization, "admin");
-    await addUser(activeOrganization, "member");
-    await addUser(otherOrganization, "member");
+    await addUser(activeOrganization, "member", volunteer);
+    await addUser(otherOrganization, "member", volunteer);
+    await OrganizationConfigService.setConfig(
+      activeOrganization.id,
+      OrganizationConfigKey.MemberTypesEnabled,
+      "true",
+    );
 
     const response = await testApi.alerts.$post(
-      { json: { title: "Active org", message: "Only our members see this." } },
+      {
+        json: {
+          title: "Active org",
+          message: "Only our volunteers see this.",
+          memberTypes: [volunteer],
+        },
+      },
       { headers },
     );
 
     expect(response.status).toBe(201);
-    expect(await alertsFor(activeOrganization.id)).toHaveLength(2);
+    expect(await alertsFor(activeOrganization.id)).toHaveLength(1);
     expect(await alertsFor(otherOrganization.id)).toEqual([]);
+  });
+
+  it("returns 400 for an unknown member type key", async () => {
+    const organization = await createOrganization("alerts-unknown", ORG_TYPES);
+    const { headers } = await addUser(organization, "admin");
+    await OrganizationConfigService.setConfig(
+      organization.id,
+      OrganizationConfigKey.MemberTypesEnabled,
+      "true",
+    );
+
+    const response = await testApi.alerts.$post(
+      {
+        json: {
+          title: "Title",
+          message: "Message",
+          memberTypes: ["attendee"],
+        },
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await alertsFor(organization.id)).toEqual([]);
   });
 
   it.each([
     { title: "", message: "Message" },
     { title: "Title", message: "" },
-    {
-      title: "Title",
-      message: "Message",
-      memberTypes: ["camper" as MemberType],
-    },
   ])("returns 400 for an invalid payload", async (json) => {
     const organization = await createOrganization(
       `alerts-invalid-${Math.random()}`,

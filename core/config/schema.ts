@@ -28,13 +28,9 @@ export enum OrganizationConfigKey {
   HeadingFont = "heading_font",
   BodyFont = "body_font",
   CornerStyle = "corner_style",
-  ApplicantDashboardLayout = "applicant_dashboard_layout",
-  AttendeeDashboardLayout = "attendee_dashboard_layout",
   DashboardHeader = "dashboard_header",
   NavbarConfig = "navbar_config",
   OrganizationFooter = "organization_footer",
-  // Each member type's own dashboard layout, by member type key. Replaces
-  // ApplicantDashboardLayout and AttendeeDashboardLayout, which #336 removes.
   MemberTypeDashboardLayouts = "member_type_dashboard_layouts",
 }
 
@@ -45,6 +41,13 @@ export type ToggleableOrganizationFeature = Extract<
   | OrganizationConfigKey.MemberTypesEnabled
   | OrganizationConfigKey.AutoApproveSignups
 >;
+
+/** Keys whose value is a JSON object with an entry per audience. */
+export const AUDIENCE_KEYED_CONFIG_KEYS = [
+  OrganizationConfigKey.DashboardHeader,
+  OrganizationConfigKey.NavbarConfig,
+  OrganizationConfigKey.MemberTypeDashboardLayouts,
+] as const satisfies readonly OrganizationConfigKey[];
 
 // Array of enum values for use with Zod
 export const ORGANIZATION_CONFIG_KEY_VALUES = Object.values(

@@ -108,7 +108,7 @@ Docker must be running: the dev and test databases and Juno are all containers.
 
 ## Gotchas
 
-- A member's type must be one of their organization's `member_types` rows (a foreign key). Until #336, call `MembersService.ensureBuiltInMemberTypes` before giving a member a type outside `MembersService`.
+- A member's type must be one of their organization's `member_types` rows (a foreign key). Seeds call `MemberTypeService.ensure` for built-in Visionaries types; elsewhere use org-defined keys via `MemberTypeKey` and `MemberTypeKeySchema`.
 - `juno/` is a submodule; a fresh clone needs `git submodule update --init --recursive` plus `pnpm run juno:setup`.
 - `DB_URL` contains a `<branch>` placeholder that `getDbUrl()` in `core/utils/env.ts` substitutes so PR preview deploys hit their own preview database. Don't remove it from `.env`.
 - File storage is pluggable via `FILE_SERVICE_IMPLEMENTATION` (`local` | `juno`) behind the `IFileService` interface in `core/files/` — code against the interface, not a concrete implementation. Juno deletion is not implemented yet.

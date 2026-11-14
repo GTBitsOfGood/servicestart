@@ -1,11 +1,15 @@
 import { NAVBAR_ITEMS, NavbarItem, Page } from "@/features/navigation/navItems";
 import {
+  audienceIfCurrent,
   getDashboardAudience,
   type MemberAudience,
 } from "@/features/membership";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { auth } from "@/core/auth/auth";
-import { MembersService } from "@/features/membership/server";
+import {
+  MemberTypeService,
+  MembersService,
+} from "@/features/membership/server";
 import OrganizationConfigService from "@/core/config/OrganizationConfigService";
 
 function getRelevantOrgConfigKeys(): OrganizationConfigKey[] {
@@ -28,15 +32,35 @@ export default async function getNavbarItems(
   orgId: string | undefined | null = session?.session.activeOrganizationId,
 ): Promise<NavbarItem[]> {
   const userId = session?.user.id;
-  const [orgConfig, membership, navbarConfig, memberTypesEnabled] = orgId
-    ? await Promise.all([
-        OrganizationConfigService.getConfig(orgId, getRelevantOrgConfigKeys()),
-        userId ? MembersService.findByUserAndOrganization(userId, orgId) : null,
-        OrganizationConfigService.getNavbarConfig(orgId),
-        OrganizationConfigService.getMemberTypesEnabled(orgId),
-      ])
-    : [{}, null, {}, false];
+  const [orgConfig, membership, navbarConfig, memberTypesEnabled, memberTypes] =
+    orgId
+      ? await Promise.all([
+          OrganizationConfigService.getConfig(
+            orgId,
+            getRelevantOrgConfigKeys(),
+          ),
+          userId
+            ? MembersService.findByUserAndOrganization(userId, orgId)
+            : null,
+          OrganizationConfigService.getNavbarConfig(orgId),
+          OrganizationConfigService.getMemberTypesEnabled(orgId),
+          OrganizationConfigService.getMemberTypesEnabled(orgId).then(
+            (enabled) =>
+              enabled ? MemberTypeService.list(orgId) : Promise.resolve([]),
+          ),
+        ])
+      : [{}, null, {}, false, []];
   const admin = MembersService.isAdminOrOwner(membership?.role);
+
+  const typeKeys = memberTypes.map((row) => row.key);
+  const navbarAudience: MemberAudience = (() => {
+    if (!membership || admin) return "member";
+    const current = audienceIfCurrent(
+      getDashboardAudience(membership, memberTypesEnabled),
+      typeKeys,
+    );
+    return current === "admin" ? "member" : current;
+  })();
 
   // How this audience's navbar differs (#318). Admins always get the full
   // navbar, so the audience here is never "admin", and visitors who aren't
@@ -44,11 +68,7 @@ export default async function getNavbarItems(
   // only; pages keep their own guards. Renamed labels can't break the navs'
   // dropdown state (keyed by label) because only admin items have subpages.
   const { hidden = [], labels = {} } =
-    membership && !admin
-      ? (navbarConfig[
-          getDashboardAudience(membership, memberTypesEnabled) as MemberAudience
-        ] ?? {})
-      : {};
+    membership && !admin ? (navbarConfig[navbarAudience] ?? {}) : {};
 
   const isVisible = (page: Page) => {
     if (page.requireAdmin && !admin) {

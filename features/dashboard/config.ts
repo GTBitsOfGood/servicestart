@@ -1,5 +1,4 @@
 import { configGroup, defineConfig } from "@/core/config/defineConfig";
-import { jsonConfig } from "@/core/config/jsonConfig";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import {
   DEFAULT_ADMIN_LAYOUT,
@@ -16,7 +15,7 @@ import {
 
 /*
  * The dashboard's config keys. core/config/registry.ts collects them. Reading
- * a member type's layout is in services/DashboardLayoutService.ts.
+ * and writing a member type's layout is in services/DashboardLayoutService.ts.
  */
 
 export const adminDashboardLayout = defineConfig({
@@ -33,14 +32,14 @@ export const dashboardLayout = defineConfig({
   visibility: "admin",
 });
 
-// Member types' own layouts, in one row keyed by member type. A type without
-// one gets the member layout (see getDashboardLayoutFor).
-export const memberTypeDashboardLayouts = jsonConfig(
-  OrganizationConfigKey.MemberTypeDashboardLayouts,
-  "member type dashboard layouts",
-  MemberTypeDashboardLayoutsSchema,
-  {},
-);
+// Member types' own layouts, in one row keyed by member type key. A type
+// without one gets the member layout (see getDashboardLayoutFor).
+export const memberTypeDashboardLayouts = defineConfig({
+  key: OrganizationConfigKey.MemberTypeDashboardLayouts,
+  schema: MemberTypeDashboardLayoutsSchema,
+  default: {},
+  visibility: "admin",
+});
 
 export const dashboardHeader = defineConfig({
   key: OrganizationConfigKey.DashboardHeader,
@@ -49,27 +48,9 @@ export const dashboardHeader = defineConfig({
   visibility: "admin",
 });
 
-// Replaced by MemberTypeDashboardLayouts; #333's migration moved their rows.
-// Nothing reads them, and #336 removes the keys.
-export const applicantDashboardLayout = defineConfig({
-  key: OrganizationConfigKey.ApplicantDashboardLayout,
-  schema: DashboardLayoutSchema.nullable(),
-  default: null,
-  visibility: "admin",
-});
-
-export const attendeeDashboardLayout = defineConfig({
-  key: OrganizationConfigKey.AttendeeDashboardLayout,
-  schema: DashboardLayoutSchema.nullable(),
-  default: null,
-  visibility: "admin",
-});
-
 export const DASHBOARD_CONFIG = configGroup(
   adminDashboardLayout,
   dashboardLayout,
   memberTypeDashboardLayouts,
   dashboardHeader,
-  applicantDashboardLayout,
-  attendeeDashboardLayout,
 );

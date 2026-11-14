@@ -1,12 +1,15 @@
 // @vitest-environment node
 import { and, eq } from "drizzle-orm";
+import {
+  MemberTypeKeySchema,
+  type MemberTypeKey,
+} from "@/features/membership/lib/memberTypeKey";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import db from "@/core/db";
 import {
   FormStatus,
   SubmissionReviewStatus,
   formSubmissions,
-  MemberType,
   OrganizationConfigKey,
   notifications,
 } from "@/core/db/schema";
@@ -145,8 +148,12 @@ afterEach(() => vi.restoreAllMocks());
 
 async function reviewSetup({
   enabled = true,
-  target = MemberType.Attendee as MemberType | null,
+  target = MemberTypeKeySchema.parse("attendee"),
   role = "member",
+}: {
+  enabled?: boolean;
+  target?: MemberTypeKey | null;
+  role?: string;
 } = {}) {
   const org = await createOrganization("review-camp");
   await OrganizationConfigService.setConfig(
@@ -156,7 +163,7 @@ async function reviewSetup({
   );
   const actorId = await createUser();
   const userId = await createUser();
-  await addMember(userId, org.id, role, MemberType.Applicant);
+  await addMember(userId, org.id, role, "applicant");
   const form = await createForm(org.id, {
     status: FormStatus.Published,
     settings: { ...DEFAULT_FORM_SETTINGS, acceptedMemberType: target },
@@ -183,7 +190,58 @@ async function notices(organizationId: string) {
     .where(eq(notifications.organizationId, organizationId));
 }
 
+const VOLUNTEER_STAFF_TYPES = [
+  {
+    key: MemberTypeKeySchema.parse("volunteer"),
+    label: "Volunteer",
+    pluralLabel: "Volunteers",
+  },
+  {
+    key: MemberTypeKeySchema.parse("staff"),
+    label: "Staff",
+    pluralLabel: "Staff",
+  },
+];
+
 describe("review side effects", () => {
+  it("accepts a volunteer into staff when the form says so", async () => {
+    const org = await createOrganization("volunteer-review", {
+      memberTypes: [...VOLUNTEER_STAFF_TYPES],
+    });
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.MemberTypesEnabled,
+      "true",
+    );
+    const actorId = await createUser();
+    const userId = await createUser();
+    await addMember(
+      userId,
+      org.id,
+      "member",
+      MemberTypeKeySchema.parse("volunteer"),
+    );
+    const form = await createForm(org.id, {
+      status: FormStatus.Published,
+      settings: {
+        ...DEFAULT_FORM_SETTINGS,
+        acceptedMemberType: MemberTypeKeySchema.parse("staff"),
+      },
+    });
+    const id = await createFormSubmission(form, { userId });
+    const input = {
+      organizationId: org.id,
+      submissionIds: [id],
+      actorId,
+      status: SubmissionReviewStatus.Accepted,
+    };
+    await FormReviewService.setReviewStatus(input);
+    expect(
+      (await MembersService.findByUserAndOrganization(userId, org.id))
+        ?.memberType,
+    ).toBe("staff");
+  });
+
   it("previews distinct people without writes, then accepts and notifies atomically", async () => {
     const { org, userId, id, form, input } = await reviewSetup();
     const preview = await FormReviewService.previewStatusChange(input);
@@ -194,13 +252,13 @@ describe("review side effects", () => {
     expect(
       (await MembersService.findByUserAndOrganization(userId, org.id))
         ?.memberType,
-    ).toBe(MemberType.Applicant);
+    ).toBe("applicant");
     expect(await notices(org.id)).toHaveLength(0);
     await FormReviewService.setReviewStatus(input);
     expect(
       (await MembersService.findByUserAndOrganization(userId, org.id))
         ?.memberType,
-    ).toBe(MemberType.Attendee);
+    ).toBe("attendee");
     expect(await notices(org.id)).toEqual([
       expect.objectContaining({
         userId,
@@ -218,10 +276,22 @@ describe("review side effects", () => {
   });
 
   it.each([
-    { enabled: false, target: MemberType.Attendee, role: "member" },
+    {
+      enabled: false,
+      target: MemberTypeKeySchema.parse("attendee"),
+      role: "member",
+    },
     { enabled: true, target: null, role: "member" },
-    { enabled: true, target: MemberType.Attendee, role: "admin" },
-    { enabled: true, target: MemberType.Attendee, role: "owner" },
+    {
+      enabled: true,
+      target: MemberTypeKeySchema.parse("attendee"),
+      role: "admin",
+    },
+    {
+      enabled: true,
+      target: MemberTypeKeySchema.parse("attendee"),
+      role: "owner",
+    },
   ])(
     "keeps member types for $role with enabled=$enabled and target=$target",
     async (options) => {
@@ -233,7 +303,7 @@ describe("review side effects", () => {
       expect(
         (await MembersService.findByUserAndOrganization(userId, org.id))
           ?.memberType,
-      ).toBe(MemberType.Applicant);
+      ).toBe("applicant");
       expect(await notices(org.id)).toHaveLength(1);
     },
   );
@@ -242,7 +312,7 @@ describe("review side effects", () => {
     const { org, form, input } = await reviewSetup();
     const outsiderId = await createUser();
     const otherOrg = await createOrganization("other-camp");
-    await addMember(outsiderId, otherOrg.id, "member", MemberType.Applicant);
+    await addMember(outsiderId, otherOrg.id, "member", "applicant");
     const outsider = await createFormSubmission(form, { userId: outsiderId });
     const guest = await createFormSubmission(form);
     const bulk = { ...input, submissionIds: [outsider, guest] };
@@ -256,7 +326,7 @@ describe("review side effects", () => {
     expect(
       (await MembersService.findByUserAndOrganization(outsiderId, otherOrg.id))
         ?.memberType,
-    ).toBe(MemberType.Applicant);
+    ).toBe("applicant");
   });
 
   it("notifies only decision transitions and never reverses acceptance membership", async () => {
@@ -281,7 +351,7 @@ describe("review side effects", () => {
     expect(
       (await MembersService.findByUserAndOrganization(userId, org.id))
         ?.memberType,
-    ).toBe(MemberType.Attendee);
+    ).toBe("attendee");
     await FormReviewService.setReviewStatus(input);
     expect(await notices(org.id)).toHaveLength(3);
   });
@@ -318,7 +388,7 @@ describe("review side effects", () => {
     expect(
       (await MembersService.findByUserAndOrganization(userId, org.id))
         ?.memberType,
-    ).toBe(MemberType.Applicant);
+    ).toBe("applicant");
     expect(await notices(org.id)).toHaveLength(0);
     expect((await statusOf(another)).reviewStatus).toBe(
       SubmissionReviewStatus.Pending,
@@ -343,7 +413,7 @@ describe("review side effects", () => {
     expect(
       (await MembersService.findByUserAndOrganization(a.userId, a.org.id))
         ?.memberType,
-    ).toBe(MemberType.Applicant);
+    ).toBe("applicant");
     expect(await notices(a.org.id)).toHaveLength(0);
   });
 

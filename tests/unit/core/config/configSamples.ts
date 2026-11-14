@@ -141,16 +141,6 @@ export const CONFIG_SAMPLES: Record<OrganizationConfigKey, ConfigSample> = {
     badLayout,
     /^Invalid dashboard layout \(widgets\.0/,
   ),
-  [OrganizationConfigKey.ApplicantDashboardLayout]: json(
-    layout,
-    badLayout,
-    /^Invalid applicant dashboard layout \(widgets\.0/,
-  ),
-  [OrganizationConfigKey.AttendeeDashboardLayout]: json(
-    layout,
-    badLayout,
-    /^Invalid attendee dashboard layout \(widgets\.0/,
-  ),
   [OrganizationConfigKey.MemberTypeDashboardLayouts]: json(
     { applicant: layout },
     { applicant: badLayout },

@@ -5,7 +5,6 @@ import {
   EventVisibility,
   FormStatus,
   FormComponentType,
-  MemberType,
   NotificationType,
   OrganizationConfigKey,
   SubmissionReviewStatus,
@@ -28,6 +27,8 @@ import {
   VISIONARIES_DEMO_FORMS,
   visionariesId,
 } from "@/tests/unit/fixtures/forms";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
+import { MemberTypeService } from "@/features/membership/services/MemberTypeService";
 import type { SeedOrg } from "./seedTypes";
 
 // ===========================================================================
@@ -154,8 +155,8 @@ export function createApplicationSeed(options: {
       [OrganizationConfigKey.MemberTypesEnabled]: "true",
       [OrganizationConfigKey.AutoApproveSignups]: "true",
       [OrganizationConfigKey.MemberTypeDashboardLayouts]: JSON.stringify({
-        [MemberType.Applicant]: APPLICANT_LAYOUT,
-        [MemberType.Attendee]: ATTENDEE_LAYOUT,
+        applicant: APPLICANT_LAYOUT,
+        attendee: ATTENDEE_LAYOUT,
       }),
       [OrganizationConfigKey.DashboardHeader]: JSON.stringify(DASHBOARD_HEADER),
       [OrganizationConfigKey.NavbarConfig]: JSON.stringify(NAVBAR),
@@ -167,34 +168,34 @@ export function createApplicationSeed(options: {
         email: "applicant@example.com",
         role: "member",
         phoneNumber: null,
-        memberType: MemberType.Applicant,
+        memberType: MemberTypeKeySchema.parse("applicant"),
       },
       {
         name: "Jada Brooks",
         email: "applicant-pending@example.com",
         role: "member",
         phoneNumber: null,
-        memberType: MemberType.Applicant,
+        memberType: MemberTypeKeySchema.parse("applicant"),
       },
       {
         name: "Marcus Hill",
         email: "applicant-review@example.com",
         role: "member",
         phoneNumber: null,
-        memberType: MemberType.Applicant,
+        memberType: MemberTypeKeySchema.parse("applicant"),
       },
       {
         name: "Aaliyah Grant",
         email: "attendee-complete@example.com",
         role: "member",
         phoneNumber: null,
-        memberType: MemberType.Attendee,
+        memberType: MemberTypeKeySchema.parse("attendee"),
       },
     ],
     // The shared member accounts are accepted campers here.
     memberTypes: {
-      "member1@example.com": MemberType.Attendee,
-      "member2@example.com": MemberType.Attendee,
+      "member1@example.com": MemberTypeKeySchema.parse("attendee"),
+      "member2@example.com": MemberTypeKeySchema.parse("attendee"),
     },
   };
 
@@ -240,7 +241,7 @@ export function createApplicationSeed(options: {
       email: "applicant-rejected@example.com",
       role: "member",
       phoneNumber: null,
-      memberType: MemberType.Applicant,
+      memberType: MemberTypeKeySchema.parse("applicant"),
     });
     PERSONAS.push({
       email: "applicant-rejected@example.com",
@@ -835,6 +836,18 @@ export function createApplicationSeed(options: {
    * user ID.
    */
   async function seedVisionaries(userIds: Map<string, string>) {
+    await MemberTypeService.ensure(ORG_ID, {
+      key: MemberTypeKeySchema.parse("applicant"),
+      label: "Applicant",
+      pluralLabel: "Applicants",
+      isSignupDefault: true,
+    });
+    await MemberTypeService.ensure(ORG_ID, {
+      key: MemberTypeKeySchema.parse("attendee"),
+      label: "Current Attendee",
+      pluralLabel: "Current Attendees",
+      isSignupDefault: false,
+    });
     const now = new Date();
     const admin = userIds.get("admin@example.com")!;
     for (const form of SEEDED_FORMS) {

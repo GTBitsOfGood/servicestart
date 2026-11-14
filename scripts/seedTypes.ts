@@ -1,4 +1,5 @@
-import type { MemberType, OrganizationConfigKey } from "@/core/db/schema";
+import type { OrganizationConfigKey } from "@/core/db/schema";
+import type { MemberTypeKey } from "@/features/membership/lib/memberTypeKey";
 
 export type NavbarConfig = {
   variant: string;
@@ -10,7 +11,7 @@ export type SeedUser = {
   email: string;
   role: string | null;
   phoneNumber: string | null;
-  memberType?: MemberType;
+  memberType?: MemberTypeKey;
 };
 
 export type SeedOrg = {
@@ -19,8 +20,6 @@ export type SeedOrg = {
   slug: string;
   navbar: NavbarConfig;
   config?: Partial<Record<OrganizationConfigKey, string>>;
-  // Accounts only this org gets, on top of the shared ones in main().
   extraUsers?: SeedUser[];
-  // Member types for the shared accounts in this org, by email.
-  memberTypes?: Record<string, MemberType>;
+  memberTypes?: Record<string, MemberTypeKey>;
 };

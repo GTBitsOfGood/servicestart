@@ -22,12 +22,11 @@ nothing uses.)
 `member`. Access checks treat owners as admins (`requireAdmin`).
 _In code:_ `members.role`.
 
-**Member type.** A kind of non-admin member that an organization defines, such
-as Visionaries' applicants and current attendees. Each organization has its
-own (`member_types`), and a member has at most one, by its key. Member types
-only count while the organization has `MemberTypesEnabled` on.
-_In code:_ the `MemberType` enum and the strings `"applicant"` and
-`"attendee"`, until #336.
+**Member type.** A kind of non-admin member that an organization defines in
+`member_types` (for example Volunteer or Staff). Each organization has its
+own rows, and a member has at most one, by its stable key. Member types only
+count while the organization has `MemberTypesEnabled` on.
+_In code:_ `MemberTypeKey`, `member_types`, `members.member_type`.
 
 **Audience.** Who a dashboard, its header, and the navbar are for: admins,
 members without a type, or one member type.

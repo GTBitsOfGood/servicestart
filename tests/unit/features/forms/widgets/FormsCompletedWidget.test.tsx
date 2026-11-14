@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import type { FormCompletedCard } from "@/features/forms/widgets/formProgress";
 import FormsCompletedWidget, {
   FormsCompletedWidgetView,
@@ -37,7 +38,7 @@ function completedCard(
 const widgetProps = {
   organizationId: "org-a",
   userId: "user-a",
-  audience: "attendee" as const,
+  audience: MemberTypeKeySchema.parse("attendee"),
 };
 
 beforeEach(() => {

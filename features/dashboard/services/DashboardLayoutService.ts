@@ -1,14 +1,18 @@
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { OrganizationConfigKey } from "@/core/config/schema";
+import { pruneAudienceRecord } from "@/features/dashboard/lib/audienceRecord";
 import {
   type DashboardLayout,
   DashboardLayoutSchema,
 } from "@/features/dashboard/lib/schema";
+import { MemberTypeError, type MemberTypeKey } from "@/features/membership";
+import { MemberTypeService } from "@/features/membership/server";
 
 /*
  * Member types' own dashboard layouts, kept in one config row keyed by member
  * type. OrganizationConfigService.getDashboardLayoutFor reads them with the
- * member layout as the fallback.
+ * member layout as the fallback. Saving drops entries for types the org no
+ * longer has, so a new type that reuses a deleted type's key starts clean.
  */
 
 async function getLayouts(organizationId: string) {
@@ -17,6 +21,12 @@ async function getLayouts(organizationId: string) {
       OrganizationConfigKey.MemberTypeDashboardLayouts,
     ])
   )[OrganizationConfigKey.MemberTypeDashboardLayouts];
+}
+
+async function currentTypeKeys(
+  organizationId: string,
+): Promise<MemberTypeKey[]> {
+  return (await MemberTypeService.list(organizationId)).map((row) => row.key);
 }
 
 /** A member type's own layout, or null when it uses the member layout. */
@@ -28,7 +38,10 @@ export async function getMemberTypeDashboardLayout(
   return Object.hasOwn(layouts, memberType) ? layouts[memberType] : null;
 }
 
-/** Saves a member type's own layout, leaving the other types' as they are. */
+/**
+ * Saves a member type's own layout, leaving the other types' as they are.
+ * Throws MemberTypeError when the org has no such type.
+ */
 export async function setMemberTypeDashboardLayout(
   organizationId: string,
   memberType: string,
@@ -42,11 +55,15 @@ export async function setMemberTypeDashboardLayout(
       `Invalid ${memberType} dashboard layout${where}: ${issue.message}`,
     );
   }
+  const keys = await currentTypeKeys(organizationId);
+  if (!keys.includes(memberType as MemberTypeKey)) {
+    throw new MemberTypeError("not_found", "Member type not found");
+  }
   const layouts = await getLayouts(organizationId);
   await OrganizationConfigService.setConfig(
     organizationId,
     OrganizationConfigKey.MemberTypeDashboardLayouts,
-    { ...layouts, [memberType]: result.data },
+    pruneAudienceRecord({ ...layouts, [memberType]: result.data }, keys),
   );
 }
 
@@ -55,7 +72,10 @@ export async function clearMemberTypeDashboardLayout(
   organizationId: string,
   memberType: string,
 ) {
-  const rest = { ...(await getLayouts(organizationId)) };
+  const rest = pruneAudienceRecord(
+    await getLayouts(organizationId),
+    await currentTypeKeys(organizationId),
+  );
   delete rest[memberType];
   if (Object.keys(rest).length === 0) {
     await OrganizationConfigService.clearConfig(

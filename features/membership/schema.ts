@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { users } from "@/core/auth/schema";
 import { organizations } from "@/core/tenant/schema";
+import type { MemberTypeKey } from "@/features/membership/lib/memberTypeKey";
 
 // TypeScript enum for join request status values
 export enum JoinRequestStatus {
@@ -35,16 +36,6 @@ export const joinRequestStatusEnum = pgEnum(
   JOIN_REQUEST_STATUS_VALUES,
 );
 
-export enum MemberType {
-  Applicant = "applicant",
-  Attendee = "attendee",
-}
-
-export const MEMBER_TYPE_VALUES = Object.values(MemberType) as [
-  MemberType,
-  ...MemberType[],
-];
-
 /**
  * The kinds of member an organization defines (#336). A member's type is one
  * of these rows' keys, in the member's own organization.
@@ -56,7 +47,7 @@ export const memberTypes = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
-    // A slug such as "applicant". It never changes once created: members,
+    // Stable slug for this type. It never changes once created: members,
     // form settings, and config rows refer to it.
     key: text("key").notNull(),
     label: text("label").notNull(),
@@ -104,7 +95,7 @@ export const members = pgTable(
     role: text("role").notNull(),
     // A member_types key in this organization. Only takes effect while
     // MemberTypesEnabled is on. Null for admins.
-    memberType: text("member_type").$type<MemberType>(),
+    memberType: text("member_type").$type<MemberTypeKey>(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [

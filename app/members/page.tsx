@@ -4,8 +4,9 @@ import { auth } from "@/core/auth/auth";
 import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import { MEMBER_TYPE_VALUES, MemberType } from "@/features/membership/schema";
 import { OrganizationConfigKey } from "@/core/config/schema";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
+import { MemberTypeService } from "@/features/membership/server";
 import MembersTable from "@/features/membership/components/MembersTable";
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -33,9 +34,19 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
     pageSize: pageSizeParam,
     type: typeParam,
   } = await searchParams;
+
+  const memberTypeRows = memberTypesEnabled
+    ? await MemberTypeService.list(organizationId)
+    : [];
+  const orgTypeKeys = new Set(memberTypeRows.map((row) => row.key));
+  const parsedType = typeParam
+    ? MemberTypeKeySchema.safeParse(typeParam)
+    : undefined;
   const memberType =
-    memberTypesEnabled && MEMBER_TYPE_VALUES.includes(typeParam as MemberType)
-      ? (typeParam as MemberType)
+    memberTypesEnabled &&
+    parsedType?.success &&
+    orgTypeKeys.has(parsedType.data)
+      ? parsedType.data
       : undefined;
 
   const requestedPage = Math.max(1, parseInt(pageParam ?? "1") || 1);
@@ -106,6 +117,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
         organizationId={organizationId}
         currentUserId={authSession.user.id}
         memberTypesEnabled={memberTypesEnabled}
+        memberTypes={memberTypeRows}
         memberTypeFilter={memberType ?? null}
         onAddDirectly={addMemberDirectly}
       />

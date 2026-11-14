@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { and, eq } from "drizzle-orm";
 import db from "@/core/db";
 import { auth, tenantTrustedOrigins } from "@/core/auth/auth";
-import { eventRsvps, members, MemberType, shiftRSVPs } from "@/core/db/schema";
+import { eventRsvps, members, shiftRSVPs } from "@/core/db/schema";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { EmailService } from "@/core/email/EmailService";
 import {
   addMember,
@@ -239,7 +240,7 @@ describe("member type", () => {
     await setActiveOrganization(session.id, org.id);
     await db
       .update(members)
-      .set({ memberType: MemberType.Applicant })
+      .set({ memberType: MemberTypeKeySchema.parse("applicant") })
       .where(
         and(
           eq(members.userId, session.userId),
@@ -249,7 +250,7 @@ describe("member type", () => {
 
     const member = await auth.api.getActiveMember({ headers });
 
-    expect(member?.memberType).toBe(MemberType.Applicant);
+    expect(member?.memberType).toBe("applicant");
   });
 
   it("can't be set through addMember's input", async () => {
@@ -261,7 +262,7 @@ describe("member type", () => {
       userId: user.id,
       organizationId: org.id,
       role: "member" as const,
-      memberType: MemberType.Attendee,
+      memberType: MemberTypeKeySchema.parse("attendee"),
     };
     await auth.api.addMember({ body });
 

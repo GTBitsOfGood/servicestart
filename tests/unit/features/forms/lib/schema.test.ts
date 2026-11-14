@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { FormComponentType, MemberType } from "@/core/db/schema";
+import { FormComponentType } from "@/core/db/schema";
 import { DEFAULT_FORM_SETTINGS } from "@/features/forms/lib/constants";
 import {
   FORM_ANSWER_VALUE_SCHEMAS,
@@ -356,20 +356,30 @@ describe("FormSettingsSchema", () => {
   it("accepts assigned member types, a due date, and an accepted type", () => {
     const settings = FormSettingsSchema.parse({
       ...DEFAULT_FORM_SETTINGS,
-      assignedMemberTypes: [MemberType.Applicant],
+      assignedMemberTypes: ["applicant"],
       dueAt: "2027-04-01T04:00:00Z",
-      acceptedMemberType: MemberType.Attendee,
+      acceptedMemberType: "attendee",
     });
-    expect(getAssignedMemberTypes(settings)).toEqual([MemberType.Applicant]);
+    expect(getAssignedMemberTypes(settings)).toEqual(["applicant"]);
     expect(getDueAt(settings)).toBe("2027-04-01T04:00:00Z");
-    expect(getAcceptedMemberType(settings)).toBe(MemberType.Attendee);
+    expect(getAcceptedMemberType(settings)).toBe("attendee");
+  });
+
+  it("parses Sprint 4 settings saved before Sprint 5 unchanged", () => {
+    const settings = FormSettingsSchema.parse({
+      ...DEFAULT_FORM_SETTINGS,
+      assignedMemberTypes: ["applicant"],
+      acceptedMemberType: "attendee",
+    });
+    expect(getAssignedMemberTypes(settings)).toEqual(["applicant"]);
+    expect(getAcceptedMemberType(settings)).toBe("attendee");
   });
 
   it.each([
-    ["an unknown member type", { assignedMemberTypes: ["camper"] }],
+    ["an invalid member type key", { assignedMemberTypes: ["Bad Key"] }],
     [
       "a repeated member type",
-      { assignedMemberTypes: [MemberType.Applicant, MemberType.Applicant] },
+      { assignedMemberTypes: ["applicant", "applicant"] },
     ],
     ["a due date that isn't a datetime", { dueAt: "April 1" }],
     ["an unknown accepted type", { acceptedMemberType: "admin" }],

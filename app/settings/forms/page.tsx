@@ -4,6 +4,7 @@ import { redirectIfNotAdmin } from "@/core/auth/authUtils";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { FormService } from "@/features/forms/services/FormService";
+import { MemberTypeService } from "@/features/membership/server";
 import FormsClient from "@/features/forms/components/FormsClient";
 
 export const metadata = { title: "Forms" };
@@ -43,10 +44,13 @@ async function FormsList({
   organizationId: string;
   memberTypesEnabled: boolean;
 }) {
+  const memberTypes = memberTypesEnabled
+    ? await MemberTypeService.list(organizationId)
+    : [];
   const forms = await FormService.list(organizationId);
   return (
     <FormsClient
-      memberTypesEnabled={memberTypesEnabled}
+      memberTypes={memberTypes}
       forms={forms.map((form) => ({
         ...form,
         createdAt: form.createdAt.toISOString(),

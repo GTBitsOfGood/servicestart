@@ -4,5 +4,6 @@
 // and through them the database and import cycles.
 
 export { JoinRequestsService } from "./services/JoinRequestService";
+export { MemberTypeService } from "./services/MemberTypeService";
 export { MembersService } from "./services/MemberService";
 export { UserService } from "./services/UserService";

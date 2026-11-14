@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getDashboardHeader: vi.fn(),
+  listMemberTypes: vi.fn(),
 }));
 
 vi.mock("@/core/config/OrganizationConfigService", () => ({
@@ -11,21 +12,40 @@ vi.mock("@/core/config/OrganizationConfigService", () => ({
   },
 }));
 
+vi.mock("@/features/membership/server", () => ({
+  MemberTypeService: {
+    list: mocks.listMemberTypes,
+  },
+}));
+
 vi.mock("@/features/communications/components/DashboardAlertBanner", () => ({
   default: () => null,
 }));
 
 import DashboardHeader from "@/features/dashboard/components/DashboardHeader";
+import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 
 const baseProps = {
   organizationId: "org_1",
-  audience: "attendee" as const,
+  audience: MemberTypeKeySchema.parse("attendee"),
   user: { id: "user_1", name: "Tiffany Pham" },
+};
+
+const attendeeTypeKey = MemberTypeKeySchema.parse("attendee");
+
+const attendeeMemberType = {
+  key: attendeeTypeKey,
+  label: "Attendee",
+  pluralLabel: "Attendees",
+  position: 0,
+  isSignupDefault: false,
 };
 
 describe("DashboardHeader", () => {
   beforeEach(() => {
     mocks.getDashboardHeader.mockReset();
+    mocks.listMemberTypes.mockReset();
+    mocks.listMemberTypes.mockResolvedValue([attendeeMemberType]);
   });
 
   it("renders all configured header fields for the viewer's audience", async () => {

@@ -7,16 +7,22 @@ import { requireAdmin } from "@/core/auth/authUtils";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   ConfigValidationError,
+  decodeConfigValue,
   readableVisibilities,
 } from "@/core/config/defineConfig";
 import { getConfigDefinition, isConfigKey } from "@/core/config/registry";
 import {
+  AUDIENCE_KEYED_CONFIG_KEYS,
   OrganizationConfigKey,
   ORGANIZATION_CONFIG_KEY_VALUES,
 } from "@/core/config/schema";
 import { getSlugFromHost } from "@/core/tenant/clientAuthUtils";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
-import { MembersService } from "@/features/membership/server";
+import { pruneAudienceRecord } from "@/features/dashboard";
+import {
+  MembersService,
+  MemberTypeService,
+} from "@/features/membership/server";
 
 type Session = Awaited<ReturnType<typeof auth.api.getSession>>;
 
@@ -29,6 +35,30 @@ async function readerRole(session: Session, organizationId: string) {
   );
   if (!membership) return null;
   return MembersService.isAdminOrOwner(membership.role) ? "admin" : "member";
+}
+
+const AUDIENCE_KEYED: ReadonlySet<OrganizationConfigKey> = new Set(
+  AUDIENCE_KEYED_CONFIG_KEYS,
+);
+
+/**
+ * An audience-keyed value (dashboard header, navbar, member type layouts)
+ * without entries for member types the org no longer has (#336), so a new
+ * type that reuses a deleted type's key starts clean. Other values pass
+ * through; the store validates every value.
+ */
+async function withoutDeletedMemberTypes(
+  organizationId: string,
+  key: OrganizationConfigKey,
+  value: unknown,
+): Promise<unknown> {
+  if (!AUDIENCE_KEYED.has(key)) return value;
+  const decoded = decodeConfigValue(getConfigDefinition(key), value);
+  if (!decoded.success) throw decoded.error;
+  const keys = (await MemberTypeService.list(organizationId)).map(
+    (row) => row.key,
+  );
+  return pruneAudienceRecord(decoded.data as Record<string, unknown>, keys);
 }
 
 const app = new Hono<{ Variables: { organizationId: string } }>()
@@ -155,10 +185,15 @@ const app = new Hono<{ Variables: { organizationId: string } }>()
         return c.json({ error: "Missing value" }, 400);
       }
 
+      const organizationId = c.get("organizationId");
       await OrganizationConfigService.setConfig(
-        c.get("organizationId"),
+        organizationId,
         key as OrganizationConfigKey,
-        value,
+        await withoutDeletedMemberTypes(
+          organizationId,
+          key as OrganizationConfigKey,
+          value,
+        ),
       );
 
       return c.json({ ok: true }, 200);
