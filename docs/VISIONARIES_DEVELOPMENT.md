@@ -5,8 +5,10 @@ Sprint 3 built forms (#299, #303), theming (#300), the auth pages (#301), and
 member types (#302). Sprint 4 built application review (#316, #317), the
 applicant and attendee portals (#318, #319), the configurable dashboard (#320),
 and the question builder (#321) on the pre-sprint setup (#315). Sprint 5 keeps
-refining it with drafts (#338) on its pre-sprint (#333), which made member
-types per-organization data. It does not provision a production deployment.
+refining it with drafts (#338) and member types each organization manages
+(#336), on its pre-sprint (#333) and alongside the typed config registry
+(#334) and one way to find the organization (#335). It does not provision a
+production deployment.
 
 ## First-time setup
 
@@ -113,19 +115,26 @@ those responses and recreate the development fixture before reseeding.
   `tests/unit/fixtures/forms.ts`).
 - Member types: `MemberTypesEnabled` and `AutoApproveSignups` are on. The org's
   `member_types` rows are applicant ("Applicant", the signup default) and
-  attendee ("Current Attendee").
+  attendee ("Current Attendee"), created through `MemberTypeService`. Admins
+  add, rename, reorder, and delete types and choose the signup default at
+  `/settings/member-types` (#336).
 - Logo: `public/organizations/visionaries-logo.png` (`LogoUrl`), from the Figma.
 - Required forms: four published forms assigned to current attendees, with due
   dates: Emergency Contact Information, Consent Form, Medical History, and
   Liability Release Form. The camp application is assigned to applicants, and
   accepting a response makes the student a current attendee
-  (`acceptedMemberType`, #316). The forms use only Sprint 3 question types.
+  (`acceptedMemberType`, #316). The forms use Sprint 3 question types and
+  question groups (#339).
 - Demo forms for form management, assigned to no member type: a draft
   Family Showcase RSVP (`family-showcase-rsvp`) to preview and publish, a
   closed Fall 2026 Open House RSVP (`open-house-rsvp-2026`) to reopen, and a
   draft Camper Health & Emergency Information form (`camper-health-2027`) for
   the question builder at `/settings/forms/camper-health-2027`, using every
   question type #321 added.
+- Drafts (#338): `member2@example.com` has a Medical History draft (one
+  medication and the doctor's name), so their to-do list shows Medical
+  History as In Progress with a Continue link that restores it. Forms that
+  require login save a draft as the member types.
 - Dashboards: an applicant layout (application status and notifications) and
   an attendee layout (to-do list, weekly calendar, completed forms, and
   progress), both in the `MemberTypeDashboardLayouts` config row.
@@ -153,8 +162,11 @@ the images don't load.
    layout. **View Application** opens the response, and **Edit response** lets
    you change it while it's pending.
 3. Sign in as `member1@example.com`; the dashboard has the attendee layout.
-4. Sign in as `admin@example.com` and open **Settings → Forms**.
-5. Rerun the seed and confirm the same accounts still work.
+4. Sign in as `member2@example.com`; Medical History is In Progress, and
+   **Continue** opens it with the draft's answers.
+5. Sign in as `admin@example.com` and open **Settings → Forms** and
+   **Settings → Member types**.
+6. Rerun the seed and confirm the same accounts still work.
 
 The seed integration suite checks repeatability, branding, roles, and login across
 all seeded tenants. With the local test database running on port 5433:

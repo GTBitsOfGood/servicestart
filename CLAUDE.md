@@ -53,7 +53,7 @@ Every user-facing entity belongs to an organization. Practically:
 
 **API routes.** One Hono sub-app per resource in the context's `api/`, chained method-by-method (`new Hono().get(...).post(...)`) — the chaining is what gives the client its types, so don't split the chain into separate statements. Validate every input with `zValidator("json" | "query" | "param", schema)` and read it back with `c.req.valid(...)`.
 
-**Registering a route.** Add a new sub-app to the `.route()` chain in `features/app.ts`, the only Hono root. `app/api/[[...route]]/route.ts` serves it, and the RPC client and tests call it. Keep the chain explicit. A sub-app mounted at `/api/forms` must come before `features/forms/api/forms.ts`, whose admin middleware runs for every `/api/forms/*` route mounted after it.
+**Registering a route.** Add a new sub-app to the `.route()` chain in `features/app.ts`, the only Hono root. `app/api/[[...route]]/route.ts` serves it, and the RPC client and tests call it. Keep the chain explicit.
 
 **Auth in routes.** Prefer the guards in `core/auth/authUtils.ts` — `requireAuth`, `requireMembership`, `requireAdmin` — which throw typed `HTTPException`s from `core/api/errors.ts`. Older routes hand-roll session checks and `c.json({ error }, 401)`; match the helper style in new code and migrate opportunistically. In server pages, use `redirectIfNotMember()` / `redirectIfNotAdmin()`, which redirect rather than throw.
 
