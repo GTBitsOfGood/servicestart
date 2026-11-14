@@ -9,11 +9,13 @@ export function progressRow(
     availability = "open",
     reviewStatus = null,
     dueAt = null,
+    draftUpdatedAt = null,
   }: {
     required?: boolean;
     availability?: MemberFormProgress["form"]["availability"];
     reviewStatus?: SubmissionReviewStatus | null;
     dueAt?: string | null;
+    draftUpdatedAt?: Date | null;
   } = {},
 ): MemberFormProgress {
   return {
@@ -35,5 +37,6 @@ export function progressRow(
       updatedAt: null,
       reviewStatus,
     },
+    draft: draftUpdatedAt ? { updatedAt: draftUpdatedAt } : null,
   };
 }

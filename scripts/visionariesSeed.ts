@@ -14,9 +14,10 @@ import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import type { DashboardHeaderConfig } from "@/features/dashboard/lib/header";
 import type { OrganizationFooter } from "@/features/navigation/footer";
 import type { NavbarConfig } from "@/features/navigation/navbarConfig";
-import type {
-  FormAnswerValue,
-  FormDefinition,
+import {
+  buildDraftSchema,
+  type FormAnswerValue,
+  type FormDefinition,
 } from "@/features/forms/lib/schema";
 import { buildSubmissionSchema } from "@/features/forms/lib/submission";
 import { FileService } from "@/core/files/FileService";
@@ -54,6 +55,15 @@ export function createApplicationSeed(options: {
   demoForms: FormDefinition[];
   id: (group: number, item: number) => string;
   includeRejected?: boolean;
+  /**
+   * Optional seeded member drafts, keyed by stable question labels. A question
+   * group's entries are keyed by its questions' labels too.
+   */
+  formDrafts?: {
+    email: string;
+    formId: string;
+    answersByLabel: Record<string, FormAnswerValue>;
+  }[];
 }) {
   const ORG_ID = options.organizationId;
   const CAMP_NAME = options.campName;
@@ -625,6 +635,73 @@ export function createApplicationSeed(options: {
     }
   }
 
+  /** Restores the configured draft and removes drafts made while testing. */
+  async function seedDrafts(userIds: Map<string, string>) {
+    await db.delete(schema.formResponseDrafts).where(
+      and(
+        eq(schema.formResponseDrafts.organizationId, ORG_ID),
+        inArray(
+          schema.formResponseDrafts.userId,
+          PERSONAS.map(({ email }) => userIds.get(email)!),
+        ),
+        inArray(
+          schema.formResponseDrafts.formId,
+          SEEDED_FORMS.map(({ id }) => id),
+        ),
+      ),
+    );
+
+    for (const draft of options.formDrafts ?? []) {
+      const form = SEEDED_FORMS.find(({ formId }) => formId === draft.formId);
+      const userId = userIds.get(draft.email);
+      if (!form || !userId) {
+        throw new Error(
+          `Cannot seed ${draft.email}'s draft: form or user is not seeded`,
+        );
+      }
+
+      const componentsByLabel = new Map(
+        form.components.map((component) => [component.label, component]),
+      );
+      const missing = (label: string) =>
+        new Error(
+          `Cannot seed ${draft.email}'s draft: question "${label}" is not in ${form.formId}`,
+        );
+      const answers: Record<string, FormAnswerValue> = {};
+      for (const [label, value] of Object.entries(draft.answersByLabel)) {
+        const component = componentsByLabel.get(label);
+        if (!component) throw missing(label);
+        if (
+          component.type !== FormComponentType.QuestionGroup ||
+          !Array.isArray(value)
+        ) {
+          answers[component.id] = value;
+          continue;
+        }
+        const subIdsByLabel = new Map(
+          component.config.questions.map(({ id, label }) => [label, id]),
+        );
+        answers[component.id] = (value as Record<string, unknown>[]).map(
+          (entry) =>
+            Object.fromEntries(
+              Object.entries(entry).map(([subLabel, cell]) => {
+                const subId = subIdsByLabel.get(subLabel);
+                if (!subId) throw missing(`${label} › ${subLabel}`);
+                return [subId, cell];
+              }),
+            ),
+        ) as FormAnswerValue;
+      }
+
+      await db.insert(schema.formResponseDrafts).values({
+        organizationId: ORG_ID,
+        formId: form.id,
+        userId,
+        answers: buildDraftSchema(form).parse(answers),
+      });
+    }
+  }
+
   /**
    * Seeds the demo forms. Their responses only come from trying them out, so
    * they're deleted, and each form goes back to its seeded status (and a
@@ -854,6 +931,7 @@ export function createApplicationSeed(options: {
       await seedForm(form, admin);
     }
     await seedSubmissions(userIds);
+    await seedDrafts(userIds);
     await seedDemoForms(admin);
     await seedInvitations(userIds, now);
     await seedEvents(now);
@@ -879,6 +957,24 @@ const visionaries = createApplicationSeed({
   attendeeForms: VISIONARIES_ATTENDEE_FORMS,
   demoForms: VISIONARIES_DEMO_FORMS,
   id: visionariesId,
+  formDrafts: [
+    {
+      email: "member2@example.com",
+      formId: "medical-history-2027",
+      answersByLabel: {
+        "Medication Schedule": [
+          {
+            "Medication name": "Albuterol inhaler",
+            Dose: "2 puffs",
+            Time: "As needed",
+          },
+        ],
+        "Anything else our staff should know about the camper's health?":
+          "The camper has mild asthma and carries their inhaler.",
+        "Doctor's Name": "Dr. Maya Carter",
+      },
+    },
+  ],
 });
 export const VISIONARIES_ORG = visionaries.organization;
 export const seedVisionaries = visionaries.seed;

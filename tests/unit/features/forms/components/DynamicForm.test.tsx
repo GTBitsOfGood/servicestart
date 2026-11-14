@@ -172,6 +172,31 @@ describe("DynamicForm", () => {
     ]);
   });
 
+  it("reports loosely validated answers for draft saving", () => {
+    const onAnswersChange = vi.fn();
+    render(
+      <DynamicForm
+        definition={form}
+        onSubmit={vi.fn()}
+        onAnswersChange={onAnswersChange}
+      />,
+    );
+
+    type(/^Student Email/, "not-yet-an-email");
+    type(/^What grade/, "9");
+    expect(onAnswersChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        [studentEmailId]: "not-yet-an-email",
+        [gradeId]: 9,
+      }),
+    );
+
+    // A transient invalid number is omitted so it cannot make the entire
+    // otherwise-valid draft fail its per-type validation.
+    type(/^What grade/, "-");
+    expect(onAnswersChange.mock.lastCall?.[0]).not.toHaveProperty(gradeId);
+  });
+
   it("doesn't submit twice while a submission is in flight", async () => {
     let finish!: (result: DynamicFormSubmitResult) => void;
     const onSubmit = renderForm(

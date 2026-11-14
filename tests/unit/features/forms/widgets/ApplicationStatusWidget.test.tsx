@@ -92,6 +92,18 @@ describe("ApplicationStatusWidgetView", () => {
     ).toBeNull();
   });
 
+  it("shows In Progress and Continue for an application draft", () => {
+    renderView([
+      app(null, { draftUpdatedAt: new Date("2027-03-10T12:00:00Z") }),
+    ]);
+
+    expect(screen.getByText("In Progress")).toBeTruthy();
+    expect(screen.queryByText("Start application")).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Continue" }).getAttribute("href"),
+    ).toBe("/forms/camp-app");
+  });
+
   it("pending: chip, review text, step 1 complete, View Application", () => {
     renderView([app(SubmissionReviewStatus.Pending)]);
     expect(chip()?.textContent).toBe("Pending");
@@ -206,6 +218,25 @@ describe("ApplicationStatusWidgetView", () => {
       renderView([app(SubmissionReviewStatus.UnderReview)]);
       expect(screen.getByText("0 of 0 completed")).toBeTruthy();
       expect(screen.getByText("All caught up!")).toBeTruthy();
+    });
+
+    it("shows In Progress and Continue for a next-step draft", () => {
+      renderView([
+        app(SubmissionReviewStatus.Pending),
+        progressRow("medical", {
+          required: false,
+          draftUpdatedAt: new Date("2027-03-10T12:00:00Z"),
+        }),
+      ]);
+
+      const item = screen.getByText("Title medical").closest("li")!;
+      expect(within(item).getByText("In Progress")).toBeTruthy();
+      expect(
+        within(item)
+          .getByRole("link", { name: /^Continue\W+Title medical$/ })
+          .getAttribute("href"),
+      ).toBe("/forms/medical");
+      expect(screen.getByText("0 of 1 completed")).toBeTruthy();
     });
 
     it("is all caught up once every item is submitted", () => {

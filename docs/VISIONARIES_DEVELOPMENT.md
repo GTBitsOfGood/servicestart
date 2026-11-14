@@ -61,7 +61,7 @@ a different stage of the camp process:
 | `applicant@example.com`         | member, applicant | Hasn't started the camp application           |
 | `applicant-pending@example.com` | member, applicant | Application submitted, Pending                |
 | `applicant-review@example.com`  | member, applicant | Application Under Review                      |
-| `member2@example.com`           | member, attendee  | Accepted; 0 of 4 camp forms done              |
+| `member2@example.com`           | member, attendee  | Accepted; Medical History draft; 0 of 4 done  |
 | `member1@example.com`           | member, attendee  | Accepted; 2 of 4 (Emergency Contact, Consent) |
 | `attendee-complete@example.com` | member, attendee  | Accepted; all 4 camp forms done               |
 | `nonmember@example.com`         | none              | Not a member; has a pending invitation        |
@@ -85,7 +85,8 @@ wrong-account state.
 
 **Rerunning the seed resets these student accounts**: their member types, their
 responses to the seeded forms (responses added while testing are deleted), the
-responses' review statuses, admins' requests to complete the seeded forms,
+responses' review statuses, `member2@example.com`'s Medical History draft,
+admins' requests to complete the seeded forms,
 and the attendees' alert, which is unread again.
 It also resets the demo forms below (their status, details, a draft's
 questions, and all their responses) and the invitations: each is pending again, the account created

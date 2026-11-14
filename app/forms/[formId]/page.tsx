@@ -13,6 +13,7 @@ import { resolveOrganization } from "@/core/tenant/resolveOrganization";
 import { FormIdSchema } from "@/features/forms/lib/schema";
 import { getFormAvailability } from "@/features/forms/lib/submission";
 import { OrganizationConfigKey } from "@/core/config/schema";
+import { FormDraftService } from "@/features/forms/services/FormDraftService";
 import { FormSubmissionService } from "@/features/forms/services/FormSubmissionService";
 import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
@@ -82,6 +83,20 @@ export default async function FormPage({
         })
       : null;
 
+  const draft =
+    !isPreview &&
+    availability === "open" &&
+    form.settings.requireLogin &&
+    session !== null &&
+    membership !== null &&
+    submissionEditable === null
+      ? await FormDraftService.get(
+          organization.id,
+          form.formId,
+          session.user.id,
+        )
+      : null;
+
   // Plain data for the client components.
   const definition = { formId: form.formId, components: form.components };
 
@@ -124,7 +139,13 @@ export default async function FormPage({
       </FormMessage>
     );
   } else {
-    content = <FormFillClient definition={definition} />;
+    content = (
+      <FormFillClient
+        definition={definition}
+        initialValues={draft?.answers}
+        enableDrafts={form.settings.requireLogin}
+      />
+    );
   }
 
   return (
