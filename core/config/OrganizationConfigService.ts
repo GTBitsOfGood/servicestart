@@ -1,6 +1,6 @@
-import type { ConfigValues } from "@/core/config/registry";
+import type { ConfigValue, ConfigValues } from "@/core/config/registry";
 import { OrganizationConfigKey } from "@/core/config/schema";
-import { configStore } from "@/core/config/store";
+import { configStore, type ConfigTransaction } from "@/core/config/store";
 import {
   ORGANIZATION_THEME_CONFIG_KEYS,
   type OrganizationThemeConfig,
@@ -30,6 +30,22 @@ function setConfig(
   value: unknown,
 ): Promise<void> {
   return configStore.set(organizationId, key, value);
+}
+
+/**
+ * Reads, changes, and stores a key's value while holding a lock on the key, so
+ * concurrent changes can't overwrite each other. `change` returns the new
+ * value, or null to remove the row; see configStore.update.
+ */
+function updateConfig<K extends OrganizationConfigKey>(
+  organizationId: string,
+  key: K,
+  change: (
+    tx: ConfigTransaction,
+    current: () => Promise<ConfigValue<K>>,
+  ) => Promise<unknown>,
+): Promise<void> {
+  return configStore.update(organizationId, key, change);
 }
 
 /** Removes a config row, so its key goes back to its default. */
@@ -90,6 +106,7 @@ export const OrganizationConfigService = {
   getConfig,
   getThemeConfig,
   setConfig,
+  updateConfig,
   clearConfig,
   getDashboardLayoutFor,
   getDashboardHeader: getter(OrganizationConfigKey.DashboardHeader),

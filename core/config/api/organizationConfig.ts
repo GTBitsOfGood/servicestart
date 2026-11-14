@@ -42,23 +42,32 @@ const AUDIENCE_KEYED: ReadonlySet<OrganizationConfigKey> = new Set(
 );
 
 /**
- * An audience-keyed value (dashboard header, navbar, member type layouts)
- * without entries for member types the org no longer has (#336), so a new
- * type that reuses a deleted type's key starts clean. Other values pass
- * through; the store validates every value.
+ * Stores a value. An audience-keyed value (dashboard header, navbar, member
+ * type layouts) drops entries for member types the org no longer has (#336),
+ * so a new type that reuses a deleted type's key starts clean. The org's
+ * types stay locked until it's stored, so a concurrent delete can't strip a
+ * type's entry in between.
  */
-async function withoutDeletedMemberTypes(
+async function saveConfig(
   organizationId: string,
   key: OrganizationConfigKey,
   value: unknown,
-): Promise<unknown> {
-  if (!AUDIENCE_KEYED.has(key)) return value;
+): Promise<void> {
+  if (!AUDIENCE_KEYED.has(key)) {
+    await OrganizationConfigService.setConfig(organizationId, key, value);
+    return;
+  }
   const decoded = decodeConfigValue(getConfigDefinition(key), value);
   if (!decoded.success) throw decoded.error;
-  const keys = (await MemberTypeService.list(organizationId)).map(
-    (row) => row.key,
+  await OrganizationConfigService.updateConfig(
+    organizationId,
+    key,
+    async (tx) =>
+      pruneAudienceRecord(
+        decoded.data as Record<string, unknown>,
+        await MemberTypeService.lockKeys(organizationId, tx),
+      ),
   );
-  return pruneAudienceRecord(decoded.data as Record<string, unknown>, keys);
 }
 
 const app = new Hono<{ Variables: { organizationId: string } }>()
@@ -173,15 +182,10 @@ const app = new Hono<{ Variables: { organizationId: string } }>()
         return c.json({ error: "Missing value" }, 400);
       }
 
-      const organizationId = c.get("organizationId");
-      await OrganizationConfigService.setConfig(
-        organizationId,
+      await saveConfig(
+        c.get("organizationId"),
         key as OrganizationConfigKey,
-        await withoutDeletedMemberTypes(
-          organizationId,
-          key as OrganizationConfigKey,
-          value,
-        ),
+        value,
       );
 
       return c.json({ ok: true }, 200);

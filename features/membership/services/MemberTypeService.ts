@@ -88,6 +88,24 @@ async function orgKeys(
   return rows.map((row) => MemberTypeKeySchema.parse(row.key));
 }
 
+/**
+ * The org's member type keys, locked against deletion until `tx` ends. A
+ * config value keyed by member type (a layout, the header, the navbar) can
+ * then be checked and saved without racing a delete that strips the type's
+ * entries: the delete waits, or finishes first and its type isn't listed.
+ */
+async function lockKeys(
+  organizationId: string,
+  tx: Transaction,
+): Promise<MemberTypeKey[]> {
+  const rows = await tx
+    .select({ key: memberTypes.key })
+    .from(memberTypes)
+    .where(eq(memberTypes.organizationId, organizationId))
+    .for("key share");
+  return rows.map((row) => MemberTypeKeySchema.parse(row.key));
+}
+
 async function list(organizationId: string): Promise<MemberTypeRow[]> {
   const rows = await db
     .select(rowColumns)
@@ -457,6 +475,7 @@ async function deleteType(
 
 export const MemberTypeService = {
   list,
+  lockKeys,
   findByKey,
   getSignupDefault,
   findUnknownKeys,

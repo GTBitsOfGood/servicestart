@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import db from "@/core/db";
 import {
   ConfigValidationError,
@@ -23,13 +23,19 @@ import {
  * only; OrganizationConfigService wraps it for callers.
  */
 
+export type ConfigTransaction = Parameters<
+  Parameters<typeof db.transaction>[0]
+>[0];
+type Executor = typeof db | ConfigTransaction;
+
 /** Stored rows for these keys, as text, keyed by config key. */
 async function readRows(
   organizationId: string,
   keys: readonly OrganizationConfigKey[],
+  executor: Executor = db,
 ): Promise<Map<string, string>> {
   if (keys.length === 0) return new Map();
-  const rows = await db
+  const rows = await executor
     .select({ key: organizationConfig.key, value: organizationConfig.value })
     .from(organizationConfig)
     .where(
@@ -67,9 +73,10 @@ function parseStored<K extends OrganizationConfigKey>(
 async function get<K extends OrganizationConfigKey>(
   organizationId: string,
   keys: readonly K[],
+  executor: Executor = db,
 ): Promise<ConfigValues<K>> {
   const wanted = knownKeys(keys);
-  const rows = await readRows(organizationId, wanted);
+  const rows = await readRows(organizationId, wanted, executor);
   const values: Partial<ConfigValues<K>> = {};
   for (const key of wanted) {
     const stored = rows.get(key);
@@ -120,6 +127,7 @@ async function set(
   organizationId: string,
   key: OrganizationConfigKey,
   input: unknown,
+  executor: Executor = db,
 ): Promise<void> {
   if (!isConfigKey(key)) {
     throw new ConfigValidationError(key, "Invalid key");
@@ -127,7 +135,7 @@ async function set(
   const result = decodeConfigValue(getConfigDefinition(key), input);
   if (!result.success) throw result.error;
   if (result.data === null) {
-    await clear(organizationId, key);
+    await clear(organizationId, key, executor);
     return;
   }
 
@@ -138,14 +146,14 @@ async function set(
     eq(organizationConfig.organizationId, organizationId),
     eq(organizationConfig.key, key),
   );
-  const updated = await db
+  const updated = await executor
     .update(organizationConfig)
     .set({ value })
     .where(where)
     .returning({ id: organizationConfig.id });
   if (updated.length > 0) return;
 
-  await db
+  await executor
     .insert(organizationConfig)
     .values({ id: randomUUID(), organizationId, key, value });
 }
@@ -154,8 +162,9 @@ async function set(
 async function clear(
   organizationId: string,
   key: OrganizationConfigKey,
+  executor: Executor = db,
 ): Promise<void> {
-  await db
+  await executor
     .delete(organizationConfig)
     .where(
       and(
@@ -165,4 +174,35 @@ async function clear(
     );
 }
 
-export const configStore = { get, getExplicit, getOne, set, clear };
+/**
+ * Changes a key's value in a transaction that holds a lock on the key, so
+ * changes to it run one at a time instead of overwriting each other (or each
+ * inserting a row). `change` gets the transaction, for any other reads and
+ * locks that belong with the change, and a reader for the current value. It
+ * returns the new value, or null to delete the row.
+ */
+async function update<K extends OrganizationConfigKey>(
+  organizationId: string,
+  key: K,
+  change: (
+    tx: ConfigTransaction,
+    current: () => Promise<ConfigValue<K>>,
+  ) => Promise<unknown>,
+): Promise<void> {
+  if (!isConfigKey(key)) {
+    throw new ConfigValidationError(key, "Invalid key");
+  }
+  await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${organizationId}), hashtext(${key}))`,
+    );
+    const next = await change(
+      tx,
+      async () => (await get(organizationId, [key], tx))[key],
+    );
+    if (next === null) await clear(organizationId, key, tx);
+    else await set(organizationId, key, next, tx);
+  });
+}
+
+export const configStore = { get, getExplicit, getOne, set, clear, update };
