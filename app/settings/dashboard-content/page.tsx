@@ -20,9 +20,7 @@ export default async function DashboardContentSettingsPage() {
     <DashboardContentSettings
       initialHeader={header}
       initialFooter={footer}
-      memberTypesEnabled={Boolean(
-        config[OrganizationConfigKey.MemberTypesEnabled],
-      )}
+      memberTypesEnabled={config[OrganizationConfigKey.MemberTypesEnabled]}
     />
   );
 }

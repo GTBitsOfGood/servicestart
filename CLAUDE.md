@@ -34,7 +34,7 @@ A file that doesn't fit goes in the context that owns its data; add it to the ta
 ## Boundaries (enforced by `pnpm lint`)
 
 - **A context imports another only through its public API:** `@/features/<context>` (`index.ts`: enums, types, Zod contracts, pure logic, hooks), `@/features/<context>/server` (`server.ts`: services), and `@/features/<context>/ui` (`ui.ts`: components and widgets). Never `@/features/<context>/lib/...` and the like. Inside a context, import its own files directly. When another context needs something new, export it from the right file.
-- **`core/` never imports `features/`.** The exceptions are `core/db/schema.ts` (the table barrel) and `import type { AppType }` in the RPC client.
+- **`core/` never imports `features/`.** The exceptions are the barrels `core/db/schema.ts` (every context's tables) and `core/config/registry.ts` (every context's config keys), and `import type { AppType }` in the RPC client.
 - **Only services, `core/`, `scripts/`, and `tests/` import `@/core/db` or `drizzle-orm`** (type-only `drizzle-orm` imports are fine anywhere, and a context's `schema.ts` defines tables). Everything else calls a service.
 - `app/`, `scripts/`, `tests/`, and `features/app.ts` are composition code and may import any context's internals.
 - `BOUNDARY_BASELINE` in `eslint.config.mjs` lists files that broke these rules before they existed. Don't add to it; fix the import.
@@ -45,7 +45,7 @@ Every user-facing entity belongs to an organization. Practically:
 
 - **Scope every query by `organizationId`.** Getting a row by ID alone is a tenant-leak bug; services take the org ID and filter on it. Verify the fetched row's `organizationId` matches the caller's active org before returning it.
 - The active org comes from `session.session.activeOrganizationId`, or is derived from the request's host subdomain (`getSlugFromHost` in `core/tenant/`). Locally, tenants are subdomains of `lvh.me`.
-- **Features are per-org toggles, not per-org code.** Build a feature for everyone, add an `OrganizationConfigKey` for it defaulting to off, and enable it with a config row. Never branch the codebase or special-case a nonprofit by name.
+- **Features are per-org toggles, not per-org code.** Build a feature for everyone, add a boolean config key for it defaulting to off (see **Config keys** below), and enable it with a config row. Never branch the codebase or special-case a nonprofit by name.
 - **Enforce the toggle on the server too** — both the page and its API routes. Use `assertFeatureEnabled` in routes and `notFoundIfFeatureDisabled` in server pages (`core/auth/featureGuards.ts`). Hiding a nav item is not access control.
 - BetterAuth is customized so one email can exist across multiple orgs (see the overrides in `core/auth/authUtils.ts`). Don't assume email is globally unique.
 
@@ -63,7 +63,9 @@ Every user-facing entity belongs to an organization. Practically:
 
 **Services** are plain functions collected into one exported object at the bottom of the file. Keep them free of HTTP concerns — no `Context`, no status codes; throw or return `null` and let the route decide the response.
 
-**Schema.** Each context's tables and their enums live in its `schema.ts`; `core/db/schema.ts` re-exports them all with the relations, and services import tables from `@/core/db/schema`. TypeScript enums are the source of truth; `pgEnum` and Zod schemas are derived from them, so add a value in one place. Reuse those enums in validation instead of restating string literals. Config keys are the exception: `organization_config.key` is text, so a new `OrganizationConfigKey` needs no migration.
+**Schema.** Each context's tables and their enums live in its `schema.ts`; `core/db/schema.ts` re-exports them all with the relations, and services import tables from `@/core/db/schema`. TypeScript enums are the source of truth; `pgEnum` and Zod schemas are derived from them, so add a value in one place. Reuse those enums in validation instead of restating string literals. Config keys are the exception; see below.
+
+**Config keys.** Each key is declared once, in its context's `config.ts`, with `defineConfig({ key, schema, default, visibility })`: a Zod schema for the value, the default for an org with no row (or an invalid one), and who may read it through `GET /api/organizationConfig` (`public` for signed-out pages, `member`, or `admin`). `core/config/registry.ts` collects every context's definitions. Adding a key takes an `OrganizationConfigKey` member and one `defineConfig` entry, and no migration (`organization_config.key` is text). Keep each key one type: strings are stored as is, anything else as JSON, so a schema can't accept both a string and a non-string. Read and write with `OrganizationConfigService.getConfig(orgId, keys)` / `setConfig` on the server, which return each key's own type, and with `useOrganizationConfig(keys)` on the client. Don't hand-write a getter, setter, or query for a key.
 
 **Styling.** Tailwind utility classes with the semantic tokens from `styles/globals.css` (`text-brand-text`, `bg-grey-fill-weak`, …) — avoid raw hex and arbitrary values. `components/bog/` primitives use CSS modules; that's their convention, not the app's.
 

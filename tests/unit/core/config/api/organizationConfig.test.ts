@@ -20,6 +20,14 @@ import {
 } from "@/tests/unit/testUtils";
 import { DEFAULT_BRANDING } from "@/core/config/branding";
 
+/** Signs up a user with this role in the org, active there. */
+async function signInTo(organizationId: string, role: "admin" | "member") {
+  const { user, session, headers } = await signUpAndGetSession(buildTestUser());
+  await setActiveOrganization(session.id, organizationId);
+  await addMember(user.id, organizationId, role);
+  return headers;
+}
+
 describe("GET /api/organizationConfig", () => {
   it("publicly returns the admin-configured logo and tagline for the requested tenant", async () => {
     const org = await createOrganization("cfg-branding");
@@ -116,12 +124,17 @@ describe("GET /api/organizationConfig", () => {
       value: "Org description",
     });
 
-    const response = await testApi.organizationConfig.$get({
-      query: {
-        keys: ["description"],
-        organizationSlug: "cfg-get-slug",
+    const headers = await signInTo(org.id, "admin");
+
+    const response = await testApi.organizationConfig.$get(
+      {
+        query: {
+          keys: ["description"],
+          organizationSlug: "cfg-get-slug",
+        },
       },
-    });
+      { headers },
+    );
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data).toEqual({ description: "Org description" });
@@ -129,10 +142,11 @@ describe("GET /api/organizationConfig", () => {
 
   it("falls back to active organization when organizationSlug is not provided", async () => {
     const org = await createOrganization("cfg-get-active");
-    const user = buildTestUser();
-    const { session, headers } = await signUpAndGetSession(user);
+    const { user, session, headers } =
+      await signUpAndGetSession(buildTestUser());
     await setActiveOrganization(session.id, org.id);
-    // No membership required
+    // The description is an admin key.
+    await addMember(user.id, org.id, "admin");
 
     await db.insert(organizationConfig).values({
       id: randomUUID(),
@@ -157,13 +171,17 @@ describe("GET /api/organizationConfig", () => {
   });
 
   it("returns default value when key is not set", async () => {
-    await createOrganization("cfg-get-default");
-    const response = await testApi.organizationConfig.$get({
-      query: {
-        keys: ["description"],
-        organizationSlug: "cfg-get-default",
+    const org = await createOrganization("cfg-get-default");
+    const headers = await signInTo(org.id, "admin");
+    const response = await testApi.organizationConfig.$get(
+      {
+        query: {
+          keys: ["description"],
+          organizationSlug: "cfg-get-default",
+        },
       },
-    });
+      { headers },
+    );
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data).toEqual({ description: "No description has been set" });
@@ -250,10 +268,8 @@ describe("PUT /api/organizationConfig", () => {
     );
     expect(response.status).toBe(403);
     const data = await response.json();
-    expect(data).toHaveProperty(
-      "error",
-      "Forbidden: Admin or owner role required",
-    );
+    // requireAdmin's message, shared with every admin route.
+    expect(data).toHaveProperty("error", "Forbidden");
   });
 
   it("returns 400 for invalid key", async () => {
@@ -457,12 +473,17 @@ describe("PUT /api/organizationConfig", () => {
       value: JSON.stringify(layout),
     });
 
-    const response = await testApi.organizationConfig.$get({
-      query: {
-        keys: [OrganizationConfigKey.DashboardLayout],
-        organizationSlug: "cfg-get-dl",
+    const headers = await signInTo(org.id, "admin");
+
+    const response = await testApi.organizationConfig.$get(
+      {
+        query: {
+          keys: [OrganizationConfigKey.DashboardLayout],
+          organizationSlug: "cfg-get-dl",
+        },
       },
-    });
+      { headers },
+    );
     expect(response.status).toBe(200);
     const data = (await response.json()) as Record<string, unknown>;
     expect(data[OrganizationConfigKey.DashboardLayout]).toEqual(layout);
@@ -542,5 +563,162 @@ describe("GET /api/organizationConfig branding", () => {
       primary_color: "#123456",
       secondary_color: "#654321",
     });
+  });
+});
+
+describe("GET /api/organizationConfig visibility", () => {
+  const PUBLIC_KEY = OrganizationConfigKey.Tagline;
+  const ADMIN_KEYS = [
+    OrganizationConfigKey.FormsEnabled,
+    OrganizationConfigKey.OrganizationFooter,
+  ];
+  const keys = [PUBLIC_KEY, ...ADMIN_KEYS];
+
+  async function seedOrg(slug: string) {
+    const org = await createOrganization(slug);
+    await OrganizationConfigService.setConfig(org.id, PUBLIC_KEY, "Welcome");
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.FormsEnabled,
+      true,
+    );
+    await OrganizationConfigService.setConfig(
+      org.id,
+      OrganizationConfigKey.OrganizationFooter,
+      { email: "hello@example.com" },
+    );
+    return org;
+  }
+
+  it("gives anonymous callers public keys only", async () => {
+    const org = await seedOrg("cfg-vis-anon");
+
+    const response = await testApi.organizationConfig.$get({
+      query: { keys, organizationSlug: org.slug },
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ tagline: "Welcome" });
+  });
+
+  it("gives an org's members its public keys, not its admin keys", async () => {
+    const org = await seedOrg("cfg-vis-member");
+    const headers = await signInTo(org.id, "member");
+
+    const response = await testApi.organizationConfig.$get(
+      { query: { keys, organizationSlug: org.slug } },
+      { headers },
+    );
+
+    expect(await response.json()).toEqual({ tagline: "Welcome" });
+  });
+
+  it("gives an org's admins every key, typed", async () => {
+    const org = await seedOrg("cfg-vis-admin");
+    const headers = await signInTo(org.id, "admin");
+
+    const response = await testApi.organizationConfig.$get(
+      { query: { keys, organizationSlug: org.slug } },
+      { headers },
+    );
+
+    expect(await response.json()).toEqual({
+      tagline: "Welcome",
+      forms_enabled: true,
+      organization_footer: { email: "hello@example.com" },
+    });
+  });
+
+  it("gives an admin of org A only org B's public keys, by slug or by host", async () => {
+    const orgA = await seedOrg("cfg-vis-a");
+    const orgB = await seedOrg("cfg-vis-b");
+    const headers = await signInTo(orgA.id, "admin");
+
+    const bySlug = await testApi.organizationConfig.$get(
+      { query: { keys, organizationSlug: orgB.slug } },
+      { headers },
+    );
+    expect(await bySlug.json()).toEqual({ tagline: "Welcome" });
+
+    const byHost = await testApi.organizationConfig.$get(
+      { query: { keys } },
+      { headers: { ...headers, host: `${orgB.slug}.servicestart.com` } },
+    );
+    expect(await byHost.json()).toEqual({ tagline: "Welcome" });
+
+    // Their own org, by host, still gets everything.
+    const ownHost = await testApi.organizationConfig.$get(
+      { query: { keys } },
+      { headers: { ...headers, host: `${orgA.slug}.servicestart.com` } },
+    );
+    expect(Object.keys(await ownHost.json()).sort()).toEqual([...keys].sort());
+  });
+});
+
+describe("PUT /api/organizationConfig typed values", () => {
+  it("accepts typed values and their text form, stored the same way", async () => {
+    const org = await createOrganization("cfg-put-typed");
+    const headers = await signInTo(org.id, "admin");
+
+    for (const value of [true, "true"]) {
+      const response = await testApi.organizationConfig.$put(
+        { json: { key: OrganizationConfigKey.FormsEnabled, value } },
+        { headers },
+      );
+      expect(response.status).toBe(200);
+    }
+    const footer = await testApi.organizationConfig.$put(
+      {
+        json: {
+          key: OrganizationConfigKey.OrganizationFooter,
+          value: { email: "hello@example.com" },
+        },
+      },
+      { headers },
+    );
+    expect(footer.status).toBe(200);
+
+    const rows = await db
+      .select({ key: organizationConfig.key, value: organizationConfig.value })
+      .from(organizationConfig)
+      .where(eq(organizationConfig.organizationId, org.id));
+    expect(Object.fromEntries(rows.map((row) => [row.key, row.value]))).toEqual(
+      {
+        forms_enabled: "true",
+        organization_footer: '{"email":"hello@example.com"}',
+      },
+    );
+  });
+
+  it("rejects an invalid value with the field and the schema's message", async () => {
+    const org = await createOrganization("cfg-put-typed-invalid");
+    const headers = await signInTo(org.id, "admin");
+
+    const response = await testApi.organizationConfig.$put(
+      {
+        json: {
+          key: OrganizationConfigKey.OrganizationFooter,
+          value: { socialLinks: [{ platform: "x", url: "nope" }] },
+        },
+      },
+      { headers },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "Invalid footer (socialLinks.0.url): Enter a web address",
+    });
+  });
+
+  it("rejects a member who isn't an admin before reading the body", async () => {
+    const org = await createOrganization("cfg-put-member");
+    const headers = await signInTo(org.id, "member");
+
+    const response = await testApi.organizationConfig.$put(
+      { json: { key: OrganizationConfigKey.Tagline, value: "Hi" } },
+      { headers },
+    );
+
+    expect(response.status).toBe(403);
   });
 });

@@ -14,8 +14,9 @@ import eslintConfigPrettier from "eslint-config-prettier/flat";
  *   file inside it: index.ts (@/features/<name>) for contracts and pure code,
  *   server.ts (@/features/<name>/server) for services, and ui.ts
  *   (@/features/<name>/ui) for React components and widgets.
- * - core/ never imports features/. The exceptions are the Drizzle barrel
- *   (core/db/schema.ts) and the RPC client's `import type { AppType }`.
+ * - core/ never imports features/. The exceptions are the barrels that
+ *   collect every context's tables (core/db/schema.ts) and config keys
+ *   (core/config/registry.ts), and the RPC client's `import type { AppType }`.
  * - @/core/db and drizzle-orm are only for a context's services/, core/,
  *   scripts/, and tests/. Each context's schema.ts may build tables, and
  *   type-only drizzle-orm imports are fine anywhere.
@@ -73,9 +74,6 @@ const BOUNDARY_BASELINE = [
   // membership and notification services.
   "core/auth/auth.ts",
   "core/auth/authUtils.ts",
-  // core/ importing features: the config service's keys come from the
-  // dashboard and navigation contexts (#334 moves them into a registry).
-  "core/config/OrganizationConfigService.ts",
   // core/ importing features: membership checks in shared routes and services.
   "core/config/api/organizationConfig.ts",
   "core/email/EmailService.ts",
@@ -134,8 +132,15 @@ export default defineConfig(
     },
   },
   {
-    // The Drizzle barrel collects every context's tables by design.
-    files: ["core/db/schema.ts", "features/app.ts", "scripts/**", "tests/**"],
+    // The Drizzle barrel and the config registry collect every context's
+    // tables and config keys by design.
+    files: [
+      "core/db/schema.ts",
+      "core/config/registry.ts",
+      "features/app.ts",
+      "scripts/**",
+      "tests/**",
+    ],
     rules: { [RULE]: "off" },
   },
   {

@@ -21,9 +21,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
   const config = await OrganizationConfigService.getConfig(organizationId, [
     OrganizationConfigKey.MemberTypesEnabled,
   ]);
-  const memberTypesEnabled = Boolean(
-    config[OrganizationConfigKey.MemberTypesEnabled],
-  );
+  const memberTypesEnabled = config[OrganizationConfigKey.MemberTypesEnabled];
 
   await notFoundIfFeatureDisabled(
     organizationId,

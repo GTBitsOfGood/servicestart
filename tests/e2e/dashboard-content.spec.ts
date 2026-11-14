@@ -12,7 +12,7 @@ import {
   OrganizationConfigKey,
 } from "@/core/db/schema";
 import { NotificationService } from "@/features/communications/services/NotificationService";
-import { setMemberTypeDashboardLayout } from "@/features/dashboard/config";
+import { setMemberTypeDashboardLayout } from "@/features/dashboard/server";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import {
   addMember,

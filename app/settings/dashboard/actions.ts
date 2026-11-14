@@ -7,7 +7,7 @@ import { auth } from "@/core/auth/auth";
 import {
   clearMemberTypeDashboardLayout,
   setMemberTypeDashboardLayout,
-} from "@/features/dashboard/config";
+} from "@/features/dashboard/server";
 import { MEMBER_AUDIENCES } from "@/features/membership/lib/audience";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import {
