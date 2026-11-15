@@ -1,0 +1,1812 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`seeded org golden fixtures > keeps every org's navbar for every member and for visitors 1`] = `
+{
+  "applicationstart | admin@example.com (admin)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/forms",
+          "label": "Forms",
+        },
+        {
+          "href": "/settings/member-types",
+          "label": "Member types",
+        },
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "applicationstart | applicant-pending@example.com (member/applicant)": [
+    {
+      "href": "/",
+      "label": "My Application",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+  ],
+  "applicationstart | applicant-rejected@example.com (member/applicant)": [
+    {
+      "href": "/",
+      "label": "My Application",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+  ],
+  "applicationstart | applicant-review@example.com (member/applicant)": [
+    {
+      "href": "/",
+      "label": "My Application",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+  ],
+  "applicationstart | applicant@example.com (member/applicant)": [
+    {
+      "href": "/",
+      "label": "My Application",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+  ],
+  "applicationstart | attendee-complete@example.com (member/attendee)": [
+    {
+      "href": "/",
+      "label": "My Camp",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "applicationstart | member1@example.com (member/attendee)": [
+    {
+      "href": "/",
+      "label": "My Camp",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "applicationstart | member2@example.com (member/attendee)": [
+    {
+      "href": "/",
+      "label": "My Camp",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "applicationstart | owner@example.com (owner)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/forms",
+          "label": "Forms",
+        },
+        {
+          "href": "/settings/member-types",
+          "label": "Member types",
+        },
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "applicationstart | signed out": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "horizontal-center | admin@example.com (admin)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "horizontal-center | member1@example.com (member)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "horizontal-center | member2@example.com (member)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "horizontal-center | owner@example.com (owner)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "horizontal-center | signed out": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "horizontal-left | admin@example.com (admin)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "horizontal-left | member1@example.com (member)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "horizontal-left | member2@example.com (member)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "horizontal-left | owner@example.com (owner)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "horizontal-left | signed out": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "servicestart | admin@example.com (admin)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "servicestart | joinrequest-approved@example.com (member)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "servicestart | member1@example.com (member)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "servicestart | member2@example.com (member)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "servicestart | owner@example.com (owner)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "servicestart | signed out": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "vertical-icon | admin@example.com (admin)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "vertical-icon | member1@example.com (member)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "vertical-icon | member2@example.com (member)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "vertical-icon | owner@example.com (owner)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "vertical-icon | signed out": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "visionariestothethrone | admin@example.com (admin)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/forms",
+          "label": "Forms",
+        },
+        {
+          "href": "/settings/member-types",
+          "label": "Member types",
+        },
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "visionariestothethrone | applicant-pending@example.com (member/applicant)": [
+    {
+      "href": "/",
+      "label": "My Application",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+  ],
+  "visionariestothethrone | applicant-review@example.com (member/applicant)": [
+    {
+      "href": "/",
+      "label": "My Application",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+  ],
+  "visionariestothethrone | applicant@example.com (member/applicant)": [
+    {
+      "href": "/",
+      "label": "My Application",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+  ],
+  "visionariestothethrone | attendee-complete@example.com (member/attendee)": [
+    {
+      "href": "/",
+      "label": "My Camp",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "visionariestothethrone | member1@example.com (member/attendee)": [
+    {
+      "href": "/",
+      "label": "My Camp",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "visionariestothethrone | member2@example.com (member/attendee)": [
+    {
+      "href": "/",
+      "label": "My Camp",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "visionariestothethrone | owner@example.com (owner)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/forms",
+          "label": "Forms",
+        },
+        {
+          "href": "/settings/member-types",
+          "label": "Member types",
+        },
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "visionariestothethrone | signed out": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "volunteerstart | admin@example.com (admin)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/forms",
+          "label": "Forms",
+        },
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "volunteerstart | joinrequest-approved@example.com (member)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "volunteerstart | member1@example.com (member)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "volunteerstart | member2@example.com (member)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "volunteerstart | owner@example.com (owner)": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/members",
+      "label": "Members",
+      "subpages": undefined,
+    },
+    {
+      "href": "/media",
+      "label": "Media Library",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/settings",
+      "label": "Settings",
+      "subpages": [
+        {
+          "href": "/settings/forms",
+          "label": "Forms",
+        },
+        {
+          "href": "/settings/admindashboard",
+          "label": "Admin Dashboard",
+        },
+        {
+          "href": "/settings/dashboard",
+          "label": "Dashboard",
+        },
+        {
+          "href": "/settings/dashboard-content",
+          "label": "Dashboard Content",
+        },
+      ],
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+  "volunteerstart | signed out": [
+    {
+      "href": "/",
+      "label": "Home",
+      "subpages": undefined,
+    },
+    {
+      "href": "/inbox",
+      "label": "Inbox",
+      "subpages": undefined,
+    },
+    {
+      "href": "/events",
+      "label": "Events",
+      "subpages": undefined,
+    },
+  ],
+}
+`;
+
+exports[`seeded org golden fixtures > keeps every org's widget options with forms on and off 1`] = `
+{
+  "applicationstart | forms off": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "applicationstart | forms on": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "application_status",
+      "label": "Application Status",
+    },
+    {
+      "id": "forms_todo",
+      "label": "To-Do List",
+    },
+    {
+      "id": "forms_completed",
+      "label": "Completed Forms",
+    },
+    {
+      "id": "forms_progress",
+      "label": "Forms Progress",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "applicationstart | stored": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "application_status",
+      "label": "Application Status",
+    },
+    {
+      "id": "forms_todo",
+      "label": "To-Do List",
+    },
+    {
+      "id": "forms_completed",
+      "label": "Completed Forms",
+    },
+    {
+      "id": "forms_progress",
+      "label": "Forms Progress",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "horizontal-center | forms off": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "horizontal-center | forms on": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "application_status",
+      "label": "Application Status",
+    },
+    {
+      "id": "forms_todo",
+      "label": "To-Do List",
+    },
+    {
+      "id": "forms_completed",
+      "label": "Completed Forms",
+    },
+    {
+      "id": "forms_progress",
+      "label": "Forms Progress",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "horizontal-center | stored": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "horizontal-left | forms off": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "horizontal-left | forms on": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "application_status",
+      "label": "Application Status",
+    },
+    {
+      "id": "forms_todo",
+      "label": "To-Do List",
+    },
+    {
+      "id": "forms_completed",
+      "label": "Completed Forms",
+    },
+    {
+      "id": "forms_progress",
+      "label": "Forms Progress",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "horizontal-left | stored": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "servicestart | forms off": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "servicestart | forms on": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "application_status",
+      "label": "Application Status",
+    },
+    {
+      "id": "forms_todo",
+      "label": "To-Do List",
+    },
+    {
+      "id": "forms_completed",
+      "label": "Completed Forms",
+    },
+    {
+      "id": "forms_progress",
+      "label": "Forms Progress",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "servicestart | stored": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "vertical-icon | forms off": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "vertical-icon | forms on": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "application_status",
+      "label": "Application Status",
+    },
+    {
+      "id": "forms_todo",
+      "label": "To-Do List",
+    },
+    {
+      "id": "forms_completed",
+      "label": "Completed Forms",
+    },
+    {
+      "id": "forms_progress",
+      "label": "Forms Progress",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "vertical-icon | stored": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "visionariestothethrone | forms off": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "visionariestothethrone | forms on": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "application_status",
+      "label": "Application Status",
+    },
+    {
+      "id": "forms_todo",
+      "label": "To-Do List",
+    },
+    {
+      "id": "forms_completed",
+      "label": "Completed Forms",
+    },
+    {
+      "id": "forms_progress",
+      "label": "Forms Progress",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "visionariestothethrone | stored": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "application_status",
+      "label": "Application Status",
+    },
+    {
+      "id": "forms_todo",
+      "label": "To-Do List",
+    },
+    {
+      "id": "forms_completed",
+      "label": "Completed Forms",
+    },
+    {
+      "id": "forms_progress",
+      "label": "Forms Progress",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "volunteerstart | forms off": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "volunteerstart | forms on": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "application_status",
+      "label": "Application Status",
+    },
+    {
+      "id": "forms_todo",
+      "label": "To-Do List",
+    },
+    {
+      "id": "forms_completed",
+      "label": "Completed Forms",
+    },
+    {
+      "id": "forms_progress",
+      "label": "Forms Progress",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+  "volunteerstart | stored": [
+    {
+      "id": "events",
+      "label": "Events",
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+    },
+    {
+      "id": "member_requests",
+      "label": "New Member Requests",
+    },
+    {
+      "id": "newsletter",
+      "label": "Newsletter",
+    },
+    {
+      "id": "application_status",
+      "label": "Application Status",
+    },
+    {
+      "id": "forms_todo",
+      "label": "To-Do List",
+    },
+    {
+      "id": "forms_completed",
+      "label": "Completed Forms",
+    },
+    {
+      "id": "forms_progress",
+      "label": "Forms Progress",
+    },
+    {
+      "id": "weekly_calendar",
+      "label": "Weekly Calendar",
+    },
+  ],
+}
+`;
