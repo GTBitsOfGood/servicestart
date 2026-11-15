@@ -1,7 +1,7 @@
 import { handleError } from "@/core/api/handleError";
 import { Hono } from "hono";
 import ping from "@/core/api/ping";
-import organizationConfig from "@/core/config/api/organizationConfig";
+import organizationConfig from "@/features/settings/api/organizationConfig";
 import alerts from "@/features/communications/api/alerts";
 import announcements from "@/features/communications/api/announcements";
 import emails from "@/features/communications/api/emails";

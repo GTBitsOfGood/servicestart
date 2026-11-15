@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import db from "@/core/db";
 import { announcements } from "@/core/db/schema";
-import { EmailService } from "@/core/email/EmailService";
+import { MemberEmailService } from "@/features/communications/services/MemberEmailService";
 import {
   addMember,
   buildTestUser,
@@ -19,12 +19,17 @@ import {
 
 vi.mock("@/core/email/EmailService", () => ({
   EmailService: {
-    emailMembers: vi.fn(async () => {}),
     registerOrganizationSender: vi.fn(async () => {}),
   },
 }));
 
-const mockEmailMembers = vi.mocked(EmailService.emailMembers);
+vi.mock("@/features/communications/services/MemberEmailService", () => ({
+  MemberEmailService: {
+    emailMembers: vi.fn(async () => {}),
+  },
+}));
+
+const mockEmailMembers = vi.mocked(MemberEmailService.emailMembers);
 
 beforeEach(() => {
   mockEmailMembers.mockReset();

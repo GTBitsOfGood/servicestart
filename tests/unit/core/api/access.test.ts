@@ -4,7 +4,7 @@ import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import { app } from "@/features/app";
 import { handleError } from "@/core/api/handleError";
-import serveImage from "@/core/files/api/serveImage";
+import serveImage from "@/features/media/api/serveImage";
 import forms from "@/features/forms/api/forms";
 import formQuestions from "@/features/forms/api/formQuestions";
 import formSubmissions from "@/features/forms/api/formSubmissions";

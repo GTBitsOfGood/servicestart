@@ -1,5 +1,5 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import db from "@/core/db";
 import { organizations } from "@/core/tenant/schema";
 
@@ -31,7 +31,20 @@ async function findById(id: string) {
   return organization ?? null;
 }
 
+/** The phone numbers of these organizations, by id. */
+async function findPhoneNumbersByIds(ids: string[]) {
+  if (ids.length === 0) return [];
+  return db
+    .select({
+      id: organizations.id,
+      phoneNumber: organizations.phoneNumber,
+    })
+    .from(organizations)
+    .where(inArray(organizations.id, ids));
+}
+
 export const OrganizationsService = {
   findBySlug,
   findById,
+  findPhoneNumbersByIds,
 };

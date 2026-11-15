@@ -31,6 +31,7 @@ const CONTEXTS = [
   "media",
   "membership",
   "navigation",
+  "settings",
 ];
 
 const RULE = "@typescript-eslint/no-restricted-imports";
@@ -67,17 +68,11 @@ const NO_FEATURES = {
  * `pnpm lint` passes. #337 empties this list. Don't add to it: fix the import.
  */
 const BOUNDARY_BASELINE = [
-  // Queries the database directly instead of through a service.
-  "app/profile/page.tsx",
-  "features/communications/api/messages.ts",
   // core/ importing features: the signup hooks and route guards call the
   // membership and notification services.
   "core/auth/auth.ts",
   "core/auth/authUtils.ts",
   // core/ importing features: membership checks in shared routes and services.
-  "core/config/api/organizationConfig.ts",
-  "core/email/EmailService.ts",
-  "core/files/api/serveImage.ts",
 ];
 
 export default defineConfig(

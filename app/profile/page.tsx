@@ -5,9 +5,7 @@ import EventService from "@/features/events/services/EventService";
 import EditProfileButton from "@/features/membership/components/EditProfileButton";
 import HoursTab from "@/features/events/components/HoursTab";
 import SaveBanner from "@/components/SaveBanner";
-import db from "@/core/db";
-import { organizations } from "@/core/tenant/schema";
-import { inArray } from "drizzle-orm";
+import { OrganizationsService } from "@/core/tenant/OrganizationService";
 import { requireSessionOrRedirect } from "@/core/auth/authUtils";
 
 interface ProfilePageProps {
@@ -40,16 +38,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   ) as Event[];
 
   const orgIds = Array.from(new Set(allEvents.map((e) => e.organizationId)));
-  const orgs =
-    orgIds.length > 0
-      ? await db
-          .select({
-            id: organizations.id,
-            phoneNumber: organizations.phoneNumber,
-          })
-          .from(organizations)
-          .where(inArray(organizations.id, orgIds))
-      : [];
+  const orgs = await OrganizationsService.findPhoneNumbersByIds(orgIds);
 
   const orgPhoneMap = Object.fromEntries(
     orgs.map((o) => [o.id, o.phoneNumber ?? "—"]),

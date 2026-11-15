@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { EmailService } from "@/core/email/EmailService";
+import { MemberEmailService } from "@/features/communications/services/MemberEmailService";
 import {
   addMember,
   buildTestUser,
@@ -12,12 +12,17 @@ import {
 
 vi.mock("@/core/email/EmailService", () => ({
   EmailService: {
-    emailMembers: vi.fn(async () => "sent" as const),
     registerOrganizationSender: vi.fn(async () => {}),
   },
 }));
 
-const mockEmailMembers = vi.mocked(EmailService.emailMembers);
+vi.mock("@/features/communications/services/MemberEmailService", () => ({
+  MemberEmailService: {
+    emailMembers: vi.fn(async () => "sent" as const),
+  },
+}));
+
+const mockEmailMembers = vi.mocked(MemberEmailService.emailMembers);
 
 beforeEach(() => {
   mockEmailMembers.mockReset();

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import db from "@/core/db";
 import { members, users } from "@/core/db/schema";
 import { FileService } from "@/core/files/FileService";
-import serveImage from "@/core/files/api/serveImage";
+import serveImage from "@/features/media/api/serveImage";
 import { app } from "@/features/app";
 import {
   addMember,
