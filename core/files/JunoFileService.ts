@@ -1,3 +1,4 @@
+import "server-only";
 import { juno } from "@/core/files/junoClient";
 import { JunoFileDeletionNotSupportedError } from "@/core/api/errors";
 import { buildAzureBlobBaseUrl, parseJunoNumericId } from "./junoFileUtils";

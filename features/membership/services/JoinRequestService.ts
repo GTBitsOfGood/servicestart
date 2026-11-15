@@ -1,3 +1,4 @@
+import "server-only";
 import { randomUUID } from "node:crypto";
 import { alias } from "drizzle-orm/pg-core";
 import { and, desc, eq } from "drizzle-orm";
@@ -6,6 +7,8 @@ import { auth } from "@/core/auth/auth";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
 import { MembersService } from "./MemberService";
 import { NotificationService } from "@/features/communications/server";
+import { NotificationType } from "@/features/communications";
+import { UserService } from "@/core/auth/UserService";
 import {
   joinRequests,
   joinRequestHistory,
@@ -275,6 +278,32 @@ async function create(
   return id;
 }
 
+/**
+ * Creates a pending join request for the user, if they don't have one, and
+ * tells the organization's admins.
+ */
+async function createIfNeeded(
+  userId: string,
+  organizationId: string,
+): Promise<void> {
+  const existingRequest = await findByUserAndOrganization(
+    userId,
+    organizationId,
+  );
+  if (existingRequest) return;
+
+  const joinRequestId = await create(userId, organizationId);
+
+  const user = await UserService.findById(userId);
+  const userName = user?.name || user?.email || "A user";
+  await NotificationService.notifyAdmins(
+    organizationId,
+    `Join Request\n${userName} has requested to join the organization.`,
+    NotificationType.ActionRequired,
+    { joinRequestId },
+  );
+}
+
 export const JoinRequestsService = {
   findByUserAndOrganization,
   findByIdAndOrganization,
@@ -285,4 +314,5 @@ export const JoinRequestsService = {
   updateStatus,
   deleteById,
   create,
+  createIfNeeded,
 };

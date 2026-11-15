@@ -1,0 +1,61 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`date formatters > formats 2026-01-01T04:59:59.000Z as before 1`] = `
+{
+  "dateTime": {
+    "date": "Wed, December 31",
+    "endTime": "1:29 AM",
+    "time": "11:59 PM",
+  },
+  "inlineClockTime": "11:59 PM",
+  "inlineIntlShortDate": "Dec 31, 2025",
+  "inlineShortDate": "Dec 31, 2025",
+  "noDuration": {
+    "date": "Wed, December 31",
+    "endTime": "",
+    "time": "11:59 PM",
+  },
+  "numeric": "12/31/2025",
+  "rsvp": "Wednesday, December 31 at 11:59 PM",
+}
+`;
+
+exports[`date formatters > formats 2026-12-31T23:30:00.000Z as before 1`] = `
+{
+  "dateTime": {
+    "date": "Thu, December 31",
+    "endTime": "8:00 PM",
+    "time": "6:30 PM",
+  },
+  "inlineClockTime": "6:30 PM",
+  "inlineIntlShortDate": "Dec 31, 2026",
+  "inlineShortDate": "Dec 31, 2026",
+  "noDuration": {
+    "date": "Thu, December 31",
+    "endTime": "",
+    "time": "6:30 PM",
+  },
+  "numeric": "12/31/2026",
+  "rsvp": "Thursday, December 31 at 6:30 PM",
+}
+`;
+
+exports[`date formatters > formats 2027-06-02T09:05:00.000Z as before 1`] = `
+{
+  "dateTime": {
+    "date": "Wed, June 2",
+    "endTime": "6:35 AM",
+    "time": "5:05 AM",
+  },
+  "inlineClockTime": "5:05 AM",
+  "inlineIntlShortDate": "Jun 2, 2027",
+  "inlineShortDate": "Jun 2, 2027",
+  "noDuration": {
+    "date": "Wed, June 2",
+    "endTime": "",
+    "time": "5:05 AM",
+  },
+  "numeric": "06/02/2027",
+  "rsvp": "Wednesday, June 2 at 5:05 AM",
+}
+`;

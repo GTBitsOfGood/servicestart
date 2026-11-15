@@ -1,3 +1,5 @@
+import { pluralize } from "@/core/utils/strings";
+
 export type MemberTypeErrorReason = "invalid" | "not_found" | "in_use";
 
 export type MemberTypeInUseCounts = {
@@ -6,15 +8,12 @@ export type MemberTypeInUseCounts = {
   label: string;
 };
 
-const countLabel = (count: number, singular: string, plural: string): string =>
-  `${count} ${count === 1 ? singular : plural}`;
-
 export const memberTypeInUseMessage = (
   members: number,
   forms: number,
   label: string,
 ): string =>
-  `${countLabel(members, "member", "members")} and ${countLabel(forms, "form", "forms")} use ${label}.`;
+  `${pluralize(members, "member", "members")} and ${pluralize(forms, "form", "forms")} use ${label}.`;
 
 export class MemberTypeError extends Error {
   constructor(

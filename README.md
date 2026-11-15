@@ -168,7 +168,7 @@ Include a recording of the working setup and configuration error in the PR, excl
 - Use `pnpm run db:view` to open Drizzle Studio and view the database schema and contents.
 - Use the `buildTestUser` function in `tests/unit/testUtils.ts` to get a user that you can use for API endpoints in tests.
 - Use `pnpx bog-cli design edit` to configure the BoG design system.
-- Run scripts in the `scripts` folder with `pnpx tsx <script-name>`.
+- Run scripts in the `scripts` folder with `pnpm exec tsx --tsconfig tsconfig.scripts.json <script-name>` (the tsconfig stubs `server-only`, which services import).
 - Set the `DB_URL` environment variable on GitHub. For the preview environment, leave out the `/database-name` part so that the workflow can create databases for each PR.
 
 ## Docs & Writeups

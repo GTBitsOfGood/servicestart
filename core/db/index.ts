@@ -1,3 +1,4 @@
+import "server-only";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { relations, schema } from "@/core/db/schema";
 import { getDbUrl } from "@/core/utils/env";

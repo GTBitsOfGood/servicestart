@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { requireAdmin } from "@/core/auth/authUtils";
-import { EmailService } from "@/core/email/EmailService";
+import { MemberEmailService } from "@/features/communications/services/MemberEmailService";
 
 const sendEmailSchema = z.object({
   subject: z.string().trim().min(1, "Subject is required"),
@@ -45,7 +45,7 @@ const app = new Hono().post(
     const { subject, subtitle, body, footer, recipientIds } =
       c.req.valid("json");
 
-    const result = await EmailService.emailMembers(organizationId, {
+    const result = await MemberEmailService.emailMembers(organizationId, {
       subject,
       content: [
         {

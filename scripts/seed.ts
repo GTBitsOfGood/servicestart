@@ -1,4 +1,5 @@
 import "dotenv/config"; //must be first to load environment variables
+import { registerMembershipAuthHooks } from "@/features/membership/authHooks";
 import { EventVisibility, JoinRequestStatus, schema } from "@/core/db/schema";
 import db from "@/core/db";
 import { auth } from "@/core/auth/auth";
@@ -22,6 +23,9 @@ import {
   seedApplicationStart,
   seedVolunteerStart,
 } from "./developmentSeed";
+
+// The seed signs users up, which fires the membership auth hooks.
+registerMembershipAuthHooks();
 
 const isTest = require.main !== module; // Check if the script is being run directly or imported in tests
 

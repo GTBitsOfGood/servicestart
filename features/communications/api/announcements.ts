@@ -12,7 +12,7 @@ import { Hono } from "hono";
 import z from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { AnnouncementsService } from "@/features/communications/services/AnnouncementService";
-import { EmailService } from "@/core/email/EmailService";
+import { MemberEmailService } from "@/features/communications/services/MemberEmailService";
 import { MembersService } from "@/features/membership/server";
 import { paginationQuerySchema } from "@/core/api/apiUtils";
 
@@ -57,7 +57,7 @@ const app = new Hono()
         }
         const data = content.data;
 
-        await EmailService.emailMembers(activeOrganizationId, {
+        await MemberEmailService.emailMembers(activeOrganizationId, {
           subject: `New announcement: ${createdAnnouncement.name}`,
           content: data,
         });
@@ -188,7 +188,7 @@ const app = new Hono()
         }
         const data = content.data;
 
-        await EmailService.emailMembers(activeOrganizationId, {
+        await MemberEmailService.emailMembers(activeOrganizationId, {
           subject: `New announcement: ${updatedAnnouncement.name}`,
           content: data,
         });

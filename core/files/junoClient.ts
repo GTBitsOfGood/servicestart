@@ -1,3 +1,4 @@
+import "server-only";
 import junoSdk from "juno-sdk";
 import { requireEnv } from "@/core/utils/env";
 

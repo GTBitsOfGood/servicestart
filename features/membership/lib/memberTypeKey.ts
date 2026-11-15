@@ -82,3 +82,12 @@ export const keyFromLabel = (
 
   throw new Error("Unable to generate a unique member type key");
 };
+
+/** A member type as the API and settings pages see it. */
+export type MemberTypeRow = {
+  key: MemberTypeKey;
+  label: string;
+  pluralLabel: string;
+  position: number;
+  isSignupDefault: boolean;
+};

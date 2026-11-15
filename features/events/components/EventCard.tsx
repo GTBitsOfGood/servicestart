@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatClockTime } from "@/core/utils/dates";
 import type { InferSelectModel } from "drizzle-orm";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { events } from "@/features/events/schema";
@@ -26,10 +27,7 @@ export default function EventCard({
       })
     : "TBD";
   const time = event.startTimestamp
-    ? new Date(event.startTimestamp).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      })
+    ? formatClockTime(event.startTimestamp)
     : "";
   const dateTime = time && date !== "TBD" ? `${date} • ${time}` : date;
 

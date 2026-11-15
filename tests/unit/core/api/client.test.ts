@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/core/utils/clientUtils", () => ({
+vi.mock("@/core/utils/urls", () => ({
   getBaseUrl: () => "https://configured.servicestart.com",
 }));
 

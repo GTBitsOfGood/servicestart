@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PencilSimple, UserPlusIcon } from "@phosphor-icons/react";
 import api from "@/core/api/client";
 import authClient from "@/core/auth/authClient";
-import { formatDate } from "@/core/utils/clientUtils";
+import { formatNumericDate } from "@/core/utils/dates";
 import BogCheckbox from "@/components/bog/BogCheckbox/BogCheckbox";
 import BogTable, {
   type ColumnHeaderCellContent,
@@ -387,7 +387,7 @@ export default function MembersTable({
         const lastActive =
           activityLoading || !act || !act.lastActive
             ? "—"
-            : formatDate(act.lastActive);
+            : formatNumericDate(act.lastActive);
         const isSelected = selectedRows.has(member.userId);
         const isSelf = member.userId === currentUserId;
         const isAdmin = isAdminRole(member.role);

@@ -38,7 +38,7 @@ import { main } from "@/scripts/seed";
 import { InvitationService } from "@/features/membership/services/InvitationService";
 import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
 import { MembersService } from "@/features/membership/services/MemberService";
-import { UserService } from "@/features/membership/services/UserService";
+import { UserService } from "@/core/auth/UserService";
 import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
 import { expect, it } from "vitest";
 import {

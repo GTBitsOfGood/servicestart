@@ -12,4 +12,5 @@ export {
 export type { DashboardAudience, MemberAudience } from "./lib/audience";
 export { MemberTypeKeySchema, type MemberTypeKey } from "./lib/memberTypeKey";
 export { MemberTypeError } from "./lib/memberTypeErrors";
-export type { MemberTypeRow } from "./services/MemberTypeService";
+export type { MemberTypeRow } from "./lib/memberTypeKey";
+export { InvitationStatus } from "./lib/invitationStatus";

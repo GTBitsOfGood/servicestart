@@ -1,3 +1,4 @@
+import "server-only";
 import { and, asc, count, eq, inArray, max, sql } from "drizzle-orm";
 import { z } from "zod";
 import db from "@/core/db";
@@ -16,17 +17,10 @@ import {
   keyFromLabel,
   MemberTypeKeySchema,
   type MemberTypeKey,
+  type MemberTypeRow,
 } from "@/features/membership/lib/memberTypeKey";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
-export type MemberTypeRow = {
-  key: MemberTypeKey;
-  label: string;
-  pluralLabel: string;
-  position: number;
-  isSignupDefault: boolean;
-};
 
 const UpdateMemberTypeSchema = z.strictObject({
   label: z.string().trim().min(1),

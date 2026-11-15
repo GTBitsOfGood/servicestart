@@ -1,3 +1,4 @@
+import "server-only";
 import { handleError } from "@/core/api/handleError";
 import { resolveOrganization } from "@/core/tenant/resolveOrganization";
 import { InternalServerError, NotFoundError } from "@/core/api/errors";
@@ -6,7 +7,7 @@ import path from "node:path";
 import { Hono } from "hono";
 import { FileService } from "@/core/files/FileService";
 import { MediaService } from "@/features/media/services/MediaService";
-import { MembersService } from "@/features/membership/services/MemberService";
+import { MembersService } from "@/features/membership/server";
 
 const IMAGE_MIME_TYPES: Record<string, string> = {
   ".jpg": "image/jpeg",

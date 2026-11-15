@@ -1,10 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { and, desc, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import db from "@/core/db";
-import { messageRecipients, messages } from "@/features/communications/schema";
 import { paginationQuerySchema } from "@/core/api/apiUtils";
 import { requireAdmin, requireMembership } from "@/core/auth/authUtils";
 import { MembersService } from "@/features/membership/server";
@@ -39,29 +36,7 @@ const app = new Hono()
     const pagination = { limit: pageSize, offset: (page - 1) * pageSize };
 
     const selectMessages = (userId: string) =>
-      db
-        .select({
-          id: messages.id,
-          organizationId: messages.organizationId,
-          senderId: messages.senderId,
-          subject: messages.subject,
-          body: messages.body,
-          sentAt: messages.sentAt,
-        })
-        .from(messages)
-        .innerJoin(
-          messageRecipients,
-          eq(messageRecipients.messageId, messages.id),
-        )
-        .where(
-          and(
-            eq(messages.organizationId, activeOrganizationId),
-            eq(messageRecipients.userId, userId),
-          ),
-        )
-        .orderBy(desc(messages.sentAt))
-        .limit(pagination.limit)
-        .offset(pagination.offset);
+      MessageService.listForRecipient(activeOrganizationId, userId, pagination);
 
     if (!isAdmin || scope === "self") {
       const data = await selectMessages(session.user.id);
@@ -93,20 +68,10 @@ const app = new Hono()
       return c.json({ data, page, pageSize });
     }
 
-    const data = await db
-      .select({
-        id: messages.id,
-        organizationId: messages.organizationId,
-        senderId: messages.senderId,
-        subject: messages.subject,
-        body: messages.body,
-        sentAt: messages.sentAt,
-      })
-      .from(messages)
-      .where(eq(messages.organizationId, activeOrganizationId))
-      .orderBy(desc(messages.sentAt))
-      .limit(pagination.limit)
-      .offset(pagination.offset);
+    const data = await MessageService.listByOrganization(
+      activeOrganizationId,
+      pagination,
+    );
 
     return c.json({ data, page, pageSize });
   })

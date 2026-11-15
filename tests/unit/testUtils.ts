@@ -27,7 +27,7 @@ import {
   invitations,
   type SubmissionReviewStatus,
 } from "@/core/db/schema";
-import { InvitationStatus } from "@/features/membership/services/InvitationService";
+import { InvitationStatus } from "@/features/membership";
 import {
   MemberTypeKeySchema,
   type MemberTypeKey,

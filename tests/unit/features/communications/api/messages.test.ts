@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { and, eq } from "drizzle-orm";
 import db from "@/core/db";
 import { messageRecipients, messages } from "@/core/db/schema";
-import { EmailService } from "@/core/email/EmailService";
+import { MemberEmailService } from "@/features/communications/services/MemberEmailService";
 import {
   addMember,
   buildTestUser,
@@ -16,12 +16,17 @@ import {
 
 vi.mock("@/core/email/EmailService", () => ({
   EmailService: {
-    emailMembers: vi.fn(async () => {}),
     registerOrganizationSender: vi.fn(async () => {}),
   },
 }));
 
-const mockEmailMembers = vi.mocked(EmailService.emailMembers);
+vi.mock("@/features/communications/services/MemberEmailService", () => ({
+  MemberEmailService: {
+    emailMembers: vi.fn(async () => {}),
+  },
+}));
+
+const mockEmailMembers = vi.mocked(MemberEmailService.emailMembers);
 
 async function setupOrgAndUser(role: "owner" | "admin" | "member") {
   const organization = await createOrganization(`msg-${Date.now()}`);

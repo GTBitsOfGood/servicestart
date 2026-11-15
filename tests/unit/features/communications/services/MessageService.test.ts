@@ -3,15 +3,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import db from "@/core/db";
 import { members, messages, users } from "@/core/db/schema";
-import { EmailService } from "@/core/email/EmailService";
+import { MemberEmailService } from "@/features/communications/services/MemberEmailService";
 import { MessageService } from "@/features/communications/services/MessageService";
 import { MembersService } from "@/features/membership/services/MemberService";
 import { createOrganization } from "@/tests/unit/testUtils";
 
 vi.mock("@/core/email/EmailService", () => ({
   EmailService: {
-    emailMembers: vi.fn(async () => {}),
     registerOrganizationSender: vi.fn(async () => {}),
+  },
+}));
+
+vi.mock("@/features/communications/services/MemberEmailService", () => ({
+  MemberEmailService: {
+    emailMembers: vi.fn(async () => {}),
   },
 }));
 
@@ -27,7 +32,7 @@ vi.mock("@/features/membership/services/MemberService", () => ({
   },
 }));
 
-const mockEmailMembers = vi.mocked(EmailService.emailMembers);
+const mockEmailMembers = vi.mocked(MemberEmailService.emailMembers);
 const mockGetUserIds = vi.mocked(MembersService.getUserIdsByOrganization);
 
 async function createUser(name: string, email: string) {

@@ -17,7 +17,7 @@ import {
   type Invitation,
 } from "@/features/membership/services/InvitationService";
 import { MembersService } from "@/features/membership/services/MemberService";
-import { UserService } from "@/features/membership/services/UserService";
+import { UserService } from "@/core/auth/UserService";
 
 export const metadata: Metadata = { title: "Accept Invitation" };
 

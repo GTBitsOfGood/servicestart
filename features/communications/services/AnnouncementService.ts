@@ -1,3 +1,4 @@
+import "server-only";
 import { createInsertSchema } from "drizzle-orm/zod";
 import { announcements } from "@/core/db/schema";
 import { z } from "zod";

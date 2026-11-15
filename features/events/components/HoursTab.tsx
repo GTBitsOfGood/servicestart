@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { formatShortDate } from "@/core/utils/dates";
 import BogTable, {
   ColumnHeaderCellContent,
   TableRow,
@@ -33,14 +34,6 @@ function formatMinutes(total: number): string {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 
-function formatDate(ts: string): string {
-  return new Date(ts).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 const columnHeaders: ColumnHeaderCellContent[] = [
   { content: "Date", datatype: "string" },
   { content: "Hours", datatype: "number" },
@@ -58,7 +51,7 @@ export default function HoursTab({ events }: HoursTabProps) {
       (e) =>
         e.name.toLowerCase().includes(q) ||
         e.eventContact.toLowerCase().includes(q) ||
-        formatDate(e.startTimestamp).toLowerCase().includes(q),
+        formatShortDate(e.startTimestamp).toLowerCase().includes(q),
     );
   }, [events, search]);
 
@@ -70,7 +63,7 @@ export default function HoursTab({ events }: HoursTabProps) {
 
   const rows: TableRow[] = filteredEvents.map((event) => ({
     cells: [
-      { content: formatDate(event.startTimestamp) },
+      { content: formatShortDate(event.startTimestamp) },
       { content: formatMinutes(intervalToMinutes(event.duration)) },
       { content: event.name },
       { content: event.eventContact },
@@ -83,7 +76,7 @@ export default function HoursTab({ events }: HoursTabProps) {
       header.join(","),
       ...filteredEvents.map((e) =>
         [
-          `"${formatDate(e.startTimestamp)}"`,
+          `"${formatShortDate(e.startTimestamp)}"`,
           formatMinutes(intervalToMinutes(e.duration)),
           `"${e.name}"`,
           `"${e.eventContact}"`,

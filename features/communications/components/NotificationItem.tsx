@@ -5,7 +5,9 @@ import { useState } from "react";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogButton from "@/components/theme/ThemedButton";
 import BogModal from "@/components/theme/ThemedModal";
-import { cn, formatTime } from "@/core/utils/utils";
+import { cn } from "@/core/utils/utils";
+import { formatRelativeTime } from "@/core/utils/dates";
+import { capitalize } from "@/core/utils/strings";
 import NotificationTag from "./NotificationTag";
 import { JoinRequestStatus } from "@/features/membership";
 
@@ -296,7 +298,7 @@ export default function NotificationItem({
                       "group-hover:opacity-0 group-focus-within:opacity-0",
                   )}
                 >
-                  {formatTime(notification.createdAt)}
+                  {formatRelativeTime(notification.createdAt)}
                 </span>
 
                 {showActions && (
@@ -346,7 +348,7 @@ export default function NotificationItem({
                     "group-hover:opacity-0 group-focus-within:opacity-0",
                 )}
               >
-                {formatTime(notification.createdAt)}
+                {formatRelativeTime(notification.createdAt)}
               </span>
 
               {showActions && (
@@ -366,7 +368,7 @@ export default function NotificationItem({
                   "group-hover:opacity-0 group-focus-within:opacity-0",
               )}
             >
-              {formatTime(notification.createdAt)}
+              {formatRelativeTime(notification.createdAt)}
             </span>
             <div className="relative flex items-center">
               {showActions && (
@@ -447,9 +449,7 @@ export default function NotificationItem({
                 {joinRequest.history && joinRequest.history.length > 0 ? (
                   joinRequest.history.map((entry) => (
                     <li key={entry.id} className="text-small leading-tight">
-                      {entry.action.charAt(0).toUpperCase() +
-                        entry.action.slice(1)}{" "}
-                      access —{" "}
+                      {capitalize(entry.action)} access —{" "}
                       {new Date(entry.resolvedAt).toLocaleDateString("en-US", {
                         month: "2-digit",
                         day: "2-digit",
@@ -477,9 +477,8 @@ export default function NotificationItem({
           )}
           {joinRequest.history && joinRequest.history.length > 0 && (
             <p className="text-small italic text-grey-text-weak">
-              {joinRequest.history[0].action.charAt(0).toUpperCase() +
-                joinRequest.history[0].action.slice(1)}{" "}
-              by {joinRequest.history[0].resolvedByName}
+              {capitalize(joinRequest.history[0].action)} by{" "}
+              {joinRequest.history[0].resolvedByName}
               {" — "}
               {new Date(joinRequest.history[0].resolvedAt).toLocaleDateString(
                 "en-US",

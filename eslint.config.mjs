@@ -20,8 +20,8 @@ import eslintConfigPrettier from "eslint-config-prettier/flat";
  * - @/core/db and drizzle-orm are only for a context's services/, core/,
  *   scripts/, and tests/. Each context's schema.ts may build tables, and
  *   type-only drizzle-orm imports are fine anywhere.
- * - app/, scripts/, tests/, and features/app.ts are composition code and may
- *   import any context's internals.
+ * - app/, scripts/, tests/, features/app.ts, and features/registry.ts are
+ *   composition code and may import any context's internals.
  */
 const CONTEXTS = [
   "communications",
@@ -31,6 +31,7 @@ const CONTEXTS = [
   "media",
   "membership",
   "navigation",
+  "settings",
 ];
 
 const RULE = "@typescript-eslint/no-restricted-imports";
@@ -61,24 +62,6 @@ const NO_FEATURES = {
   message:
     "core/ is shared by every feature, so it can't import one. Move the shared code into core/, or have the feature pass it in.",
 };
-
-/**
- * Violations from before the rule (#333), as file-level overrides so
- * `pnpm lint` passes. #337 empties this list. Don't add to it: fix the import.
- */
-const BOUNDARY_BASELINE = [
-  // Queries the database directly instead of through a service.
-  "app/profile/page.tsx",
-  "features/communications/api/messages.ts",
-  // core/ importing features: the signup hooks and route guards call the
-  // membership and notification services.
-  "core/auth/auth.ts",
-  "core/auth/authUtils.ts",
-  // core/ importing features: membership checks in shared routes and services.
-  "core/config/api/organizationConfig.ts",
-  "core/email/EmailService.ts",
-  "core/files/api/serveImage.ts",
-];
 
 export default defineConfig(
   eslint.configs.recommended,
@@ -132,19 +115,16 @@ export default defineConfig(
     },
   },
   {
-    // The Drizzle barrel and the config registry collect every context's
-    // tables and config keys by design.
+    // The Drizzle barrel, the config registry, and the feature registry
+    // collect every context's tables, config keys, and manifests by design.
     files: [
       "core/db/schema.ts",
       "core/config/registry.ts",
       "features/app.ts",
+      "features/registry.ts",
       "scripts/**",
       "tests/**",
     ],
-    rules: { [RULE]: "off" },
-  },
-  {
-    files: BOUNDARY_BASELINE,
     rules: { [RULE]: "off" },
   },
 );

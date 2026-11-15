@@ -1,3 +1,4 @@
+import "server-only";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { pruneAudienceRecord } from "@/features/dashboard/lib/audienceRecord";

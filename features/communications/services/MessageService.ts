@@ -1,6 +1,8 @@
+import "server-only";
+import { and, desc, eq } from "drizzle-orm";
 import db from "@/core/db";
 import { messageRecipients, messages } from "@/core/db/schema";
-import { EmailService } from "@/core/email/EmailService";
+import { MemberEmailService } from "@/features/communications/services/MemberEmailService";
 import { MembersService } from "@/features/membership/server";
 
 export type MessageBody = Record<string, unknown>;
@@ -79,7 +81,7 @@ async function createAndSend(input: MessageCreateInput) {
       content.push({ type: "text/html", value: htmlBody });
     }
 
-    await EmailService.emailMembers(input.organizationId, {
+    await MemberEmailService.emailMembers(input.organizationId, {
       subject: input.subject,
       content,
       ...(hasExplicitRecipients ? { targetUserIds: recipientUserIds } : {}),
@@ -89,6 +91,54 @@ async function createAndSend(input: MessageCreateInput) {
   return createdMessage ?? null;
 }
 
+const MESSAGE_COLUMNS = {
+  id: messages.id,
+  organizationId: messages.organizationId,
+  senderId: messages.senderId,
+  subject: messages.subject,
+  body: messages.body,
+  sentAt: messages.sentAt,
+};
+
+type Pagination = { limit: number; offset: number };
+
+/** Messages sent to a user in an organization, newest first. */
+async function listForRecipient(
+  organizationId: string,
+  userId: string,
+  { limit, offset }: Pagination,
+) {
+  return db
+    .select(MESSAGE_COLUMNS)
+    .from(messages)
+    .innerJoin(messageRecipients, eq(messageRecipients.messageId, messages.id))
+    .where(
+      and(
+        eq(messages.organizationId, organizationId),
+        eq(messageRecipients.userId, userId),
+      ),
+    )
+    .orderBy(desc(messages.sentAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+/** Every message in an organization, newest first. */
+async function listByOrganization(
+  organizationId: string,
+  { limit, offset }: Pagination,
+) {
+  return db
+    .select(MESSAGE_COLUMNS)
+    .from(messages)
+    .where(eq(messages.organizationId, organizationId))
+    .orderBy(desc(messages.sentAt))
+    .limit(limit)
+    .offset(offset);
+}
+
 export const MessageService = {
   createAndSend,
+  listForRecipient,
+  listByOrganization,
 };

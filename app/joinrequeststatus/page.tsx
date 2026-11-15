@@ -13,15 +13,13 @@ import { Fragment } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/core/auth/auth";
-import {
-  createJoinRequestIfNeeded,
-  requireOrganizationOrRedirect,
-} from "@/core/auth/authUtils";
+import { requireOrganizationOrRedirect } from "@/core/auth/authUtils";
 import { JoinRequestStatus } from "@/features/membership/schema";
 import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
 import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
 import { cn } from "@/core/utils/utils";
+import { formatShortDate } from "@/core/utils/dates";
 
 export const metadata: Metadata = { title: "Join Request Status" };
 
@@ -29,14 +27,6 @@ const DEFAULT_UPDATED_AT = new Date("2026-02-25T15:00:00");
 
 type StepStatus = "complete" | "clock" | "denied" | "upcoming";
 type Step = { title: string; subtitle?: string; status: StepStatus };
-
-function formatDate(d: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(d);
-}
 
 function formatDateTime(d: Date) {
   return new Intl.DateTimeFormat("en-US", {
@@ -49,10 +39,10 @@ function formatDateTime(d: Date) {
 }
 
 function getSteps(status: JoinRequestStatus, createdAt: Date): Step[] {
-  const submitted = `Submitted on ${formatDate(createdAt)}`;
+  const submitted = `Submitted on ${formatShortDate(createdAt)}`;
   const reviewDate = new Date(createdAt);
   reviewDate.setDate(reviewDate.getDate() + 1);
-  const reviewed = `Reviewed ${formatDate(reviewDate)}`;
+  const reviewed = `Reviewed ${formatShortDate(reviewDate)}`;
   switch (status) {
     case JoinRequestStatus.Pending:
       return [
@@ -213,7 +203,7 @@ export default async function JoinRequestStatusPage() {
 
   async function submitJoinRequest() {
     "use server";
-    await createJoinRequestIfNeeded(userId, activeOrgId);
+    await JoinRequestsService.createIfNeeded(userId, activeOrgId);
     redirect("/joinrequeststatus");
   }
 

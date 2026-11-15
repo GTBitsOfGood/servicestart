@@ -1,10 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
+import { DashboardLayoutSchema } from "@/features/dashboard/lib/schema";
 import {
   ApplicationStatusWidgetConfigSchema,
-  DashboardLayoutSchema,
   DEFAULT_APPLICATION_STATUS_STEPS,
-} from "@/features/dashboard/lib/schema";
+} from "@/features/forms";
 
 describe("DashboardLayoutSchema", () => {
   describe("valid layouts", () => {

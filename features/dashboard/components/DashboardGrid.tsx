@@ -17,7 +17,7 @@ import { FormsCompletedWidget } from "@/features/forms/ui";
 import { FormsProgressWidget } from "@/features/forms/ui";
 import { WeeklyCalendarWidget } from "@/features/events/ui";
 
-const WIDGET_COMPONENTS: Record<WidgetId, ComponentType<WidgetProps>> = {
+const WIDGET_COMPONENTS = {
   events: EventsWidget,
   notifications: NotificationsDashboardWidget,
   member_requests: MemberRequestsWidget,
@@ -27,7 +27,7 @@ const WIDGET_COMPONENTS: Record<WidgetId, ComponentType<WidgetProps>> = {
   forms_completed: FormsCompletedWidget,
   forms_progress: FormsProgressWidget,
   weekly_calendar: WeeklyCalendarWidget,
-};
+} satisfies Record<WidgetId, ComponentType<WidgetProps>>;
 
 function WidgetFallback() {
   return (

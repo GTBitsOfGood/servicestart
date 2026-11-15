@@ -1,6 +1,7 @@
-import { eq } from "drizzle-orm";
-import { users } from "@/core/db/schema";
+import "server-only";
+import { and, eq } from "drizzle-orm";
 import db from "@/core/db";
+import { users } from "@/core/auth/schema";
 
 async function findById(id: string) {
   return db
@@ -11,7 +12,6 @@ async function findById(id: string) {
     .then((rows) => rows[0] ?? null);
 }
 
-import { and } from "drizzle-orm";
 async function findByEmailAndOrganization(
   email: string,
   organizationId: string,

@@ -1,3 +1,4 @@
+import "server-only";
 import type { ConfigValue, ConfigValues } from "@/core/config/registry";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { configStore, type ConfigTransaction } from "@/core/config/store";

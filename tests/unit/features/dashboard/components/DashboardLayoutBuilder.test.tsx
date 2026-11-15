@@ -8,11 +8,11 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import DashboardLayoutBuilder from "@/features/dashboard/components/DashboardLayoutBuilder";
-import {
-  DEFAULT_APPLICATION_STATUS_STEPS,
-  type DashboardLayout,
-  type WidgetId,
+import type {
+  DashboardLayout,
+  WidgetId,
 } from "@/features/dashboard/lib/schema";
+import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/forms";
 
 type DragEndEvent = {
   operation: { source: { id: string }; target: { id: string } };

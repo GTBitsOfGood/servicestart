@@ -1,74 +1,26 @@
+import "server-only";
 import { getTenantOrigin } from "@/core/tenant/urls";
 import { juno } from "@/core/files/junoClient";
-import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
 import { getEmailSenderDomain } from "@/core/utils/env";
-import { getBaseUrl } from "@/core/utils/clientUtils";
+import { getBaseUrl } from "@/core/utils/urls";
 
 function senderDomain() {
   return getEmailSenderDomain();
 }
 
-export type EmailMembersResult = "sent" | "no-recipients" | "delivery-failed";
-
-async function emailMembers(
-  organizationId: string,
-  email: {
-    subject: string;
-    content: { type: "text/plain" | "text/html"; value: string }[];
-    targetUserIds?: string[];
-  },
-): Promise<EmailMembersResult> {
-  const [organization, allRecipients] = await Promise.all([
-    OrganizationsService.findById(organizationId),
-    MembersService.listMemberContacts(organizationId),
-  ]);
-
-  if (!organization) {
-    return "no-recipients";
-  }
-
-  const targetUserIds = email.targetUserIds && new Set(email.targetUserIds);
-  const recipients =
-    targetUserIds === undefined
-      ? allRecipients
-      : allRecipients.filter((recipient) =>
-          targetUserIds.has(recipient.userId),
-        );
-
-  if (recipients.length === 0) {
-    return "no-recipients";
-  }
-
-  if (!organization.slug) {
-    throw new Error(
-      `Organization ${organization.id} is missing slug for sender email`,
-    );
-  }
-
-  const normalizedOrganization = organization.slug
+/**
+ * An organization's sender address, `<slug>@mail.<sender domain>`, with the
+ * slug lowercased and runs of other characters turned into "-". Null when
+ * nothing is left of the slug.
+ */
+export function organizationSenderEmail(slug: string): string | null {
+  const localPart = slug
     .trim()
     .toLowerCase()
-    // normalize org name
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-
-  if (!normalizedOrganization) {
-    throw new Error(
-      `Cannot derive sender email local-part for organization ${organization.id}`,
-    );
-  }
-
-  const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
-
-  const result = await juno.email.sendEmail({
-    recipients: recipients.map(({ email, name }) => ({ email, name })),
-    sender: { email: senderEmail, name: organization.name },
-    subject: email.subject,
-    contents: email.content,
-  });
-
-  return result.success ? "sent" : "delivery-failed";
+  return localPart ? `${localPart}@mail.${senderDomain()}` : null;
 }
 
 async function registerOrganizationSender({
@@ -86,20 +38,12 @@ async function registerOrganizationSender({
     );
   }
 
-  const normalizedOrganization = organizationSlug
-    .trim()
-    .toLowerCase()
-    // normalize org name
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  if (!normalizedOrganization) {
+  const senderEmail = organizationSenderEmail(organizationSlug);
+  if (!senderEmail) {
     throw new Error(
       `Cannot derive sender email local-part for organization ${organizationName}`,
     );
   }
-
-  const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
 
   await juno.email.registerSenderAddress({
     email: senderEmail,
@@ -133,19 +77,12 @@ async function sendInvitationEmail({
     );
   }
 
-  const normalizedOrganization = organization.slug
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  if (!normalizedOrganization) {
+  const senderEmail = organizationSenderEmail(organization.slug);
+  if (!senderEmail) {
     throw new Error(
       `Cannot derive sender email local-part for organization ${organization.id}`,
     );
   }
-
-  const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
   const acceptUrl = new URL(
     `/accept-invitation/${encodeURIComponent(id)}`,
     getTenantOrigin(organization.slug, getBaseUrl()),
@@ -194,19 +131,12 @@ async function sendResetPasswordEmail({
     throw new Error(`Cannot derive sender email for organization`);
   }
 
-  const normalizedOrganization = slug
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  if (!normalizedOrganization) {
+  const senderEmail = organizationSenderEmail(slug);
+  if (!senderEmail) {
     throw new Error(
       `Cannot derive sender email local-part for organization ${organization.id}`,
     );
   }
-
-  const senderEmail = `${normalizedOrganization}@mail.${senderDomain()}`;
 
   await juno.email.sendEmail({
     recipients: [{ email }],
@@ -233,7 +163,6 @@ async function sendResetPasswordEmail({
 }
 
 export const EmailService = {
-  emailMembers,
   registerOrganizationSender,
   sendInvitationEmail,
   sendResetPasswordEmail,

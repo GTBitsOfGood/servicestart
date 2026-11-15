@@ -42,8 +42,8 @@ _In code:_ `OrganizationConfigKey`, organization config.
 organization. Features are built for everyone and default to off. Pages and
 routes enforce the toggle on the server (`notFoundIfFeatureDisabled`,
 `assertFeatureEnabled`); hiding the nav item isn't enough.
-_In code:_ `ToggleableOrganizationFeature`, `requireConfig`, the `…Enabled`
-keys.
+_In code:_ `ToggleableOrganizationFeature`, a manifest's `toggle`, the
+`…Enabled` keys.
 
 ## Forms
 
@@ -111,7 +111,7 @@ _In code:_ register, `event_rsvps`, `shift_rsvps`, `shiftRSVPs`.
 
 **Widget.** One card on a dashboard, such as Events or the To-Do List. Each
 widget lives in the context whose data it shows, and some take settings.
-_In code:_ `WIDGET_REGISTRY`, `WidgetId`.
+_In code:_ `WidgetId`, a manifest's `widgets`, `getWidgetOptions`.
 
 **Layout.** Which widgets a dashboard shows, their order and sizes, and the
 direction they flow. Each audience can have its own. Member types without one

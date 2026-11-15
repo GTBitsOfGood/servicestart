@@ -1,15 +1,9 @@
+import "server-only";
 import { randomUUID } from "node:crypto";
 import { and, eq, gt, sql } from "drizzle-orm";
 import db from "@/core/db";
 import { invitations, members, organizations } from "@/core/db/schema";
-
-/** Statuses BetterAuth's organization plugin writes to `invitations.status`. */
-export const InvitationStatus = {
-  Pending: "pending",
-  Accepted: "accepted",
-  Rejected: "rejected",
-  Canceled: "canceled",
-} as const;
+import { InvitationStatus } from "@/features/membership/lib/invitationStatus";
 
 export type Invitation = NonNullable<
   Awaited<ReturnType<typeof findByIdAndOrganization>>

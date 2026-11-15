@@ -9,7 +9,7 @@ import {
   getApplicationStatusView,
   NO_APPLICATION_MESSAGE,
 } from "@/features/forms/lib/applicationStatus";
-import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";
+import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/forms";
 import {
   FormStatus,
   OrganizationConfigKey,

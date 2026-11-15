@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { registerMembershipAuthHooks } from "@/features/membership/authHooks";
 import { and, eq } from "drizzle-orm";
 import db from "@/core/db";
 import {
@@ -8,7 +9,7 @@ import {
   OrganizationConfigKey,
 } from "@/core/db/schema";
 import { AuthMessage } from "@/core/auth/components/authConstants";
-import { InvitationStatus } from "@/features/membership/services/InvitationService";
+import { InvitationStatus } from "@/features/membership";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { auth } from "@/core/auth/auth";
 import {
@@ -18,6 +19,9 @@ import {
   createOrganization,
   signUpAndGetSession,
 } from "../unit/testUtils";
+
+// This spec signs a user up directly, which fires the auth hooks.
+registerMembershipAuthHooks();
 
 const HOUR_MS = 60 * 60 * 1000;
 

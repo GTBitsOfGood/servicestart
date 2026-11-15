@@ -3,10 +3,8 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import db from "@/core/db";
 import { invitations, members } from "@/core/db/schema";
-import {
-  InvitationService,
-  InvitationStatus,
-} from "@/features/membership/services/InvitationService";
+import { InvitationStatus } from "@/features/membership";
+import { InvitationService } from "@/features/membership/services/InvitationService";
 import { MembersService } from "@/features/membership/services/MemberService";
 import {
   addMember,

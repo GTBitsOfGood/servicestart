@@ -2,10 +2,8 @@ import { headers } from "next/headers";
 import { auth } from "@/core/auth/auth";
 import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import {
-  getWidgetOptions,
-  WIDGET_FEATURE_KEYS,
-} from "@/features/dashboard/widgets";
+import { getWidgetOptions } from "@/features/dashboard/widgets";
+import { FEATURE_TOGGLES } from "@/features/registry";
 import DashboardLayoutBuilder from "@/features/dashboard/components/DashboardLayoutBuilder";
 import type { DashboardLayout } from "@/features/dashboard/lib/schema";
 import {
@@ -25,10 +23,7 @@ export default async function AdminDashboardSettingsPage() {
   const layout =
     await OrganizationConfigService.getAdminDashboardLayout(organizationId);
   const widgetOptions = getWidgetOptions(
-    await OrganizationConfigService.getConfig(
-      organizationId,
-      WIDGET_FEATURE_KEYS,
-    ),
+    await OrganizationConfigService.getConfig(organizationId, FEATURE_TOGGLES),
   );
 
   async function saveLayout(newLayout: DashboardLayout) {

@@ -1,3 +1,4 @@
+import "server-only";
 import { tags } from "@/core/db/schema";
 import db from "@/core/db";
 import { randomUUID } from "node:crypto";

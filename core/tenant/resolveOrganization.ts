@@ -1,3 +1,4 @@
+import "server-only";
 import type { Context } from "hono";
 import { getSlugFromHost } from "@/core/tenant/host";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";

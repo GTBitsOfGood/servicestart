@@ -1,0 +1,13 @@
+{
+  // For code that runs outside Next: tsx scripts and Playwright. Services
+  // import "server-only", which throws anywhere but a Next server bundle, so
+  // here it resolves to the package's no-op. Never add this mapping to
+  // tsconfig.json: Next would read it and the build check would disappear.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./*"],
+      "server-only": ["./node_modules/server-only/empty.js"]
+    }
+  }
+}
