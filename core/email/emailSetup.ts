@@ -1,3 +1,4 @@
+import "server-only";
 import { ResponseError } from "juno-sdk/internal/runtime";
 import { getEmailSenderDomain, requireEnv } from "@/core/utils/env";
 import { juno } from "@/core/files/junoClient";

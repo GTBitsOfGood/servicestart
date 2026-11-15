@@ -1,3 +1,4 @@
+import "server-only";
 import { notFound } from "next/navigation";
 import { NotFoundError } from "@/core/api/errors";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";

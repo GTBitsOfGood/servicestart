@@ -1,3 +1,4 @@
+import "server-only";
 import { NAVBAR_ITEMS, NavbarItem, Page } from "@/features/navigation/navItems";
 import {
   audienceIfCurrent,

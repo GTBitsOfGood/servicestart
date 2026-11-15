@@ -1,3 +1,4 @@
+import "server-only";
 import db from "@/core/db";
 import { messageRecipients, messages } from "@/core/db/schema";
 import { EmailService } from "@/core/email/EmailService";

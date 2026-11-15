@@ -1,3 +1,4 @@
+import "server-only";
 import { resolveOrganization } from "@/core/tenant/resolveOrganization";
 import { users } from "@/core/auth/schema";
 import { createUserOverride } from "@/core/auth/authUtils";

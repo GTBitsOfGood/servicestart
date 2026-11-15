@@ -1,3 +1,4 @@
+import "server-only";
 import { randomUUID } from "node:crypto";
 import { alias } from "drizzle-orm/pg-core";
 import { and, desc, eq } from "drizzle-orm";

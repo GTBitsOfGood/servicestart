@@ -1,3 +1,4 @@
+import "server-only";
 import { getTenantOrigin } from "@/core/tenant/urls";
 import { juno } from "@/core/files/junoClient";
 import { MembersService } from "@/features/membership/services/MemberService";

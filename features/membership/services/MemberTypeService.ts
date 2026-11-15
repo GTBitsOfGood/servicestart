@@ -1,3 +1,4 @@
+import "server-only";
 import { and, asc, count, eq, inArray, max, sql } from "drizzle-orm";
 import { z } from "zod";
 import db from "@/core/db";

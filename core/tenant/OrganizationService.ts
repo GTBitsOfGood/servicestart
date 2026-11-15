@@ -1,3 +1,4 @@
+import "server-only";
 import { eq } from "drizzle-orm";
 import db from "@/core/db";
 import { organizations } from "@/core/tenant/schema";
