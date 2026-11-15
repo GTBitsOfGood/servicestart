@@ -43,23 +43,26 @@ The code is organized around features, not layers. Everything lives in one of tw
 
 `app/` stays as Next.js routes only. Pages compose contexts, so they may import any context's internals. `components/` is shared UI with no feature logic: the generated BoG primitives in `components/bog/`, the themed wrappers in `components/theme/`, icons, `SaveBanner`, and `TagInput`. (The BoG CLI also generates `utils/design-system/`, which `components/bog/` imports.)
 
-| Folder                     | What's in it                                                                                                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `core/db/`                 | The Drizzle client (`index.ts`), the schema barrel (`schema.ts`), and shared column types (`columns.ts`)                                                                  |
-| `core/auth/`               | BetterAuth (`auth.ts`, `authClient.ts`), the route and page guards (`authUtils.ts`, `featureGuards.ts`), the auth pages' components                                       |
-| `core/tenant/`             | Organizations and finding the one a request is for (host parsing, `OrganizationService`, `useActiveOrganization`)                                                         |
-| `core/config/`             | `organization_config`, `defineConfig` and the key registry, the store, `OrganizationConfigService`, its route and hook, branding and theme                                |
-| `core/api/`                | The typed RPC client (`client.ts`), typed errors, `ping`                                                                                                                  |
-| `core/files/`              | `FileService` and its local and Juno implementations, serving images                                                                                                      |
-| `core/email/`              | `EmailService` and email setup                                                                                                                                            |
-| `core/utils/`              | Generic helpers and hooks, and `env.ts`                                                                                                                                   |
-| `features/membership/`     | Members, roles, member types, invitations, join requests, profiles, audiences                                                                                             |
-| `features/events/`         | Events, shifts, RSVPs, tags, and the events and weekly calendar widgets                                                                                                   |
-| `features/forms/`          | Forms, questions, responses, review, information requests, and the forms and application status widgets                                                                   |
-| `features/communications/` | Notifications, alerts, announcements, messages, email to members, and the notifications and newsletter widgets                                                            |
-| `features/media/`          | The media library                                                                                                                                                         |
-| `features/dashboard/`      | The dashboard grid, header, layout schema and builder, the widget registry, the dashboard config keys (`config.ts`), and member types' layouts (`DashboardLayoutService`) |
-| `features/navigation/`     | The navbar (`navItems.ts`, `navbarConfig.ts`, `getNavbarItems.ts`), the footer, and the organization logo                                                                 |
+| Folder                     | What's in it                                                                                                                                                                                                                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `core/db/`                 | The Drizzle client (`index.ts`), the schema barrel (`schema.ts`), and shared column types (`columns.ts`)                                                                                                                                     |
+| `core/auth/`               | BetterAuth (`auth.ts`, `authClient.ts`), the route and page guards (`authUtils.ts`, `featureGuards.ts`), the guards' membership lookup (`membership.ts`), `UserService`, the auth hook registry (`authHooks.ts`), the auth pages' components |
+| `core/tenant/`             | Organizations and finding the one a request is for (host parsing, `OrganizationService`, `useActiveOrganization`)                                                                                                                            |
+| `core/config/`             | `organization_config`, `defineConfig` and the key registry, the store, `OrganizationConfigService`, its hook, branding and theme. Its route is in `features/settings/`                                                                       |
+| `core/features/`           | `defineFeature`, the type of a feature manifest                                                                                                                                                                                              |
+| `core/api/`                | The typed RPC client (`client.ts`), typed errors, `ping`                                                                                                                                                                                     |
+| `core/files/`              | `FileService` and its local and Juno implementations                                                                                                                                                                                         |
+| `core/email/`              | `EmailService`, the email transport (invitations, password resets, sender addresses), and email setup                                                                                                                                        |
+| `core/utils/`              | Generic helpers by purpose (`dates.ts`, `strings.ts`, `urls.ts`), `cn` (`utils.ts`), hooks, and `env.ts`                                                                                                                                     |
+| `features/registry.ts`     | Every feature's manifest; the navbar and the widget picker read it                                                                                                                                                                           |
+| `features/membership/`     | Members, roles, member types, invitations, join requests, profiles, audiences, and the signup and member-removal auth hooks                                                                                                                  |
+| `features/events/`         | Events, shifts, RSVPs, tags, and the events and weekly calendar widgets                                                                                                                                                                      |
+| `features/forms/`          | Forms, questions, responses, review, information requests, and the forms and application status widgets                                                                                                                                      |
+| `features/communications/` | Notifications, alerts, announcements, messages, email to members (`MemberEmailService`), and the notifications and newsletter widgets                                                                                                        |
+| `features/media/`          | The media library and serving images (`api/serveImage.ts`)                                                                                                                                                                                   |
+| `features/dashboard/`      | The dashboard grid, header, layout schema and builder, the widget options (`widgets.ts`), the dashboard config keys (`config.ts`), and member types' layouts (`DashboardLayoutService`)                                                      |
+| `features/navigation/`     | The navbar (`navItems.ts`, `navbarConfig.ts`, `getNavbarItems.ts`), the footer, and the organization logo                                                                                                                                    |
+| `features/settings/`       | The Settings nav item and the organization config route (`api/organizationConfig.ts`). A leaf: nothing imports it, so it may use membership and dashboard                                                                                    |
 
 A dashboard widget lives in the context whose data it shows (`features/forms/widgets/FormsTodoWidget.tsx`), along with its helpers. `features/dashboard/` only lays widgets out. If a file doesn't fit the table, put it in the context that owns its data, and add it here.
 
@@ -69,6 +72,7 @@ Each context has only the folders it needs:
 
 | Path          | What goes there                                                    |
 | ------------- | ------------------------------------------------------------------ |
+| `feature.ts`  | Its manifest: toggle, navbar items, and widgets (metadata only)    |
 | `index.ts`    | Public API: enums, types, Zod contracts, pure logic, and hooks     |
 | `server.ts`   | Public API: services, for other contexts' server code              |
 | `ui.ts`       | Public API: React components and widgets                           |
@@ -118,7 +122,7 @@ entrypoint installs the same shared renderer.
 
 ### Routes
 
-`features/app.ts` is the only Hono root. `app/api/[[...route]]/route.ts` serves it, and the typed RPC client and the tests call it. Add a sub-app to its `.route()` chain, which is what types the RPC client.
+`features/app.ts` is the only Hono root. `app/api/[[...route]]/route.ts` serves it, and the typed RPC client and the tests call it. Add a sub-app to its `.route()` chain, which is what types the RPC client. Feature manifests never register routes. The one other Hono app is media's image route (`features/media/api/serveImage.ts`), which `app/images/[id]/route.ts` serves.
 
 ### The boundary rule
 
@@ -127,9 +131,9 @@ entrypoint installs the same shared renderer.
 - A context imports another only through its public API, `@/features/<context>`, `@/features/<context>/server`, or `@/features/<context>/ui`, never through any other file inside it.
 - `core/` never imports `features/`. The exceptions are by design: `core/db/schema.ts` collects every context's tables, `core/config/registry.ts` collects every context's config keys, and the RPC client imports `type { AppType }` from `features/app.ts`.
 - `@/core/db` and `drizzle-orm` are only for a context's `services/`, `core/`, `scripts/`, and `tests/`. A context's `schema.ts` may define tables, and type-only Drizzle imports are allowed anywhere.
-- `app/`, `scripts/`, `tests/`, and `features/app.ts` are composition code and may import any context's internals.
+- `app/`, `scripts/`, `tests/`, `features/app.ts`, and `features/registry.ts` are composition code and may import any context's internals.
 
-Files that broke the rule before it existed are listed, with the reason, in `BOUNDARY_BASELINE` in `eslint.config.mjs`. #337 empties that list. Don't add to it; fix the import instead.
+The rule has no exceptions list. Sprint 5 started with a `BOUNDARY_BASELINE` of files that broke it; #337 fixed each one and removed the list. When an import breaks the rule, move the code to the context that owns it, go through the context's public API, or move shared code into `core/`. Don't add a file-level override.
 
 ### A context's public API: `index.ts`, `server.ts`, and `ui.ts`
 
@@ -142,6 +146,79 @@ The public API is three files, because each kind of code has to load in differen
 Some widgets in a `ui.ts` are server components that call services, next to client components. `package.json` declares the app's modules free of side effects (`"sideEffects": ["*.css"]`), so when a client component imports one client component from a `ui.ts`, Next drops the other re-exports instead of bundling those widgets' services, and `pg` with them, for the browser. Without it, that import fails `next build` with "Module not found: Can't resolve 'fs'". Because of this, a module must not do work at import time that other code depends on: export a function and call it instead.
 
 Export only what another context uses today, and add to these files as that changes. Within a context, import files directly (`@/features/forms/lib/schema`), not through its own public API, which avoids import cycles.
+
+### Feature manifests
+
+_Added in #337._
+
+Each context describes itself in `feature.ts` with `defineFeature` (`core/features/defineFeature.ts`):
+
+- `id`: unique across features.
+- `toggle`: a boolean config key (`ToggleableOrganizationFeature`). While it's off, the feature's navbar items and widgets are hidden.
+- `navItems`: `{ label, href, icon?, order, parent?, requireAdmin? }`. Top-level items have an icon; a subpage names its top-level item's href as `parent` (settings pages use `parent: "/settings"`). Siblings sort by `order`, spaced by 10 so an item can go between two others.
+- `widgets`: `{ id, label }`, the dashboard widgets the feature owns.
+
+`features/registry.ts` lists every feature. `getNavbarItems` builds the navbar from it: it reads every toggle in one `getConfig` call, drops items whose toggle is off, admin-only items for non-admins, and items the audience's `NavbarConfig` hides, then applies the audience's labels. A hidden top-level item hides its subpages. `NAVBAR_HREFS` is every manifest href regardless of toggles, because stored `NavbarConfig` rows are keyed by href and validated against it. `getWidgetOptions` offers the manifests' widgets in `WIDGET_IDS` order, leaving out those whose feature is off.
+
+One context can export more than one feature when parts of it have different toggles. Membership has three: `membership` (the join requests widget, always on), `members` (the Members page, `MembersPageEnabled`), and `memberTypes` (the Member types page, `MemberTypesEnabled`).
+
+Manifests are metadata only: no React components, services, or `next/*` imports, and `IconName` is a type-only import. They reach the client bundle (`NavbarWrapper` imports `navItems.ts`, and the `NavbarConfig` schema checks hrefs against `NAVBAR_HREFS`). A manifest must not import `core/config/registry.ts` or `OrganizationConfigService`, which would make an import cycle through the config schemas.
+
+Hiding is presentation only. Pages and routes keep their own guards: `notFoundIfFeatureDisabled` in pages and `assertFeatureEnabled` in routes (`core/auth/featureGuards.ts`), and `requireAdmin` and friends.
+
+### Auth hooks
+
+BetterAuth's hooks need membership code: signup files a join request or adds the member, and removing a member records it and cancels their upcoming RSVPs. `core/auth/auth.ts` can't import a feature, so it calls through a registry in `core/auth/authHooks.ts` (`afterSessionCreated`, `beforeRemoveMember`), and `registerMembershipAuthHooks()` in `features/membership/authHooks.ts` fills it. Imports go one way: membership imports core, and `auth.ts` never imports the registration.
+
+- The registry lives on `globalThis`, because Next can load a module more than once (separate route bundles, HMR), and every copy must see the hooks.
+- `auth.ts` throws if a hook runs before it's registered. Failing silently would drop new users' join requests and memberships.
+- Registration is an explicit call in every entry point that can fire a hook, not a side effect hidden in a barrel: `app/api/auth/[...all]/route.ts` (signup and sign-in), `features/app.ts` (routes that remove members), `features/membership/server.ts`, `scripts/seed.ts`, `tests/unit/setup.ts`, `tests/e2e/testUtils.ts`, and `tests/e2e/acceptInvitation.spec.ts`. In the Next app the auth route and `features/app.ts` are the ones that count: with `"sideEffects"` set, Next may skip evaluating `server.ts` when it only re-exports what a caller uses. A new entry point that signs users up or removes members (a script, a server action calling `auth.api`) must call it too.
+- The hook bodies (`features/membership/services/MembershipAuthHooks.ts`) load on first use, so registering is cheap and can't take part in an import cycle.
+
+### Server-only code
+
+Every service and every server-only `core/` module starts with `import "server-only";`, so a client component that imports one fails `next build` instead of shipping the database client to the browser. A unit test (`tests/unit/core/serverOnly.test.ts`) checks the services.
+
+- **Mark:** `features/*/services/*.ts`, `core/db/index.ts`, `core/auth/{auth,authUtils,authHooks,featureGuards,membership,UserService}.ts`, `core/tenant/{OrganizationService,resolveOrganization}.ts`, `core/email/*Service.ts` and `emailSetup.ts`, `core/files/` except `junoFileUtils.ts`, `core/config/{OrganizationConfigService,store}.ts`, `features/navigation/getNavbarItems.ts`, and the two route files that moved out of `core/` in #337 (`features/media/api/serveImage.ts`, `features/settings/api/organizationConfig.ts`).
+- **Never mark:** `core/utils/env.ts` (`drizzle.config.ts` loads it under plain Node), schema files and barrels, the config definitions (`registry.ts`, `config.ts`, `defineConfig.ts`, branding and theme), `core/api/client.ts`, `core/auth/{authClient,authValidation}.ts` and its components and hooks, `core/tenant/{host,organizationRoutes,urls,clientAuthUtils}.ts` (`proxy.ts` runs outside React Server Components), `core/utils/`, and `core/files/junoFileUtils.ts`. Before marking a module, move anything client code needs out of it (types and enums go in the context's `lib/`).
+- Outside Next, `server-only` throws, so code that runs there gets the package's no-op (`server-only/empty.js`): Vitest aliases it in `vitest.config.ts` and `vitest.config.setup.ts`, and tsx scripts and Playwright run with `--tsconfig tsconfig.scripts.json`, which extends `tsconfig.json` and maps `server-only` to the stub. Never add that mapping to `tsconfig.json`: Next would read it and the check would quietly stop working. To run a script by hand, use `pnpm exec tsx --tsconfig tsconfig.scripts.json scripts/<name>.ts`.
+
+To check the guard, import a service into a `"use client"` component and run `pnpm build`. It fails with `You're importing a module that depends on "server-only"` and an import trace through the client component. Revert the import afterwards.
+
+### Adding a feature
+
+A walkthrough, using a made-up volunteer hours feature. Real examples to copy: `features/forms/` for a toggle, a settings page, and widgets; `features/media/` for a small one.
+
+1. **Create the folder**, `features/hours/`, with only the subfolders it needs (see "A context's shape"). Add `"hours"` to `CONTEXTS` in `eslint.config.mjs`, so the boundary rule covers it.
+2. **Write `feature.ts`** and add it to `features/registry.ts`. Keep it metadata only, since it ends up in the client bundle:
+
+   ```ts
+   import { defineFeature } from "@/core/features/defineFeature";
+   import { OrganizationConfigKey } from "@/core/config/schema";
+
+   export const hours = defineFeature({
+     id: "hours",
+     toggle: OrganizationConfigKey.HoursEnabled,
+     navItems: [
+       {
+         label: "Hours",
+         href: "/settings/hours",
+         order: 60,
+         parent: "/settings",
+         requireAdmin: true,
+       },
+     ],
+     widgets: [{ id: "hours_summary", label: "Hours Summary" }],
+   });
+   ```
+
+3. **Declare the toggle** in `config.ts` with `defineConfig`, the way `features/forms/config.ts` declares `FormsEnabled`: add `HoursEnabled` to `OrganizationConfigKey`, add it to `ToggleableOrganizationFeature`, and add the context's group to `core/config/registry.ts`. It defaults to `false`; turn it on for an org with a config row.
+4. **Add the schema**: tables in `features/hours/schema.ts`, re-exported from `core/db/schema.ts`, then `pnpm run db:generate`. Add each table to `tests/unit/setup.ts`'s cleanup list.
+5. **Add the routes**: a Hono sub-app in `features/hours/api/`, added to the `.route()` chain in `features/app.ts`.
+6. **Add the guards**, since hiding the nav item isn't access control: `assertFeatureEnabled(organizationId, OrganizationConfigKey.HoursEnabled)` in each route, and `notFoundIfFeatureDisabled(...)` in each page (see `app/settings/forms/page.tsx`).
+7. **Add widgets**: the manifest entry, the id in `WIDGET_IDS` (`features/dashboard/lib/schema.ts`), and the component in `WIDGET_COMPONENTS` (`DashboardGrid.tsx`). `WIDGET_IDS` stays a literal list rather than being built from the manifests, because the dashboard's layout schema would then import every feature; `tests/unit/features/registry.test.ts` checks the two agree, and `WIDGET_COMPONENTS` is typed to need every id.
+
+Then add tests: a service and route test with the org A / org B case, and an e2e test for the user flow.
 
 ## Future Work
 
