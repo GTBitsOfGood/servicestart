@@ -1,15 +1,12 @@
 import { ORGANIZATION_NOT_FOUND_PATH } from "@/core/tenant/organizationRoutes";
 import type { IconName } from "@/components/bog/BogIcon/BogIcon";
-import {
-  OrganizationConfigKey,
-  ToggleableOrganizationFeature,
-} from "@/core/config/schema";
+import type { ToggleableOrganizationFeature } from "@/core/config/schema";
+import { FEATURES } from "@/features/registry";
 
 export type Page = {
   label: string;
   href: string;
   requireAdmin?: boolean;
-  requireConfig?: ToggleableOrganizationFeature;
 };
 
 export type NavbarItem = Page & {
@@ -21,58 +18,53 @@ export type NavbarProps = {
   items: NavbarItem[];
 };
 
-export const NAVBAR_ITEMS: NavbarItem[] = [
-  { label: "Home", href: "/", icon: "house" },
-  {
-    label: "Members",
-    href: "/members",
-    icon: "users",
-    requireAdmin: true,
-    requireConfig: OrganizationConfigKey.MembersPageEnabled,
-  },
-  {
-    label: "Media Library",
-    href: "/media",
-    icon: "folder",
-    requireAdmin: true,
-  },
-  { label: "Inbox", href: "/inbox", icon: "bell" },
-  {
-    label: "Settings",
-    href: "/settings",
-    icon: "gear",
-    requireAdmin: true,
-    subpages: [
-      {
-        label: "Forms",
-        href: "/settings/forms",
-        requireAdmin: true,
-        requireConfig: OrganizationConfigKey.FormsEnabled,
-      },
-      {
-        label: "Member types",
-        href: "/settings/member-types",
-        requireAdmin: true,
-        requireConfig: OrganizationConfigKey.MemberTypesEnabled,
-      },
-      { label: "Admin Dashboard", href: "/settings/admindashboard" },
-      { label: "Dashboard", href: "/settings/dashboard" },
-      {
-        label: "Dashboard Content",
-        href: "/settings/dashboard-content",
-        requireAdmin: true,
-      },
-    ],
-  },
-  { label: "Events", href: "/events", icon: "calendar" },
-];
+/** A navbar entry from a feature manifest, with the feature's toggle. */
+export type NavbarEntry = Page & {
+  icon?: IconName;
+  toggle?: ToggleableOrganizationFeature;
+  subpages?: NavbarEntry[];
+};
 
-/** Every navbar item's href, including settings sub-items. */
+const byOrder = (a: { order: number }, b: { order: number }) =>
+  a.order - b.order;
+
+const ENTRIES = FEATURES.flatMap(({ toggle, navItems = [] }) =>
+  navItems.map((item) => ({ ...item, toggle })),
+);
+
+/**
+ * The full navbar from every feature's manifest, before any per-org or
+ * per-user filtering: top-level items and their subpages, each by `order`.
+ */
+export const NAVBAR_TREE: NavbarEntry[] = ENTRIES.filter(
+  (entry) => !entry.parent,
+)
+  .sort(byOrder)
+  .map(({ label, href, icon, requireAdmin, toggle }) => {
+    const subpages = ENTRIES.filter((entry) => entry.parent === href)
+      .sort(byOrder)
+      .map((page) => ({
+        label: page.label,
+        href: page.href,
+        requireAdmin: page.requireAdmin,
+        toggle: page.toggle,
+      }));
+    return {
+      label,
+      href,
+      icon,
+      requireAdmin,
+      toggle,
+      ...(subpages.length ? { subpages } : {}),
+    };
+  });
+
+/**
+ * Every navbar item's href, including settings sub-items. Never filtered by
+ * toggle: stored NavbarConfig rows are keyed by href and checked against it.
+ */
 export const NAVBAR_HREFS: ReadonlySet<string> = new Set(
-  NAVBAR_ITEMS.flatMap((item) => [
-    item.href,
-    ...(item.subpages ?? []).map((page) => page.href),
-  ]),
+  ENTRIES.map((entry) => entry.href),
 );
 
 // Entries ending in "/" also match every path under them (see matchesPage).

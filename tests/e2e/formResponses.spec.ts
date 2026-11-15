@@ -9,7 +9,7 @@ import { MemberTypeKeySchema } from "@/features/membership/lib/memberTypeKey";
 import { setMemberTypeDashboardLayout } from "@/features/dashboard/server";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { VISIONARIES_APPLICATION_FORM } from "@/tests/unit/fixtures/forms";
-import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";
+import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/forms";
 import {
   addMember,
   buildTestUser,

@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { FormService } from "@/features/forms/services/FormService";
-import {
-  getWidgetOptions,
-  WIDGET_FEATURE_KEYS,
-} from "@/features/dashboard/widgets";
+import { getWidgetOptions } from "@/features/dashboard/widgets";
+import { FEATURE_TOGGLES } from "@/features/registry";
 import type { MemberAudience } from "@/features/membership/lib/audience";
 import { getMemberTypeDashboardLayout } from "@/features/dashboard/server";
 import DashboardLayoutBuilder from "@/features/dashboard/components/DashboardLayoutBuilder";
@@ -49,7 +47,7 @@ export default async function DashboardSettingsPage({
   const [memberTypesEnabled, features, forms, { audience: requested }] =
     await Promise.all([
       OrganizationConfigService.getMemberTypesEnabled(organizationId),
-      OrganizationConfigService.getConfig(organizationId, WIDGET_FEATURE_KEYS),
+      OrganizationConfigService.getConfig(organizationId, FEATURE_TOGGLES),
       OrganizationConfigService.getConfig(organizationId, [
         OrganizationConfigKey.FormsEnabled,
       ]).then((config) =>

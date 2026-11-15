@@ -12,8 +12,10 @@ import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import {
   ApplicationStatusWidgetConfigSchema,
   DEFAULT_APPLICATION_STATUS_STEPS,
-  WIDGET_CONFIG_SCHEMAS,
   type ApplicationStatusWidgetConfig,
+} from "@/features/forms";
+import {
+  WIDGET_CONFIG_SCHEMAS,
   type DashboardLayout,
   type DashboardWidget,
   type WidgetId,

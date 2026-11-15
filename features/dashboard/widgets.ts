@@ -1,9 +1,7 @@
-import {
-  OrganizationConfigKey,
-  type ToggleableOrganizationFeature,
-} from "@/core/config/schema";
+import type { OrganizationConfigKey } from "@/core/config/schema";
+import { FEATURES } from "@/features/registry";
 import type { DashboardAudience } from "@/features/membership";
-import type { WidgetId } from "./lib/schema";
+import { WIDGET_IDS, type WidgetId } from "./lib/schema";
 
 /**
  * What every dashboard widget receives. Widgets are server components, so
@@ -20,55 +18,23 @@ export type WidgetProps = {
   config?: unknown;
 };
 
-interface WidgetMeta {
-  label: string;
-  /** A feature the org must have on for the widget to be offered. */
-  requireConfig?: ToggleableOrganizationFeature;
-}
-
-export const WIDGET_REGISTRY: Record<WidgetId, WidgetMeta> = {
-  events: { label: "Events" },
-  notifications: { label: "Notifications" },
-  member_requests: { label: "New Member Requests" },
-  newsletter: { label: "Newsletter" },
-  application_status: {
-    label: "Application Status",
-    requireConfig: OrganizationConfigKey.FormsEnabled,
-  },
-  forms_todo: {
-    label: "To-Do List",
-    requireConfig: OrganizationConfigKey.FormsEnabled,
-  },
-  forms_completed: {
-    label: "Completed Forms",
-    requireConfig: OrganizationConfigKey.FormsEnabled,
-  },
-  forms_progress: {
-    label: "Forms Progress",
-    requireConfig: OrganizationConfigKey.FormsEnabled,
-  },
-  weekly_calendar: { label: "Weekly Calendar" },
-};
-
-/** The features widgets depend on, to look up before getWidgetOptions. */
-export const WIDGET_FEATURE_KEYS = [
-  ...new Set(
-    Object.values(WIDGET_REGISTRY).flatMap(({ requireConfig }) =>
-      requireConfig ? [requireConfig] : [],
-    ),
-  ),
-];
-
-/** Widgets an org can add, leaving out those whose feature is off. */
+/**
+ * Widgets an org can add, from the feature manifests, in WIDGET_IDS order.
+ * A widget is left out while its feature's toggle is off.
+ */
 export function getWidgetOptions(
   enabledFeatures: Partial<Record<OrganizationConfigKey, unknown>> = {},
 ): { id: WidgetId; label: string }[] {
-  return (Object.entries(WIDGET_REGISTRY) as [WidgetId, WidgetMeta][])
-    .filter(
-      ([, meta]) => !meta.requireConfig || enabledFeatures[meta.requireConfig],
-    )
-    .map(([id, meta]) => ({
-      id,
-      label: meta.label,
-    }));
+  const widgets = new Map(
+    FEATURES.flatMap(({ toggle, widgets = [] }) =>
+      widgets.map((widget) => [widget.id, { ...widget, toggle }] as const),
+    ),
+  );
+  return WIDGET_IDS.flatMap((id) => {
+    const widget = widgets.get(id);
+    if (!widget || (widget.toggle && !enabledFeatures[widget.toggle])) {
+      return [];
+    }
+    return [{ id, label: widget.label }];
+  });
 }

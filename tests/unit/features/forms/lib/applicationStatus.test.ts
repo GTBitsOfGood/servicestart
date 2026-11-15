@@ -6,7 +6,7 @@ import {
   getFirstName,
   NO_APPLICATION_MESSAGE,
 } from "@/features/forms/lib/applicationStatus";
-import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/dashboard/lib/schema";
+import { DEFAULT_APPLICATION_STATUS_STEPS } from "@/features/forms";
 import { SubmissionReviewStatus } from "@/core/db/schema";
 import { progressRow } from "@/tests/unit/fixtures/formProgress";
 

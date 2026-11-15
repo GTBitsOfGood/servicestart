@@ -11,7 +11,7 @@ import {
   type TimelineStep,
 } from "@/features/forms/lib/applicationStatus";
 import { memberTypeFromAudience } from "@/features/membership";
-import { ApplicationStatusWidgetConfigSchema } from "@/features/dashboard";
+import { ApplicationStatusWidgetConfigSchema } from "@/features/forms/lib/applicationStatusConfig";
 import type { WidgetProps } from "@/features/dashboard";
 import { OrganizationConfigKey } from "@/core/config/schema";
 import { SubmissionReviewStatus } from "@/features/forms/schema";

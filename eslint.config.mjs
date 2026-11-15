@@ -20,8 +20,8 @@ import eslintConfigPrettier from "eslint-config-prettier/flat";
  * - @/core/db and drizzle-orm are only for a context's services/, core/,
  *   scripts/, and tests/. Each context's schema.ts may build tables, and
  *   type-only drizzle-orm imports are fine anywhere.
- * - app/, scripts/, tests/, and features/app.ts are composition code and may
- *   import any context's internals.
+ * - app/, scripts/, tests/, features/app.ts, and features/registry.ts are
+ *   composition code and may import any context's internals.
  */
 const CONTEXTS = [
   "communications",
@@ -115,12 +115,13 @@ export default defineConfig(
     },
   },
   {
-    // The Drizzle barrel and the config registry collect every context's
-    // tables and config keys by design.
+    // The Drizzle barrel, the config registry, and the feature registry
+    // collect every context's tables, config keys, and manifests by design.
     files: [
       "core/db/schema.ts",
       "core/config/registry.ts",
       "features/app.ts",
+      "features/registry.ts",
       "scripts/**",
       "tests/**",
     ],

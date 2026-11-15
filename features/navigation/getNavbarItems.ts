@@ -1,11 +1,15 @@
 import "server-only";
-import { NAVBAR_ITEMS, NavbarItem, Page } from "@/features/navigation/navItems";
+import {
+  NAVBAR_TREE,
+  type NavbarEntry,
+  type NavbarItem,
+} from "@/features/navigation/navItems";
+import { FEATURE_TOGGLES } from "@/features/registry";
 import {
   audienceIfCurrent,
   getDashboardAudience,
   type MemberAudience,
 } from "@/features/membership";
-import { OrganizationConfigKey } from "@/core/config/schema";
 import { auth } from "@/core/auth/auth";
 import {
   MemberTypeService,
@@ -13,41 +17,26 @@ import {
 } from "@/features/membership/server";
 import OrganizationConfigService from "@/core/config/OrganizationConfigService";
 
-function getRelevantOrgConfigKeys(): OrganizationConfigKey[] {
-  return NAVBAR_ITEMS.flatMap((item) => {
-    const keys: OrganizationConfigKey[] = [];
-    if (item.requireConfig) {
-      keys.push(item.requireConfig);
-    }
-    item.subpages?.forEach((sub) => {
-      if (sub.requireConfig) {
-        keys.push(sub.requireConfig);
-      }
-    });
-    return keys;
-  });
-}
-
 export default async function getNavbarItems(
   session: Awaited<ReturnType<typeof auth.api.getSession>>,
   orgId: string | undefined | null = session?.session.activeOrganizationId,
 ): Promise<NavbarItem[]> {
   const userId = session?.user.id;
+  // One read of MemberTypesEnabled, for the audience and the member types.
+  const memberTypesEnabledRead = orgId
+    ? OrganizationConfigService.getMemberTypesEnabled(orgId)
+    : Promise.resolve(false);
   const [orgConfig, membership, navbarConfig, memberTypesEnabled, memberTypes] =
     orgId
       ? await Promise.all([
-          OrganizationConfigService.getConfig(
-            orgId,
-            getRelevantOrgConfigKeys(),
-          ),
+          OrganizationConfigService.getConfig(orgId, FEATURE_TOGGLES),
           userId
             ? MembersService.findByUserAndOrganization(userId, orgId)
             : null,
           OrganizationConfigService.getNavbarConfig(orgId),
-          OrganizationConfigService.getMemberTypesEnabled(orgId),
-          OrganizationConfigService.getMemberTypesEnabled(orgId).then(
-            (enabled) =>
-              enabled ? MemberTypeService.list(orgId) : Promise.resolve([]),
+          memberTypesEnabledRead,
+          memberTypesEnabledRead.then((enabled) =>
+            enabled ? MemberTypeService.list(orgId) : Promise.resolve([]),
           ),
         ])
       : [{}, null, {}, false, []];
@@ -71,22 +60,23 @@ export default async function getNavbarItems(
   const { hidden = [], labels = {} } =
     membership && !admin ? (navbarConfig[navbarAudience] ?? {}) : {};
 
-  const isVisible = (page: Page) => {
+  const enabled = orgConfig as Partial<Record<string, unknown>>;
+  const isVisible = (page: NavbarEntry) => {
     if (page.requireAdmin && !admin) {
       return false;
     }
-    if (page.requireConfig && !orgConfig[page.requireConfig]) {
+    if (page.toggle && !enabled[page.toggle]) {
       return false;
     }
     return !hidden.includes(page.href);
   };
-  const relabel = <T extends Page>(page: T): T =>
+  const relabel = <T extends NavbarEntry>(page: T): T =>
     labels[page.href] ? { ...page, label: labels[page.href] } : page;
 
-  return NAVBAR_ITEMS.filter(isVisible).map((item) =>
+  return NAVBAR_TREE.filter(isVisible).map((item) =>
     relabel({
       ...item,
       subpages: item.subpages?.filter(isVisible).map(relabel),
     }),
-  );
+  ) as NavbarItem[];
 }
