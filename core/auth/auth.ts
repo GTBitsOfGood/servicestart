@@ -8,27 +8,16 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware, organization } from "better-auth/plugins";
 import { APIError } from "better-auth/api";
 import db from "@/core/db";
-import { afterUserCreated } from "@/core/auth/authUtils";
+import { getAuthHook } from "@/core/auth/authHooks";
 import {
   getSlugFromHost,
   getTenantRootDomain,
 } from "@/core/tenant/clientAuthUtils";
-import {
-  eventRsvps,
-  events,
-  joinRequests,
-  joinRequestHistory,
-  JoinRequestStatus,
-  shiftRSVPs,
-  shifts,
-} from "@/core/db/schema";
-// import { UserService } from "@/features/membership/services/UserService";
-import { and, eq, gt, inArray, isNotNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { EmailService } from "@/core/email/EmailService";
 import { getBaseUrl } from "@/core/utils/clientUtils";
 import { requireEnv } from "@/core/utils/env";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./authValidation";
-import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
 
 const baseURL = process.env.BETTER_AUTH_URL || getBaseUrl();
@@ -94,84 +83,10 @@ export const auth = betterAuth({
             });
           }
         },
+        // The membership context records the removal and cancels upcoming
+        // RSVPs (see core/auth/authHooks.ts).
         beforeRemoveMember: async ({ member }) => {
-          const now = new Date();
-
-          // Records the removal so auto-approve doesn't re-add them on their
-          // next login. Leaves an existing request alone (the join request
-          // "remove" flow has already moved it back to pending).
-          const [existingRequest] = await db
-            .select({ id: joinRequests.id, status: joinRequests.status })
-            .from(joinRequests)
-            .where(
-              and(
-                eq(joinRequests.userId, member.userId),
-                eq(joinRequests.organizationId, member.organizationId),
-              ),
-            )
-            .limit(1);
-          if (!existingRequest) {
-            await db.insert(joinRequests).values({
-              id: crypto.randomUUID(),
-              userId: member.userId,
-              organizationId: member.organizationId,
-              status: JoinRequestStatus.Denied,
-            });
-          }
-
-          if (existingRequest?.status === JoinRequestStatus.Pending) {
-            const history = await JoinRequestsService.listHistory(
-              existingRequest.id,
-            );
-            if (!history.some((entry) => entry.action === "removed")) {
-              // An invite may have been accepted while a join request was
-              // pending. Preserve removal history when access is revoked.
-              await db.insert(joinRequestHistory).values({
-                id: crypto.randomUUID(),
-                joinRequestId: existingRequest.id,
-                action: "removed",
-              });
-            }
-          }
-
-          await Promise.all([
-            db.delete(eventRsvps).where(
-              and(
-                eq(eventRsvps.userId, member.userId),
-                inArray(
-                  eventRsvps.eventId,
-                  db
-                    .select({ id: events.id })
-                    .from(events)
-                    .where(
-                      and(
-                        eq(events.organizationId, member.organizationId),
-                        gt(events.startTimestamp, now),
-                        isNotNull(events.startTimestamp),
-                      ),
-                    ),
-                ),
-              ),
-            ),
-
-            db.delete(shiftRSVPs).where(
-              and(
-                eq(shiftRSVPs.userId, member.userId),
-                inArray(
-                  shiftRSVPs.shiftId,
-                  db
-                    .select({ id: shifts.id })
-                    .from(shifts)
-                    .where(
-                      and(
-                        eq(shifts.organizationId, member.organizationId),
-                        gt(shifts.startTimestamp, now),
-                      ),
-                    ),
-                ),
-              ),
-            ),
-          ]);
+          await getAuthHook("beforeRemoveMember")(member);
         },
       },
       schema: {
@@ -274,8 +189,9 @@ export const auth = betterAuth({
     session: {
       create: {
         after: async (session, context) => {
+          // Signup's join request or membership; see core/auth/authHooks.ts.
           const headers = context?.headers;
-          await afterUserCreated(session.userId, headers);
+          await getAuthHook("afterSessionCreated")(session.userId, headers);
         },
       },
     },

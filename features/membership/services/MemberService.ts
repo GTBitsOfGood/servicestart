@@ -11,32 +11,14 @@ import {
   users,
 } from "@/core/db/schema";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
+import { findMembership, isAdminOrOwner } from "@/core/auth/membership";
 import type { MemberTypeKey } from "@/features/membership/lib/memberTypeKey";
 import { MemberTypeService } from "@/features/membership/server";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-async function findByUserAndOrganization(
-  userId: string,
-  organizationId: string,
-) {
-  const [membership] = await db
-    .select({
-      id: members.id,
-      role: members.role,
-      memberType: members.memberType,
-    })
-    .from(members)
-    .where(
-      and(
-        eq(members.userId, userId),
-        eq(members.organizationId, organizationId),
-      ),
-    )
-    .limit(1);
-
-  return membership ?? null;
-}
+/** The user's membership in the organization, or null. See core/auth/membership.ts. */
+const findByUserAndOrganization = findMembership;
 
 async function getUserIdsByOrganization(
   organizationId: string,
@@ -55,11 +37,6 @@ async function getUserIdsByOrganization(
     );
 
   return organizationMembers.map((member) => member.userId);
-}
-
-function isAdminOrOwner(role: string | undefined): boolean {
-  const ADMIN_ROLES = ["admin", "owner"];
-  return role !== undefined && ADMIN_ROLES.includes(role);
 }
 
 async function listMemberContacts(organizationId: string) {

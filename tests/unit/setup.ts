@@ -49,6 +49,12 @@ beforeAll(async () => {
   });
 
   db = (await import("@/core/db")).default;
+
+  // Tests sign users up and remove members, which fire the auth hooks.
+  // Imported here, after the database URL is set, like the database client.
+  (
+    await import("@/features/membership/authHooks")
+  ).registerMembershipAuthHooks();
 });
 
 beforeEach(async () => {

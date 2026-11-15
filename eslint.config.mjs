@@ -63,18 +63,6 @@ const NO_FEATURES = {
     "core/ is shared by every feature, so it can't import one. Move the shared code into core/, or have the feature pass it in.",
 };
 
-/**
- * Violations from before the rule (#333), as file-level overrides so
- * `pnpm lint` passes. #337 empties this list. Don't add to it: fix the import.
- */
-const BOUNDARY_BASELINE = [
-  // core/ importing features: the signup hooks and route guards call the
-  // membership and notification services.
-  "core/auth/auth.ts",
-  "core/auth/authUtils.ts",
-  // core/ importing features: membership checks in shared routes and services.
-];
-
 export default defineConfig(
   eslint.configs.recommended,
   tseslint.configs.recommended,
@@ -136,10 +124,6 @@ export default defineConfig(
       "scripts/**",
       "tests/**",
     ],
-    rules: { [RULE]: "off" },
-  },
-  {
-    files: BOUNDARY_BASELINE,
     rules: { [RULE]: "off" },
   },
 );

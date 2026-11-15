@@ -13,10 +13,7 @@ import { Fragment } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/core/auth/auth";
-import {
-  createJoinRequestIfNeeded,
-  requireOrganizationOrRedirect,
-} from "@/core/auth/authUtils";
+import { requireOrganizationOrRedirect } from "@/core/auth/authUtils";
 import { JoinRequestStatus } from "@/features/membership/schema";
 import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
 import { MembersService } from "@/features/membership/services/MemberService";
@@ -213,7 +210,7 @@ export default async function JoinRequestStatusPage() {
 
   async function submitJoinRequest() {
     "use server";
-    await createJoinRequestIfNeeded(userId, activeOrgId);
+    await JoinRequestsService.createIfNeeded(userId, activeOrgId);
     redirect("/joinrequeststatus");
   }
 

@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { registerMembershipAuthHooks } from "@/features/membership/authHooks";
 import { eq } from "drizzle-orm";
 import db from "@/core/db";
 import { organizations } from "@/core/db/schema";
@@ -12,6 +13,9 @@ import {
   signUpAndGetHeaders,
   signUpAndGetSession,
 } from "../unit/testUtils";
+
+// Helpers here sign users up, which fires the membership auth hooks.
+registerMembershipAuthHooks();
 
 type SignInOptions = {
   baseUrl?: string;

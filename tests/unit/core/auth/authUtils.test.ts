@@ -34,7 +34,6 @@ import {
   redirectIfNotMember,
   requireAdmin,
   requireAuth,
-  requireMemberType,
   requireMembership,
 } from "@/core/auth/authUtils";
 import {
@@ -836,114 +835,6 @@ describe("auto-approved signups", () => {
     expect(requests).toHaveLength(1);
     expect(requests[0].status).toBe(JoinRequestStatus.Pending);
     expect(await getJoinRequests(userId, orgA.id)).toHaveLength(0);
-  });
-});
-
-describe("requireMemberType", () => {
-  async function signInAs(
-    role: "owner" | "admin" | "member",
-    memberType: string | null,
-    memberTypesEnabled: boolean,
-  ) {
-    const organization = await createOrganization(
-      `mt-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
-    );
-    await setToggles(organization.id, { memberTypes: memberTypesEnabled });
-    const { user, session, headers } =
-      await signUpAndGetSession(buildTestUser());
-    await db.insert(members).values({
-      id: randomUUID(),
-      userId: user.id,
-      organizationId: organization.id,
-      role,
-      memberType:
-        memberType === null ? null : MemberTypeKeySchema.parse(memberType),
-    });
-    await setActiveOrganization(session.id, organization.id);
-    return { user, organization, headers };
-  }
-
-  it("throws UnauthorizedError when not signed in", async () => {
-    await expect(
-      requireMemberType(buildContext(), [
-        MemberTypeKeySchema.parse("attendee"),
-      ]),
-    ).rejects.toBeInstanceOf(UnauthorizedError);
-  });
-
-  it("throws ForbiddenError for a non-member", async () => {
-    const organization = await createOrganization("mt-nonmember");
-    await setToggles(organization.id, { memberTypes: true });
-    const { session, headers } = await signUpAndGetSession(buildTestUser());
-    await setActiveOrganization(session.id, organization.id);
-
-    await expect(
-      requireMemberType(buildContext(headers), [
-        MemberTypeKeySchema.parse("attendee"),
-      ]),
-    ).rejects.toBeInstanceOf(ForbiddenError);
-  });
-
-  it.each([
-    ["an admin", "admin", null, true, [MemberTypeKeySchema.parse("attendee")]],
-    ["an owner", "owner", null, true, [MemberTypeKeySchema.parse("attendee")]],
-    [
-      "any member while types are off",
-      "member",
-      null,
-      false,
-      [MemberTypeKeySchema.parse("attendee")],
-    ],
-    [
-      "an applicant while types are off",
-      "member",
-      "applicant",
-      false,
-      [MemberTypeKeySchema.parse("attendee")],
-    ],
-    [
-      "an allowed type",
-      "member",
-      "attendee",
-      true,
-      [MemberTypeKeySchema.parse("attendee")],
-    ],
-    [
-      "one of several allowed types",
-      "member",
-      "applicant",
-      true,
-      [
-        MemberTypeKeySchema.parse("applicant"),
-        MemberTypeKeySchema.parse("attendee"),
-      ],
-    ],
-  ] as const)(
-    "lets %s through",
-    async (_name, role, memberType, enabled, allowed) => {
-      const { user, headers } = await signInAs(role, memberType, enabled);
-
-      const session = await requireMemberType(
-        buildContext(headers),
-        allowed.map((key) =>
-          typeof key === "string" ? MemberTypeKeySchema.parse(key) : key,
-        ),
-      );
-      expect(session.user.id).toBe(user.id);
-    },
-  );
-
-  it.each([
-    ["a type that isn't allowed", "applicant"],
-    ["an untyped member", null],
-  ] as const)("throws ForbiddenError for %s", async (_name, memberType) => {
-    const { headers } = await signInAs("member", memberType, true);
-
-    await expect(
-      requireMemberType(buildContext(headers), [
-        MemberTypeKeySchema.parse("attendee"),
-      ]),
-    ).rejects.toBeInstanceOf(ForbiddenError);
   });
 });
 

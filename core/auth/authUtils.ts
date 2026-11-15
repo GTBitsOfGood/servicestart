@@ -13,20 +13,12 @@ import {
   NoActiveOrganizationError,
   UnauthorizedError,
 } from "@/core/api/errors";
-import { JoinRequestsService } from "@/features/membership/services/JoinRequestService";
-import { MembersService } from "@/features/membership/services/MemberService";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
-import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
-import { InvitationService } from "@/features/membership/services/InvitationService";
-import { UserService } from "@/features/membership/services/UserService";
+import { UserService } from "@/core/auth/UserService";
+import { findMembership, isAdminOrOwner } from "@/core/auth/membership";
 import { User } from "better-auth";
 import db from "@/core/db";
 import { users } from "@/core/auth/schema";
-import { INVITATION_ID_HEADER } from "@/core/tenant/clientAuthUtils";
-// import { User } from "better-auth/client";
-import { NotificationService } from "@/features/communications/services/NotificationService";
-import type { MemberTypeKey } from "@/features/membership/lib/memberTypeKey";
-import { JoinRequestStatus, NotificationType } from "@/core/db/schema";
 
 type AppSession = NonNullable<Awaited<ReturnType<typeof auth.api.getSession>>>;
 
@@ -34,94 +26,6 @@ type SessionWithOrganization = AppSession & {
   organizationId: string;
 };
 
-/**
- * Creates a join request for the user if there isn't already one
- */
-export async function createJoinRequestIfNeeded(
-  userId: string,
-  organizationId: string,
-): Promise<void> {
-  const existingRequest = await JoinRequestsService.findByUserAndOrganization(
-    userId,
-    organizationId,
-  );
-  if (existingRequest) return;
-
-  const joinRequestId = await JoinRequestsService.create(
-    userId,
-    organizationId,
-  );
-
-  const user = await UserService.findById(userId);
-  const userName = user?.name || user?.email || "A user";
-  await NotificationService.notifyAdmins(
-    organizationId,
-    `Join Request\n${userName} has requested to join the organization.`,
-    NotificationType.ActionRequired,
-    { joinRequestId },
-  );
-}
-
-/**
- * Accepts the invitation the user signed up from (the `x-invitation-id`
- * header the invitation page sends) if it's theirs; otherwise files a join
- * request with the host's organization.
- */
-export async function afterUserCreated(
-  userId: string,
-  headers?: Headers,
-): Promise<void> {
-  try {
-    const organization = await resolveOrganization(headers ?? new Headers());
-    if (!organization) return;
-
-    const membership = await MembersService.findByUserAndOrganization(
-      userId,
-      organization.id,
-    );
-    if (membership) return;
-
-    // Only a sign-up from the invitation link accepts it: an email match
-    // alone would let anyone who knows the address claim the invited role.
-    const invitationId = headers?.get(INVITATION_ID_HEADER);
-    if (invitationId) {
-      const user = await UserService.findById(userId);
-      const role =
-        user &&
-        (await InvitationService.acceptForUser(
-          invitationId,
-          organization.id,
-          user,
-        ));
-      if (role) return;
-    }
-
-    const autoApprove = await OrganizationConfigService.getAutoApproveSignups(
-      organization.id,
-    );
-    const user = await UserService.findById(userId);
-    const pendingInvite =
-      user &&
-      (await InvitationService.hasPendingForEmail(organization.id, user.email));
-    if (!autoApprove || pendingInvite) {
-      await createJoinRequestIfNeeded(userId, organization.id);
-      return;
-    }
-    const existingRequest = await JoinRequestsService.findByUserAndOrganization(
-      userId,
-      organization.id,
-    );
-    if (existingRequest) return;
-    await MembersService.addSignupMember(userId, organization.id);
-    await JoinRequestsService.create(
-      userId,
-      organization.id,
-      JoinRequestStatus.Approved,
-    );
-  } catch (err) {
-    console.error(err);
-  }
-}
 /**
  * Returns the current session or throws UnauthorizedError if not signed in.
  * Use this to avoid duplicating auth checks in route handlers.
@@ -151,10 +55,7 @@ export async function requireMembership(c: Context) {
     throw new NoActiveOrganizationError();
   }
 
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
+  const membership = await findMembership(session.user.id, organizationId);
 
   if (!membership) {
     throw new ForbiddenError();
@@ -182,39 +83,10 @@ export async function requireAdminSession(
     throw new NoActiveOrganizationError();
   }
 
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
+  const membership = await findMembership(session.user.id, organizationId);
 
-  if (!MembersService.isAdminOrOwner(membership?.role)) {
+  if (!isAdminOrOwner(membership?.role)) {
     throw new ForbiddenError(message);
-  }
-
-  return session;
-}
-
-/**
- * Returns the current session only if the user is a member of the active
- * organization whose member type is in `allowed`. Admins and owners always
- * pass, and so does everyone while MemberTypesEnabled is off.
- */
-export async function requireMemberType(c: Context, allowed: MemberTypeKey[]) {
-  const session = await requireMembership(c);
-  const organizationId = session.session.activeOrganizationId!;
-
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
-  if (MembersService.isAdminOrOwner(membership?.role)) return session;
-
-  const enabled =
-    await OrganizationConfigService.getMemberTypesEnabled(organizationId);
-  if (!enabled) return session;
-
-  if (!membership?.memberType || !allowed.includes(membership.memberType)) {
-    throw new ForbiddenError();
   }
 
   return session;
@@ -267,10 +139,7 @@ export async function redirectIfNotMember() {
 
   const organizationId = await requireOrganizationOrRedirect(requestHeaders);
 
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
+  const membership = await findMembership(session.user.id, organizationId);
 
   if (membership) {
     return {
@@ -381,12 +250,9 @@ export async function redirectIfNotAdmin() {
   const session = await redirectIfNotMember();
   const { organizationId } = session;
 
-  const membership = await MembersService.findByUserAndOrganization(
-    session.user.id,
-    organizationId,
-  );
+  const membership = await findMembership(session.user.id, organizationId);
 
-  if (!MembersService.isAdminOrOwner(membership?.role)) {
+  if (!isAdminOrOwner(membership?.role)) {
     redirect("/");
   }
 

@@ -1,4 +1,5 @@
 import { handleError } from "@/core/api/handleError";
+import { registerMembershipAuthHooks } from "@/features/membership/authHooks";
 import { Hono } from "hono";
 import ping from "@/core/api/ping";
 import organizationConfig from "@/features/settings/api/organizationConfig";
@@ -22,6 +23,10 @@ import joinRequests from "@/features/membership/api/joinRequests";
 import members from "@/features/membership/api/members";
 import memberTypes from "@/features/membership/api/memberTypes";
 import profile from "@/features/membership/api/profile";
+
+// Routes here can remove members, which fires an auth hook; see
+// core/auth/authHooks.ts.
+registerMembershipAuthHooks();
 
 /*
  * The only Hono root: app/api/[[...route]]/route.ts serves it, the typed RPC

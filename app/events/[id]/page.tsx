@@ -16,7 +16,7 @@ import { auth } from "@/core/auth/auth";
 import { MembersService } from "@/features/membership/services/MemberService";
 import EventService from "@/features/events/services/EventService";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
-import { UserService } from "@/features/membership/services/UserService";
+import { UserService } from "@/core/auth/UserService";
 import { formatDateTime, formatRsvpDeadline } from "@/core/utils/clientUtils";
 import {
   canManageEvent,
