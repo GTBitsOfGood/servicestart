@@ -50,11 +50,19 @@ beforeAll(async () => {
 
   db = (await import("@/core/db")).default;
 
-  // Tests sign users up and remove members, which fire the auth hooks.
-  // Imported here, after the database URL is set, like the database client.
-  (
-    await import("@/features/membership/authHooks")
-  ).registerMembershipAuthHooks();
+  // Tests sign users up and remove members, which fire the auth hooks. This
+  // registers the same hooks as registerMembershipAuthHooks(), but loads them
+  // on first use: loading them here would load auth.ts in every test file,
+  // including ones that mock what it imports.
+  const { registerAuthHooks } = await import("@/core/auth/authHooks");
+  const load = () =>
+    import("@/features/membership/services/MembershipAuthHooks");
+  registerAuthHooks({
+    afterSessionCreated: async (userId, headers) =>
+      (await load()).afterUserCreated(userId, headers),
+    beforeRemoveMember: async (member) =>
+      (await load()).beforeRemoveMember(member),
+  });
 });
 
 beforeEach(async () => {

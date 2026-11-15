@@ -173,7 +173,7 @@ BetterAuth's hooks need membership code: signup files a join request or adds the
 - The registry lives on `globalThis`, because Next can load a module more than once (separate route bundles, HMR), and every copy must see the hooks.
 - `auth.ts` throws if a hook runs before it's registered. Failing silently would drop new users' join requests and memberships.
 - Registration is an explicit call in every entry point that can fire a hook, not a side effect hidden in a barrel: `app/api/auth/[...all]/route.ts` (signup and sign-in), `features/app.ts` (routes that remove members), `features/membership/server.ts`, `scripts/seed.ts`, `tests/unit/setup.ts`, `tests/e2e/testUtils.ts`, and `tests/e2e/acceptInvitation.spec.ts`. In the Next app the auth route and `features/app.ts` are the ones that count: with `"sideEffects"` set, Next may skip evaluating `server.ts` when it only re-exports what a caller uses. A new entry point that signs users up or removes members (a script, a server action calling `auth.api`) must call it too.
-- The hook bodies (`features/membership/services/MembershipAuthHooks.ts`) load on first use, so registering is cheap and can't take part in an import cycle.
+- The registered functions look up the hook bodies (`features/membership/services/MembershipAuthHooks.ts`) when they run, so registering from inside an import cycle is safe. `tests/unit/setup.ts` registers the same bodies but imports them on first use, so test files that mock what `auth.ts` imports don't load it early.
 
 ### Server-only code
 
