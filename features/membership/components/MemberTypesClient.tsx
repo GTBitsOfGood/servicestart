@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowDown, ArrowUp, Trash } from "@phosphor-icons/react";
 import api from "@/core/api/client";
 import type { MemberTypeKey } from "@/features/membership/lib/memberTypeKey";
-import type { MemberTypeRow } from "@/features/membership/services/MemberTypeService";
+import type { MemberTypeRow } from "@/features/membership/lib/memberTypeKey";
 import BogModal from "@/components/bog/BogModal/BogModal";
 import ThemedButton from "@/components/theme/ThemedButton";
 import { cn } from "@/core/utils/utils";

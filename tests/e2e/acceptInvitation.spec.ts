@@ -8,7 +8,7 @@ import {
   OrganizationConfigKey,
 } from "@/core/db/schema";
 import { AuthMessage } from "@/core/auth/components/authConstants";
-import { InvitationStatus } from "@/features/membership/services/InvitationService";
+import { InvitationStatus } from "@/features/membership";
 import { OrganizationConfigService } from "@/core/config/OrganizationConfigService";
 import { auth } from "@/core/auth/auth";
 import {

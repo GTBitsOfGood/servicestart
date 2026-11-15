@@ -21,7 +21,7 @@ import {
 } from "@/features/forms/lib/schema";
 import { buildSubmissionSchema } from "@/features/forms/lib/submission";
 import { FileService } from "@/core/files/FileService";
-import { InvitationStatus } from "@/features/membership/services/InvitationService";
+import { InvitationStatus } from "@/features/membership";
 import {
   VISIONARIES_APPLICATION_FORM,
   VISIONARIES_ATTENDEE_FORMS,
