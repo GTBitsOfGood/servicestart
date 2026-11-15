@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { capitalize } from "@/core/utils/strings";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/core/utils/utils";
@@ -308,9 +309,7 @@ export function MobileSidebarNav({
     (session.data?.user?.email as string | undefined) ??
     "";
   const rawRole = (organization?.data as { role?: string } | undefined)?.role;
-  const clientDisplayRole = rawRole
-    ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1)
-    : "";
+  const clientDisplayRole = rawRole ? capitalize(rawRole) : "";
   const displayName = clientDisplayName || pinnedProfileDisplayName;
   const displayRole = clientDisplayRole || pinnedProfileRole;
 

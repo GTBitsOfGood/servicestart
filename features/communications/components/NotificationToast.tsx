@@ -7,7 +7,7 @@ import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogModal from "@/components/theme/ThemedModal";
 import { NotificationType } from "@/features/communications/schema";
 import { JoinRequestStatus } from "@/features/membership";
-import { formatTime } from "@/core/utils/utils";
+import { formatRelativeTime } from "@/core/utils/dates";
 import api from "@/core/api/client";
 import type {
   NotificationListItem,
@@ -80,7 +80,7 @@ export default function NotificationToast({
             <NotificationTag type={notification.type} variant="text" />
             <div className="flex items-center gap-3">
               <span className="whitespace-nowrap text-paragraph-2 text-grey-text-weak">
-                {formatTime(notification.createdAt)}
+                {formatRelativeTime(notification.createdAt)}
               </span>
               <Toast.Close asChild>
                 <button

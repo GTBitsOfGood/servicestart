@@ -1,6 +1,6 @@
 import type { AppType } from "@/features/app";
 import { hc } from "hono/client";
-import { getBaseUrl } from "@/core/utils/clientUtils";
+import { getBaseUrl } from "@/core/utils/urls";
 
 const client = hc<AppType>(
   typeof window === "undefined" ? getBaseUrl() : window.location.origin,

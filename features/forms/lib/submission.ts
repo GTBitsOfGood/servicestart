@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { formatShortDate } from "@/core/utils/dates";
 import {
   FormComponentType,
   FormStatus,
@@ -55,12 +56,7 @@ export function parseNumberInput(text: string) {
 /** A date like 2027-06-02 as "Jun 2, 2027", for error messages. */
 export function formatDateString(date: string) {
   const [year, month, day] = date.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  });
+  return formatShortDate(Date.UTC(year, month - 1, day), { timeZone: "UTC" });
 }
 
 function dateRangeMessage(min?: string, max?: string) {

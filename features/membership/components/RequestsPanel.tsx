@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { capitalize } from "@/core/utils/strings";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import BogTextInput from "@/components/theme/ThemedTextInput";
 import BogDropdown from "@/components/theme/ThemedDropdown";
@@ -260,9 +261,7 @@ export default function RequestsPanel({
                 name="typeFilter"
                 placeholder="Type"
                 options={["Pending", "Approved", "Denied"]}
-                value={Array.from(typeFilters).map(
-                  (s) => s.charAt(0).toUpperCase() + s.slice(1),
-                )}
+                value={Array.from(typeFilters).map(capitalize)}
                 onSelectionChange={(selection) => {
                   const values = (
                     Array.isArray(selection) ? selection : [selection]
@@ -334,7 +333,7 @@ export default function RequestsPanel({
                   onClick={() => toggleTypeFilter(s)}
                 >
                   <span className="text-[11px] font-medium text-grey-text-strong">
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                    {capitalize(s)}
                   </span>
                   <BogIcon
                     name="x"

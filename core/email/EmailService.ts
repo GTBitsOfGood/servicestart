@@ -3,7 +3,7 @@ import { getTenantOrigin } from "@/core/tenant/urls";
 import { juno } from "@/core/files/junoClient";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
 import { getEmailSenderDomain } from "@/core/utils/env";
-import { getBaseUrl } from "@/core/utils/clientUtils";
+import { getBaseUrl } from "@/core/utils/urls";
 
 function senderDomain() {
   return getEmailSenderDomain();

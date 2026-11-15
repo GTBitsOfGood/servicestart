@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { capitalize } from "@/core/utils/strings";
 import { useEffect, useState } from "react";
 import BogIcon from "@/components/bog/BogIcon/BogIcon";
 import { ProfileAvatar } from "@/features/navigation/components/ProfileAvatar";
@@ -51,9 +52,7 @@ export function UserProfileMenu({
     session.data?.user?.name ??
     (session.data?.user?.email as string | undefined) ??
     "";
-  const displayRole = rawRole
-    ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1)
-    : "";
+  const displayRole = rawRole ? capitalize(rawRole) : "";
 
   const flyoutOpensStart =
     direction === "vertical" && verticalFlyout === "start";

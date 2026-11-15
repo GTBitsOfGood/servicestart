@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatClockTime } from "@/core/utils/dates";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import api from "@/core/api/client";
 import {
@@ -18,10 +19,7 @@ export type CalendarEvent = {
 };
 
 function eventTime(timestamp: string) {
-  return new Date(timestamp).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatClockTime(timestamp);
 }
 
 export default function WeeklyCalendarClient() {

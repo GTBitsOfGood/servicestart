@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { capitalize } from "@/core/utils/strings";
 import { VerticalSidebarNav } from "@/features/navigation/components/VerticalSidebarNav";
 import { VerticalIconNav } from "@/features/navigation/components/VerticalIconNav";
 import { HorizontalNavLayout } from "@/features/navigation/components/HorizontalNavLayout";
@@ -68,8 +69,7 @@ export default async function Navbar({ children }: NavbarProps) {
         orgId,
       );
       if (membership?.role) {
-        pinnedProfileRole =
-          membership.role.charAt(0).toUpperCase() + membership.role.slice(1);
+        pinnedProfileRole = capitalize(membership.role);
       }
     }
   }

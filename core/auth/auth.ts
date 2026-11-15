@@ -15,7 +15,7 @@ import {
 } from "@/core/tenant/clientAuthUtils";
 import { eq } from "drizzle-orm";
 import { EmailService } from "@/core/email/EmailService";
-import { getBaseUrl } from "@/core/utils/clientUtils";
+import { getBaseUrl } from "@/core/utils/urls";
 import { requireEnv } from "@/core/utils/env";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./authValidation";
 import { OrganizationsService } from "@/core/tenant/OrganizationService";
